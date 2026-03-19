@@ -17,48 +17,6 @@ interface PendingBroker {
   dateApplied: string;
 }
 
-const MOCK_PENDING: PendingBroker[] = [
-  {
-    id: "brk_3",
-    userName: "Maria Gonzalez",
-    brokerageName: "Maple Leaf Mortgages",
-    licenseNumber: "ON-44821",
-    province: "ON",
-    dateApplied: "2026-03-17",
-  },
-  {
-    id: "brk_4",
-    userName: "David Park",
-    brokerageName: "West Coast Financial",
-    licenseNumber: "BC-31092",
-    province: "BC",
-    dateApplied: "2026-03-16",
-  },
-  {
-    id: "brk_7",
-    userName: "Anna Kowalski",
-    brokerageName: "Northern Trust Mortgages",
-    licenseNumber: "AB-90217",
-    province: "AB",
-    dateApplied: "2026-03-15",
-  },
-  {
-    id: "brk_8",
-    userName: "Michael Tremblay",
-    brokerageName: "Quebec Home Finance",
-    licenseNumber: "QC-60134",
-    province: "QC",
-    dateApplied: "2026-03-14",
-  },
-  {
-    id: "brk_9",
-    userName: "Lisa Nguyen",
-    brokerageName: "Coastal Lending Solutions",
-    licenseNumber: "BC-42918",
-    province: "BC",
-    dateApplied: "2026-03-13",
-  },
-];
 
 export default function AdminVerification() {
   const { data: session, status } = useSession();
@@ -75,12 +33,32 @@ export default function AdminVerification() {
       return;
     }
 
-    const timer = setTimeout(() => {
-      setPending(MOCK_PENDING);
-      setLoading(false);
-    }, 300);
+    const fetchPending = async () => {
+      try {
+        const res = await fetch("/api/admin/brokers");
+        if (res.ok) {
+          const data = await res.json();
+          setPending(
+            data
+              .filter((b: any) => b.verificationStatus === "PENDING")
+              .map((b: any) => ({
+                id: b.id,
+                userName: b.user?.name ?? "Unknown",
+                brokerageName: b.brokerageName,
+                licenseNumber: b.licenseNumber,
+                province: b.province,
+                dateApplied: b.createdAt?.slice(0, 10) ?? "",
+              }))
+          );
+        }
+      } catch {
+        // Network error
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchPending();
   }, [session, status, router]);
 
   const handleDecision = async (
@@ -92,7 +70,7 @@ export default function AdminVerification() {
       const res = await fetch(`/api/admin/brokers/${brokerId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: decision }),
+        body: JSON.stringify({ verificationStatus: decision }),
       });
 
       if (res.ok) {

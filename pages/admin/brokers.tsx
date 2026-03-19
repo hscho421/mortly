@@ -21,68 +21,6 @@ interface BrokerRow {
   rating: number | null;
 }
 
-const MOCK_BROKERS: BrokerRow[] = [
-  {
-    id: "brk_1",
-    userName: "Sarah Chen",
-    brokerageName: "Pacific Mortgage Group",
-    province: "BC",
-    licenseNumber: "BC-29184",
-    verificationStatus: "VERIFIED",
-    subscriptionTier: "PRO",
-    rating: 4.8,
-  },
-  {
-    id: "brk_2",
-    userName: "James Wilson",
-    brokerageName: "Capital Home Lending",
-    province: "ON",
-    licenseNumber: "ON-55230",
-    verificationStatus: "VERIFIED",
-    subscriptionTier: "PREMIUM",
-    rating: 4.9,
-  },
-  {
-    id: "brk_3",
-    userName: "Maria Gonzalez",
-    brokerageName: "Maple Leaf Mortgages",
-    province: "ON",
-    licenseNumber: "ON-44821",
-    verificationStatus: "PENDING",
-    subscriptionTier: "BASIC",
-    rating: null,
-  },
-  {
-    id: "brk_4",
-    userName: "David Park",
-    brokerageName: "West Coast Financial",
-    province: "BC",
-    licenseNumber: "BC-31092",
-    verificationStatus: "PENDING",
-    subscriptionTier: "BASIC",
-    rating: null,
-  },
-  {
-    id: "brk_5",
-    userName: "Emily Brown",
-    brokerageName: "Prairie Home Loans",
-    province: "AB",
-    licenseNumber: "AB-12847",
-    verificationStatus: "VERIFIED",
-    subscriptionTier: "BASIC",
-    rating: 4.5,
-  },
-  {
-    id: "brk_6",
-    userName: "Robert Taylor",
-    brokerageName: "Eastern Mortgage Corp",
-    province: "QC",
-    licenseNumber: "QC-77312",
-    verificationStatus: "REJECTED",
-    subscriptionTier: "BASIC",
-    rating: null,
-  },
-];
 
 const TIER_BADGE: Record<SubscriptionTier, string> = {
   BASIC: "bg-cream-200 text-forest-600 ring-1 ring-inset ring-cream-400/30",
@@ -108,12 +46,32 @@ export default function AdminBrokers() {
       return;
     }
 
-    const timer = setTimeout(() => {
-      setBrokers(MOCK_BROKERS);
-      setLoading(false);
-    }, 300);
+    const fetchBrokers = async () => {
+      try {
+        const res = await fetch("/api/admin/brokers");
+        if (res.ok) {
+          const data = await res.json();
+          setBrokers(
+            data.map((b: any) => ({
+              id: b.id,
+              userName: b.user?.name ?? "Unknown",
+              brokerageName: b.brokerageName,
+              province: b.province,
+              licenseNumber: b.licenseNumber,
+              verificationStatus: b.verificationStatus,
+              subscriptionTier: b.subscriptionTier,
+              rating: b.rating,
+            }))
+          );
+        }
+      } catch {
+        // Network error
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchBrokers();
   }, [session, status, router]);
 
   const handleStatusChange = async (
@@ -125,7 +83,7 @@ export default function AdminBrokers() {
       const res = await fetch(`/api/admin/brokers/${brokerId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ verificationStatus: newStatus }),
       });
 
       if (res.ok) {

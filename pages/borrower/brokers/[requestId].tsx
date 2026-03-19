@@ -96,7 +96,7 @@ export default function BrokerComparison() {
       }
 
       const data = await res.json();
-      router.push(`/borrower/chat/${data.id}`);
+      router.push(`/borrower/messages?id=${data.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSelectingId(null);

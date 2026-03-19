@@ -152,6 +152,16 @@ export default function BorrowerMessagesPage() {
     }
   }, []);
 
+  /* ---- auto-select from query param (e.g. after accepting intro) ---- */
+  useEffect(() => {
+    const qid = router.query.id;
+    if (typeof qid === "string" && qid && !activeId) {
+      setActiveId(qid);
+      fetchActiveConversation(qid);
+      setMobileShowChat(true);
+    }
+  }, [router.query.id, activeId, fetchActiveConversation]);
+
   /* ---- Supabase Realtime for instant messages ---- */
   useEffect(() => {
     if (!activeId || authStatus !== "authenticated") return;

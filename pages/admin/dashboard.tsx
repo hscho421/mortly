@@ -14,91 +14,12 @@ interface DashboardStats {
   openReports: number;
 }
 
-interface ActivityItem {
-  id: string;
-  type: "user_signup" | "verification" | "request" | "report";
-  message: string;
-  timestamp: string;
-}
-
-const MOCK_STATS: DashboardStats = {
-  totalUsers: 1248,
-  pendingVerifications: 17,
-  activeRequests: 342,
-  openReports: 5,
-};
-
-const MOCK_ACTIVITY: ActivityItem[] = [
-  {
-    id: "1",
-    type: "user_signup",
-    message: "New broker registered: Sarah Chen from Pacific Mortgage Group",
-    timestamp: "2 minutes ago",
-  },
-  {
-    id: "2",
-    type: "verification",
-    message: "Broker verification approved: James Wilson (License #BC-29184)",
-    timestamp: "15 minutes ago",
-  },
-  {
-    id: "3",
-    type: "request",
-    message: "New mortgage request created in Toronto, ON - Purchase, $650K-$800K",
-    timestamp: "32 minutes ago",
-  },
-  {
-    id: "4",
-    type: "report",
-    message: "New report filed against broker profile (ID: clx8k2m0f)",
-    timestamp: "1 hour ago",
-  },
-  {
-    id: "5",
-    type: "user_signup",
-    message: "New borrower registered: anonymous user in Vancouver, BC",
-    timestamp: "1 hour ago",
-  },
-  {
-    id: "6",
-    type: "verification",
-    message: "Broker verification submitted: Maria Gonzalez (License #ON-44821)",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: "7",
-    type: "request",
-    message: "Mortgage request closed - matched with broker in Calgary, AB",
-    timestamp: "3 hours ago",
-  },
-  {
-    id: "8",
-    type: "report",
-    message: "Report resolved: inappropriate message content dismissed",
-    timestamp: "4 hours ago",
-  },
-];
-
-const ACTIVITY_COLORS: Record<ActivityItem["type"], string> = {
-  user_signup: "bg-forest-100 text-forest-700 ring-1 ring-inset ring-forest-600/20",
-  verification: "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-600/20",
-  request: "bg-sage-100 text-sage-700 ring-1 ring-inset ring-sage-600/20",
-  report: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20",
-};
-
-const ACTIVITY_LABELS: Record<ActivityItem["type"], string> = {
-  user_signup: "Signup",
-  verification: "Verification",
-  request: "Request",
-  report: "Report",
-};
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -108,14 +29,26 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Simulate API fetch
-    const timer = setTimeout(() => {
-      setStats(MOCK_STATS);
-      setActivity(MOCK_ACTIVITY);
-      setLoading(false);
-    }, 300);
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/admin/stats");
+        if (res.ok) {
+          const data = await res.json();
+          setStats({
+            totalUsers: data.users,
+            pendingVerifications: data.pendingVerifications,
+            activeRequests: data.activeRequests,
+            openReports: data.openReports,
+          });
+        }
+      } catch {
+        // Network error
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchData();
   }, [session, status, router]);
 
   if (status === "loading" || loading) {
@@ -254,29 +187,6 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {/* Recent Activity Feed */}
-        <div className="card-elevated animate-fade-in-up opacity-0 stagger-5">
-          <div className="border-b border-cream-200 pb-5 mb-2">
-            <h2 className="heading-sm">{t("admin.recentActivity", "Recent Activity")}</h2>
-          </div>
-          <ul className="divide-y divide-cream-200">
-            {activity.map((item) => (
-              <li key={item.id} className="flex items-start gap-4 py-4">
-                <span
-                  className={`mt-0.5 inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ${ACTIVITY_COLORS[item.type]}`}
-                >
-                  {ACTIVITY_LABELS[item.type]}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-body text-sm text-forest-800">{item.message}</p>
-                  <p className="mt-0.5 text-body-sm">
-                    {item.timestamp}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     </Layout>
   );

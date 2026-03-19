@@ -19,62 +19,6 @@ interface ReportRow {
   createdAt: string;
 }
 
-const MOCK_REPORTS: ReportRow[] = [
-  {
-    id: "rpt_1",
-    reporterName: "John Smith",
-    targetType: "Broker",
-    targetId: "brk_6",
-    reason: "Misleading profile information about experience and credentials",
-    status: "OPEN",
-    createdAt: "2026-03-18",
-  },
-  {
-    id: "rpt_2",
-    reporterName: "Alice Johnson",
-    targetType: "Message",
-    targetId: "msg_482",
-    reason: "Inappropriate language and unprofessional conduct",
-    status: "OPEN",
-    createdAt: "2026-03-18",
-  },
-  {
-    id: "rpt_3",
-    reporterName: "Bob Williams",
-    targetType: "Broker",
-    targetId: "brk_12",
-    reason: "Suspected unlicensed activity in Ontario",
-    status: "REVIEWED",
-    createdAt: "2026-03-17",
-  },
-  {
-    id: "rpt_4",
-    reporterName: "Carol Davis",
-    targetType: "Message",
-    targetId: "msg_391",
-    reason: "Spam messages soliciting external services",
-    status: "RESOLVED",
-    createdAt: "2026-03-16",
-  },
-  {
-    id: "rpt_5",
-    reporterName: "Dan Miller",
-    targetType: "Broker",
-    targetId: "brk_8",
-    reason: "Profile photo does not match person during consultation",
-    status: "DISMISSED",
-    createdAt: "2026-03-15",
-  },
-  {
-    id: "rpt_6",
-    reporterName: "Eva Martinez",
-    targetType: "Message",
-    targetId: "msg_520",
-    reason: "Requesting personal financial information outside the platform",
-    status: "OPEN",
-    createdAt: "2026-03-19",
-  },
-];
 
 export default function AdminReports() {
   const { data: session, status } = useSession();
@@ -94,12 +38,31 @@ export default function AdminReports() {
       return;
     }
 
-    const timer = setTimeout(() => {
-      setReports(MOCK_REPORTS);
-      setLoading(false);
-    }, 300);
+    const fetchReports = async () => {
+      try {
+        const res = await fetch("/api/admin/reports");
+        if (res.ok) {
+          const data = await res.json();
+          setReports(
+            data.map((r: any) => ({
+              id: r.id,
+              reporterName: r.reporter?.name ?? "Unknown",
+              targetType: r.targetType,
+              targetId: r.targetId,
+              reason: r.reason,
+              status: r.status,
+              createdAt: r.createdAt?.slice(0, 10) ?? "",
+            }))
+          );
+        }
+      } catch {
+        // Network error
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchReports();
   }, [session, status, router]);
 
   const handleStatusChange = async (
@@ -120,9 +83,12 @@ export default function AdminReports() {
             r.id === reportId ? { ...r, status: newStatus } : r
           )
         );
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.error(`PUT /api/admin/reports/${reportId} failed:`, res.status, err);
       }
-    } catch {
-      // Network error - silently fail for now
+    } catch (e) {
+      console.error("Network error updating report:", e);
     } finally {
       setActionLoading(null);
     }
