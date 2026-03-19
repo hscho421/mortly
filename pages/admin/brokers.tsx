@@ -1,0 +1,321 @@
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
+import Layout from "@/components/Layout";
+import StatusBadge from "@/components/StatusBadge";
+
+type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
+type SubscriptionTier = "BASIC" | "PRO" | "PREMIUM";
+
+interface BrokerRow {
+  id: string;
+  userName: string;
+  brokerageName: string;
+  province: string;
+  licenseNumber: string;
+  verificationStatus: VerificationStatus;
+  subscriptionTier: SubscriptionTier;
+  rating: number | null;
+}
+
+const MOCK_BROKERS: BrokerRow[] = [
+  {
+    id: "brk_1",
+    userName: "Sarah Chen",
+    brokerageName: "Pacific Mortgage Group",
+    province: "BC",
+    licenseNumber: "BC-29184",
+    verificationStatus: "VERIFIED",
+    subscriptionTier: "PRO",
+    rating: 4.8,
+  },
+  {
+    id: "brk_2",
+    userName: "James Wilson",
+    brokerageName: "Capital Home Lending",
+    province: "ON",
+    licenseNumber: "ON-55230",
+    verificationStatus: "VERIFIED",
+    subscriptionTier: "PREMIUM",
+    rating: 4.9,
+  },
+  {
+    id: "brk_3",
+    userName: "Maria Gonzalez",
+    brokerageName: "Maple Leaf Mortgages",
+    province: "ON",
+    licenseNumber: "ON-44821",
+    verificationStatus: "PENDING",
+    subscriptionTier: "BASIC",
+    rating: null,
+  },
+  {
+    id: "brk_4",
+    userName: "David Park",
+    brokerageName: "West Coast Financial",
+    province: "BC",
+    licenseNumber: "BC-31092",
+    verificationStatus: "PENDING",
+    subscriptionTier: "BASIC",
+    rating: null,
+  },
+  {
+    id: "brk_5",
+    userName: "Emily Brown",
+    brokerageName: "Prairie Home Loans",
+    province: "AB",
+    licenseNumber: "AB-12847",
+    verificationStatus: "VERIFIED",
+    subscriptionTier: "BASIC",
+    rating: 4.5,
+  },
+  {
+    id: "brk_6",
+    userName: "Robert Taylor",
+    brokerageName: "Eastern Mortgage Corp",
+    province: "QC",
+    licenseNumber: "QC-77312",
+    verificationStatus: "REJECTED",
+    subscriptionTier: "BASIC",
+    rating: null,
+  },
+];
+
+const TIER_BADGE: Record<SubscriptionTier, string> = {
+  BASIC: "bg-cream-200 text-forest-600 ring-1 ring-inset ring-cream-400/30",
+  PRO: "bg-forest-100 text-forest-700 ring-1 ring-inset ring-forest-600/20",
+  PREMIUM: "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-600/20",
+};
+
+export default function AdminBrokers() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [brokers, setBrokers] = useState<BrokerRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<
+    VerificationStatus | "ALL"
+  >("ALL");
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session || session.user.role !== "ADMIN") {
+      router.replace("/login");
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setBrokers(MOCK_BROKERS);
+      setLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [session, status, router]);
+
+  const handleStatusChange = async (
+    brokerId: string,
+    newStatus: VerificationStatus
+  ) => {
+    setActionLoading(brokerId);
+    try {
+      const res = await fetch(`/api/admin/brokers/${brokerId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        setBrokers((prev) =>
+          prev.map((b) =>
+            b.id === brokerId
+              ? { ...b, verificationStatus: newStatus }
+              : b
+          )
+        );
+      }
+    } catch {
+      // Network error - silently fail for now
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const filteredBrokers =
+    filterStatus === "ALL"
+      ? brokers
+      : brokers.filter((b) => b.verificationStatus === filterStatus);
+
+  if (status === "loading" || loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <p className="text-body-sm">Loading brokers...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!session || session.user.role !== "ADMIN") {
+    return null;
+  }
+
+  return (
+    <Layout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 animate-fade-in">
+          <div>
+            <h1 className="heading-lg">Broker Management</h1>
+            <p className="text-body mt-2">
+              View, verify, and manage broker accounts across the platform.
+            </p>
+          </div>
+          <div className="mt-4 sm:mt-0">
+            <label htmlFor="statusFilter" className="label-text">
+              Filter by status
+            </label>
+            <select
+              id="statusFilter"
+              value={filterStatus}
+              onChange={(e) =>
+                setFilterStatus(
+                  e.target.value as VerificationStatus | "ALL"
+                )
+              }
+              className="input-field w-auto min-w-[160px]"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="PENDING">Pending</option>
+              <option value="VERIFIED">Verified</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="card-elevated !p-0 overflow-hidden animate-fade-in-up opacity-0 stagger-2">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-cream-200">
+              <thead>
+                <tr className="bg-forest-800">
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    Name
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    Brokerage
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    Province
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    License #
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    Status
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    Tier
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    Rating
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-cream-200 bg-white">
+                {filteredBrokers.map((broker) => (
+                  <tr key={broker.id} className="hover:bg-cream-50 transition-colors">
+                    <td className="whitespace-nowrap px-5 py-4 font-body text-sm font-semibold text-forest-800">
+                      {broker.userName}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 font-body text-sm text-forest-700/80">
+                      {broker.brokerageName}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 font-body text-sm text-forest-700/80">
+                      {broker.province}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 font-mono text-sm text-forest-700/80">
+                      {broker.licenseNumber}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4">
+                      <StatusBadge status={broker.verificationStatus} />
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ${TIER_BADGE[broker.subscriptionTier]}`}
+                      >
+                        {broker.subscriptionTier}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4">
+                      {broker.rating !== null ? (
+                        <span className="inline-flex items-center gap-1 font-body text-sm text-forest-800">
+                          <svg className="h-4 w-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          {broker.rating.toFixed(1)}
+                        </span>
+                      ) : (
+                        <span className="font-body text-sm text-sage-400">--</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            router.push(`/admin/brokers/${broker.id}`)
+                          }
+                          className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
+                        >
+                          View
+                        </button>
+                        {broker.verificationStatus !== "VERIFIED" && (
+                          <button
+                            onClick={() =>
+                              handleStatusChange(broker.id, "VERIFIED")
+                            }
+                            disabled={actionLoading === broker.id}
+                            className="btn-primary !px-3 !py-1.5 !text-xs !rounded-lg disabled:opacity-50"
+                          >
+                            {actionLoading === broker.id
+                              ? "..."
+                              : "Verify"}
+                          </button>
+                        )}
+                        {broker.verificationStatus !== "REJECTED" && (
+                          <button
+                            onClick={() =>
+                              handleStatusChange(broker.id, "REJECTED")
+                            }
+                            disabled={actionLoading === broker.id}
+                            className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all duration-300 hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+                          >
+                            {actionLoading === broker.id
+                              ? "..."
+                              : "Suspend"}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredBrokers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-5 py-12 text-center text-body-sm"
+                    >
+                      No brokers found for the selected filter.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}

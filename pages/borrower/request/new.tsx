@@ -1,0 +1,608 @@
+import { useState, FormEvent } from "react";
+import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
+import Layout from "@/components/Layout";
+import type { CreateRequestInput } from "@/types";
+
+const PROVINCES = [
+  "Alberta",
+  "British Columbia",
+  "Manitoba",
+  "New Brunswick",
+  "Newfoundland and Labrador",
+  "Northwest Territories",
+  "Nova Scotia",
+  "Nunavut",
+  "Ontario",
+  "Prince Edward Island",
+  "Quebec",
+  "Saskatchewan",
+  "Yukon",
+];
+
+const DOWN_PAYMENT_OPTIONS = ["5%", "10%", "15%", "20%+"];
+
+const PREFERRED_TERMS = [
+  "1 year",
+  "2 years",
+  "3 years",
+  "4 years",
+  "5 years",
+  "7 years",
+  "10 years",
+];
+
+const CLOSING_TIMELINES = [
+  "Within 30 days",
+  "1-3 months",
+  "3-6 months",
+  "6-12 months",
+  "Just exploring",
+];
+
+export default function NewRequest() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const [form, setForm] = useState<CreateRequestInput>({
+    requestType: "PURCHASE",
+    province: "",
+    city: "",
+    propertyType: "DETACHED",
+    priceRangeMin: undefined,
+    priceRangeMax: undefined,
+    downPaymentPercent: "",
+    incomeRangeMin: undefined,
+    incomeRangeMax: undefined,
+    employmentType: "FULL_TIME",
+    creditScoreBand: "GOOD",
+    debtRangeMin: undefined,
+    debtRangeMax: undefined,
+    mortgageAmountMin: undefined,
+    mortgageAmountMax: undefined,
+    preferredTerm: "5 years",
+    preferredType: "FIXED",
+    closingTimeline: "",
+    notes: "",
+  });
+
+  if (status === "loading") {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <p className="text-body-sm">Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (status === "unauthenticated" || !session) {
+    if (typeof window !== "undefined") {
+      router.replace("/api/auth/signin?callbackUrl=/borrower/request/new");
+    }
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <p className="text-body-sm">Redirecting to login...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  function updateField<K extends keyof CreateRequestInput>(
+    key: K,
+    value: CreateRequestInput[K]
+  ) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleNumberChange(key: keyof CreateRequestInput, raw: string) {
+    const parsed = raw === "" ? undefined : Number(raw);
+    updateField(key, parsed as CreateRequestInput[typeof key]);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to submit request");
+      }
+
+      const data = await res.json();
+      router.push(`/borrower/request/${data.id}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const radioOptionClass = (isSelected: boolean) =>
+    `flex items-center gap-2 rounded-xl border px-4 py-3 cursor-pointer text-sm font-body transition-all duration-200 ${
+      isSelected
+        ? "border-forest-600 bg-forest-50 text-forest-800 ring-2 ring-forest-600/10"
+        : "border-cream-300 bg-white hover:border-sage-300 text-forest-700"
+    }`;
+
+  return (
+    <Layout>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
+        {/* Privacy notice */}
+        <div className="mb-8 rounded-2xl bg-forest-50 border border-forest-200 p-5 animate-fade-in-up stagger-1">
+          <div className="flex items-start gap-3">
+            <svg
+              className="w-5 h-5 text-forest-600 mt-0.5 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+            <p className="text-body-sm">
+              <strong className="text-forest-800">Your identity stays private until you choose to connect.</strong>{" "}
+              Brokers will see your mortgage needs but not your name or contact
+              information until you decide to start a conversation.
+            </p>
+          </div>
+        </div>
+
+        <h1 className="heading-lg mb-2 animate-fade-in-up stagger-2">
+          Submit Your Mortgage Request
+        </h1>
+        <p className="text-body mb-8 animate-fade-in-up stagger-3">
+          Tell us what you&apos;re looking for and let verified brokers come to you.
+        </p>
+
+        {error && (
+          <div className="mb-6 rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 font-body">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-10">
+          {/* Section 1: Request basics */}
+          <fieldset className="space-y-6 animate-fade-in-up stagger-4">
+            <legend className="heading-sm border-b divider pb-3 w-full">
+              What type of mortgage help do you need?
+            </legend>
+
+            <div>
+              <span className="label-text">Request Type</span>
+              <div className="flex flex-wrap gap-4 mt-2">
+                {(["PURCHASE", "REFINANCE", "RENEWAL"] as const).map((type) => (
+                  <label
+                    key={type}
+                    className={radioOptionClass(form.requestType === type)}
+                  >
+                    <input
+                      type="radio"
+                      name="requestType"
+                      value={type}
+                      checked={form.requestType === type}
+                      onChange={() => updateField("requestType", type)}
+                      className="accent-forest-600"
+                    />
+                    {type.charAt(0) + type.slice(1).toLowerCase()}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Section 2: Property details */}
+          <fieldset className="space-y-6 animate-fade-in-up stagger-5">
+            <legend className="heading-sm border-b divider pb-3 w-full">
+              Property Details
+            </legend>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="province" className="label-text">
+                  Province
+                </label>
+                <select
+                  id="province"
+                  value={form.province}
+                  onChange={(e) => updateField("province", e.target.value)}
+                  required
+                  className="input-field"
+                >
+                  <option value="">Select a province</option>
+                  {PROVINCES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="city" className="label-text">
+                  City <span className="text-sage-400">(optional)</span>
+                </label>
+                <input
+                  id="city"
+                  type="text"
+                  value={form.city || ""}
+                  onChange={(e) => updateField("city", e.target.value)}
+                  placeholder="e.g. Toronto"
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            <div>
+              <span className="label-text">Property Type</span>
+              <div className="flex flex-wrap gap-4 mt-2">
+                {(["CONDO", "TOWNHOUSE", "DETACHED", "OTHER"] as const).map(
+                  (type) => (
+                    <label
+                      key={type}
+                      className={radioOptionClass(form.propertyType === type)}
+                    >
+                      <input
+                        type="radio"
+                        name="propertyType"
+                        value={type}
+                        checked={form.propertyType === type}
+                        onChange={() => updateField("propertyType", type)}
+                        className="accent-forest-600"
+                      />
+                      {type.charAt(0) + type.slice(1).toLowerCase()}
+                    </label>
+                  )
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="priceRangeMin" className="label-text">
+                  Price Range (Min $)
+                </label>
+                <input
+                  id="priceRangeMin"
+                  type="number"
+                  min={0}
+                  value={form.priceRangeMin ?? ""}
+                  onChange={(e) =>
+                    handleNumberChange("priceRangeMin", e.target.value)
+                  }
+                  placeholder="e.g. 300000"
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label htmlFor="priceRangeMax" className="label-text">
+                  Price Range (Max $)
+                </label>
+                <input
+                  id="priceRangeMax"
+                  type="number"
+                  min={0}
+                  value={form.priceRangeMax ?? ""}
+                  onChange={(e) =>
+                    handleNumberChange("priceRangeMax", e.target.value)
+                  }
+                  placeholder="e.g. 600000"
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="downPaymentPercent" className="label-text">
+                Down Payment Percentage
+              </label>
+              <select
+                id="downPaymentPercent"
+                value={form.downPaymentPercent || ""}
+                onChange={(e) =>
+                  updateField("downPaymentPercent", e.target.value)
+                }
+                className="input-field"
+              >
+                <option value="">Select an option</option>
+                {DOWN_PAYMENT_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </fieldset>
+
+          {/* Section 3: Financial profile */}
+          <fieldset className="space-y-6 animate-fade-in-up stagger-6">
+            <legend className="heading-sm border-b divider pb-3 w-full">
+              Financial Profile
+            </legend>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="incomeRangeMin" className="label-text">
+                  Household Income (Min $)
+                </label>
+                <input
+                  id="incomeRangeMin"
+                  type="number"
+                  min={0}
+                  value={form.incomeRangeMin ?? ""}
+                  onChange={(e) =>
+                    handleNumberChange("incomeRangeMin", e.target.value)
+                  }
+                  placeholder="e.g. 80000"
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label htmlFor="incomeRangeMax" className="label-text">
+                  Household Income (Max $)
+                </label>
+                <input
+                  id="incomeRangeMax"
+                  type="number"
+                  min={0}
+                  value={form.incomeRangeMax ?? ""}
+                  onChange={(e) =>
+                    handleNumberChange("incomeRangeMax", e.target.value)
+                  }
+                  placeholder="e.g. 120000"
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="employmentType" className="label-text">
+                Employment Type
+              </label>
+              <select
+                id="employmentType"
+                value={form.employmentType || ""}
+                onChange={(e) => updateField("employmentType", e.target.value)}
+                className="input-field"
+              >
+                <option value="">Select employment type</option>
+                {[
+                  ["FULL_TIME", "Full Time"],
+                  ["PART_TIME", "Part Time"],
+                  ["SELF_EMPLOYED", "Self Employed"],
+                  ["CONTRACT", "Contract"],
+                  ["RETIRED", "Retired"],
+                  ["OTHER", "Other"],
+                ].map(([val, label]) => (
+                  <option key={val} value={val}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <span className="label-text">Credit Score Band</span>
+              <div className="flex flex-wrap gap-3 mt-2">
+                {(
+                  ["EXCELLENT", "GOOD", "FAIR", "POOR", "NOT_SURE"] as const
+                ).map((band) => (
+                  <label
+                    key={band}
+                    className={radioOptionClass(form.creditScoreBand === band)}
+                  >
+                    <input
+                      type="radio"
+                      name="creditScoreBand"
+                      value={band}
+                      checked={form.creditScoreBand === band}
+                      onChange={() => updateField("creditScoreBand", band)}
+                      className="accent-forest-600"
+                    />
+                    {band === "NOT_SURE"
+                      ? "Not Sure"
+                      : band.charAt(0) + band.slice(1).toLowerCase()}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="debtRangeMin" className="label-text">
+                  Existing Debts (Min $)
+                </label>
+                <input
+                  id="debtRangeMin"
+                  type="number"
+                  min={0}
+                  value={form.debtRangeMin ?? ""}
+                  onChange={(e) =>
+                    handleNumberChange("debtRangeMin", e.target.value)
+                  }
+                  placeholder="e.g. 0"
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label htmlFor="debtRangeMax" className="label-text">
+                  Existing Debts (Max $)
+                </label>
+                <input
+                  id="debtRangeMax"
+                  type="number"
+                  min={0}
+                  value={form.debtRangeMax ?? ""}
+                  onChange={(e) =>
+                    handleNumberChange("debtRangeMax", e.target.value)
+                  }
+                  placeholder="e.g. 20000"
+                  className="input-field"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Section 4: Mortgage preferences */}
+          <fieldset className="space-y-6">
+            <legend className="heading-sm border-b divider pb-3 w-full">
+              Mortgage Preferences
+            </legend>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="mortgageAmountMin" className="label-text">
+                  Mortgage Amount Needed (Min $)
+                </label>
+                <input
+                  id="mortgageAmountMin"
+                  type="number"
+                  min={0}
+                  value={form.mortgageAmountMin ?? ""}
+                  onChange={(e) =>
+                    handleNumberChange("mortgageAmountMin", e.target.value)
+                  }
+                  placeholder="e.g. 250000"
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label htmlFor="mortgageAmountMax" className="label-text">
+                  Mortgage Amount Needed (Max $)
+                </label>
+                <input
+                  id="mortgageAmountMax"
+                  type="number"
+                  min={0}
+                  value={form.mortgageAmountMax ?? ""}
+                  onChange={(e) =>
+                    handleNumberChange("mortgageAmountMax", e.target.value)
+                  }
+                  placeholder="e.g. 500000"
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="preferredTerm" className="label-text">
+                  Preferred Term
+                </label>
+                <select
+                  id="preferredTerm"
+                  value={form.preferredTerm || ""}
+                  onChange={(e) => updateField("preferredTerm", e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Select a term</option>
+                  {PREFERRED_TERMS.map((term) => (
+                    <option key={term} value={term}>
+                      {term}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <span className="label-text">Preferred Type</span>
+                <div className="flex flex-wrap gap-3 mt-2">
+                  {(["FIXED", "VARIABLE", "NOT_SURE"] as const).map((type) => (
+                    <label
+                      key={type}
+                      className={radioOptionClass(form.preferredType === type)}
+                    >
+                      <input
+                        type="radio"
+                        name="preferredType"
+                        value={type}
+                        checked={form.preferredType === type}
+                        onChange={() => updateField("preferredType", type)}
+                        className="accent-forest-600"
+                      />
+                      {type === "NOT_SURE"
+                        ? "Not Sure"
+                        : type.charAt(0) + type.slice(1).toLowerCase()}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="closingTimeline" className="label-text">
+                Closing Timeline
+              </label>
+              <select
+                id="closingTimeline"
+                value={form.closingTimeline || ""}
+                onChange={(e) =>
+                  updateField("closingTimeline", e.target.value)
+                }
+                className="input-field"
+              >
+                <option value="">Select a timeline</option>
+                {CLOSING_TIMELINES.map((tl) => (
+                  <option key={tl} value={tl}>
+                    {tl}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </fieldset>
+
+          {/* Section 5: Additional notes */}
+          <fieldset className="space-y-6">
+            <legend className="heading-sm border-b divider pb-3 w-full">
+              Additional Notes
+            </legend>
+
+            <div>
+              <label htmlFor="notes" className="label-text">
+                Anything else brokers should know?{" "}
+                <span className="text-sage-400">(optional)</span>
+              </label>
+              <textarea
+                id="notes"
+                rows={4}
+                value={form.notes || ""}
+                onChange={(e) => updateField("notes", e.target.value)}
+                placeholder="e.g. First-time buyer, looking for pre-approval, unique income situation..."
+                className="input-field"
+              />
+            </div>
+          </fieldset>
+
+          {/* Submit */}
+          <div className="pt-6 border-t divider">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-primary w-full sm:w-auto px-10 py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Submitting..." : "Submit Request"}
+            </button>
+            <p className="mt-3 text-body-sm text-sage-400">
+              By submitting, you agree to our Terms of Service and Privacy Policy.
+            </p>
+          </div>
+        </form>
+      </div>
+    </Layout>
+  );
+}

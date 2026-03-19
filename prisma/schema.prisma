@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  passwordHash     String
+  role             Role
+  name             String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  borrowerRequests BorrowerRequest[]
+  broker           Broker?
+  conversations    Conversation[]
+  messages         Message[]
+  reports          Report[]
+
+  @@map("users")
+}
+
+model BorrowerRequest {
+  id                 String               @id @default(cuid())
+  borrowerId         String
+  requestType        RequestType
+  province           String
+  city               String?
+  propertyType       PropertyType
+  priceRangeMin      Int?
+  priceRangeMax      Int?
+  downPaymentPercent String?
+  incomeRangeMin     Int?
+  incomeRangeMax     Int?
+  employmentType     EmploymentType?
+  creditScoreBand    CreditScoreBand?
+  debtRangeMin       Int?
+  debtRangeMax       Int?
+  mortgageAmountMin  Int?
+  mortgageAmountMax  Int?
+  preferredTerm      String?
+  preferredType      MortgageType?
+  closingTimeline    String?
+  notes              String?
+  status             RequestStatus        @default(OPEN)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  borrower           User                 @relation(fields: [borrowerId], references: [id])
+  introductions      BrokerIntroduction[]
+  conversations      Conversation[]
+
+  @@map("borrower_requests")
+}
+
+model Broker {
+  id                 String               @id @default(cuid())
+  userId             String               @unique
+  brokerageName      String
+  province           String
+  licenseNumber      String
+  bio                String?
+  yearsExperience    Int?
+  areasServed        String?
+  specialties        String?
+  profilePhoto       String?
+  verificationStatus VerificationStatus   @default(PENDING)
+  subscriptionTier   SubscriptionTier     @default(BASIC)
+  rating             Float?
+  completedMatches   Int                  @default(0)
+  responseCredits    Int                  @default(5)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  introductions      BrokerIntroduction[]
+  user               User                 @relation(fields: [userId], references: [id])
+  conversations      Conversation[]
+  subscription       Subscription?
+
+  @@map("brokers")
+}
+
+model BrokerIntroduction {
+  id                String          @id @default(cuid())
+  requestId         String
+  brokerId          String
+  howCanHelp        String
+  experience        String?
+  lenderNetwork     String?
+  processNotes      String?
+  personalMessage   String
+  estimatedTimeline String?
+  createdAt         DateTime        @default(now())
+  broker            Broker          @relation(fields: [brokerId], references: [id])
+  request           BorrowerRequest @relation(fields: [requestId], references: [id])
+
+  @@unique([requestId, brokerId])
+  @@map("broker_introductions")
+}
+
+model Conversation {
+  id         String             @id @default(cuid())
+  requestId  String
+  borrowerId String
+  brokerId   String
+  status     ConversationStatus @default(ACTIVE)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  borrower   User               @relation(fields: [borrowerId], references: [id])
+  broker     Broker             @relation(fields: [brokerId], references: [id])
+  request    BorrowerRequest    @relation(fields: [requestId], references: [id])
+  messages   Message[]
+
+  @@unique([requestId, brokerId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         User         @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  brokerId  String             @unique
+  tier      SubscriptionTier
+  status    SubscriptionStatus @default(ACTIVE)
+  startedAt DateTime           @default(now())
+  endedAt   DateTime?
+  broker    Broker             @relation(fields: [brokerId], references: [id])
+
+  @@map("subscriptions")
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String
+  targetType String
+  targetId   String
+  reason     String
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+  reporter   User         @relation(fields: [reporterId], references: [id])
+
+  @@map("reports")
+}
+
+enum Role {
+  BORROWER
+  BROKER
+  ADMIN
+}
+
+enum RequestType {
+  PURCHASE
+  REFINANCE
+  RENEWAL
+}
+
+enum PropertyType {
+  CONDO
+  TOWNHOUSE
+  DETACHED
+  OTHER
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  SELF_EMPLOYED
+  CONTRACT
+  RETIRED
+  OTHER
+}
+
+enum CreditScoreBand {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  NOT_SURE
+}
+
+enum MortgageType {
+  FIXED
+  VARIABLE
+  NOT_SURE
+}
+
+enum RequestStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+  EXPIRED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum SubscriptionTier {
+  BASIC
+  PRO
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}

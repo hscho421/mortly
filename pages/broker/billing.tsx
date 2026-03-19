@@ -1,0 +1,214 @@
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
+import Layout from "@/components/Layout";
+
+interface PlanFeature {
+  text: string;
+  included: boolean;
+}
+
+interface Plan {
+  name: string;
+  tier: string;
+  price: string;
+  period: string;
+  credits: string;
+  features: PlanFeature[];
+  highlighted: boolean;
+}
+
+const PLANS: Plan[] = [
+  {
+    name: "Basic",
+    tier: "BASIC",
+    price: "$0",
+    period: "/month",
+    credits: "5 response credits/month",
+    features: [
+      { text: "Browse all open requests", included: true },
+      { text: "5 introductions per month", included: true },
+      { text: "Basic profile listing", included: true },
+      { text: "Priority placement", included: false },
+      { text: "Analytics dashboard", included: false },
+      { text: "Verified badge", included: false },
+    ],
+    highlighted: false,
+  },
+  {
+    name: "Pro",
+    tier: "PRO",
+    price: "$79",
+    period: "/month",
+    credits: "25 response credits/month",
+    features: [
+      { text: "Browse all open requests", included: true },
+      { text: "25 introductions per month", included: true },
+      { text: "Enhanced profile listing", included: true },
+      { text: "Priority placement", included: true },
+      { text: "Analytics dashboard", included: true },
+      { text: "Verified badge", included: false },
+    ],
+    highlighted: true,
+  },
+  {
+    name: "Premium",
+    tier: "PREMIUM",
+    price: "$199",
+    period: "/month",
+    credits: "Unlimited response credits",
+    features: [
+      { text: "Browse all open requests", included: true },
+      { text: "Unlimited introductions", included: true },
+      { text: "Premium profile listing", included: true },
+      { text: "Top priority placement", included: true },
+      { text: "Advanced analytics dashboard", included: true },
+      { text: "Verified badge", included: true },
+    ],
+    highlighted: false,
+  },
+];
+
+export default function BrokerBillingPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  const [currentTier] = useState("BASIC");
+  const [responseCredits] = useState(8);
+
+  if (status === "loading") {
+    return (
+      <Layout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-body-sm">Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!session || session.user.role !== "BROKER") {
+    if (typeof window !== "undefined") {
+      router.push("/login");
+    }
+    return null;
+  }
+
+  return (
+    <Layout>
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-10 animate-fade-in">
+          <h1 className="heading-lg">Billing & Subscription</h1>
+          <p className="text-body mt-2">Manage your plan and view billing details.</p>
+        </div>
+
+        {/* Current plan summary */}
+        <div className="card-elevated mb-10 animate-fade-in-up stagger-1">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="heading-sm">Current Plan</h2>
+              <p className="text-body mt-1">
+                You are on the{" "}
+                <span className="font-semibold text-forest-700">{currentTier}</span> plan.
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">Response Credits Remaining</p>
+              <p className="font-display text-3xl tracking-tight text-amber-700">{responseCredits}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Plan comparison */}
+        <h2 className="heading-md mb-6 animate-fade-in stagger-2">Choose a Plan</h2>
+        <div className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {PLANS.map((plan, i) => (
+            <div
+              key={plan.tier}
+              className={`relative card-elevated animate-fade-in-up stagger-${Math.min(i + 3, 6)} ${
+                plan.highlighted
+                  ? "border-amber-400 ring-2 ring-amber-400"
+                  : ""
+              }`}
+            >
+              {plan.highlighted && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-4 py-1 font-body text-xs font-semibold text-forest-900">
+                  Most Popular
+                </span>
+              )}
+              <h3 className="heading-sm">{plan.name}</h3>
+              <div className="mt-3">
+                <span className="font-display text-4xl tracking-tight text-forest-800">{plan.price}</span>
+                <span className="text-body-sm">{plan.period}</span>
+              </div>
+              <p className="text-body-sm mt-1">{plan.credits}</p>
+
+              <hr className="divider my-6" />
+
+              <ul className="space-y-3">
+                {plan.features.map((feature) => (
+                  <li key={feature.text} className="flex items-start gap-2.5">
+                    {feature.included ? (
+                      <svg
+                        className="mt-0.5 h-4 w-4 shrink-0 text-forest-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="mt-0.5 h-4 w-4 shrink-0 text-cream-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                    <span className={`font-body text-sm ${feature.included ? "text-forest-700" : "text-sage-400"}`}>
+                      {feature.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                className={`mt-8 w-full ${
+                  currentTier === plan.tier
+                    ? "btn-secondary cursor-default opacity-60"
+                    : plan.highlighted
+                      ? "btn-amber"
+                      : "btn-secondary"
+                }`}
+                disabled={currentTier === plan.tier}
+              >
+                {currentTier === plan.tier ? "Current Plan" : "Upgrade"}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Billing history */}
+        <h2 className="heading-md mb-5 animate-fade-in">Billing History</h2>
+        <div className="card-elevated py-16 text-center animate-fade-in-up">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cream-200">
+            <svg className="h-6 w-6 text-sage-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+            </svg>
+          </div>
+          <p className="font-body text-sm font-medium text-forest-700">No billing history yet.</p>
+          <p className="text-body-sm mt-1">
+            Invoices and payment history will appear here once you upgrade.
+          </p>
+        </div>
+      </div>
+    </Layout>
+  );
+}

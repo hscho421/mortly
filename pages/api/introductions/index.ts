@@ -1,0 +1,127 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    if (req.method === "GET") {
+      const { requestId } = req.query;
+
+      if (!requestId || typeof requestId !== "string") {
+        return res.status(400).json({ error: "requestId query parameter is required" });
+      }
+
+      const where: Record<string, unknown> = { requestId };
+
+      if (session.user.role === "BORROWER") {
+        const request = await prisma.borrowerRequest.findUnique({
+          where: { id: requestId },
+        });
+        if (!request || request.borrowerId !== session.user.id) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+      } else if (session.user.role === "BROKER") {
+        const broker = await prisma.broker.findUnique({
+          where: { userId: session.user.id },
+        });
+        if (!broker) {
+          return res.status(404).json({ error: "Broker profile not found" });
+        }
+        where.brokerId = broker.id;
+      } else {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const introductions = await prisma.brokerIntroduction.findMany({
+        where,
+        include: {
+          broker: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      return res.status(200).json(introductions);
+    }
+
+    if (req.method === "POST") {
+      if (session.user.role !== "BROKER") {
+        return res.status(403).json({ error: "Only brokers can create introductions" });
+      }
+
+      const broker = await prisma.broker.findUnique({
+        where: { userId: session.user.id },
+      });
+
+      if (!broker) {
+        return res.status(404).json({ error: "Broker profile not found" });
+      }
+
+      if (broker.verificationStatus !== "VERIFIED") {
+        return res.status(403).json({ error: "Broker must be verified to send introductions" });
+      }
+
+      if (broker.responseCredits <= 0) {
+        return res.status(403).json({ error: "No response credits remaining" });
+      }
+
+      const { requestId, howCanHelp, personalMessage, ...rest } = req.body;
+
+      if (!requestId || !howCanHelp || !personalMessage) {
+        return res.status(400).json({
+          error: "requestId, howCanHelp, and personalMessage are required",
+        });
+      }
+
+      const existing = await prisma.brokerIntroduction.findUnique({
+        where: {
+          requestId_brokerId: {
+            requestId,
+            brokerId: broker.id,
+          },
+        },
+      });
+
+      if (existing) {
+        return res.status(409).json({ error: "You have already responded to this request" });
+      }
+
+      const [introduction] = await prisma.$transaction([
+        prisma.brokerIntroduction.create({
+          data: {
+            requestId,
+            brokerId: broker.id,
+            howCanHelp,
+            personalMessage,
+            ...rest,
+          },
+        }),
+        prisma.broker.update({
+          where: { id: broker.id },
+          data: { responseCredits: { decrement: 1 } },
+        }),
+      ]);
+
+      return res.status(201).json(introduction);
+    }
+
+    return res.status(405).json({ error: "Method not allowed" });
+  } catch (error) {
+    console.error("Error in /api/introductions:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
