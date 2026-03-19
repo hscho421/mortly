@@ -7,7 +7,11 @@ import {
 } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 import Navbar from "@/components/Navbar";
+import { supabase } from "@/lib/supabase";
 import type { ConversationWithParticipants } from "@/types";
 import type { Message } from "@/types";
 
@@ -73,7 +77,14 @@ function displayLabel(val: string) {
 /*  Component                                     */
 /* ────────────────────────────────────────────── */
 
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});
+
 export default function BorrowerMessagesPage() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { data: session, status: authStatus } = useSession();
 
@@ -92,7 +103,6 @@ export default function BorrowerMessagesPage() {
   const [mobileShowChat, setMobileShowChat] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   /* ---- auth guard ---- */
   useEffect(() => {
@@ -142,27 +152,54 @@ export default function BorrowerMessagesPage() {
     }
   }, []);
 
-  /* ---- poll messages every 5s ---- */
-  const pollMessages = useCallback(async () => {
-    if (!activeId) return;
-    try {
-      const res = await fetch(`/api/conversations/${activeId}`);
-      if (!res.ok) return;
-      const data: ConversationWithParticipants = await res.json();
-      setConversation(data);
-      setMessages(data.messages);
-    } catch {
-      // silent fail for polling
-    }
-  }, [activeId]);
-
+  /* ---- Supabase Realtime for instant messages ---- */
   useEffect(() => {
     if (!activeId || authStatus !== "authenticated") return;
-    pollRef.current = setInterval(pollMessages, 5000);
+
+    const channel = supabase
+      .channel(`chat-${activeId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversationId=eq.${activeId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          // Only add if we don't already have it (e.g. from optimistic update)
+          setMessages((prev) =>
+            prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]
+          );
+          // Refresh conversation list sidebar for latest preview
+          fetchConversations();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversations",
+          filter: `id=eq.${activeId}`,
+        },
+        (payload) => {
+          const updated = payload.new as { status: string };
+          if (updated.status === "CLOSED") {
+            setConversation((prev) =>
+              prev ? { ...prev, status: "CLOSED" } : prev
+            );
+            fetchConversations();
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      supabase.removeChannel(channel);
     };
-  }, [activeId, authStatus, pollMessages]);
+  }, [activeId, authStatus, fetchConversations]);
 
   /* ---- auto-scroll on new messages ---- */
   useEffect(() => {
@@ -273,23 +310,22 @@ export default function BorrowerMessagesPage() {
       {showCloseConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-900/40 backdrop-blur-sm animate-fade-in">
           <div className="card-elevated !p-6 max-w-sm mx-4">
-            <h3 className="heading-sm mb-2">Close Conversation</h3>
+            <h3 className="heading-sm mb-2">{t("messages.closeConfirmTitle")}</h3>
             <p className="text-body-sm mb-6">
-              Are you sure you want to close this conversation? You will no
-              longer be able to send or receive messages.
+              {t("messages.closeConfirmDesc")}
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowCloseConfirm(false)}
                 className="btn-secondary"
               >
-                Cancel
+                {t("messages.cancel")}
               </button>
               <button
                 onClick={handleCloseConversation}
                 className="btn-primary !bg-red-600 hover:!bg-red-700"
               >
-                Close
+                {t("messages.close")}
               </button>
             </div>
           </div>
@@ -324,7 +360,7 @@ export default function BorrowerMessagesPage() {
           {/* List header */}
           <div className="px-5 py-4 border-b border-cream-300">
             <div className="flex items-center justify-between">
-              <h1 className="heading-md">Messages</h1>
+              <h1 className="heading-md">{t("messages.title")}</h1>
               <span className="inline-flex items-center justify-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
                 {conversations.length}
               </span>
@@ -350,9 +386,9 @@ export default function BorrowerMessagesPage() {
                     />
                   </svg>
                 </div>
-                <p className="heading-sm mb-2">No conversations yet</p>
+                <p className="heading-sm mb-2">{t("messages.noConversations")}</p>
                 <p className="text-body-sm">
-                  Browse broker introductions to start chatting.
+                  {t("messages.noConversationsDescBorrower")}
                 </p>
               </div>
             ) : (
@@ -402,7 +438,7 @@ export default function BorrowerMessagesPage() {
                           </span>
                           {conv.status === "CLOSED" && (
                             <span className="inline-flex items-center rounded-full bg-sage-100 px-2 py-0.5 font-body text-[10px] font-medium text-sage-500">
-                              Closed
+                              {t("messages.closed")}
                             </span>
                           )}
                         </div>
@@ -447,9 +483,9 @@ export default function BorrowerMessagesPage() {
                   />
                 </svg>
               </div>
-              <p className="heading-sm mb-2">Select a conversation</p>
+              <p className="heading-sm mb-2">{t("messages.selectConversation")}</p>
               <p className="text-body-sm">
-                Choose a conversation from the list to start messaging.
+                {t("messages.selectConversationDesc")}
               </p>
             </div>
           ) : chatLoading ? (
@@ -508,7 +544,7 @@ export default function BorrowerMessagesPage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          Verified
+                          {t("messages.verified")}
                         </span>
                       )}
                     </div>
@@ -523,12 +559,12 @@ export default function BorrowerMessagesPage() {
                       onClick={() => setShowCloseConfirm(true)}
                       className="btn-secondary !py-2 !px-3 !text-xs shrink-0"
                     >
-                      Close Conversation
+                      {t("messages.closeConversation")}
                     </button>
                   )}
                   {isClosed && (
                     <span className="inline-flex items-center rounded-full bg-sage-100 px-3 py-1 font-body text-xs font-medium text-sage-500 shrink-0">
-                      Closed
+                      {t("messages.closed")}
                     </span>
                   )}
                 </div>
@@ -539,7 +575,7 @@ export default function BorrowerMessagesPage() {
                 {messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <p className="text-body-sm text-sage-400">
-                      No messages yet. Start the conversation below.
+                      {t("messages.noMessages")}
                     </p>
                   </div>
                 ) : (
@@ -603,7 +639,7 @@ export default function BorrowerMessagesPage() {
                 {isClosed ? (
                   <div className="rounded-xl bg-sage-50 border border-sage-200 p-3 text-center">
                     <p className="text-body-sm text-sage-500">
-                      This conversation has been closed.
+                      {t("messages.conversationClosed")}
                     </p>
                   </div>
                 ) : (
@@ -612,7 +648,7 @@ export default function BorrowerMessagesPage() {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type your message..."
+                      placeholder={t("messages.typeMessage")}
                       className="input-field flex-1"
                       disabled={sending}
                     />
@@ -621,7 +657,7 @@ export default function BorrowerMessagesPage() {
                       disabled={sending || !newMessage.trim()}
                       className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {sending ? "..." : "Send"}
+                      {sending ? t("messages.sending") : t("messages.send")}
                     </button>
                   </form>
                 )}

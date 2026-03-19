@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   html {
@@ -15,6 +15,20 @@
 
   ::selection {
     @apply bg-forest-200 text-forest-900;
+  }
+
+  /* Korean locale font override */
+  html[lang="ko"] body {
+    font-family: "Noto Sans KR", system-ui, sans-serif;
+  }
+
+  html[lang="ko"] .font-display {
+    font-family: "Noto Sans KR", system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  html[lang="ko"] .font-body {
+    font-family: "Noto Sans KR", system-ui, sans-serif;
   }
 }
 

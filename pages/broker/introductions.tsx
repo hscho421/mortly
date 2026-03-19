@@ -3,6 +3,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 interface IntroductionItem {
   id: string;
@@ -41,6 +44,7 @@ function truncate(text: string, maxLength: number) {
 export default function BrokerIntroductionsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const [introductions, setIntroductions] = useState<IntroductionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,9 +93,9 @@ export default function BrokerIntroductionsPage() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 animate-fade-in">
-          <h1 className="heading-lg">My Introductions</h1>
+          <h1 className="heading-lg">{t("broker.myIntroductions")}</h1>
           <p className="text-body mt-2">
-            Track all the introductions you have sent to borrowers.
+            {t("broker.introsSubtitle")}
           </p>
         </div>
 
@@ -119,13 +123,12 @@ export default function BrokerIntroductionsPage() {
                 />
               </svg>
             </div>
-            <h2 className="heading-md mb-2">No introductions yet</h2>
+            <h2 className="heading-md mb-2">{t("broker.noIntroductions")}</h2>
             <p className="text-body mb-6 max-w-md mx-auto">
-              Browse open requests and introduce yourself to borrowers looking
-              for mortgage help.
+              {t("broker.noIntrosDesc")}
             </p>
             <Link href="/broker/requests" className="btn-amber">
-              Browse Requests
+              {t("broker.browseRequests")}
             </Link>
           </div>
         ) : (
@@ -148,11 +151,11 @@ export default function BrokerIntroductionsPage() {
                     </span>
                     {hasConversation ? (
                       <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                        Connected
+                        {t("broker.connected")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                        Awaiting Response
+                        {t("broker.awaitingResponse")}
                       </span>
                     )}
                   </div>
@@ -168,7 +171,7 @@ export default function BrokerIntroductionsPage() {
                   {/* How can help preview */}
                   <div className="mb-2">
                     <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
-                      How You Can Help
+                      {t("broker.howYouCanHelp")}
                     </span>
                     <p className="font-body text-sm text-forest-800 mt-0.5">
                       {truncate(intro.howCanHelp, 120)}
@@ -178,7 +181,7 @@ export default function BrokerIntroductionsPage() {
                   {/* Personal message preview */}
                   <div className="mb-3">
                     <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
-                      Personal Message
+                      {t("broker.personalMessage")}
                     </span>
                     <p className="font-body text-sm text-forest-700 mt-0.5">
                       {truncate(intro.personalMessage, 100)}
@@ -205,3 +208,9 @@ export default function BrokerIntroductionsPage() {
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

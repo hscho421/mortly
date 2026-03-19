@@ -1,8 +1,11 @@
 import Link from "next/link";
 import Head from "next/head";
 import Layout from "@/components/Layout";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 export default function Home() {
+  const { t } = useTranslation("common");
   return (
     <Layout>
       <Head>
@@ -22,26 +25,26 @@ export default function Home() {
             <div className="lg:col-span-7">
               <div className="animate-fade-in-up opacity-0 stagger-1">
                 <span className="inline-block font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-400 mb-6">
-                  Privacy-First Mortgage Marketplace
+                  {t("home.badge")}
                 </span>
               </div>
               <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-5xl sm:text-6xl lg:text-7xl tracking-tight text-cream-100 leading-[1.05]">
-                Find Your Perfect
+                {t("home.title1")}
                 <br />
-                Mortgage Broker
+                {t("home.title2")}
                 <span className="text-amber-400">&mdash;</span>
                 <br />
-                <em className="text-amber-300">Anonymously</em>
+                <em className="text-amber-300">{t("home.title3")}</em>
               </h1>
               <p className="animate-fade-in-up opacity-0 stagger-3 mt-8 text-lg text-cream-300/80 leading-relaxed max-w-xl font-body">
-                MortgageMatch is the privacy-first marketplace where you describe your mortgage needs without revealing your identity. Verified brokers compete for your business, and you choose who to connect with&nbsp;&mdash; on your terms.
+                {t("home.subtitle")}
               </p>
               <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-start gap-4">
                 <Link href="/borrower/request/new" className="btn-amber px-8 py-4 text-base">
-                  Submit Your Request
+                  {t("home.submitRequest")}
                 </Link>
                 <Link href="/for-brokers" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
-                  I&apos;m a Broker
+                  {t("home.imBroker")}
                 </Link>
               </div>
             </div>
@@ -67,10 +70,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              The Process
+              {t("home.theProcess")}
             </span>
             <h2 className="heading-lg">
-              Three Simple Steps to Your Ideal Broker
+              {t("home.threeSteps")}
             </h2>
           </div>
 
@@ -83,9 +86,9 @@ export default function Home() {
                 </div>
                 <div className="h-px flex-1 bg-cream-300" />
               </div>
-              <h3 className="heading-sm mb-3">Submit Your Request</h3>
+              <h3 className="heading-sm mb-3">{t("home.step1Title")}</h3>
               <p className="text-body-sm">
-                Describe your mortgage needs anonymously. Share your loan amount, property type, timeline, and preferences without revealing personal details.
+                {t("home.step1Desc")}
               </p>
             </div>
 
@@ -97,9 +100,9 @@ export default function Home() {
                 </div>
                 <div className="h-px flex-1 bg-cream-300" />
               </div>
-              <h3 className="heading-sm mb-3">Compare Brokers</h3>
+              <h3 className="heading-sm mb-3">{t("home.step2Title")}</h3>
               <p className="text-body-sm">
-                Verified brokers review your request and express interest. Compare their profiles, reviews, specializations, and proposed approaches side by side.
+                {t("home.step2Desc")}
               </p>
             </div>
 
@@ -111,9 +114,9 @@ export default function Home() {
                 </div>
                 <div className="h-px flex-1 bg-cream-300" />
               </div>
-              <h3 className="heading-sm mb-3">Connect on Your Terms</h3>
+              <h3 className="heading-sm mb-3">{t("home.step3Title")}</h3>
               <p className="text-body-sm">
-                When you find the right broker, choose to share your contact information. Your identity stays private until you decide to reveal it.
+                {t("home.step3Desc")}
               </p>
             </div>
           </div>
@@ -126,13 +129,13 @@ export default function Home() {
           <div className="grid lg:grid-cols-12 gap-16 items-start">
             <div className="lg:col-span-4 animate-fade-in-up opacity-0">
               <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-                Why MortgageMatch
+                {t("home.whyUs")}
               </span>
               <h2 className="heading-lg mb-6">
-                Built on Trust
+                {t("home.builtOnTrust")}
               </h2>
               <p className="text-body">
-                Your confidence is our foundation. Every aspect of MortgageMatch is designed to protect your privacy and ensure quality.
+                {t("home.trustDesc")}
               </p>
             </div>
 
@@ -145,9 +148,9 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="heading-sm mb-2">Privacy First</h3>
+                  <h3 className="heading-sm mb-2">{t("home.privacyFirst")}</h3>
                   <p className="text-body-sm">
-                    Your personal information is never shared without your explicit consent. Browse and compare brokers completely anonymously.
+                    {t("home.privacyFirstDesc")}
                   </p>
                 </div>
               </div>
@@ -160,9 +163,9 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="heading-sm mb-2">Verified Brokers</h3>
+                  <h3 className="heading-sm mb-2">{t("home.verifiedBrokers")}</h3>
                   <p className="text-body-sm">
-                    Every broker on MortgageMatch is licensed, vetted, and verified. We check credentials and monitor reviews so you can browse with confidence.
+                    {t("home.verifiedBrokersDesc")}
                   </p>
                 </div>
               </div>
@@ -175,9 +178,9 @@ export default function Home() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="heading-sm mb-2">No Commitment</h3>
+                  <h3 className="heading-sm mb-2">{t("home.noCommitment")}</h3>
                   <p className="text-body-sm">
-                    Explore your options freely. There is no obligation to connect with any broker and no fees for borrowers&nbsp;&mdash; ever.
+                    {t("home.noCommitmentDesc")}
                   </p>
                 </div>
               </div>
@@ -192,16 +195,16 @@ export default function Home() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_50%,_theme(colors.amber.400),_transparent_50%)]" />
         <div className="relative section-padding max-w-4xl mx-auto text-center">
           <h2 className="animate-fade-in-up opacity-0 font-display text-3xl sm:text-4xl lg:text-5xl tracking-tight text-cream-100">
-            Ready to Find Your Broker?
+            {t("home.readyTitle")}
           </h2>
           <p className="animate-fade-in-up opacity-0 stagger-1 mt-6 text-lg text-cream-300/70 font-body">
-            Submit your anonymous request in minutes and let brokers come to you.
+            {t("home.readyDesc")}
           </p>
           <Link
             href="/borrower/request/new"
             className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
           >
-            Get Started Free
+            {t("home.getStartedFree")}
           </Link>
         </div>
       </section>
@@ -210,10 +213,16 @@ export default function Home() {
       <section className="py-8 bg-cream-200/50 border-t border-cream-300">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-xs text-forest-700/50 text-center leading-relaxed font-body">
-            <strong>Disclaimer:</strong> MortgageMatch is a marketplace platform that connects borrowers with licensed mortgage brokers. We do not provide mortgage advice, make lending decisions, or act as a lender. All mortgage products and services are offered by independent, licensed brokers. Please consult with a qualified professional before making any financial decisions.
+            <strong>Disclaimer:</strong> {t("home.disclaimerFull")}
           </p>
         </div>
       </section>
     </Layout>
   );
 }
+
+export const getStaticProps = async ({ locale }: { locale: string }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

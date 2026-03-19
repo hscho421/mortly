@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
 import type { IntroductionWithBroker } from "@/types";
 
@@ -31,7 +34,14 @@ function sortIntroductions(
   return sorted;
 }
 
+export const getServerSideProps: GetServerSideProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});
+
 export default function BrokerComparison() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { requestId } = router.query;
   const { data: session, status: authStatus } = useSession();
@@ -110,18 +120,16 @@ export default function BrokerComparison() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
         <div className="mb-8 animate-fade-in-up stagger-1">
           <h1 className="heading-lg mb-2">
-            Broker Introductions
+            {t("brokerIntros.title")}
           </h1>
           <p className="text-body">
-            Compare brokers who are interested in helping with your mortgage
-            request.
+            {t("brokerIntros.subtitle")}
           </p>
         </div>
 
         {/* Disclaimer */}
         <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm font-body text-amber-800 animate-fade-in-up stagger-2">
-          Information shown is self-reported by brokers. We recommend verifying
-          credentials independently.
+          {t("brokerIntros.disclaimer")}
         </div>
 
         {error && (
@@ -132,12 +140,12 @@ export default function BrokerComparison() {
 
         {/* Sort controls */}
         <div className="flex items-center gap-3 mb-6 animate-fade-in-up stagger-3">
-          <span className="text-body-sm">Sort by:</span>
+          <span className="text-body-sm">{t("brokerIntros.sortBy")}</span>
           {(
             [
-              ["fastest", "Fastest Response"],
-              ["highest_rated", "Highest Rated"],
-              ["most_experienced", "Most Experienced"],
+              ["fastest", t("brokerIntros.fastestResponse")],
+              ["highest_rated", t("brokerIntros.highestRated")],
+              ["most_experienced", t("brokerIntros.mostExperienced")],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -157,9 +165,9 @@ export default function BrokerComparison() {
         {/* Introduction cards */}
         {sorted.length === 0 ? (
           <div className="text-center py-16 animate-fade-in-up stagger-4">
-            <p className="heading-sm text-sage-400 mb-2">No broker introductions yet</p>
+            <p className="heading-sm text-sage-400 mb-2">{t("brokerIntros.noIntros")}</p>
             <p className="text-body-sm text-sage-400">
-              Check back soon -- brokers are reviewing your request.
+              {t("brokerIntros.noIntrosDesc")}
             </p>
           </div>
         ) : (
@@ -200,7 +208,7 @@ export default function BrokerComparison() {
                                   clipRule="evenodd"
                                 />
                               </svg>
-                              Verified
+                              {t("messages.verified")}
                             </span>
                           )}
                         </div>
@@ -227,7 +235,7 @@ export default function BrokerComparison() {
                   {/* Message preview / full */}
                   <div className="mt-5">
                     <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                      How they can help
+                      {t("brokerIntros.howTheyCanHelp")}
                     </p>
                     <p className="text-body">
                       {isExpanded
@@ -242,7 +250,7 @@ export default function BrokerComparison() {
                         {intro.personalMessage && (
                           <div>
                             <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                              Personal message
+                              {t("brokerIntros.personalMessage")}
                             </p>
                             <p className="text-body">
                               {intro.personalMessage}
@@ -252,7 +260,7 @@ export default function BrokerComparison() {
                         {intro.experience && (
                           <div>
                             <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                              Relevant experience
+                              {t("brokerIntros.relevantExperience")}
                             </p>
                             <p className="text-body">
                               {intro.experience}
@@ -262,7 +270,7 @@ export default function BrokerComparison() {
                         {intro.lenderNetwork && (
                           <div>
                             <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                              Lender network
+                              {t("brokerIntros.lenderNetwork")}
                             </p>
                             <p className="text-body">
                               {intro.lenderNetwork}
@@ -272,7 +280,7 @@ export default function BrokerComparison() {
                         {intro.estimatedTimeline && (
                           <div>
                             <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                              Estimated timeline
+                              {t("brokerIntros.estimatedTimeline")}
                             </p>
                             <p className="text-body">
                               {intro.estimatedTimeline}
@@ -290,7 +298,7 @@ export default function BrokerComparison() {
                       disabled={isSelecting}
                       className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSelecting ? "Connecting..." : "Select This Broker"}
+                      {isSelecting ? t("brokerIntros.connecting") : t("brokerIntros.selectBroker")}
                     </button>
                     <button
                       onClick={() =>
@@ -299,8 +307,8 @@ export default function BrokerComparison() {
                       className="btn-secondary"
                     >
                       {isExpanded
-                        ? "Show Less"
-                        : "View Full Introduction"}
+                        ? t("brokerIntros.showLess")
+                        : t("brokerIntros.viewFull")}
                     </button>
                   </div>
                 </div>

@@ -4,6 +4,9 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import type { RequestWithIntroductions } from "@/types";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps, GetStaticPaths } from "next";
 
 function formatCurrency(value: number | null | undefined): string {
   if (value == null) return "N/A";
@@ -22,6 +25,7 @@ export default function BrokerRequestDetailPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { id } = router.query;
+  const { t } = useTranslation("common");
 
   const [request, setRequest] = useState<RequestWithIntroductions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,7 +80,7 @@ export default function BrokerRequestDetailPage() {
             href="/broker/requests"
             className="mt-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
           >
-            &larr; Back to Requests
+            &larr; {t("broker.backToRequests")}
           </Link>
         </div>
       </Layout>
@@ -106,7 +110,7 @@ export default function BrokerRequestDetailPage() {
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
-          Back to Requests
+          {t("request.backToRequests")}
         </Link>
 
         <div className="card-elevated animate-fade-in-up">
@@ -137,16 +141,16 @@ export default function BrokerRequestDetailPage() {
           {/* Details grid */}
           <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
             {[
-              { label: "Price Range", value: `${formatCurrency(request.priceRangeMin)} - ${formatCurrency(request.priceRangeMax)}` },
-              { label: "Mortgage Amount", value: `${formatCurrency(request.mortgageAmountMin)} - ${formatCurrency(request.mortgageAmountMax)}` },
-              { label: "Down Payment", value: request.downPaymentPercent || "Not specified" },
-              { label: "Closing Timeline", value: request.closingTimeline || "Not specified" },
-              { label: "Employment Type", value: request.employmentType || "Not specified" },
-              { label: "Credit Score Band", value: request.creditScoreBand || "Not specified" },
-              { label: "Income Range", value: `${formatCurrency(request.incomeRangeMin)} - ${formatCurrency(request.incomeRangeMax)}` },
-              { label: "Existing Debt", value: `${formatCurrency(request.debtRangeMin)} - ${formatCurrency(request.debtRangeMax)}` },
-              { label: "Preferred Term", value: request.preferredTerm || "Not specified" },
-              { label: "Preferred Rate Type", value: request.preferredType || "Not specified" },
+              { label: t("request.priceRange"), value: `${formatCurrency(request.priceRangeMin)} - ${formatCurrency(request.priceRangeMax)}` },
+              { label: t("request.mortgageAmount"), value: `${formatCurrency(request.mortgageAmountMin)} - ${formatCurrency(request.mortgageAmountMax)}` },
+              { label: t("request.downPayment"), value: request.downPaymentPercent || t("request.notSpecified") },
+              { label: t("request.closingTimeline"), value: request.closingTimeline || t("request.notSpecified") },
+              { label: t("request.employmentType"), value: request.employmentType || t("request.notSpecified") },
+              { label: t("request.creditScore"), value: request.creditScoreBand || t("request.notSpecified") },
+              { label: t("request.income"), value: `${formatCurrency(request.incomeRangeMin)} - ${formatCurrency(request.incomeRangeMax)}` },
+              { label: t("request.existingDebts"), value: `${formatCurrency(request.debtRangeMin)} - ${formatCurrency(request.debtRangeMax)}` },
+              { label: t("request.preferredTerm"), value: request.preferredTerm || t("request.notSpecified") },
+              { label: t("request.preferredType"), value: request.preferredType || t("request.notSpecified") },
             ].map((item) => (
               <div key={item.label} className="rounded-xl bg-cream-100 p-4">
                 <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{item.label}</h3>
@@ -157,7 +161,7 @@ export default function BrokerRequestDetailPage() {
 
           {request.notes && (
             <div className="mb-8 rounded-xl bg-cream-100 p-5">
-              <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">Additional Notes</h3>
+              <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.additionalNotes")}</h3>
               <p className="mt-2 font-body text-sm text-forest-800 whitespace-pre-wrap">{request.notes}</p>
             </div>
           )}
@@ -172,7 +176,7 @@ export default function BrokerRequestDetailPage() {
                   </svg>
                 </div>
                 <p className="font-body text-sm font-medium text-forest-800">
-                  You have already submitted an introduction for this request.
+                  {t("broker.alreadySubmitted")}
                 </p>
               </div>
             </div>
@@ -181,7 +185,7 @@ export default function BrokerRequestDetailPage() {
               href={`/broker/introduction/new?requestId=${request.id}`}
               className="btn-primary w-full sm:w-auto text-center"
             >
-              Submit Introduction
+              {t("broker.submitIntroduction")}
             </Link>
           )}
         </div>
@@ -189,3 +193,14 @@ export default function BrokerRequestDetailPage() {
     </Layout>
   );
 }
+
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: "blocking",
+});
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

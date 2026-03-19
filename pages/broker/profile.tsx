@@ -3,6 +3,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import type { CreateBrokerProfileInput } from "@/types";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 const PROVINCES = [
   "Alberta",
@@ -28,6 +31,7 @@ interface BrokerProfile extends CreateBrokerProfileInput {
 export default function BrokerProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const [form, setForm] = useState<CreateBrokerProfileInput>({
     brokerageName: "",
@@ -140,19 +144,19 @@ export default function BrokerProfilePage() {
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between animate-fade-in">
           <div>
-            <h1 className="heading-lg">Edit Profile</h1>
+            <h1 className="heading-lg">{t("broker.editProfile")}</h1>
             <p className="text-body mt-2">
-              Update your broker profile information.
+              {t("broker.profileSubtitle")}
             </p>
           </div>
           <span
             className={`inline-flex items-center rounded-full px-3.5 py-1.5 font-body text-xs font-semibold ${verificationColors[verificationStatus] || verificationColors.PENDING}`}
           >
             {verificationStatus === "VERIFIED"
-              ? "Verified"
+              ? t("status.verified")
               : verificationStatus === "REJECTED"
-                ? "Rejected"
-                : "Pending Verification"}
+                ? t("status.rejected")
+                : t("status.pending")}
           </span>
         </div>
 
@@ -176,7 +180,7 @@ export default function BrokerProfilePage() {
         <form onSubmit={handleSubmit} className="card-elevated space-y-6 animate-fade-in-up">
           <div>
             <label htmlFor="brokerageName" className="label-text">
-              Brokerage Name <span className="text-amber-600">*</span>
+              {t("broker.brokerageName")} <span className="text-amber-600">*</span>
             </label>
             <input
               id="brokerageName"
@@ -191,7 +195,7 @@ export default function BrokerProfilePage() {
 
           <div>
             <label htmlFor="province" className="label-text">
-              Province <span className="text-amber-600">*</span>
+              {t("request.province")} <span className="text-amber-600">*</span>
             </label>
             <select
               id="province"
@@ -201,7 +205,7 @@ export default function BrokerProfilePage() {
               onChange={handleChange}
               className="input-field"
             >
-              <option value="">Select a province</option>
+              <option value="">{t("request.selectProvince")}</option>
               {PROVINCES.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -212,7 +216,7 @@ export default function BrokerProfilePage() {
 
           <div>
             <label htmlFor="licenseNumber" className="label-text">
-              License Number <span className="text-amber-600">*</span>
+              {t("broker.licenseNumber")} <span className="text-amber-600">*</span>
             </label>
             <input
               id="licenseNumber"
@@ -229,7 +233,7 @@ export default function BrokerProfilePage() {
 
           <div>
             <label htmlFor="bio" className="label-text">
-              Bio
+              {t("broker.bio")}
             </label>
             <textarea
               id="bio"
@@ -243,7 +247,7 @@ export default function BrokerProfilePage() {
 
           <div>
             <label htmlFor="yearsExperience" className="label-text">
-              Years of Experience
+              {t("broker.yearsExperience")}
             </label>
             <input
               id="yearsExperience"
@@ -259,7 +263,7 @@ export default function BrokerProfilePage() {
 
           <div>
             <label htmlFor="areasServed" className="label-text">
-              Areas Served
+              {t("broker.areasServed")}
             </label>
             <input
               id="areasServed"
@@ -273,7 +277,7 @@ export default function BrokerProfilePage() {
 
           <div>
             <label htmlFor="specialties" className="label-text">
-              Specialties
+              {t("broker.specialties")}
             </label>
             <input
               id="specialties"
@@ -290,10 +294,16 @@ export default function BrokerProfilePage() {
             disabled={isSaving}
             className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? t("broker.saving") : t("broker.save")}
           </button>
         </form>
       </div>
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

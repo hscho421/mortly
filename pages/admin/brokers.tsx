@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
 
@@ -90,6 +93,7 @@ const TIER_BADGE: Record<SubscriptionTier, string> = {
 export default function AdminBrokers() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const [brokers, setBrokers] = useState<BrokerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -165,14 +169,14 @@ export default function AdminBrokers() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 animate-fade-in">
           <div>
-            <h1 className="heading-lg">Broker Management</h1>
+            <h1 className="heading-lg">{t("admin.brokerManagement")}</h1>
             <p className="text-body mt-2">
-              View, verify, and manage broker accounts across the platform.
+              {t("admin.brokerManagementDescription", "View, verify, and manage broker accounts across the platform.")}
             </p>
           </div>
           <div className="mt-4 sm:mt-0">
             <label htmlFor="statusFilter" className="label-text">
-              Filter by status
+              {t("admin.filterByStatus", "Filter by status")}
             </label>
             <select
               id="statusFilter"
@@ -184,10 +188,10 @@ export default function AdminBrokers() {
               }
               className="input-field w-auto min-w-[160px]"
             >
-              <option value="ALL">All Statuses</option>
-              <option value="PENDING">Pending</option>
-              <option value="VERIFIED">Verified</option>
-              <option value="REJECTED">Rejected</option>
+              <option value="ALL">{t("admin.allStatuses", "All Statuses")}</option>
+              <option value="PENDING">{t("status.pending")}</option>
+              <option value="VERIFIED">{t("status.verified")}</option>
+              <option value="REJECTED">{t("status.rejected")}</option>
             </select>
           </div>
         </div>
@@ -269,7 +273,7 @@ export default function AdminBrokers() {
                           }
                           className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
                         >
-                          View
+                          {t("admin.view")}
                         </button>
                         {broker.verificationStatus !== "VERIFIED" && (
                           <button
@@ -281,7 +285,7 @@ export default function AdminBrokers() {
                           >
                             {actionLoading === broker.id
                               ? "..."
-                              : "Verify"}
+                              : t("admin.verify")}
                           </button>
                         )}
                         {broker.verificationStatus !== "REJECTED" && (
@@ -294,7 +298,7 @@ export default function AdminBrokers() {
                           >
                             {actionLoading === broker.id
                               ? "..."
-                              : "Suspend"}
+                              : t("admin.suspend")}
                           </button>
                         )}
                       </div>
@@ -319,3 +323,11 @@ export default function AdminBrokers() {
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? "en", ["common"])),
+    },
+  };
+};

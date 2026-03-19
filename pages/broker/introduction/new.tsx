@@ -5,6 +5,9 @@ import Link from "next/link";
 import Layout from "@/components/Layout";
 import type { BorrowerRequest } from "@/types";
 import type { CreateIntroductionInput } from "@/types";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 function formatCurrency(value: number | null | undefined): string {
   if (value == null) return "N/A";
@@ -15,6 +18,7 @@ export default function NewIntroductionPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { requestId } = router.query;
+  const { t } = useTranslation("common");
 
   const [request, setRequest] = useState<BorrowerRequest | null>(null);
   const [isLoadingRequest, setIsLoadingRequest] = useState(true);
@@ -116,13 +120,13 @@ export default function NewIntroductionPage() {
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
-          Back to Requests
+          {t("request.backToRequests")}
         </Link>
 
         <div className="mb-8 animate-fade-in">
-          <h1 className="heading-lg mb-2">Submit Introduction</h1>
+          <h1 className="heading-lg mb-2">{t("broker.myIntroductions")}</h1>
           <p className="text-body">
-            Introduce yourself to the borrower and explain how you can help.
+            {t("broker.introSubtitle")}
           </p>
         </div>
 
@@ -134,7 +138,7 @@ export default function NewIntroductionPage() {
         ) : request ? (
           <div className="mb-8 rounded-2xl bg-cream-200/50 border border-cream-300 p-6 animate-fade-in-up stagger-1">
             <h2 className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">
-              Request Summary
+              {t("broker.requestSummary")}
             </h2>
             <p className="heading-sm">
               {request.requestType} in {request.city ? `${request.city}, ` : ""}
@@ -142,25 +146,25 @@ export default function NewIntroductionPage() {
             </p>
             <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2">
               <div>
-                <span className="font-body text-xs font-medium text-forest-700/50">Property</span>
+                <span className="font-body text-xs font-medium text-forest-700/50">{t("request.property")}</span>
                 <p className="font-body text-sm text-forest-800">{request.propertyType}</p>
               </div>
               <div>
-                <span className="font-body text-xs font-medium text-forest-700/50">Price</span>
+                <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.price")}</span>
                 <p className="font-body text-sm text-forest-800">
                   {formatCurrency(request.priceRangeMin)} - {formatCurrency(request.priceRangeMax)}
                 </p>
               </div>
               <div>
-                <span className="font-body text-xs font-medium text-forest-700/50">Mortgage</span>
+                <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.mortgage")}</span>
                 <p className="font-body text-sm text-forest-800">
                   {formatCurrency(request.mortgageAmountMin)} - {formatCurrency(request.mortgageAmountMax)}
                 </p>
               </div>
               <div>
-                <span className="font-body text-xs font-medium text-forest-700/50">Timeline</span>
+                <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.timeline")}</span>
                 <p className="font-body text-sm text-forest-800">
-                  {request.closingTimeline || "Not specified"}
+                  {request.closingTimeline || t("request.notSpecified")}
                 </p>
               </div>
             </div>
@@ -176,7 +180,7 @@ export default function NewIntroductionPage() {
         <form onSubmit={handleSubmit} className="card-elevated space-y-6 animate-fade-in-up stagger-2">
           <div>
             <label htmlFor="howCanHelp" className="label-text">
-              How You Can Help <span className="text-amber-600">*</span>
+              {t("broker.howYouCanHelp")} <span className="text-amber-600">*</span>
             </label>
             <textarea
               id="howCanHelp"
@@ -186,13 +190,13 @@ export default function NewIntroductionPage() {
               value={form.howCanHelp}
               onChange={handleChange}
               className="input-field resize-none"
-              placeholder="Explain how your expertise applies to this borrower's situation..."
+              placeholder={t("broker.howYouCanHelpPlaceholder")}
             />
           </div>
 
           <div>
             <label htmlFor="experience" className="label-text">
-              Relevant Experience
+              {t("broker.relevantExperience")}
             </label>
             <textarea
               id="experience"
@@ -201,13 +205,13 @@ export default function NewIntroductionPage() {
               value={form.experience || ""}
               onChange={handleChange}
               className="input-field resize-none"
-              placeholder="Describe relevant deals or experience..."
+              placeholder={t("broker.relevantExpPlaceholder")}
             />
           </div>
 
           <div>
             <label htmlFor="lenderNetwork" className="label-text">
-              Lender Network Description
+              {t("broker.lenderNetwork")}
             </label>
             <textarea
               id="lenderNetwork"
@@ -216,13 +220,13 @@ export default function NewIntroductionPage() {
               value={form.lenderNetwork || ""}
               onChange={handleChange}
               className="input-field resize-none"
-              placeholder="Describe the lenders you work with..."
+              placeholder={t("broker.lenderNetworkPlaceholder")}
             />
           </div>
 
           <div>
             <label htmlFor="processNotes" className="label-text">
-              Process Notes
+              {t("broker.processNotes")}
             </label>
             <textarea
               id="processNotes"
@@ -231,7 +235,7 @@ export default function NewIntroductionPage() {
               value={form.processNotes || ""}
               onChange={handleChange}
               className="input-field resize-none"
-              placeholder="Outline next steps if the borrower selects you..."
+              placeholder={t("broker.processNotesPlaceholder")}
             />
           </div>
 
@@ -239,7 +243,7 @@ export default function NewIntroductionPage() {
 
           <div>
             <label htmlFor="personalMessage" className="label-text">
-              Personal Message to Borrower <span className="text-amber-600">*</span>
+              {t("broker.personalMessage")} <span className="text-amber-600">*</span>
             </label>
             <textarea
               id="personalMessage"
@@ -249,13 +253,13 @@ export default function NewIntroductionPage() {
               value={form.personalMessage}
               onChange={handleChange}
               className="input-field resize-none"
-              placeholder="Write a personal message to the borrower..."
+              placeholder={t("broker.personalMessagePlaceholder")}
             />
           </div>
 
           <div>
             <label htmlFor="estimatedTimeline" className="label-text">
-              Estimated Timeline
+              {t("broker.estimatedTimeline")}
             </label>
             <input
               id="estimatedTimeline"
@@ -264,7 +268,7 @@ export default function NewIntroductionPage() {
               value={form.estimatedTimeline || ""}
               onChange={handleChange}
               className="input-field"
-              placeholder="e.g. 2-3 weeks from initial consultation"
+              placeholder={t("broker.estimatedTimelinePlaceholder")}
             />
           </div>
 
@@ -273,10 +277,16 @@ export default function NewIntroductionPage() {
             disabled={isSubmitting}
             className="btn-amber w-full disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "Submitting..." : "Submit Introduction"}
+            {isSubmitting ? t("broker.saving") : t("broker.save")}
           </button>
         </form>
       </div>
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

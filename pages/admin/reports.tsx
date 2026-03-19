@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
 
@@ -76,6 +79,7 @@ const MOCK_REPORTS: ReportRow[] = [
 export default function AdminReports() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -149,14 +153,14 @@ export default function AdminReports() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 animate-fade-in">
           <div>
-            <h1 className="heading-lg">Reports &amp; Moderation</h1>
+            <h1 className="heading-lg">{t("admin.reports")}</h1>
             <p className="text-body mt-2">
               Review and resolve user-submitted reports.
             </p>
           </div>
           <div className="mt-4 sm:mt-0">
             <label htmlFor="reportStatusFilter" className="label-text">
-              Filter by status
+              {t("admin.filterByStatus", "Filter by status")}
             </label>
             <select
               id="reportStatusFilter"
@@ -166,11 +170,11 @@ export default function AdminReports() {
               }
               className="input-field w-auto min-w-[160px]"
             >
-              <option value="ALL">All Statuses</option>
-              <option value="OPEN">Open</option>
-              <option value="REVIEWED">Reviewed</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="DISMISSED">Dismissed</option>
+              <option value="ALL">{t("admin.allStatuses", "All Statuses")}</option>
+              <option value="OPEN">{t("status.open")}</option>
+              <option value="REVIEWED">{t("status.reviewed")}</option>
+              <option value="RESOLVED">{t("status.resolved")}</option>
+              <option value="DISMISSED">{t("status.dismissed")}</option>
             </select>
           </div>
         </div>
@@ -243,7 +247,7 @@ export default function AdminReports() {
                           >
                             {actionLoading === report.id
                               ? "..."
-                              : "Mark Reviewed"}
+                              : t("admin.markReviewed")}
                           </button>
                         )}
                         {(report.status === "OPEN" ||
@@ -258,7 +262,7 @@ export default function AdminReports() {
                             >
                               {actionLoading === report.id
                                 ? "..."
-                                : "Resolve"}
+                                : t("admin.resolve")}
                             </button>
                             <button
                               onClick={() =>
@@ -269,7 +273,7 @@ export default function AdminReports() {
                             >
                               {actionLoading === report.id
                                 ? "..."
-                                : "Dismiss"}
+                                : t("admin.dismiss")}
                             </button>
                           </>
                         )}
@@ -301,3 +305,11 @@ export default function AdminReports() {
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? "en", ["common"])),
+    },
+  };
+};

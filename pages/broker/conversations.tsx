@@ -4,6 +4,9 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import type { ConversationWithParticipants } from "@/types";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-CA", {
@@ -16,6 +19,7 @@ function formatDate(dateStr: string): string {
 export default function BrokerConversationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const [conversations, setConversations] = useState<ConversationWithParticipants[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,9 +67,9 @@ export default function BrokerConversationsPage() {
     <Layout>
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 animate-fade-in">
-          <h1 className="heading-lg">Conversations</h1>
+          <h1 className="heading-lg">{t("broker.conversations")}</h1>
           <p className="text-body mt-2">
-            Messages with borrowers who accepted your introductions.
+            {t("broker.convoSubtitle")}
           </p>
         </div>
 
@@ -88,15 +92,15 @@ export default function BrokerConversationsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
               </svg>
             </div>
-            <p className="font-body text-sm font-medium text-forest-700">No conversations yet.</p>
+            <p className="font-body text-sm font-medium text-forest-700">{t("messages.noConversations")}</p>
             <p className="text-body-sm mt-1">
-              Conversations will appear here when borrowers accept your introductions.
+              {t("messages.noConversationsDescBroker")}
             </p>
             <Link
               href="/broker/requests"
               className="btn-primary mt-6 inline-flex"
             >
-              Browse Requests
+              {t("broker.browseRequests")}
             </Link>
           </div>
         )}
@@ -138,7 +142,7 @@ export default function BrokerConversationsPage() {
                           {lastMessage.body}
                         </p>
                       ) : (
-                        <p className="mt-1.5 font-body text-sm italic text-sage-400">No messages yet</p>
+                        <p className="mt-1.5 font-body text-sm italic text-sage-400">{t("broker.noMessagesYet")}</p>
                       )}
                     </div>
                     <div className="shrink-0 text-right">
@@ -159,3 +163,9 @@ export default function BrokerConversationsPage() {
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

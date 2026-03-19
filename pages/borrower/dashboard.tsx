@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
 import type { RequestWithIntroductions } from "@/types";
@@ -28,7 +31,14 @@ function displayLabel(val: string | null | undefined) {
   return val.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});
+
 export default function BorrowerDashboard() {
+  const { t } = useTranslation("common");
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -80,13 +90,13 @@ export default function BorrowerDashboard() {
         {/* Header */}
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
           <div>
-            <h1 className="heading-lg">My Mortgage Requests</h1>
+            <h1 className="heading-lg">{t("borrowerDashboard.title")}</h1>
             <p className="text-body mt-2">
               Track and manage all your mortgage requests in one place.
             </p>
           </div>
           <Link href="/borrower/request/new" className="btn-amber">
-            + New Request
+            + {t("borrowerDashboard.newRequest")}
           </Link>
         </div>
 
@@ -114,13 +124,12 @@ export default function BorrowerDashboard() {
                 />
               </svg>
             </div>
-            <h2 className="heading-md mb-2">No requests yet</h2>
+            <h2 className="heading-md mb-2">{t("borrowerDashboard.noRequests")}</h2>
             <p className="text-body mb-6 max-w-md mx-auto">
-              Create your first mortgage request to get matched with qualified
-              brokers in your area.
+              {t("borrowerDashboard.noRequestsDesc")}
             </p>
             <Link href="/borrower/request/new" className="btn-amber">
-              Create Your First Request
+              {t("borrowerDashboard.createFirst")}
             </Link>
           </div>
         ) : (
@@ -160,7 +169,7 @@ export default function BorrowerDashboard() {
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
                     <div>
                       <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
-                        Price Range
+                        {t("request.priceRange")}
                       </span>
                       <p className="font-body text-sm font-medium text-forest-800">
                         {formatCurrency(req.priceRangeMin)} -{" "}
@@ -169,7 +178,7 @@ export default function BorrowerDashboard() {
                     </div>
                     <div>
                       <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
-                        Mortgage Amount
+                        {t("request.mortgageAmount")}
                       </span>
                       <p className="font-body text-sm font-medium text-forest-800">
                         {formatCurrency(req.mortgageAmountMin)} -{" "}
@@ -197,7 +206,7 @@ export default function BorrowerDashboard() {
                           d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
                         />
                       </svg>
-                      {introCount} introduction{introCount !== 1 ? "s" : ""}
+                      {introCount} {introCount !== 1 ? t("borrowerDashboard.introductionsPlural") : t("borrowerDashboard.introductions")}
                     </span>
                   </div>
                 </Link>

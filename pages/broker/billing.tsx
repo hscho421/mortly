@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 interface PlanFeature {
   text: string;
@@ -72,6 +75,7 @@ const PLANS: Plan[] = [
 export default function BrokerBillingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const [currentTier] = useState("BASIC");
   const [responseCredits] = useState(8);
@@ -97,29 +101,28 @@ export default function BrokerBillingPage() {
     <Layout>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-10 animate-fade-in">
-          <h1 className="heading-lg">Billing & Subscription</h1>
-          <p className="text-body mt-2">Manage your plan and view billing details.</p>
+          <h1 className="heading-lg">{t("broker.billingTitle")}</h1>
+          <p className="text-body mt-2">{t("broker.billingSubtitle")}</p>
         </div>
 
         {/* Current plan summary */}
         <div className="card-elevated mb-10 animate-fade-in-up stagger-1">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="heading-sm">Current Plan</h2>
+              <h2 className="heading-sm">{t("broker.currentPlan")}</h2>
               <p className="text-body mt-1">
-                You are on the{" "}
-                <span className="font-semibold text-forest-700">{currentTier}</span> plan.
+                {t("broker.currentPlanDesc", { tier: currentTier })}
               </p>
             </div>
             <div className="text-right">
-              <p className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">Response Credits Remaining</p>
+              <p className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("broker.responseCredits")}</p>
               <p className="font-display text-3xl tracking-tight text-amber-700">{responseCredits}</p>
             </div>
           </div>
         </div>
 
         {/* Plan comparison */}
-        <h2 className="heading-md mb-6 animate-fade-in stagger-2">Choose a Plan</h2>
+        <h2 className="heading-md mb-6 animate-fade-in stagger-2">{t("broker.choosePlan")}</h2>
         <div className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
           {PLANS.map((plan, i) => (
             <div
@@ -132,7 +135,7 @@ export default function BrokerBillingPage() {
             >
               {plan.highlighted && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-4 py-1 font-body text-xs font-semibold text-forest-900">
-                  Most Popular
+                  {t("broker.mostPopular")}
                 </span>
               )}
               <h3 className="heading-sm">{plan.name}</h3>
@@ -189,26 +192,32 @@ export default function BrokerBillingPage() {
                 }`}
                 disabled={currentTier === plan.tier}
               >
-                {currentTier === plan.tier ? "Current Plan" : "Upgrade"}
+                {currentTier === plan.tier ? t("broker.currentPlanBtn") : t("broker.upgrade")}
               </button>
             </div>
           ))}
         </div>
 
         {/* Billing history */}
-        <h2 className="heading-md mb-5 animate-fade-in">Billing History</h2>
+        <h2 className="heading-md mb-5 animate-fade-in">{t("broker.billingHistory")}</h2>
         <div className="card-elevated py-16 text-center animate-fade-in-up">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cream-200">
             <svg className="h-6 w-6 text-sage-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
             </svg>
           </div>
-          <p className="font-body text-sm font-medium text-forest-700">No billing history yet.</p>
+          <p className="font-body text-sm font-medium text-forest-700">{t("broker.noBillingHistory")}</p>
           <p className="text-body-sm mt-1">
-            Invoices and payment history will appear here once you upgrade.
+            {t("broker.noBillingHistoryDesc")}
           </p>
         </div>
       </div>
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

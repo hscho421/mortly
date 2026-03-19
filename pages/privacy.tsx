@@ -1,93 +1,93 @@
 import Link from "next/link";
 import Head from "next/head";
 import Layout from "@/components/Layout";
-
-const protections = [
-  {
-    title: "Anonymous by Default",
-    description:
-      "When you submit a mortgage request, no personally identifiable information is included. Brokers see your mortgage needs — loan amount, property type, timeline — but never your name, email, phone number, or address.",
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2 2l20 20" />
-      </svg>
-    ),
-  },
-  {
-    title: "You Control the Connection",
-    description:
-      "Your identity is only shared when you explicitly choose to connect with a specific broker. Until that moment, you remain completely anonymous. You can browse, compare, and evaluate without any exposure.",
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Encrypted Data Storage",
-    description:
-      "All data at rest is encrypted using AES-256 encryption. Data in transit is protected with TLS 1.3. We follow industry best practices for secure data handling and regularly audit our security infrastructure.",
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-      </svg>
-    ),
-  },
-  {
-    title: "No Data Selling",
-    description:
-      "We never sell your personal data to third parties. Your information is used solely to facilitate connections between you and the brokers you choose. Period.",
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-      </svg>
-    ),
-  },
-];
-
-const dataCollected = [
-  {
-    category: "Mortgage Request Details",
-    items: ["Loan amount and type", "Property type and general location (state/region)", "Timeline and urgency", "Special requirements or preferences"],
-    purpose: "Shared anonymously with brokers so they can evaluate if they are a good fit for your needs.",
-  },
-  {
-    category: "Account Information",
-    items: ["Email address", "Password (hashed, never stored in plain text)", "Communication preferences"],
-    purpose: "Used to manage your account, send notifications, and facilitate connections when you choose to connect.",
-  },
-  {
-    category: "Contact Information",
-    items: ["Full name", "Phone number", "Preferred contact method"],
-    purpose: "Only shared with a broker when you explicitly choose to connect. Never visible on your public request.",
-  },
-];
-
-const verificationSteps = [
-  {
-    step: "1",
-    title: "License Verification",
-    description: "We verify every broker's NMLS license number and confirm it is active and in good standing with state regulators.",
-  },
-  {
-    step: "2",
-    title: "Identity Confirmation",
-    description: "Brokers must verify their identity through a secure process that matches their professional credentials.",
-  },
-  {
-    step: "3",
-    title: "Background Review",
-    description: "We review each broker's professional history, checking for disciplinary actions, complaints, and regulatory issues.",
-  },
-  {
-    step: "4",
-    title: "Ongoing Monitoring",
-    description: "Verification is not a one-time event. We continuously monitor license status, review borrower feedback, and investigate complaints to maintain marketplace quality.",
-  },
-];
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import { useTranslation } from "next-i18next";
 
 export default function Privacy() {
+  const { t } = useTranslation("common");
+
+  const protections = [
+    {
+      title: t("privacy.protection1Title"),
+      description: t("privacy.protection1Desc"),
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2 2l20 20" />
+        </svg>
+      ),
+    },
+    {
+      title: t("privacy.protection2Title"),
+      description: t("privacy.protection2Desc"),
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+      ),
+    },
+    {
+      title: t("privacy.protection3Title"),
+      description: t("privacy.protection3Desc"),
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      ),
+    },
+    {
+      title: t("privacy.protection4Title"),
+      description: t("privacy.protection4Desc"),
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+      ),
+    },
+  ];
+
+  const dataCollected = [
+    {
+      category: t("privacy.data1Title"),
+      items: ["Loan amount and type", "Property type and general location (state/region)", "Timeline and urgency", "Special requirements or preferences"],
+      purpose: t("privacy.data1Purpose"),
+    },
+    {
+      category: t("privacy.data2Title"),
+      items: ["Email address", "Password (hashed, never stored in plain text)", "Communication preferences"],
+      purpose: t("privacy.data2Purpose"),
+    },
+    {
+      category: t("privacy.data3Title"),
+      items: ["Full name", "Phone number", "Preferred contact method"],
+      purpose: t("privacy.data3Purpose"),
+    },
+  ];
+
+  const verificationSteps = [
+    {
+      step: "1",
+      title: t("privacy.verify1"),
+      description: "We verify every broker's NMLS license number and confirm it is active and in good standing with state regulators.",
+    },
+    {
+      step: "2",
+      title: t("privacy.verify2"),
+      description: "Brokers must verify their identity through a secure process that matches their professional credentials.",
+    },
+    {
+      step: "3",
+      title: t("privacy.verify3"),
+      description: "We review each broker's professional history, checking for disciplinary actions, complaints, and regulatory issues.",
+    },
+    {
+      step: "4",
+      title: t("privacy.verify4"),
+      description: "Verification is not a one-time event. We continuously monitor license status, review borrower feedback, and investigate complaints to maintain marketplace quality.",
+    },
+  ];
+
   return (
     <Layout>
       <Head>
@@ -122,10 +122,10 @@ export default function Privacy() {
         <div className="max-w-5xl mx-auto">
           <div className="max-w-2xl mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              Our Commitment
+              {t("privacy.badge")}
             </span>
-            <h2 className="heading-lg">How Your Data Is Protected</h2>
-            <p className="text-body mt-4">Four pillars of our privacy commitment</p>
+            <h2 className="heading-lg">{t("privacy.title")}</h2>
+            <p className="text-body mt-4">{t("privacy.subtitle")}</p>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-6">
@@ -150,10 +150,10 @@ export default function Privacy() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              Transparency
+              {t("privacy.transparencyBadge")}
             </span>
-            <h2 className="heading-lg">What Data We Collect</h2>
-            <p className="text-body mt-3">Complete transparency about the information we gather and why</p>
+            <h2 className="heading-lg">{t("privacy.transparencyTitle")}</h2>
+            <p className="text-body mt-3">{t("privacy.transparencySubtitle")}</p>
           </div>
 
           <div className="space-y-6">
@@ -173,7 +173,7 @@ export default function Privacy() {
                 </ul>
                 <div className="pt-5 border-t border-cream-200">
                   <p className="text-body-sm">
-                    <strong className="text-forest-800 font-semibold">Purpose:</strong> {section.purpose}
+                    <strong className="text-forest-800 font-semibold">{t("privacy.purpose")}</strong> {section.purpose}
                   </p>
                 </div>
               </div>
@@ -188,10 +188,10 @@ export default function Privacy() {
           <div className="grid lg:grid-cols-12 gap-16 items-start">
             <div className="lg:col-span-5 animate-fade-in-up opacity-0">
               <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-                Your Control
+                {t("privacy.controlBadge")}
               </span>
-              <h2 className="heading-lg mb-4">When Your Identity Is Shared</h2>
-              <p className="text-body">The answer is simple: only when you decide.</p>
+              <h2 className="heading-lg mb-4">{t("privacy.controlTitle")}</h2>
+              <p className="text-body">{t("privacy.controlSubtitle")}</p>
             </div>
 
             <div className="lg:col-span-7">
@@ -207,8 +207,8 @@ export default function Privacy() {
                     </svg>
                   </div>
                   <div className="pt-1">
-                    <h3 className="heading-sm mb-1">Submit Request</h3>
-                    <p className="text-body-sm">Your identity is <strong className="text-forest-600 font-semibold">completely hidden</strong>. Brokers only see your mortgage requirements.</p>
+                    <h3 className="heading-sm mb-1">{t("privacy.step1Title")}</h3>
+                    <p className="text-body-sm">{t("privacy.step1Desc")}</p>
                   </div>
                 </div>
 
@@ -220,8 +220,8 @@ export default function Privacy() {
                     </svg>
                   </div>
                   <div className="pt-1">
-                    <h3 className="heading-sm mb-1">Review Broker Responses</h3>
-                    <p className="text-body-sm">Your identity is <strong className="text-forest-600 font-semibold">still hidden</strong>. Browse and compare brokers freely.</p>
+                    <h3 className="heading-sm mb-1">{t("privacy.step2Title")}</h3>
+                    <p className="text-body-sm">{t("privacy.step2Desc")}</p>
                   </div>
                 </div>
 
@@ -233,8 +233,8 @@ export default function Privacy() {
                     </svg>
                   </div>
                   <div className="pt-1">
-                    <h3 className="heading-sm mb-1">You Choose to Connect</h3>
-                    <p className="text-body-sm">Only now is your contact information shared — and <strong className="text-amber-700 font-semibold">only with the broker you selected</strong>. No other broker ever sees your details.</p>
+                    <h3 className="heading-sm mb-1">{t("privacy.step3Title")}</h3>
+                    <p className="text-body-sm">{t("privacy.step3Desc")}</p>
                   </div>
                 </div>
               </div>
@@ -248,11 +248,11 @@ export default function Privacy() {
         <div className="max-w-5xl mx-auto">
           <div className="max-w-2xl mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              Broker Standards
+              {t("privacy.verificationBadge")}
             </span>
-            <h2 className="heading-lg">Broker Verification Process</h2>
+            <h2 className="heading-lg">{t("privacy.verificationTitle")}</h2>
             <p className="text-body mt-4">
-              Every broker on MortgageMatch goes through a rigorous verification process
+              {t("privacy.verificationSubtitle")}
             </p>
           </div>
 
@@ -283,9 +283,9 @@ export default function Privacy() {
                 </svg>
               </div>
               <div>
-                <h4 className="heading-sm mb-1">Report a Concern</h4>
+                <h4 className="heading-sm mb-1">{t("privacy.reportTitle")}</h4>
                 <p className="text-body-sm">
-                  If you ever have a concern about a broker on our platform, contact our trust and safety team. We investigate every report and take action to maintain marketplace integrity.
+                  {t("privacy.reportDesc")}
                 </p>
               </div>
             </div>
@@ -299,19 +299,25 @@ export default function Privacy() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,_theme(colors.sage.400),_transparent_50%)]" />
         <div className="relative section-padding max-w-3xl mx-auto text-center">
           <h2 className="animate-fade-in-up opacity-0 font-display text-3xl sm:text-4xl lg:text-5xl tracking-tight text-cream-100">
-            Your Privacy, Your Control
+            {t("privacy.ctaTitle")}
           </h2>
           <p className="animate-fade-in-up opacity-0 stagger-1 mt-6 text-lg text-cream-300/70 font-body">
-            Ready to explore your mortgage options without compromising your privacy?
+            {t("privacy.ctaDesc")}
           </p>
           <Link
             href="/borrower/request/new"
             className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
           >
-            Submit an Anonymous Request
+            {t("privacy.ctaButton")}
           </Link>
         </div>
       </section>
     </Layout>
   );
 }
+
+export const getStaticProps = async ({ locale }: { locale: string }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

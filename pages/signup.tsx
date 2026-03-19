@@ -3,6 +3,8 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 const ROLE_REDIRECTS: Record<string, string> = {
   BORROWER: "/borrower/request/new",
@@ -10,6 +12,7 @@ const ROLE_REDIRECTS: Record<string, string> = {
 };
 
 export default function SignupPage() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -99,9 +102,9 @@ export default function SignupPage() {
           {/* Card */}
           <div className="card-elevated opacity-0 animate-fade-in-up stagger-1">
             <div className="mb-8 text-center">
-              <h1 className="heading-lg mb-2">Create Your Account</h1>
+              <h1 className="heading-lg mb-2">{t("auth.signupTitle")}</h1>
               <p className="text-body-sm">
-                Join MortgageMatch to get started
+                {t("auth.signupSubtitle")}
               </p>
             </div>
 
@@ -114,7 +117,7 @@ export default function SignupPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="opacity-0 animate-fade-in-up stagger-2">
                 <label htmlFor="name" className="label-text">
-                  Full Name
+                  {t("auth.name")}
                 </label>
                 <input
                   id="name"
@@ -129,7 +132,7 @@ export default function SignupPage() {
 
               <div className="opacity-0 animate-fade-in-up stagger-2">
                 <label htmlFor="email" className="label-text">
-                  Email
+                  {t("auth.email")}
                 </label>
                 <input
                   id="email"
@@ -144,7 +147,7 @@ export default function SignupPage() {
 
               <div className="opacity-0 animate-fade-in-up stagger-3">
                 <label htmlFor="password" className="label-text">
-                  Password
+                  {t("auth.password")}
                 </label>
                 <input
                   id="password"
@@ -159,7 +162,7 @@ export default function SignupPage() {
 
               <div className="opacity-0 animate-fade-in-up stagger-3">
                 <label htmlFor="confirmPassword" className="label-text">
-                  Confirm Password
+                  {t("auth.confirmPassword")}
                 </label>
                 <input
                   id="confirmPassword"
@@ -173,7 +176,7 @@ export default function SignupPage() {
               </div>
 
               <div className="opacity-0 animate-fade-in-up stagger-4">
-                <label className="label-text">I am a...</label>
+                <label className="label-text">{t("auth.role")}</label>
                 <div className="mt-2 grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -184,7 +187,7 @@ export default function SignupPage() {
                         : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
                     }`}
                   >
-                    Borrower
+                    {t("auth.borrower")}
                   </button>
                   <button
                     type="button"
@@ -195,7 +198,7 @@ export default function SignupPage() {
                         : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
                     }`}
                   >
-                    Broker
+                    {t("auth.broker")}
                   </button>
                 </div>
               </div>
@@ -206,19 +209,19 @@ export default function SignupPage() {
                   disabled={isLoading}
                   className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isLoading ? "Creating account..." : "Create Account"}
+                  {isLoading ? t("auth.creatingAccount") : t("auth.signupBtn")}
                 </button>
               </div>
             </form>
 
             <div className="mt-8 border-t border-cream-300 pt-6 opacity-0 animate-fade-in-up stagger-6">
               <p className="text-center text-body-sm">
-                Already have an account?{" "}
+                {t("auth.haveAccount")}{" "}
                 <Link
                   href="/login"
                   className="font-semibold text-forest-700 underline decoration-amber-400 decoration-2 underline-offset-2 transition-colors hover:text-forest-600"
                 >
-                  Sign in
+                  {t("auth.signInLink")}
                 </Link>
               </p>
             </div>
@@ -228,3 +231,9 @@ export default function SignupPage() {
     </Layout>
   );
 }
+
+export const getStaticProps = async ({ locale }: { locale: string }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

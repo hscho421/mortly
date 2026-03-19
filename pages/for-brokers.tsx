@@ -1,95 +1,100 @@
 import Link from "next/link";
 import Head from "next/head";
 import Layout from "@/components/Layout";
-
-const benefits = [
-  {
-    title: "Qualified Leads",
-    description:
-      "Every borrower on MortgageMatch has actively described their mortgage needs. No cold calls, no tire-kickers — just real people ready to move forward.",
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Transparent Marketplace",
-    description:
-      "See exactly what borrowers are looking for before you express interest. Full visibility into loan type, amount, timeline, and property details.",
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Efficient Client Acquisition",
-    description:
-      "Stop spending thousands on ads that may never convert. MortgageMatch delivers borrowers who are actively seeking a broker — dramatically lowering your cost per client.",
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-      </svg>
-    ),
-  },
-  {
-    title: "Merit-Based Competition",
-    description:
-      "Win clients based on your expertise, reviews, and quality of response — not on who spends the most on advertising. Your track record is your best marketing tool.",
-    icon: (
-      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-      </svg>
-    ),
-  },
-];
-
-const tiers = [
-  {
-    name: "Basic",
-    price: "$49",
-    period: "/mo",
-    description: "For brokers getting started with MortgageMatch.",
-    features: ["5 introductions per month", "Standard profile listing", "Borrower request notifications", "Email support"],
-    cta: "Get Started",
-    featured: false,
-  },
-  {
-    name: "Pro",
-    price: "$149",
-    period: "/mo",
-    description: "For established brokers looking to grow.",
-    features: [
-      "20 introductions per month",
-      "Priority placement in results",
-      "Enhanced broker profile",
-      "Advanced lead filters",
-      "Priority support",
-    ],
-    cta: "Go Pro",
-    featured: true,
-  },
-  {
-    name: "Premium",
-    price: "$349",
-    period: "/mo",
-    description: "For top-performing brokers and teams.",
-    features: [
-      "Unlimited introductions",
-      "Featured broker badge",
-      "Top placement in results",
-      "Dedicated account manager",
-      "Analytics dashboard",
-      "Team collaboration tools",
-    ],
-    cta: "Go Premium",
-    featured: false,
-  },
-];
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import { useTranslation } from "next-i18next";
 
 export default function ForBrokers() {
+  const { t } = useTranslation("common");
+
+  const tiers = [
+    {
+      name: t("pricing.basicName"),
+      price: "$49",
+      period: t("pricing.perMonth"),
+      description: t("pricing.basicDesc"),
+      features: [
+        t("pricing.val_5perMonth"),
+        t("pricing.val_standardListing"),
+        t("pricing.feat_notifications"),
+        t("pricing.val_emailSupport"),
+      ],
+      cta: t("pricing.basicCta"),
+      featured: false,
+    },
+    {
+      name: t("pricing.proName"),
+      price: "$149",
+      period: t("pricing.perMonth"),
+      description: t("pricing.proDesc"),
+      features: [
+        t("pricing.val_20perMonth"),
+        t("pricing.val_priority") + " " + t("pricing.feat_placement").toLowerCase(),
+        t("pricing.val_enhancedListing"),
+        t("pricing.feat_leadFilters"),
+        t("pricing.val_prioritySupport"),
+      ],
+      cta: t("pricing.proCta"),
+      featured: true,
+    },
+    {
+      name: t("pricing.premiumName"),
+      price: "$349",
+      period: t("pricing.perMonth"),
+      description: t("pricing.premiumDesc"),
+      features: [
+        t("pricing.val_unlimited"),
+        t("pricing.feat_badge"),
+        t("pricing.val_topOfResults"),
+        t("pricing.feat_accountManager"),
+        t("pricing.feat_analytics"),
+        t("pricing.feat_teamTools"),
+      ],
+      cta: t("pricing.premiumCta"),
+      featured: false,
+    },
+  ];
+
+  const benefits = [
+    {
+      title: t("forBrokers.benefit1Title"),
+      description: t("forBrokers.benefit1Desc"),
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+    {
+      title: t("forBrokers.benefit2Title"),
+      description: t("forBrokers.benefit2Desc"),
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      ),
+    },
+    {
+      title: t("forBrokers.benefit3Title"),
+      description: t("forBrokers.benefit3Desc"),
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+      ),
+    },
+    {
+      title: t("forBrokers.benefit4Title"),
+      description: t("forBrokers.benefit4Desc"),
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <Layout>
       <Head>
@@ -106,22 +111,22 @@ export default function ForBrokers() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_40%,_theme(colors.amber.400),_transparent_50%)]" />
         <div className="relative section-padding max-w-4xl mx-auto text-center">
           <span className="animate-fade-in-up opacity-0 stagger-1 inline-block px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-amber-400 border border-amber-400/30 rounded-full mb-8 font-body">
-            For Mortgage Brokers
+            {t("forBrokers.badge")}
           </span>
           <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-4xl sm:text-5xl lg:text-7xl tracking-tight text-cream-100 leading-[1.05]">
-            Grow Your Mortgage
+            {t("forBrokers.title1")}
             <br />
-            <em className="text-amber-300">Business</em>
+            <em className="text-amber-300">{t("forBrokers.title2")}</em>
           </h1>
           <p className="animate-fade-in-up opacity-0 stagger-3 mt-8 text-lg text-cream-300/70 leading-relaxed max-w-2xl mx-auto font-body">
-            Connect with borrowers who are actively looking for a broker. No cold outreach, no expensive ads — just qualified leads delivered to your dashboard.
+            {t("forBrokers.subtitle")}
           </p>
           <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/pricing" className="btn-amber px-8 py-4 text-base">
-              View Pricing
+              {t("forBrokers.viewPricing")}
             </Link>
             <Link href="/how-it-works" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
-              See How It Works
+              {t("forBrokers.seeHowItWorks")}
             </Link>
           </div>
         </div>
@@ -132,10 +137,10 @@ export default function ForBrokers() {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              The Advantage
+              {t("forBrokers.advantageBadge")}
             </span>
-            <h2 className="heading-lg">Why Brokers Choose MortgageMatch</h2>
-            <p className="text-body mt-4">A smarter way to build your client base</p>
+            <h2 className="heading-lg">{t("forBrokers.advantageTitle")}</h2>
+            <p className="text-body mt-4">{t("forBrokers.advantageSubtitle")}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -160,10 +165,10 @@ export default function ForBrokers() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { value: "93%", label: "Broker satisfaction rate" },
-              { value: "4.8x", label: "ROI vs traditional ads" },
-              { value: "72hr", label: "Avg. time to connection" },
-              { value: "100%", label: "Verified borrower requests" },
+              { value: "93%", label: t("forBrokers.satisfactionRate") },
+              { value: "4.8x", label: t("forBrokers.roiVsAds") },
+              { value: "72hr", label: t("forBrokers.avgResponseTime") },
+              { value: "100%", label: t("forBrokers.activeMarkets") },
             ].map((stat, index) => (
               <div key={stat.label} className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)}`}>
                 <div className="font-display text-4xl text-amber-400">{stat.value}</div>
@@ -179,10 +184,10 @@ export default function ForBrokers() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              Investment
+              {t("forBrokers.investmentBadge")}
             </span>
-            <h2 className="heading-lg">Simple, Transparent Pricing</h2>
-            <p className="text-body mt-4">Choose the plan that fits your business</p>
+            <h2 className="heading-lg">{t("forBrokers.pricingTitle")}</h2>
+            <p className="text-body mt-4">{t("forBrokers.pricingSubtitle")}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -197,7 +202,7 @@ export default function ForBrokers() {
               >
                 {tier.featured && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-forest-900 text-xs font-bold rounded-full uppercase tracking-wider font-body">
-                    Most Popular
+                    {t("forBrokers.mostPopular")}
                   </div>
                 )}
                 <h3 className={`font-body text-sm font-semibold uppercase tracking-wider ${tier.featured ? "text-amber-400" : "text-sage-500"}`}>
@@ -257,19 +262,25 @@ export default function ForBrokers() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_60%,_theme(colors.amber.400),_transparent_50%)]" />
         <div className="relative section-padding max-w-3xl mx-auto text-center">
           <h2 className="animate-fade-in-up opacity-0 font-display text-3xl sm:text-4xl lg:text-5xl tracking-tight text-cream-100">
-            Start Growing Your Business Today
+            {t("forBrokers.ctaTitle")}
           </h2>
           <p className="animate-fade-in-up opacity-0 stagger-1 mt-6 text-lg text-cream-300/70 font-body">
-            Join hundreds of brokers already using MortgageMatch to find qualified clients efficiently.
+            {t("forBrokers.ctaSubtitle")}
           </p>
           <Link
             href="/pricing"
             className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
           >
-            Sign Up as a Broker
+            {t("forBrokers.signUpBroker")}
           </Link>
         </div>
       </section>
     </Layout>
   );
 }
+
+export const getStaticProps = async ({ locale }: { locale: string }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

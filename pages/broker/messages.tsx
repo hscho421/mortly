@@ -2,6 +2,10 @@ import { useState, useEffect, useRef, useCallback, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Navbar from "@/components/Navbar";
+import { supabase } from "@/lib/supabase";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 interface ConversationListItem {
   id: string;
@@ -70,6 +74,7 @@ function formatRequestType(type: string) {
 export default function BrokerMessagesPage() {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -83,7 +88,6 @@ export default function BrokerMessagesPage() {
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -132,28 +136,52 @@ export default function BrokerMessagesPage() {
     }
   }, []);
 
-  // Poll messages for active conversation
-  const pollMessages = useCallback(async () => {
-    if (!activeConvId) return;
-    try {
-      const res = await fetch(`/api/conversations/${activeConvId}`);
-      if (!res.ok) return;
-      const data: FullConversation = await res.json();
-      setMessages(data.messages);
-      setActiveConversation(data);
-    } catch {
-      // Silent fail for polling
-    }
-  }, [activeConvId]);
-
+  // Supabase Realtime for instant messages
   useEffect(() => {
     if (!activeConvId || authStatus !== "authenticated") return;
 
-    pollRef.current = setInterval(pollMessages, 5000);
+    const channel = supabase
+      .channel(`chat-${activeConvId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversationId=eq.${activeConvId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as FullMessage;
+          setMessages((prev) =>
+            prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]
+          );
+          fetchConversations();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversations",
+          filter: `id=eq.${activeConvId}`,
+        },
+        (payload) => {
+          const updated = payload.new as { status: string };
+          if (updated.status === "CLOSED") {
+            setActiveConversation((prev) =>
+              prev ? { ...prev, status: "CLOSED" } : prev
+            );
+            fetchConversations();
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      supabase.removeChannel(channel);
     };
-  }, [activeConvId, authStatus, pollMessages]);
+  }, [activeConvId, authStatus, fetchConversations]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -262,7 +290,7 @@ export default function BrokerMessagesPage() {
           {/* List header */}
           <div className="shrink-0 border-b border-cream-300 px-5 py-4">
             <div className="flex items-center justify-between">
-              <h1 className="heading-md">Messages</h1>
+              <h1 className="heading-md">{t("messages.title")}</h1>
               {!loadingList && (
                 <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-1 font-body text-xs font-semibold text-forest-700">
                   {conversations.length}
@@ -297,10 +325,10 @@ export default function BrokerMessagesPage() {
                   </svg>
                 </div>
                 <p className="font-body text-sm font-medium text-forest-700">
-                  No conversations yet.
+                  {t("messages.noConversations")}
                 </p>
                 <p className="text-body-sm mt-1">
-                  Browse and respond to requests to connect with borrowers.
+                  {t("messages.noConversationsDescBroker")}
                 </p>
               </div>
             )}
@@ -330,12 +358,12 @@ export default function BrokerMessagesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-body text-sm font-semibold text-forest-800 truncate">
-                            Borrower
+                            {t("messages.borrowerLabel")}
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
                             {conv.status === "CLOSED" && (
                               <span className="inline-flex items-center rounded-full bg-cream-300/50 px-2 py-0.5 font-body text-[10px] font-semibold uppercase tracking-wide text-forest-600 ring-1 ring-inset ring-cream-400/30">
-                                Closed
+                                {t("status.closed")}
                               </span>
                             )}
                             <span className="font-body text-[11px] text-forest-700/40">
@@ -394,7 +422,7 @@ export default function BrokerMessagesPage() {
                   </svg>
                 </div>
                 <p className="heading-sm text-forest-700">
-                  Select a conversation to start messaging
+                  {t("messages.selectConversation")}
                 </p>
               </div>
             </div>
@@ -436,7 +464,7 @@ export default function BrokerMessagesPage() {
 
                   <div className="flex-1 min-w-0">
                     <h2 className="font-body text-sm font-semibold text-forest-800">
-                      Borrower
+                      {t("messages.borrowerLabel")}
                     </h2>
                     {activeConversation?.request && (
                       <p className="text-body-sm truncate">
@@ -471,7 +499,7 @@ export default function BrokerMessagesPage() {
                 {!loadingChat && messages.length === 0 && (
                   <div className="flex items-center justify-center h-full">
                     <p className="text-body-sm text-sage-400">
-                      No messages yet. Start the conversation below.
+                      {t("messages.noMessages")}
                     </p>
                   </div>
                 )}
@@ -544,7 +572,7 @@ export default function BrokerMessagesPage() {
                 {isClosed ? (
                   <div className="text-center py-2">
                     <p className="font-body text-sm text-sage-500">
-                      This conversation has been closed.
+                      {t("messages.conversationClosed")}
                     </p>
                   </div>
                 ) : (
@@ -553,7 +581,7 @@ export default function BrokerMessagesPage() {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type your message..."
+                      placeholder={t("messages.typeMessage")}
                       className="input-field flex-1"
                       disabled={sending}
                     />
@@ -583,7 +611,7 @@ export default function BrokerMessagesPage() {
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                             />
                           </svg>
-                          Sending
+                          {t("messages.sending")}
                         </span>
                       ) : (
                         <span className="flex items-center gap-2">
@@ -600,7 +628,7 @@ export default function BrokerMessagesPage() {
                               d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"
                             />
                           </svg>
-                          Send
+                          {t("messages.send")}
                         </span>
                       )}
                     </button>
@@ -614,3 +642,9 @@ export default function BrokerMessagesPage() {
     </>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

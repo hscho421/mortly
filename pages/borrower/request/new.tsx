@@ -1,6 +1,9 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import type { CreateRequestInput } from "@/types";
 
@@ -40,7 +43,14 @@ const CLOSING_TIMELINES = [
   "Just exploring",
 ];
 
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});
+
 export default function NewRequest() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const { data: session, status } = useSession();
   const [submitting, setSubmitting] = useState(false);
@@ -156,18 +166,16 @@ export default function NewRequest() {
               />
             </svg>
             <p className="text-body-sm">
-              <strong className="text-forest-800">Your identity stays private until you choose to connect.</strong>{" "}
-              Brokers will see your mortgage needs but not your name or contact
-              information until you decide to start a conversation.
+              <strong className="text-forest-800">{t("request.privacyNote")}</strong>
             </p>
           </div>
         </div>
 
         <h1 className="heading-lg mb-2 animate-fade-in-up stagger-2">
-          Submit Your Mortgage Request
+          {t("request.title")}
         </h1>
         <p className="text-body mb-8 animate-fade-in-up stagger-3">
-          Tell us what you&apos;re looking for and let verified brokers come to you.
+          {t("request.subtitle")}
         </p>
 
         {error && (
@@ -184,7 +192,7 @@ export default function NewRequest() {
             </legend>
 
             <div>
-              <span className="label-text">Request Type</span>
+              <span className="label-text">{t("request.requestType")}</span>
               <div className="flex flex-wrap gap-4 mt-2">
                 {(["PURCHASE", "REFINANCE", "RENEWAL"] as const).map((type) => (
                   <label
@@ -215,7 +223,7 @@ export default function NewRequest() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="province" className="label-text">
-                  Province
+                  {t("request.province")}
                 </label>
                 <select
                   id="province"
@@ -224,7 +232,7 @@ export default function NewRequest() {
                   required
                   className="input-field"
                 >
-                  <option value="">Select a province</option>
+                  <option value="">{t("request.selectProvince")}</option>
                   {PROVINCES.map((p) => (
                     <option key={p} value={p}>
                       {p}
@@ -235,7 +243,7 @@ export default function NewRequest() {
 
               <div>
                 <label htmlFor="city" className="label-text">
-                  City <span className="text-sage-400">(optional)</span>
+                  {t("request.city")}
                 </label>
                 <input
                   id="city"
@@ -249,7 +257,7 @@ export default function NewRequest() {
             </div>
 
             <div>
-              <span className="label-text">Property Type</span>
+              <span className="label-text">{t("request.propertyType")}</span>
               <div className="flex flex-wrap gap-4 mt-2">
                 {(["CONDO", "TOWNHOUSE", "DETACHED", "OTHER"] as const).map(
                   (type) => (
@@ -275,7 +283,7 @@ export default function NewRequest() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="priceRangeMin" className="label-text">
-                  Price Range (Min $)
+                  {t("request.priceRange")} ({t("request.min")} $)
                 </label>
                 <input
                   id="priceRangeMin"
@@ -291,7 +299,7 @@ export default function NewRequest() {
               </div>
               <div>
                 <label htmlFor="priceRangeMax" className="label-text">
-                  Price Range (Max $)
+                  {t("request.priceRange")} ({t("request.max")} $)
                 </label>
                 <input
                   id="priceRangeMax"
@@ -309,7 +317,7 @@ export default function NewRequest() {
 
             <div>
               <label htmlFor="downPaymentPercent" className="label-text">
-                Down Payment Percentage
+                {t("request.downPayment")}
               </label>
               <select
                 id="downPaymentPercent"
@@ -338,7 +346,7 @@ export default function NewRequest() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="incomeRangeMin" className="label-text">
-                  Household Income (Min $)
+                  {t("request.income")} ({t("request.min")} $)
                 </label>
                 <input
                   id="incomeRangeMin"
@@ -354,7 +362,7 @@ export default function NewRequest() {
               </div>
               <div>
                 <label htmlFor="incomeRangeMax" className="label-text">
-                  Household Income (Max $)
+                  {t("request.income")} ({t("request.max")} $)
                 </label>
                 <input
                   id="incomeRangeMax"
@@ -372,7 +380,7 @@ export default function NewRequest() {
 
             <div>
               <label htmlFor="employmentType" className="label-text">
-                Employment Type
+                {t("request.employmentType")}
               </label>
               <select
                 id="employmentType"
@@ -397,7 +405,7 @@ export default function NewRequest() {
             </div>
 
             <div>
-              <span className="label-text">Credit Score Band</span>
+              <span className="label-text">{t("request.creditScore")}</span>
               <div className="flex flex-wrap gap-3 mt-2">
                 {(
                   ["EXCELLENT", "GOOD", "FAIR", "POOR", "NOT_SURE"] as const
@@ -425,7 +433,7 @@ export default function NewRequest() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="debtRangeMin" className="label-text">
-                  Existing Debts (Min $)
+                  {t("request.existingDebts")} ({t("request.min")} $)
                 </label>
                 <input
                   id="debtRangeMin"
@@ -441,7 +449,7 @@ export default function NewRequest() {
               </div>
               <div>
                 <label htmlFor="debtRangeMax" className="label-text">
-                  Existing Debts (Max $)
+                  {t("request.existingDebts")} ({t("request.max")} $)
                 </label>
                 <input
                   id="debtRangeMax"
@@ -467,7 +475,7 @@ export default function NewRequest() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="mortgageAmountMin" className="label-text">
-                  Mortgage Amount Needed (Min $)
+                  {t("request.mortgageAmount")} ({t("request.min")} $)
                 </label>
                 <input
                   id="mortgageAmountMin"
@@ -483,7 +491,7 @@ export default function NewRequest() {
               </div>
               <div>
                 <label htmlFor="mortgageAmountMax" className="label-text">
-                  Mortgage Amount Needed (Max $)
+                  {t("request.mortgageAmount")} ({t("request.max")} $)
                 </label>
                 <input
                   id="mortgageAmountMax"
@@ -502,7 +510,7 @@ export default function NewRequest() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="preferredTerm" className="label-text">
-                  Preferred Term
+                  {t("request.preferredTerm")}
                 </label>
                 <select
                   id="preferredTerm"
@@ -520,7 +528,7 @@ export default function NewRequest() {
               </div>
 
               <div>
-                <span className="label-text">Preferred Type</span>
+                <span className="label-text">{t("request.preferredType")}</span>
                 <div className="flex flex-wrap gap-3 mt-2">
                   {(["FIXED", "VARIABLE", "NOT_SURE"] as const).map((type) => (
                     <label
@@ -546,7 +554,7 @@ export default function NewRequest() {
 
             <div>
               <label htmlFor="closingTimeline" className="label-text">
-                Closing Timeline
+                {t("request.closingTimeline")}
               </label>
               <select
                 id="closingTimeline"
@@ -569,7 +577,7 @@ export default function NewRequest() {
           {/* Section 5: Additional notes */}
           <fieldset className="space-y-6">
             <legend className="heading-sm border-b divider pb-3 w-full">
-              Additional Notes
+              {t("request.additionalNotes")}
             </legend>
 
             <div>
@@ -595,7 +603,7 @@ export default function NewRequest() {
               disabled={submitting}
               className="btn-primary w-full sm:w-auto px-10 py-3.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? "Submitting..." : "Submit Request"}
+              {submitting ? t("request.submitting") : t("request.submit")}
             </button>
             <p className="mt-3 text-body-sm text-sage-400">
               By submitting, you agree to our Terms of Service and Privacy Policy.

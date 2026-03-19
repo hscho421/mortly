@@ -3,6 +3,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import type { CreateBrokerProfileInput } from "@/types";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 const PROVINCES = [
   "Alberta",
@@ -20,6 +23,7 @@ const PROVINCES = [
 export default function BrokerOnboardingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const [form, setForm] = useState<CreateBrokerProfileInput>({
     brokerageName: "",
@@ -96,9 +100,9 @@ export default function BrokerOnboardingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
             </svg>
           </div>
-          <h1 className="heading-lg">Set Up Your Broker Profile</h1>
+          <h1 className="heading-lg">{t("broker.onboardingTitle")}</h1>
           <p className="text-body mt-3 max-w-md mx-auto">
-            Complete your profile to start receiving borrower requests on MortgageMatch.
+            {t("broker.onboardingSubtitle")}
           </p>
         </div>
 
@@ -111,7 +115,7 @@ export default function BrokerOnboardingPage() {
         <form onSubmit={handleSubmit} className="card-elevated space-y-6 animate-fade-in-up">
           <div>
             <label htmlFor="brokerageName" className="label-text">
-              Brokerage Name <span className="text-amber-600">*</span>
+              {t("broker.brokerageName")} <span className="text-amber-600">*</span>
             </label>
             <input
               id="brokerageName"
@@ -127,7 +131,7 @@ export default function BrokerOnboardingPage() {
 
           <div>
             <label htmlFor="province" className="label-text">
-              Province <span className="text-amber-600">*</span>
+              {t("request.province")} <span className="text-amber-600">*</span>
             </label>
             <select
               id="province"
@@ -137,7 +141,7 @@ export default function BrokerOnboardingPage() {
               onChange={handleChange}
               className="input-field"
             >
-              <option value="">Select a province</option>
+              <option value="">{t("request.selectProvince")}</option>
               {PROVINCES.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -148,7 +152,7 @@ export default function BrokerOnboardingPage() {
 
           <div>
             <label htmlFor="licenseNumber" className="label-text">
-              License Number <span className="text-amber-600">*</span>
+              {t("broker.licenseNumber")} <span className="text-amber-600">*</span>
             </label>
             <input
               id="licenseNumber"
@@ -166,7 +170,7 @@ export default function BrokerOnboardingPage() {
 
           <div>
             <label htmlFor="bio" className="label-text">
-              Bio
+              {t("broker.bio")}
             </label>
             <textarea
               id="bio"
@@ -181,7 +185,7 @@ export default function BrokerOnboardingPage() {
 
           <div>
             <label htmlFor="yearsExperience" className="label-text">
-              Years of Experience
+              {t("broker.yearsExperience")}
             </label>
             <input
               id="yearsExperience"
@@ -198,7 +202,7 @@ export default function BrokerOnboardingPage() {
 
           <div>
             <label htmlFor="areasServed" className="label-text">
-              Areas Served
+              {t("broker.areasServed")}
             </label>
             <input
               id="areasServed"
@@ -213,7 +217,7 @@ export default function BrokerOnboardingPage() {
 
           <div>
             <label htmlFor="specialties" className="label-text">
-              Specialties
+              {t("broker.specialties")}
             </label>
             <input
               id="specialties"
@@ -231,10 +235,16 @@ export default function BrokerOnboardingPage() {
             disabled={isSubmitting}
             className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "Creating Profile..." : "Complete Profile Setup"}
+            {isSubmitting ? t("broker.saving") : t("broker.save")}
           </button>
         </form>
       </div>
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

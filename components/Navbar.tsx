@@ -2,18 +2,24 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSession, signOut } from "next-auth/react";
+import { useTranslation } from "next-i18next";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const switchLocale = (locale: string) => {
+    router.push(router.asPath, router.asPath, { locale });
+  };
 
   const dashboardHref =
     session?.user?.role === "BROKER"
@@ -23,9 +29,9 @@ export default function Navbar() {
         : "/borrower/dashboard";
 
   const publicLinks = [
-    { href: "/how-it-works", label: "How It Works" },
-    { href: "/for-brokers", label: "For Brokers" },
-    { href: "/pricing", label: "Pricing" },
+    { href: "/how-it-works", label: t("nav.howItWorks") },
+    { href: "/for-brokers", label: t("nav.forBrokers") },
+    { href: "/pricing", label: t("nav.pricing") },
   ];
 
   const isActive = (href: string) => router.pathname === href;
@@ -72,15 +78,39 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop auth */}
+          {/* Desktop auth + lang switcher */}
           <div className="hidden items-center gap-3 md:flex">
+            {/* Language switcher */}
+            <div className="flex items-center rounded-lg border border-cream-300 overflow-hidden mr-1">
+              <button
+                onClick={() => switchLocale("en")}
+                className={`px-2.5 py-1.5 font-body text-xs font-semibold transition-colors ${
+                  router.locale === "en"
+                    ? "bg-forest-800 text-cream-100"
+                    : "text-forest-600 hover:bg-cream-200"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => switchLocale("ko")}
+                className={`px-2.5 py-1.5 font-body text-xs font-semibold transition-colors ${
+                  router.locale === "ko"
+                    ? "bg-forest-800 text-cream-100"
+                    : "text-forest-600 hover:bg-cream-200"
+                }`}
+              >
+                KO
+              </button>
+            </div>
+
             {session ? (
               <>
                 <Link
                   href={dashboardHref}
                   className="font-body text-sm font-medium text-forest-700/60 transition-colors hover:text-forest-800"
                 >
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
                 {(session.user?.role === "BORROWER" || session.user?.role === "BROKER") && (
                   <Link
@@ -91,7 +121,7 @@ export default function Navbar() {
                         : "text-forest-700/60 hover:text-forest-800"
                     }`}
                   >
-                    Messages
+                    {t("nav.messages")}
                     {(isActive("/borrower/messages") || isActive("/broker/messages")) && (
                       <span className="absolute -bottom-1 left-0 h-0.5 w-full rounded-full bg-amber-500" />
                     )}
@@ -101,7 +131,7 @@ export default function Navbar() {
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="rounded-lg border border-cream-400 px-4 py-2 font-body text-sm font-medium text-forest-700 transition-all hover:border-forest-300 hover:bg-white"
                 >
-                  Sign Out
+                  {t("nav.signOut")}
                 </button>
               </>
             ) : (
@@ -110,10 +140,10 @@ export default function Navbar() {
                   href="/login"
                   className="font-body text-sm font-medium text-forest-700/60 transition-colors hover:text-forest-800"
                 >
-                  Login
+                  {t("nav.login")}
                 </Link>
                 <Link href="/signup" className="btn-primary !py-2.5 !text-sm">
-                  Get Started
+                  {t("nav.getStarted")}
                 </Link>
               </>
             )}
@@ -161,6 +191,28 @@ export default function Navbar() {
 
             <hr className="my-3 border-cream-300" />
 
+            {/* Mobile language switcher */}
+            <div className="flex items-center gap-2 px-4 py-2">
+              <button
+                onClick={() => { switchLocale("en"); setMobileOpen(false); }}
+                className={`rounded-md px-3 py-1.5 font-body text-xs font-semibold transition-colors ${
+                  router.locale === "en" ? "bg-forest-800 text-cream-100" : "text-forest-600 hover:bg-cream-200"
+                }`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => { switchLocale("ko"); setMobileOpen(false); }}
+                className={`rounded-md px-3 py-1.5 font-body text-xs font-semibold transition-colors ${
+                  router.locale === "ko" ? "bg-forest-800 text-cream-100" : "text-forest-600 hover:bg-cream-200"
+                }`}
+              >
+                KO
+              </button>
+            </div>
+
+            <hr className="my-2 border-cream-300" />
+
             {session ? (
               <>
                 <Link
@@ -168,7 +220,7 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="block rounded-lg px-4 py-2.5 font-body text-sm font-medium text-forest-700/70 hover:bg-cream-200"
                 >
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
                 {(session.user?.role === "BORROWER" || session.user?.role === "BROKER") && (
                   <Link
@@ -180,7 +232,7 @@ export default function Navbar() {
                         : "text-forest-700/70 hover:bg-cream-200 hover:text-forest-800"
                     }`}
                   >
-                    Messages
+                    {t("nav.messages")}
                   </Link>
                 )}
                 <button
@@ -190,7 +242,7 @@ export default function Navbar() {
                   }}
                   className="block w-full rounded-lg px-4 py-2.5 text-left font-body text-sm font-medium text-forest-700/70 hover:bg-cream-200"
                 >
-                  Sign Out
+                  {t("nav.signOut")}
                 </button>
               </>
             ) : (
@@ -200,14 +252,14 @@ export default function Navbar() {
                   onClick={() => setMobileOpen(false)}
                   className="block rounded-lg px-4 py-2.5 font-body text-sm font-medium text-forest-700/70 hover:bg-cream-200"
                 >
-                  Login
+                  {t("nav.login")}
                 </Link>
                 <Link
                   href="/signup"
                   onClick={() => setMobileOpen(false)}
                   className="block btn-primary mt-2 text-center"
                 >
-                  Get Started
+                  {t("nav.getStarted")}
                 </Link>
               </>
             )}

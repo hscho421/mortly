@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 
 type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
@@ -60,6 +63,7 @@ const MOCK_PENDING: PendingBroker[] = [
 export default function AdminVerification() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const [pending, setPending] = useState<PendingBroker[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -120,7 +124,7 @@ export default function AdminVerification() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Page Header */}
         <div className="mb-8 animate-fade-in">
-          <h1 className="heading-lg">Verification Queue</h1>
+          <h1 className="heading-lg">{t("admin.verificationQueue")}</h1>
           <p className="text-body mt-2">
             {pending.length} broker{pending.length !== 1 ? "s" : ""} awaiting
             verification
@@ -195,7 +199,7 @@ export default function AdminVerification() {
                       disabled={actionLoading === broker.id}
                       className="btn-primary !py-2 !px-5 disabled:opacity-50"
                     >
-                      {actionLoading === broker.id ? "..." : "Approve"}
+                      {actionLoading === broker.id ? "..." : t("admin.approve")}
                     </button>
                     <button
                       onClick={() =>
@@ -204,7 +208,7 @@ export default function AdminVerification() {
                       disabled={actionLoading === broker.id}
                       className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-5 py-2 font-body text-sm font-semibold text-white transition-all duration-300 hover:bg-rose-700 hover:shadow-lg hover:shadow-rose-600/20 active:scale-[0.98] disabled:opacity-50"
                     >
-                      {actionLoading === broker.id ? "..." : "Reject"}
+                      {actionLoading === broker.id ? "..." : t("admin.reject")}
                     </button>
                   </div>
                 </div>
@@ -216,3 +220,11 @@ export default function AdminVerification() {
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? "en", ["common"])),
+    },
+  };
+};

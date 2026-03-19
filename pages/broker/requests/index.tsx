@@ -4,6 +4,9 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import type { RequestWithIntroductions } from "@/types";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 const PROVINCES = [
   "",
@@ -38,6 +41,7 @@ function formatDate(dateStr: string): string {
 export default function BrokerRequestsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const [requests, setRequests] = useState<RequestWithIntroductions[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,9 +104,9 @@ export default function BrokerRequestsPage() {
     <Layout>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 animate-fade-in">
-          <h1 className="heading-lg">Browse Borrower Requests</h1>
+          <h1 className="heading-lg">{t("broker.browseRequests")}</h1>
           <p className="text-body mt-2">
-            Find borrowers looking for a mortgage broker in your area.
+            {t("broker.requestsSubtitle")}
           </p>
         </div>
 
@@ -111,7 +115,7 @@ export default function BrokerRequestsPage() {
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
             <div>
               <label htmlFor="filterProvince" className="label-text">
-                Province
+                {t("request.province")}
               </label>
               <select
                 id="filterProvince"
@@ -121,14 +125,14 @@ export default function BrokerRequestsPage() {
               >
                 {PROVINCES.map((p) => (
                   <option key={p} value={p}>
-                    {p || "All Provinces"}
+                    {p || t("broker.allProvinces")}
                   </option>
                 ))}
               </select>
             </div>
             <div>
               <label htmlFor="filterRequestType" className="label-text">
-                Request Type
+                {t("request.requestType")}
               </label>
               <select
                 id="filterRequestType"
@@ -136,16 +140,16 @@ export default function BrokerRequestsPage() {
                 onChange={(e) => setFilterRequestType(e.target.value)}
                 className="input-field"
               >
-                {REQUEST_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t || "All Types"}
+                {REQUEST_TYPES.map((rt) => (
+                  <option key={rt} value={rt}>
+                    {rt || t("broker.allTypes")}
                   </option>
                 ))}
               </select>
             </div>
             <div>
               <label htmlFor="filterPropertyType" className="label-text">
-                Property Type
+                {t("request.propertyType")}
               </label>
               <select
                 id="filterPropertyType"
@@ -153,9 +157,9 @@ export default function BrokerRequestsPage() {
                 onChange={(e) => setFilterPropertyType(e.target.value)}
                 className="input-field"
               >
-                {PROPERTY_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t || "All Property Types"}
+                {PROPERTY_TYPES.map((pt) => (
+                  <option key={pt} value={pt}>
+                    {pt || t("broker.allPropertyTypes")}
                   </option>
                 ))}
               </select>
@@ -173,7 +177,7 @@ export default function BrokerRequestsPage() {
         {/* Loading */}
         {isLoading && (
           <div className="flex justify-center py-16">
-            <p className="text-body-sm">Loading requests...</p>
+            <p className="text-body-sm">{t("broker.loadingRequests")}</p>
           </div>
         )}
 
@@ -185,9 +189,9 @@ export default function BrokerRequestsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
               </svg>
             </div>
-            <p className="font-body text-sm font-medium text-forest-700">No matching requests found.</p>
+            <p className="font-body text-sm font-medium text-forest-700">{t("broker.noMatchingRequests")}</p>
             <p className="text-body-sm mt-1">
-              Try adjusting your filters or check back later.
+              {t("broker.noMatchingRequestsDesc")}
             </p>
           </div>
         )}
@@ -210,7 +214,7 @@ export default function BrokerRequestsPage() {
                         {req.propertyType}
                       </span>
                       <span className="font-body text-xs text-forest-700/50">
-                        Posted {formatDate(req.createdAt as unknown as string)}
+                        {t("broker.posted")} {formatDate(req.createdAt as unknown as string)}
                       </span>
                     </div>
                     <h3 className="heading-sm">
@@ -219,25 +223,25 @@ export default function BrokerRequestsPage() {
                     </h3>
                     <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
                       <div>
-                        <span className="font-body text-xs font-medium text-forest-700/50">Price Range</span>
+                        <span className="font-body text-xs font-medium text-forest-700/50">{t("request.priceRange")}</span>
                         <p className="font-body text-sm text-forest-800">
                           {formatCurrency(req.priceRangeMin)} - {formatCurrency(req.priceRangeMax)}
                         </p>
                       </div>
                       <div>
-                        <span className="font-body text-xs font-medium text-forest-700/50">Mortgage</span>
+                        <span className="font-body text-xs font-medium text-forest-700/50">{t("request.mortgageAmount")}</span>
                         <p className="font-body text-sm text-forest-800">
                           {formatCurrency(req.mortgageAmountMin)} - {formatCurrency(req.mortgageAmountMax)}
                         </p>
                       </div>
                       <div>
-                        <span className="font-body text-xs font-medium text-forest-700/50">Timeline</span>
+                        <span className="font-body text-xs font-medium text-forest-700/50">{t("request.closingTimeline")}</span>
                         <p className="font-body text-sm text-forest-800">
-                          {req.closingTimeline || "Not specified"}
+                          {req.closingTimeline || t("request.notSpecified")}
                         </p>
                       </div>
                       <div>
-                        <span className="font-body text-xs font-medium text-forest-700/50">Responses</span>
+                        <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
                         <p className="font-body text-sm text-forest-800">
                           {req._count?.introductions ?? 0}
                         </p>
@@ -249,13 +253,13 @@ export default function BrokerRequestsPage() {
                       href={`/broker/requests/${req.id}`}
                       className="btn-secondary text-center text-xs px-4 py-2"
                     >
-                      View Details
+                      {t("broker.viewDetails")}
                     </Link>
                     <Link
                       href={`/broker/introduction/new?requestId=${req.id}`}
                       className="btn-primary text-center text-xs px-4 py-2"
                     >
-                      Respond to This Request
+                      {t("broker.respondToRequest")}
                     </Link>
                   </div>
                 </div>
@@ -267,3 +271,9 @@ export default function BrokerRequestsPage() {
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

@@ -3,6 +3,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps } from "next";
 
 interface BrokerProfile {
   id: string;
@@ -40,6 +43,7 @@ interface DashboardStats {
 export default function BrokerDashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
 
   const [profile, setProfile] = useState<BrokerProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
@@ -178,7 +182,7 @@ export default function BrokerDashboardPage() {
 
   const statCards = [
     {
-      label: "Open Requests Available",
+      label: t("broker.openRequests"),
       value: stats.openRequests,
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -188,7 +192,7 @@ export default function BrokerDashboardPage() {
       accent: false,
     },
     {
-      label: "Introductions Sent",
+      label: t("broker.introsSent"),
       value: stats.introductionsSent,
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -198,7 +202,7 @@ export default function BrokerDashboardPage() {
       accent: false,
     },
     {
-      label: "Active Conversations",
+      label: t("broker.activeConvos"),
       value: stats.activeConversations,
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -208,7 +212,7 @@ export default function BrokerDashboardPage() {
       accent: false,
     },
     {
-      label: "Response Credits Remaining",
+      label: t("broker.responseCredits"),
       value: stats.responseCredits,
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -222,7 +226,7 @@ export default function BrokerDashboardPage() {
   const quickActions = [
     {
       href: "/broker/requests",
-      label: "Browse Requests",
+      label: t("broker.browseRequests"),
       colorBg: "bg-forest-100",
       colorText: "text-forest-600",
       colorHover: "group-hover:bg-forest-200",
@@ -234,7 +238,7 @@ export default function BrokerDashboardPage() {
     },
     {
       href: "/broker/introductions",
-      label: "My Introductions",
+      label: t("broker.myIntroductions"),
       colorBg: "bg-forest-100",
       colorText: "text-forest-600",
       colorHover: "group-hover:bg-forest-200",
@@ -246,7 +250,7 @@ export default function BrokerDashboardPage() {
     },
     {
       href: "/broker/conversations",
-      label: "Conversations",
+      label: t("broker.conversations"),
       colorBg: "bg-sage-100",
       colorText: "text-sage-600",
       colorHover: "group-hover:bg-sage-200",
@@ -258,7 +262,7 @@ export default function BrokerDashboardPage() {
     },
     {
       href: "/broker/profile",
-      label: "Edit Profile",
+      label: t("broker.editProfile"),
       colorBg: "bg-amber-100",
       colorText: "text-amber-600",
       colorHover: "group-hover:bg-amber-200",
@@ -277,7 +281,7 @@ export default function BrokerDashboardPage() {
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
           <div>
             <h1 className="heading-lg">
-              Welcome back, {session.user.name || "Broker"}
+              {t("broker.welcome")}, {session.user.name || "Broker"}
             </h1>
             <p className="text-body mt-2">
               Here is an overview of your MortgageMatch activity.
@@ -293,10 +297,10 @@ export default function BrokerDashboardPage() {
               className={`inline-flex items-center rounded-full px-3 py-1 font-body text-xs font-semibold ${verificationColors[verificationStatus] || verificationColors.PENDING}`}
             >
               {verificationStatus === "VERIFIED"
-                ? "Verified"
+                ? t("status.verified")
                 : verificationStatus === "REJECTED"
-                  ? "Verification Rejected"
-                  : "Verification Pending"}
+                  ? t("status.rejected")
+                  : t("status.pending")}
             </span>
           </div>
         </div>
@@ -349,3 +353,9 @@ export default function BrokerDashboardPage() {
     </Layout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

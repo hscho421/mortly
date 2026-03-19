@@ -1,109 +1,8 @@
 import Link from "next/link";
 import Head from "next/head";
 import Layout from "@/components/Layout";
-
-const tiers = [
-  {
-    name: "Basic",
-    price: "$49",
-    period: "/mo",
-    description: "For individual brokers getting started on the platform.",
-    features: {
-      introductions: "5 per month",
-      profile: "Standard listing",
-      placement: "Standard",
-      badge: false,
-      notifications: true,
-      leadFilters: false,
-      analytics: false,
-      accountManager: false,
-      teamTools: false,
-      support: "Email support",
-    },
-    cta: "Start with Basic",
-    featured: false,
-  },
-  {
-    name: "Pro",
-    price: "$149",
-    period: "/mo",
-    description: "For established brokers looking to scale their pipeline.",
-    features: {
-      introductions: "20 per month",
-      profile: "Enhanced listing",
-      placement: "Priority",
-      badge: false,
-      notifications: true,
-      leadFilters: true,
-      analytics: false,
-      accountManager: false,
-      teamTools: false,
-      support: "Priority support",
-    },
-    cta: "Go Pro",
-    featured: true,
-  },
-  {
-    name: "Premium",
-    price: "$349",
-    period: "/mo",
-    description: "For top performers and brokerage teams.",
-    features: {
-      introductions: "Unlimited",
-      profile: "Featured listing",
-      placement: "Top of results",
-      badge: true,
-      notifications: true,
-      leadFilters: true,
-      analytics: true,
-      accountManager: true,
-      teamTools: true,
-      support: "Dedicated manager",
-    },
-    cta: "Go Premium",
-    featured: false,
-  },
-];
-
-const comparisonRows = [
-  { label: "Monthly introductions", key: "introductions" },
-  { label: "Profile type", key: "profile" },
-  { label: "Search placement", key: "placement" },
-  { label: "Featured broker badge", key: "badge" },
-  { label: "Borrower notifications", key: "notifications" },
-  { label: "Advanced lead filters", key: "leadFilters" },
-  { label: "Analytics dashboard", key: "analytics" },
-  { label: "Dedicated account manager", key: "accountManager" },
-  { label: "Team collaboration tools", key: "teamTools" },
-  { label: "Support level", key: "support" },
-];
-
-const faqs = [
-  {
-    q: "Can I switch plans at any time?",
-    a: "Yes. You can upgrade or downgrade your plan at any time. When upgrading, the new features take effect immediately and billing is prorated. When downgrading, the change takes effect at the start of your next billing cycle.",
-  },
-  {
-    q: "What counts as an introduction?",
-    a: "An introduction is counted when a borrower you expressed interest in chooses to share their contact information with you. You are not charged for expressing interest — only for successful connections.",
-  },
-  {
-    q: "Is there a free trial?",
-    a: "We offer a 14-day free trial on the Pro plan so you can experience the full power of MortgageMatch before committing. No credit card required to start.",
-  },
-  {
-    q: "What happens if I use all my introductions?",
-    a: "You can purchase additional introductions at $15 each, or upgrade to a higher plan for better per-introduction value. Unused introductions do not roll over to the next month.",
-  },
-  {
-    q: "Do you offer annual billing?",
-    a: "Yes. Annual billing is available at a 20% discount on all plans. Contact our sales team or select annual billing during signup.",
-  },
-  {
-    q: "Can I cancel anytime?",
-    a: "Absolutely. There are no long-term contracts. You can cancel your subscription at any time and your access will continue until the end of your current billing period.",
-  },
-];
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import { useTranslation } from "next-i18next";
 
 function CellValue({ value }: { value: string | boolean }) {
   if (typeof value === "boolean") {
@@ -121,6 +20,111 @@ function CellValue({ value }: { value: string | boolean }) {
 }
 
 export default function Pricing() {
+  const { t } = useTranslation("common");
+
+  const tiers = [
+    {
+      name: t("pricing.basicName"),
+      price: "$49",
+      period: t("pricing.perMonth"),
+      description: t("pricing.basicDesc"),
+      features: {
+        introductions: t("pricing.val_5perMonth"),
+        profile: t("pricing.val_standardListing"),
+        placement: t("pricing.val_standard"),
+        badge: false,
+        notifications: true,
+        leadFilters: false,
+        analytics: false,
+        accountManager: false,
+        teamTools: false,
+        support: t("pricing.val_emailSupport"),
+      },
+      cta: t("pricing.basicCta"),
+      featured: false,
+    },
+    {
+      name: t("pricing.proName"),
+      price: "$149",
+      period: t("pricing.perMonth"),
+      description: t("pricing.proDesc"),
+      features: {
+        introductions: t("pricing.val_20perMonth"),
+        profile: t("pricing.val_enhancedListing"),
+        placement: t("pricing.val_priority"),
+        badge: false,
+        notifications: true,
+        leadFilters: true,
+        analytics: false,
+        accountManager: false,
+        teamTools: false,
+        support: t("pricing.val_prioritySupport"),
+      },
+      cta: t("pricing.proCta"),
+      featured: true,
+    },
+    {
+      name: t("pricing.premiumName"),
+      price: "$349",
+      period: t("pricing.perMonth"),
+      description: t("pricing.premiumDesc"),
+      features: {
+        introductions: t("pricing.val_unlimited"),
+        profile: t("pricing.val_featuredListing"),
+        placement: t("pricing.val_topOfResults"),
+        badge: true,
+        notifications: true,
+        leadFilters: true,
+        analytics: true,
+        accountManager: true,
+        teamTools: true,
+        support: t("pricing.val_dedicatedManager"),
+      },
+      cta: t("pricing.premiumCta"),
+      featured: false,
+    },
+  ];
+
+  const comparisonRows = [
+    { label: t("pricing.feat_introductions"), key: "introductions" },
+    { label: t("pricing.feat_profile"), key: "profile" },
+    { label: t("pricing.feat_placement"), key: "placement" },
+    { label: t("pricing.feat_badge"), key: "badge" },
+    { label: t("pricing.feat_notifications"), key: "notifications" },
+    { label: t("pricing.feat_leadFilters"), key: "leadFilters" },
+    { label: t("pricing.feat_analytics"), key: "analytics" },
+    { label: t("pricing.feat_accountManager"), key: "accountManager" },
+    { label: t("pricing.feat_teamTools"), key: "teamTools" },
+    { label: t("pricing.feat_support"), key: "support" },
+  ];
+
+  const faqs = [
+    {
+      q: t("pricing.faq1Q"),
+      a: t("pricing.faq1A"),
+    },
+    {
+      q: t("pricing.faq2Q"),
+      a: t("pricing.faq2A"),
+    },
+    {
+      q: t("pricing.faq3Q"),
+      a: t("pricing.faq3A"),
+    },
+    {
+      q: t("pricing.faq4Q"),
+      a: t("pricing.faq4A"),
+    },
+    {
+      q: t("pricing.faq5Q"),
+      a: t("pricing.faq5A"),
+    },
+    {
+      q: t("pricing.faq6Q"),
+      a: t("pricing.faq6A"),
+    },
+  ];
+
   return (
     <Layout>
       <Head>
@@ -137,13 +141,13 @@ export default function Pricing() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_30%,_theme(colors.amber.400),_transparent_50%)]" />
         <div className="relative section-padding max-w-3xl mx-auto text-center">
           <span className="animate-fade-in-up opacity-0 stagger-1 inline-block font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-400 mb-6">
-            Pricing
+            {t("pricing.badge")}
           </span>
           <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-4xl sm:text-5xl lg:text-6xl tracking-tight text-cream-100 leading-[1.1]">
-            Simple, Transparent Pricing
+            {t("pricing.title")}
           </h1>
           <p className="animate-fade-in-up opacity-0 stagger-3 mt-6 text-lg text-cream-300/70 leading-relaxed font-body">
-            No hidden fees. No long-term contracts. Choose the plan that matches your business goals and scale as you grow.
+            {t("pricing.subtitle")}
           </p>
         </div>
       </section>
@@ -163,7 +167,7 @@ export default function Pricing() {
               >
                 {tier.featured && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-forest-900 text-xs font-bold rounded-full uppercase tracking-wider font-body">
-                    Most Popular
+                    {t("pricing.mostPopular")}
                   </div>
                 )}
                 <h3 className={`font-body text-sm font-semibold uppercase tracking-wider ${tier.featured ? "text-amber-400" : "text-sage-500"}`}>
@@ -223,24 +227,24 @@ export default function Pricing() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              Compare Plans
+              {t("pricing.compareBadge")}
             </span>
-            <h2 className="heading-lg">Feature Comparison</h2>
-            <p className="text-body mt-3">A detailed look at what each plan includes</p>
+            <h2 className="heading-lg">{t("pricing.compareTitle")}</h2>
+            <p className="text-body mt-3">{t("pricing.compareSubtitle")}</p>
           </div>
 
           <div className="animate-fade-in-up opacity-0 stagger-2 overflow-x-auto card-elevated !p-0">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b-2 border-cream-300">
-                  <th className="py-5 pl-6 pr-4 text-sm font-semibold text-forest-800 w-1/3 font-body">Feature</th>
+                  <th className="py-5 pl-6 pr-4 text-sm font-semibold text-forest-800 w-1/3 font-body">{t("pricing.feature")}</th>
                   {tiers.map((tier) => (
                     <th key={tier.name} className="py-5 px-4 text-center">
                       <span className={`text-sm font-semibold font-body ${tier.featured ? "text-forest-800" : "text-forest-700"}`}>
                         {tier.name}
                       </span>
                       {tier.featured && (
-                        <span className="block text-xs text-amber-600 font-body mt-0.5">Recommended</span>
+                        <span className="block text-xs text-amber-600 font-body mt-0.5">{t("pricing.recommended")}</span>
                       )}
                     </th>
                   ))}
@@ -268,9 +272,9 @@ export default function Pricing() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              Questions
+              {t("pricing.faqBadge")}
             </span>
-            <h2 className="heading-lg">Pricing FAQ</h2>
+            <h2 className="heading-lg">{t("pricing.faqTitle")}</h2>
           </div>
 
           <div className="space-y-0">
@@ -293,19 +297,25 @@ export default function Pricing() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_50%,_theme(colors.amber.400),_transparent_50%)]" />
         <div className="relative section-padding max-w-3xl mx-auto text-center">
           <h2 className="animate-fade-in-up opacity-0 font-display text-3xl sm:text-4xl lg:text-5xl tracking-tight text-cream-100">
-            Ready to Grow Your Business?
+            {t("pricing.ctaTitle")}
           </h2>
           <p className="animate-fade-in-up opacity-0 stagger-1 mt-6 text-lg text-cream-300/70 font-body">
-            Start with a 14-day free trial of the Pro plan. No credit card required.
+            {t("pricing.ctaSubtitle")}
           </p>
           <Link
             href="/for-brokers"
             className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
           >
-            Start Free Trial
+            {t("pricing.startFreeTrial")}
           </Link>
         </div>
       </section>
     </Layout>
   );
 }
+
+export const getStaticProps = async ({ locale }: { locale: string }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

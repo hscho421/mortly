@@ -3,6 +3,9 @@ import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Layout from "@/components/Layout";
 import type { Message } from "@/types";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { GetStaticProps, GetStaticPaths } from "next";
 
 interface ConversationData {
   id: string;
@@ -48,6 +51,7 @@ export default function BrokerChatPage() {
   const router = useRouter();
   const { id } = router.query;
   const { data: session, status: authStatus } = useSession();
+  const { t } = useTranslation("common");
 
   const [conversation, setConversation] = useState<ConversationData | null>(
     null
@@ -157,7 +161,7 @@ export default function BrokerChatPage() {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-body-sm">Loading conversation...</p>
+          <p className="text-body-sm">{t("messages.loading")}</p>
         </div>
       </Layout>
     );
@@ -171,7 +175,7 @@ export default function BrokerChatPage() {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-body-sm">Conversation not found.</p>
+          <p className="text-body-sm">{t("messages.notFound")}</p>
         </div>
       </Layout>
     );
@@ -205,7 +209,7 @@ export default function BrokerChatPage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-semibold font-body text-forest-800 truncate">
-                Borrower
+                {t("messages.borrowerLabel")}
               </h2>
               <p className="text-body-sm truncate">
                 {displayLabel(conversation.request?.requestType)} in{" "}
@@ -232,7 +236,7 @@ export default function BrokerChatPage() {
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-body-sm text-sage-400">
-                No messages yet. Start the conversation below.
+                {t("messages.noMessages")}
               </p>
             </div>
           ) : (
@@ -292,7 +296,7 @@ export default function BrokerChatPage() {
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={t("messages.typeMessage")}
             className="input-field flex-1"
             disabled={sending}
           />
@@ -301,10 +305,21 @@ export default function BrokerChatPage() {
             disabled={sending || !newMessage.trim()}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {sending ? "Sending..." : "Send"}
+            {sending ? t("messages.sending") : t("messages.send")}
           </button>
         </form>
       </div>
     </Layout>
   );
 }
+
+export const getStaticPaths: GetStaticPaths = async () => ({
+  paths: [],
+  fallback: "blocking",
+});
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

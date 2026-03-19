@@ -3,6 +3,8 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 const ROLE_REDIRECTS: Record<string, string> = {
   BORROWER: "/borrower/request/new",
@@ -11,6 +13,7 @@ const ROLE_REDIRECTS: Record<string, string> = {
 };
 
 export default function LoginPage() {
+  const { t } = useTranslation("common");
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -66,9 +69,9 @@ export default function LoginPage() {
           {/* Card */}
           <div className="card-elevated opacity-0 animate-fade-in-up stagger-1">
             <div className="mb-8 text-center">
-              <h1 className="heading-lg mb-2">Welcome Back</h1>
+              <h1 className="heading-lg mb-2">{t("auth.loginTitle")}</h1>
               <p className="text-body-sm">
-                Sign in to your MortgageMatch account
+                {t("auth.loginSubtitle")}
               </p>
             </div>
 
@@ -81,7 +84,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="opacity-0 animate-fade-in-up stagger-2">
                 <label htmlFor="email" className="label-text">
-                  Email
+                  {t("auth.email")}
                 </label>
                 <input
                   id="email"
@@ -96,7 +99,7 @@ export default function LoginPage() {
 
               <div className="opacity-0 animate-fade-in-up stagger-3">
                 <label htmlFor="password" className="label-text">
-                  Password
+                  {t("auth.password")}
                 </label>
                 <input
                   id="password"
@@ -115,19 +118,19 @@ export default function LoginPage() {
                   disabled={isLoading}
                   className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading ? t("auth.loggingIn") : t("auth.loginBtn")}
                 </button>
               </div>
             </form>
 
             <div className="mt-8 border-t border-cream-300 pt-6 opacity-0 animate-fade-in-up stagger-5">
               <p className="text-center text-body-sm">
-                Don&apos;t have an account?{" "}
+                {t("auth.noAccount")}{" "}
                 <Link
                   href="/signup"
                   className="font-semibold text-forest-700 underline decoration-amber-400 decoration-2 underline-offset-2 transition-colors hover:text-forest-600"
                 >
-                  Create one
+                  {t("auth.signUpLink")}
                 </Link>
               </p>
             </div>
@@ -137,3 +140,9 @@ export default function LoginPage() {
     </Layout>
   );
 }
+
+export const getStaticProps = async ({ locale }: { locale: string }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+  },
+});

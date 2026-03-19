@@ -1,7 +1,9 @@
 import React from "react";
 import Link from "next/link";
+import { useTranslation } from "next-i18next";
 
 export default function Footer() {
+  const { t } = useTranslation("common");
   return (
     <footer className="border-t border-cream-300 bg-forest-800">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -19,24 +21,24 @@ export default function Footer() {
               </span>
             </div>
             <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-cream-400/70">
-              Connecting Canadian homebuyers with trusted mortgage brokers, anonymously and securely.
+              {t("footer.tagline")}
             </p>
           </div>
 
           {/* Platform */}
           <div>
             <h4 className="font-body text-xs font-semibold uppercase tracking-widest text-cream-400/50">
-              Platform
+              {t("footer.platform")}
             </h4>
             <nav className="mt-4 flex flex-col gap-3">
               <Link href="/how-it-works" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                How It Works
+                {t("nav.howItWorks")}
               </Link>
               <Link href="/for-brokers" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                For Brokers
+                {t("nav.forBrokers")}
               </Link>
               <Link href="/pricing" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                Pricing
+                {t("nav.pricing")}
               </Link>
             </nav>
           </div>
@@ -44,17 +46,17 @@ export default function Footer() {
           {/* Legal */}
           <div>
             <h4 className="font-body text-xs font-semibold uppercase tracking-widest text-cream-400/50">
-              Legal
+              {t("footer.legal")}
             </h4>
             <nav className="mt-4 flex flex-col gap-3">
               <Link href="/privacy" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                Privacy & Trust
+                {t("footer.privacyTrust")}
               </Link>
               <Link href="/terms" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                Terms of Service
+                {t("footer.terms")}
               </Link>
               <Link href="/contact" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                Contact Us
+                {t("footer.contact")}
               </Link>
             </nav>
           </div>
@@ -62,14 +64,14 @@ export default function Footer() {
           {/* Get started */}
           <div>
             <h4 className="font-body text-xs font-semibold uppercase tracking-widest text-cream-400/50">
-              Get Started
+              {t("footer.getStarted")}
             </h4>
             <nav className="mt-4 flex flex-col gap-3">
               <Link href="/signup" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                Create Account
+                {t("footer.createAccount")}
               </Link>
               <Link href="/login" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                Sign In
+                {t("footer.signIn")}
               </Link>
             </nav>
           </div>
@@ -78,10 +80,10 @@ export default function Footer() {
         <div className="mt-14 border-t border-cream-100/10 pt-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="font-body text-xs text-cream-400/50">
-              &copy; {new Date().getFullYear()} MortgageMatch. All rights reserved.
+              &copy; {new Date().getFullYear()} {t("footer.copyright")}
             </p>
             <p className="max-w-md text-center font-body text-xs text-cream-400/40 sm:text-right">
-              MortgageMatch is a connection platform. We do not provide mortgage advice or lending services.
+              {t("footer.disclaimer")}
             </p>
           </div>
         </div>
