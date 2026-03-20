@@ -1,15 +1,13 @@
-import { useState, FormEvent } from "react";
-import { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import { getServerSession } from "next-auth/next";
+import { useState, useEffect, FormEvent, useCallback } from "react";
+import { GetServerSideProps } from "next";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
-import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
-import type { RequestWithIntroductions, CreateRequestInput } from "@/types";
+import type { CreateRequestInput } from "@/types";
 
 const PROVINCES = [
   "Alberta",
@@ -83,58 +81,26 @@ function DetailRow({ label, value }: DetailRowProps) {
   );
 }
 
-type Props = {
-  request: RequestWithIntroductions;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RequestData = any;
+
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  return {
+    props: {
+      ...(await serverSideTranslations(ctx.locale ?? "en", ["common"])),
+    },
+  };
 };
 
-export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
-  const session = await getServerSession(ctx.req, ctx.res, authOptions);
-  if (!session?.user) {
-    return { redirect: { destination: "/login", permanent: false } };
-  }
-
-  const id = ctx.params?.id as string;
-
-  try {
-    const request = await prisma.borrowerRequest.findUnique({
-      where: { id },
-      include: {
-        introductions: {
-          include: {
-            broker: {
-              include: {
-                user: { select: { name: true, email: true } },
-              },
-            },
-          },
-        },
-        _count: { select: { introductions: true } },
-      },
-    });
-
-    if (!request || request.borrowerId !== session.user.id) {
-      return { notFound: true };
-    }
-
-    return {
-      props: {
-        request: JSON.parse(JSON.stringify(request)),
-        ...(await serverSideTranslations(ctx.locale ?? "en", ["common"])),
-      },
-    };
-  } catch (error) {
-    console.error("Error loading request detail:", error instanceof Error ? error.message : error, error instanceof Error ? error.stack : "");
-    return { notFound: true };
-  }
-};
-
-export default function RequestDetail({
-  request: initialRequest,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function RequestDetail() {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const [request, setRequest] = useState(initialRequest);
-  const introCount = request._count.introductions;
+  const { data: session, status: authStatus } = useSession();
+  const { id } = router.query;
+
+  const [request, setRequest] = useState<RequestData>(null);
+  const [loading, setLoading] = useState(true);
+  const [introCount, setIntroCount] = useState(0);
 
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -144,29 +110,64 @@ export default function RequestDetail({
   const [successMsg, setSuccessMsg] = useState("");
 
   const [form, setForm] = useState<CreateRequestInput>({
-    mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
-    requestType: request.requestType,
-    province: request.province,
-    city: request.city || "",
-    propertyType: request.propertyType,
-    priceRangeMin: request.priceRangeMin ?? undefined,
-    priceRangeMax: request.priceRangeMax ?? undefined,
-    downPaymentPercent: request.downPaymentPercent || "",
-    incomeRangeMin: request.incomeRangeMin ?? undefined,
-    incomeRangeMax: request.incomeRangeMax ?? undefined,
-    employmentType: request.employmentType || "",
-    creditScoreBand: request.creditScoreBand || "",
-    debtRangeMin: request.debtRangeMin ?? undefined,
-    debtRangeMax: request.debtRangeMax ?? undefined,
-    mortgageAmountMin: request.mortgageAmountMin ?? undefined,
-    mortgageAmountMax: request.mortgageAmountMax ?? undefined,
-    preferredTerm: request.preferredTerm || "",
-    preferredType: request.preferredType || "",
-    closingTimeline: request.closingTimeline || "",
-    notes: request.notes || "",
+    mortgageCategory: "RESIDENTIAL",
+    requestType: "PURCHASE",
+    province: "",
+    city: "",
+    propertyType: "CONDO",
   });
 
-  const isOpen = request.status === "OPEN";
+  const fetchRequest = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/requests/${id}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          router.replace("/borrower/dashboard", undefined, { locale: router.locale });
+          return;
+        }
+        throw new Error("Failed to load request");
+      }
+      const data = await res.json();
+      setRequest(data);
+      setIntroCount(data._count?.introductions ?? data.introductions?.length ?? 0);
+      setForm({
+        mortgageCategory: data.mortgageCategory || "RESIDENTIAL",
+        requestType: data.requestType,
+        province: data.province,
+        city: data.city || "",
+        propertyType: data.propertyType,
+        priceRangeMin: data.priceRangeMin ?? undefined,
+        priceRangeMax: data.priceRangeMax ?? undefined,
+        downPaymentPercent: data.downPaymentPercent || "",
+        incomeRangeMin: data.incomeRangeMin ?? undefined,
+        incomeRangeMax: data.incomeRangeMax ?? undefined,
+        employmentType: data.employmentType || "",
+        creditScoreBand: data.creditScoreBand || "",
+        debtRangeMin: data.debtRangeMin ?? undefined,
+        debtRangeMax: data.debtRangeMax ?? undefined,
+        mortgageAmountMin: data.mortgageAmountMin ?? undefined,
+        mortgageAmountMax: data.mortgageAmountMax ?? undefined,
+        preferredTerm: data.preferredTerm || "",
+        preferredType: data.preferredType || "",
+        closingTimeline: data.closingTimeline || "",
+        notes: data.notes || "",
+      });
+    } catch {
+      setError("Failed to load request");
+    } finally {
+      setLoading(false);
+    }
+  }, [id, router]);
+
+  useEffect(() => {
+    if (authStatus === "loading") return;
+    if (!session) {
+      router.replace("/login", undefined, { locale: router.locale });
+      return;
+    }
+    fetchRequest();
+  }, [authStatus, session, fetchRequest, router]);
 
   function updateField<K extends keyof CreateRequestInput>(
     key: K,
@@ -183,28 +184,30 @@ export default function RequestDetail({
   function handleCancelEdit() {
     setIsEditing(false);
     setError("");
-    setForm({
-      mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
-      requestType: request.requestType,
-      province: request.province,
-      city: request.city || "",
-      propertyType: request.propertyType,
-      priceRangeMin: request.priceRangeMin ?? undefined,
-      priceRangeMax: request.priceRangeMax ?? undefined,
-      downPaymentPercent: request.downPaymentPercent || "",
-      incomeRangeMin: request.incomeRangeMin ?? undefined,
-      incomeRangeMax: request.incomeRangeMax ?? undefined,
-      employmentType: request.employmentType || "",
-      creditScoreBand: request.creditScoreBand || "",
-      debtRangeMin: request.debtRangeMin ?? undefined,
-      debtRangeMax: request.debtRangeMax ?? undefined,
-      mortgageAmountMin: request.mortgageAmountMin ?? undefined,
-      mortgageAmountMax: request.mortgageAmountMax ?? undefined,
-      preferredTerm: request.preferredTerm || "",
-      preferredType: request.preferredType || "",
-      closingTimeline: request.closingTimeline || "",
-      notes: request.notes || "",
-    });
+    if (request) {
+      setForm({
+        mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
+        requestType: request.requestType,
+        province: request.province,
+        city: request.city || "",
+        propertyType: request.propertyType,
+        priceRangeMin: request.priceRangeMin ?? undefined,
+        priceRangeMax: request.priceRangeMax ?? undefined,
+        downPaymentPercent: request.downPaymentPercent || "",
+        incomeRangeMin: request.incomeRangeMin ?? undefined,
+        incomeRangeMax: request.incomeRangeMax ?? undefined,
+        employmentType: request.employmentType || "",
+        creditScoreBand: request.creditScoreBand || "",
+        debtRangeMin: request.debtRangeMin ?? undefined,
+        debtRangeMax: request.debtRangeMax ?? undefined,
+        mortgageAmountMin: request.mortgageAmountMin ?? undefined,
+        mortgageAmountMax: request.mortgageAmountMax ?? undefined,
+        preferredTerm: request.preferredTerm || "",
+        preferredType: request.preferredType || "",
+        closingTimeline: request.closingTimeline || "",
+        notes: request.notes || "",
+      });
+    }
   }
 
   async function handleSaveEdit(e: FormEvent) {
@@ -225,7 +228,7 @@ export default function RequestDetail({
       }
 
       const updated = await res.json();
-      setRequest((prev) => ({ ...prev, ...updated }));
+      setRequest((prev: RequestData) => ({ ...prev, ...updated }));
       setIsEditing(false);
       setSuccessMsg(t("request.editSuccess"));
       setTimeout(() => setSuccessMsg(""), 4000);
@@ -265,6 +268,18 @@ export default function RequestDetail({
         : "border-cream-300 bg-white hover:border-sage-300 text-forest-700"
     }`;
 
+  if (loading || !request) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest-600" />
+        </div>
+      </Layout>
+    );
+  }
+
+  const isOpen = request.status === "OPEN";
+
   return (
     <Layout>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
@@ -302,7 +317,7 @@ export default function RequestDetail({
               <StatusBadge status={request.status} />
             </div>
             <p className="text-body-sm">
-              Created {formatDate(request.createdAt as unknown as string)}
+              Created {formatDate(request.createdAt)}
             </p>
           </div>
 
