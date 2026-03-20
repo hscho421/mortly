@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import Pagination from "@/components/Pagination";
 import { downloadCSV } from "@/lib/csvExport";
 
 interface UserRow {
@@ -28,6 +29,13 @@ interface UserRow {
     conversations: number;
     reviews: number;
   };
+}
+
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 const ROLE_BADGE: Record<string, string> = {
@@ -61,10 +69,20 @@ export default function AdminUsers() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
-  const [allUsers, setAllUsers] = useState<UserRow[]>([]);
+
+  // Paginated data
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // Search with debounce
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Filters & page
   const [filterRole, setFilterRole] = useState("ALL");
+  const [page, setPage] = useState(1);
+
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<{ id: string; text: string; ok: boolean } | null>(null);
@@ -99,50 +117,57 @@ export default function AdminUsers() {
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
-  // Fetch all users once on mount
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset to page 1 when search or role filter changes
+  useEffect(() => {
+    setPage(1);
+    setSelectedIds(new Set());
+  }, [debouncedSearch, filterRole]);
+
+  // Fetch paginated users
+  const fetchUsers = useCallback(async () => {
+    if (status === "loading") return;
+    if (!session || session.user.role !== "ADMIN") return;
+
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "25",
+        search: debouncedSearch,
+        role: filterRole,
+      });
+      const res = await fetch(`/api/admin/users?${params}`);
+      if (res.ok) {
+        const json = await res.json();
+        setUsers(json.data);
+        setPagination(json.pagination);
+      }
+    } catch {
+      // Network error
+    } finally {
+      setLoading(false);
+    }
+  }, [session, status, page, debouncedSearch, filterRole]);
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "ADMIN") {
       router.replace("/login", undefined, { locale: router.locale });
       return;
     }
+    fetchUsers();
+  }, [fetchUsers, session, status, router]);
 
-    const fetchAllUsers = async () => {
-      try {
-        const res = await fetch("/api/admin/users");
-        if (res.ok) {
-          setAllUsers(await res.json());
-        }
-      } catch {
-        // Network error
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAllUsers();
-  }, [session, status, router]);
-
-  // Client-side filtering
-  const users = useMemo(() => {
-    let filtered = allUsers;
-
-    if (filterRole !== "ALL") {
-      filtered = filtered.filter((u) => u.role === filterRole);
-    }
-
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      filtered = filtered.filter(
-        (u) =>
-          (u.name || "").toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          u.publicId.includes(q)
-      );
-    }
-
-    return filtered;
-  }, [allUsers, filterRole, searchQuery]);
+  // Clear selection when page changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page]);
 
   const copyId = (id: string) => {
     navigator.clipboard.writeText(id);
@@ -164,7 +189,7 @@ export default function AdminUsers() {
       const data = await res.json();
 
       if (res.ok) {
-        setAllUsers((prev) =>
+        setUsers((prev) =>
           prev.map((u) => (u.id === userId ? { ...u, status: data.status } : u))
         );
         setActionMessage({ id: userId, text: t("admin.statusUpdated", "Status updated"), ok: true });
@@ -202,7 +227,7 @@ export default function AdminUsers() {
 
       if (res.ok) {
         // Update the user list with new credit count
-        setAllUsers((prev) =>
+        setUsers((prev) =>
           prev.map((u) =>
             u.broker?.id === creditModal.brokerId
               ? { ...u, broker: { ...u.broker!, responseCredits: data.responseCredits } }
@@ -245,21 +270,8 @@ export default function AdminUsers() {
 
       if (res.ok) {
         setInviteMessage({ text: t("admin.adminCreated", "Admin account created successfully"), ok: true });
-        // Add to user list
-        setAllUsers((prev) => [
-          {
-            id: data.id,
-            publicId: data.publicId,
-            email: data.email,
-            name: data.name,
-            role: "ADMIN",
-            status: "ACTIVE",
-            createdAt: new Date().toISOString(),
-            broker: null,
-            _count: { borrowerRequests: 0, conversations: 0, reviews: 0 },
-          },
-          ...prev,
-        ]);
+        // Refresh the current page to include the new user
+        fetchUsers();
         setInviteName("");
         setInviteEmail("");
         setInvitePassword("");
@@ -342,7 +354,7 @@ export default function AdminUsers() {
 
     results.forEach((r) => {
       if (r.status === "fulfilled" && r.value.ok) {
-        setAllUsers((prev) =>
+        setUsers((prev) =>
           prev.map((u) => (u.id === r.value.id ? { ...u, status: r.value.data.status } : u))
         );
       }
@@ -350,6 +362,32 @@ export default function AdminUsers() {
 
     setSelectedIds(new Set());
     setBulkLoading(false);
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const res = await fetch("/api/admin/users?limit=10000");
+      if (!res.ok) return;
+      const json = await res.json();
+      const allUsers: UserRow[] = json.data ?? json;
+      const headers = ["Public ID", "Name", "Email", "Role", "Status", "Joined", "Brokerage", "Tier", "Credits", "Requests", "Conversations"];
+      const rows = allUsers.map((u) => [
+        u.publicId,
+        u.name || "",
+        u.email,
+        u.role,
+        u.status,
+        new Date(u.createdAt).toISOString().slice(0, 10),
+        u.broker?.brokerageName || "",
+        u.broker?.subscriptionTier || "",
+        u.broker ? String(u.broker.responseCredits) : "",
+        String(u._count.borrowerRequests),
+        String(u._count.conversations),
+      ]);
+      downloadCSV("users_export", headers, rows);
+    } catch {
+      // Export failed silently
+    }
   };
 
   if (status === "loading" || loading) {
@@ -384,23 +422,7 @@ export default function AdminUsers() {
             <h1 className="heading-lg">{t("admin.userManagement", "User Management")}</h1>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => {
-                  const headers = ["Public ID", "Name", "Email", "Role", "Status", "Joined", "Brokerage", "Tier", "Credits", "Requests", "Conversations"];
-                  const rows = users.map((u) => [
-                    u.publicId,
-                    u.name || "",
-                    u.email,
-                    u.role,
-                    u.status,
-                    new Date(u.createdAt).toISOString().slice(0, 10),
-                    u.broker?.brokerageName || "",
-                    u.broker?.subscriptionTier || "",
-                    u.broker ? String(u.broker.responseCredits) : "",
-                    String(u._count.borrowerRequests),
-                    String(u._count.conversations),
-                  ]);
-                  downloadCSV("users_export", headers, rows);
-                }}
+                onClick={handleExportCSV}
                 className="btn-secondary !rounded-lg"
               >
                 {t("admin.exportCsv", "Export CSV")}
@@ -432,8 +454,8 @@ export default function AdminUsers() {
                 <input
                   id="search"
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   placeholder={t("admin.searchPlaceholder", "Search by name, email, or ID...")}
                   className="input-field !pl-10"
                 />
@@ -461,7 +483,7 @@ export default function AdminUsers() {
         {/* Results count & bulk actions */}
         <div className="flex items-center justify-between mb-4 animate-fade-in">
           <p className="text-body-sm">
-            {t("admin.showingUsers", "Showing {{count}} user(s)").replace("{{count}}", String(users.length))}
+            {t("admin.showingUsers", "Showing {{count}} user(s)").replace("{{count}}", String(pagination.total))}
           </p>
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3">
@@ -713,6 +735,15 @@ export default function AdminUsers() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          onPageChange={(p) => setPage(p)}
+        />
       </div>
 
       {/* Credit Adjustment Modal */}

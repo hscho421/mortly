@@ -18,19 +18,60 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const requests = await prisma.borrowerRequest.findMany({
-        include: {
-          borrower: {
-            select: { id: true, name: true, email: true, status: true },
-          },
-          _count: {
-            select: { introductions: true, conversations: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+      const { search, status, type, page: pageStr, limit: limitStr } = req.query;
 
-      return res.status(200).json(requests);
+      const page = Math.max(1, parseInt(pageStr as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 25));
+      const skip = (page - 1) * limit;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: any = {};
+
+      if (status && status !== "ALL") {
+        where.status = status;
+      }
+
+      if (type && type !== "ALL") {
+        where.requestType = type;
+      }
+
+      if (search && typeof search === "string" && search.trim()) {
+        const s = search.trim();
+        where.OR = [
+          { id: { contains: s } },
+          { province: { contains: s, mode: "insensitive" } },
+          { city: { contains: s, mode: "insensitive" } },
+          { borrower: { name: { contains: s, mode: "insensitive" } } },
+        ];
+      }
+
+      const [requests, total] = await Promise.all([
+        prisma.borrowerRequest.findMany({
+          where,
+          include: {
+            borrower: {
+              select: { id: true, name: true, email: true, status: true },
+            },
+            _count: {
+              select: { introductions: true, conversations: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.borrowerRequest.count({ where }),
+      ]);
+
+      return res.status(200).json({
+        data: requests,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     }
 
     return res.status(405).json({ error: "Method not allowed" });

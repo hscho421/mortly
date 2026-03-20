@@ -18,27 +18,42 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const { action, limit } = req.query;
+      const { action, page: pageStr, limit: limitStr } = req.query;
 
-      const where: Record<string, unknown> = {};
+      const page = Math.max(1, parseInt(pageStr as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 25));
+      const skip = (page - 1) * limit;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: any = {};
       if (action && action !== "ALL") {
         where.action = action;
       }
 
-      const take = Math.min(parseInt(limit as string, 10) || 50, 200);
-
-      const actions = await prisma.adminAction.findMany({
-        where,
-        include: {
-          admin: {
-            select: { id: true, name: true, email: true },
+      const [actions, total] = await Promise.all([
+        prisma.adminAction.findMany({
+          where,
+          include: {
+            admin: {
+              select: { id: true, name: true, email: true },
+            },
           },
-        },
-        orderBy: { createdAt: "desc" },
-        take,
-      });
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.adminAction.count({ where }),
+      ]);
 
-      return res.status(200).json(actions);
+      return res.status(200).json({
+        data: actions,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     }
 
     return res.status(405).json({ error: "Method not allowed" });

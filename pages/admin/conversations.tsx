@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import Pagination from "@/components/Pagination";
 
 interface ConversationRow {
   id: string;
@@ -44,6 +45,13 @@ interface ConversationRow {
   review: { id: string; rating: number } | null;
 }
 
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 const STATUS_BADGE: Record<string, string> = {
   ACTIVE: "bg-forest-100 text-forest-700",
   CLOSED: "bg-sage-200 text-sage-700",
@@ -70,10 +78,13 @@ export default function AdminConversations() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
-  const [allConversations, setAllConversations] = useState<ConversationRow[]>([]);
+  const [conversations, setConversations] = useState<ConversationRow[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [page, setPage] = useState(1);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<{ id: string; text: string; ok: boolean } | null>(null);
 
@@ -81,51 +92,48 @@ export default function AdminConversations() {
   const [closeModal, setCloseModal] = useState<{ id: string } | null>(null);
   const [closeReason, setCloseReason] = useState("");
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset page to 1 when search or filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filterStatus]);
+
+  const fetchConversations = useCallback(async () => {
+    if (!session || session.user.role !== "ADMIN") return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "25",
+        search: debouncedSearch,
+        status: filterStatus,
+      });
+      const res = await fetch(`/api/admin/conversations?${params}`);
+      if (res.ok) {
+        const json = await res.json();
+        setConversations(json.data);
+        setPagination(json.pagination);
+      }
+    } catch {
+      // Network error
+    } finally {
+      setLoading(false);
+    }
+  }, [session, page, debouncedSearch, filterStatus]);
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "ADMIN") {
       router.replace("/login", undefined, { locale: router.locale });
       return;
     }
-
-    const fetchConversations = async () => {
-      try {
-        const res = await fetch("/api/admin/conversations");
-        if (res.ok) {
-          setAllConversations(await res.json());
-        }
-      } catch {
-        // Network error
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchConversations();
-  }, [session, status, router]);
-
-  const conversations = useMemo(() => {
-    let filtered = allConversations;
-
-    if (filterStatus !== "ALL") {
-      filtered = filtered.filter((c) => c.status === filterStatus);
-    }
-
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      filtered = filtered.filter(
-        (c) =>
-          c.id.toLowerCase().includes(q) ||
-          (c.borrower.name || "").toLowerCase().includes(q) ||
-          c.borrower.email.toLowerCase().includes(q) ||
-          (c.broker.user.name || "").toLowerCase().includes(q) ||
-          c.broker.user.email.toLowerCase().includes(q) ||
-          c.broker.brokerageName.toLowerCase().includes(q)
-      );
-    }
-
-    return filtered;
-  }, [allConversations, filterStatus, searchQuery]);
+  }, [session, status, router, fetchConversations]);
 
   const handleClose = async () => {
     if (!closeModal) return;
@@ -139,12 +147,10 @@ export default function AdminConversations() {
       });
 
       if (res.ok) {
-        setAllConversations((prev) =>
-          prev.map((c) => (c.id === closeModal.id ? { ...c, status: "CLOSED" } : c))
-        );
         setActionMessage({ id: closeModal.id, text: t("admin.conversationClosed", "Conversation closed"), ok: true });
         setCloseModal(null);
         setCloseReason("");
+        fetchConversations();
       } else {
         const data = await res.json();
         setActionMessage({ id: closeModal.id, text: data.error, ok: false });
@@ -203,8 +209,8 @@ export default function AdminConversations() {
                 <input
                   id="searchConvo"
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   placeholder={t("admin.searchConversationsPlaceholder", "Search by participant name, email, or brokerage...")}
                   className="input-field !pl-10"
                 />
@@ -230,7 +236,7 @@ export default function AdminConversations() {
 
         {/* Results count */}
         <p className="text-body-sm mb-4 animate-fade-in">
-          {t("admin.showingConversations", "Showing {{count}} conversation(s)").replace("{{count}}", String(conversations.length))}
+          {t("admin.showingConversations", "Showing {{count}} conversation(s)").replace("{{count}}", String(pagination.total))}
         </p>
 
         {/* Conversations Table */}
@@ -373,6 +379,15 @@ export default function AdminConversations() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* Close Conversation Modal */}

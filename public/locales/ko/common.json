@@ -495,6 +495,7 @@
     "manual": "관리자 매뉴얼",
     "manualDesc": "포털 사용 가이드",
     "exportCsv": "CSV 내보내기",
+    "paginationShowing": "{{total}}개 중 {{start}}-{{end}} 표시",
     "selected": "선택됨",
     "bulkSuspend": "일괄 정지",
     "bulkBan": "일괄 차단",

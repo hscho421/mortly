@@ -495,6 +495,7 @@
     "manual": "Admin Manual",
     "manualDesc": "Portal usage guide",
     "exportCsv": "Export CSV",
+    "paginationShowing": "Showing {{start}}-{{end}} of {{total}}",
     "selected": "selected",
     "bulkSuspend": "Suspend All",
     "bulkBan": "Ban All",

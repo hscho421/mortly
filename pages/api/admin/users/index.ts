@@ -18,9 +18,14 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const { search, role } = req.query;
+      const { search, role, page: pageStr, limit: limitStr } = req.query;
 
-      const where: Record<string, unknown> = {};
+      const page = Math.max(1, parseInt(pageStr as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 25));
+      const skip = (page - 1) * limit;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: any = {};
 
       if (role && role !== "ALL") {
         where.role = role;
@@ -34,37 +39,50 @@ export default async function handler(
         ];
       }
 
-      const users = await prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          publicId: true,
-          email: true,
-          name: true,
-          role: true,
-          status: true,
-          createdAt: true,
-          broker: {
-            select: {
-              id: true,
-              verificationStatus: true,
-              subscriptionTier: true,
-              responseCredits: true,
-              brokerageName: true,
+      const [users, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          select: {
+            id: true,
+            publicId: true,
+            email: true,
+            name: true,
+            role: true,
+            status: true,
+            createdAt: true,
+            broker: {
+              select: {
+                id: true,
+                verificationStatus: true,
+                subscriptionTier: true,
+                responseCredits: true,
+                brokerageName: true,
+              },
+            },
+            _count: {
+              select: {
+                borrowerRequests: true,
+                conversations: true,
+                reviews: true,
+              },
             },
           },
-          _count: {
-            select: {
-              borrowerRequests: true,
-              conversations: true,
-              reviews: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.user.count({ where }),
+      ]);
 
-      return res.status(200).json(users);
+      return res.status(200).json({
+        data: users,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     }
 
     return res.status(405).json({ error: "Method not allowed" });

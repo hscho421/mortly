@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
@@ -6,6 +6,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
+import Pagination from "@/components/Pagination";
 
 type VerificationStatus = "PENDING" | "VERIFIED" | "REJECTED";
 type SubscriptionTier = "BASIC" | "PRO" | "PREMIUM";
@@ -21,6 +22,12 @@ interface BrokerRow {
   rating: number | null;
 }
 
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 const TIER_BADGE: Record<SubscriptionTier, string> = {
   BASIC: "bg-cream-200 text-forest-600 ring-1 ring-inset ring-cream-400/30",
@@ -38,6 +45,43 @@ export default function AdminBrokers() {
   const [filterStatus, setFilterStatus] = useState<
     VerificationStatus | "ALL"
   >("ALL");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    page: 1,
+    limit: 25,
+    total: 0,
+    totalPages: 1,
+  });
+
+  const fetchBrokers = useCallback(async (currentPage: number, statusFilter: VerificationStatus | "ALL") => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/brokers?page=${currentPage}&limit=25&status=${statusFilter}`
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setBrokers(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          json.data.map((b: any) => ({
+            id: b.id,
+            userName: b.user?.name ?? "Unknown",
+            brokerageName: b.brokerageName,
+            province: b.province,
+            licenseNumber: b.licenseNumber,
+            verificationStatus: b.verificationStatus,
+            subscriptionTier: b.subscriptionTier,
+            rating: b.rating,
+          }))
+        );
+        setPagination(json.pagination);
+      }
+    } catch {
+      // Network error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -46,34 +90,17 @@ export default function AdminBrokers() {
       return;
     }
 
-    const fetchBrokers = async () => {
-      try {
-        const res = await fetch("/api/admin/brokers");
-        if (res.ok) {
-          const data = await res.json();
-          setBrokers(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data.map((b: any) => ({
-              id: b.id,
-              userName: b.user?.name ?? "Unknown",
-              brokerageName: b.brokerageName,
-              province: b.province,
-              licenseNumber: b.licenseNumber,
-              verificationStatus: b.verificationStatus,
-              subscriptionTier: b.subscriptionTier,
-              rating: b.rating,
-            }))
-          );
-        }
-      } catch {
-        // Network error
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchBrokers(page, filterStatus);
+  }, [session, status, router, page, filterStatus, fetchBrokers]);
 
-    fetchBrokers();
-  }, [session, status, router]);
+  const handleFilterChange = (newStatus: VerificationStatus | "ALL") => {
+    setFilterStatus(newStatus);
+    setPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   const handleStatusChange = async (
     brokerId: string,
@@ -88,13 +115,7 @@ export default function AdminBrokers() {
       });
 
       if (res.ok) {
-        setBrokers((prev) =>
-          prev.map((b) =>
-            b.id === brokerId
-              ? { ...b, verificationStatus: newStatus }
-              : b
-          )
-        );
+        await fetchBrokers(page, filterStatus);
       }
     } catch {
       // Network error - silently fail for now
@@ -102,11 +123,6 @@ export default function AdminBrokers() {
       setActionLoading(null);
     }
   };
-
-  const filteredBrokers =
-    filterStatus === "ALL"
-      ? brokers
-      : brokers.filter((b) => b.verificationStatus === filterStatus);
 
   if (status === "loading" || loading) {
     return (
@@ -141,7 +157,7 @@ export default function AdminBrokers() {
               id="statusFilter"
               value={filterStatus}
               onChange={(e) =>
-                setFilterStatus(
+                handleFilterChange(
                   e.target.value as VerificationStatus | "ALL"
                 )
               }
@@ -188,7 +204,7 @@ export default function AdminBrokers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-cream-200 bg-white">
-                {filteredBrokers.map((broker) => (
+                {brokers.map((broker) => (
                   <tr key={broker.id} className="hover:bg-cream-50 transition-colors">
                     <td className="whitespace-nowrap px-5 py-4 font-body text-sm font-semibold text-forest-800">
                       {broker.userName}
@@ -264,7 +280,7 @@ export default function AdminBrokers() {
                     </td>
                   </tr>
                 ))}
-                {filteredBrokers.length === 0 && (
+                {brokers.length === 0 && (
                   <tr>
                     <td
                       colSpan={8}
@@ -278,6 +294,14 @@ export default function AdminBrokers() {
             </table>
           </div>
         </div>
+
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          onPageChange={handlePageChange}
+        />
       </div>
     </Layout>
   );

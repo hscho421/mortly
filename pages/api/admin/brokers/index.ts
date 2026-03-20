@@ -18,16 +18,43 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const brokers = await prisma.broker.findMany({
-        include: {
-          user: {
-            select: { name: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+      const { status, page: pageStr, limit: limitStr } = req.query;
 
-      return res.status(200).json(brokers);
+      const page = Math.max(1, parseInt(pageStr as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 25));
+      const skip = (page - 1) * limit;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: any = {};
+
+      if (status && status !== "ALL") {
+        where.verificationStatus = status;
+      }
+
+      const [brokers, total] = await Promise.all([
+        prisma.broker.findMany({
+          where,
+          include: {
+            user: {
+              select: { name: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.broker.count({ where }),
+      ]);
+
+      return res.status(200).json({
+        data: brokers,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     }
 
     return res.status(405).json({ error: "Method not allowed" });

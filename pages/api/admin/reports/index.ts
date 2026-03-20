@@ -18,16 +18,56 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const reports = await prisma.report.findMany({
-        include: {
-          reporter: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+      const { search, status, targetType, page: pageStr, limit: limitStr } = req.query;
 
-      return res.status(200).json(reports);
+      const page = Math.max(1, parseInt(pageStr as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 25));
+      const skip = (page - 1) * limit;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: any = {};
+
+      if (status && status !== "ALL") {
+        where.status = status;
+      }
+
+      if (targetType && targetType !== "ALL") {
+        where.targetType = targetType;
+      }
+
+      if (search && typeof search === "string" && search.trim()) {
+        const s = search.trim();
+        where.OR = [
+          { reason: { contains: s, mode: "insensitive" } },
+          { targetId: { contains: s } },
+          { reporter: { name: { contains: s, mode: "insensitive" } } },
+        ];
+      }
+
+      const [reports, total] = await Promise.all([
+        prisma.report.findMany({
+          where,
+          include: {
+            reporter: {
+              select: { id: true, name: true, email: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.report.count({ where }),
+      ]);
+
+      return res.status(200).json({
+        data: reports,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     }
 
     return res.status(405).json({ error: "Method not allowed" });

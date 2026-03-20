@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import Pagination from "@/components/Pagination";
 import { downloadCSV } from "@/lib/csvExport";
 
 type ReportStatus = "OPEN" | "REVIEWED" | "RESOLVED" | "DISMISSED";
@@ -25,6 +26,13 @@ interface ReportRow {
     name: string | null;
     email: string;
   };
+}
+
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -65,12 +73,22 @@ export default function AdminReports() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
-  const [allReports, setAllReports] = useState<ReportRow[]>([]);
+
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 0 });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<ReportStatus | "ALL">("ALL");
   const [filterTarget, setFilterTarget] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
+
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Notes modal
   const [notesModal, setNotesModal] = useState<{ id: string; currentNotes: string | null; currentStatus: ReportStatus } | null>(null);
@@ -79,54 +97,50 @@ export default function AdminReports() {
   const [notesSubmitting, setNotesSubmitting] = useState(false);
   const [notesMessage, setNotesMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
+  const fetchReports = useCallback(async () => {
+    if (!session || session.user.role !== "ADMIN") return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "25",
+      });
+      if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+      if (filterStatus !== "ALL") params.set("status", filterStatus);
+      if (filterTarget !== "ALL") params.set("targetType", filterTarget);
+
+      const res = await fetch(`/api/admin/reports?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        setReports(json.data);
+        setPagination(json.pagination);
+      }
+    } catch {
+      // Network error
+    } finally {
+      setLoading(false);
+    }
+  }, [session, page, debouncedSearch, filterStatus, filterTarget]);
+
+  // Auth guard
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "ADMIN") {
       router.replace("/login", undefined, { locale: router.locale });
-      return;
     }
-
-    const fetchReports = async () => {
-      try {
-        const res = await fetch("/api/admin/reports");
-        if (res.ok) {
-          setAllReports(await res.json());
-        }
-      } catch {
-        // Network error
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchReports();
   }, [session, status, router]);
 
-  const reports = useMemo(() => {
-    let filtered = allReports;
+  // Fetch on page/filter changes
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session || session.user.role !== "ADMIN") return;
+    fetchReports();
+  }, [fetchReports, session, status]);
 
-    if (filterStatus !== "ALL") {
-      filtered = filtered.filter((r) => r.status === filterStatus);
-    }
-
-    if (filterTarget !== "ALL") {
-      filtered = filtered.filter((r) => r.targetType === filterTarget);
-    }
-
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      filtered = filtered.filter(
-        (r) =>
-          r.id.toLowerCase().includes(q) ||
-          (r.reporter.name || "").toLowerCase().includes(q) ||
-          r.reporter.email.toLowerCase().includes(q) ||
-          r.reason.toLowerCase().includes(q) ||
-          r.targetId.toLowerCase().includes(q)
-      );
-    }
-
-    return filtered;
-  }, [allReports, filterStatus, filterTarget, searchQuery]);
+  // Reset to page 1 when filters/search change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filterStatus, filterTarget]);
 
   const handleStatusChange = async (reportId: string, newStatus: ReportStatus) => {
     setActionLoading(reportId);
@@ -138,10 +152,7 @@ export default function AdminReports() {
       });
 
       if (res.ok) {
-        const updated = await res.json();
-        setAllReports((prev) =>
-          prev.map((r) => (r.id === reportId ? { ...r, status: updated.status, resolvedAt: updated.resolvedAt } : r))
-        );
+        await fetchReports();
       }
     } catch {
       // error
@@ -166,18 +177,11 @@ export default function AdminReports() {
       });
 
       if (res.ok) {
-        const updated = await res.json();
-        setAllReports((prev) =>
-          prev.map((r) =>
-            r.id === notesModal.id
-              ? { ...r, adminNotes: updated.adminNotes, status: updated.status, resolvedAt: updated.resolvedAt }
-              : r
-          )
-        );
         setNotesMessage({ text: t("admin.notesSaved", "Notes saved successfully"), ok: true });
-        setTimeout(() => {
+        setTimeout(async () => {
           setNotesModal(null);
           setNotesMessage(null);
+          await fetchReports();
         }, 1200);
       } else {
         const data = await res.json();
@@ -219,20 +223,34 @@ export default function AdminReports() {
           <div className="flex items-center justify-between">
             <h1 className="heading-lg">{t("admin.reports")}</h1>
             <button
-              onClick={() => {
-                const headers = ["ID", "Reporter", "Target Type", "Target ID", "Reason", "Status", "Admin Notes", "Created", "Resolved"];
-                const rows = reports.map((r) => [
-                  r.id,
-                  r.reporter.name || r.reporter.email,
-                  r.targetType,
-                  r.targetId,
-                  r.reason,
-                  r.status,
-                  r.adminNotes || "",
-                  new Date(r.createdAt).toISOString().slice(0, 10),
-                  r.resolvedAt ? new Date(r.resolvedAt).toISOString().slice(0, 10) : "",
-                ]);
-                downloadCSV("reports_export", headers, rows);
+              onClick={async () => {
+                try {
+                  const params = new URLSearchParams({ limit: "10000" });
+                  if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+                  if (filterStatus !== "ALL") params.set("status", filterStatus);
+                  if (filterTarget !== "ALL") params.set("targetType", filterTarget);
+
+                  const res = await fetch(`/api/admin/reports?${params.toString()}`);
+                  if (!res.ok) return;
+                  const json = await res.json();
+                  const allReports: ReportRow[] = json.data;
+
+                  const headers = ["ID", "Reporter", "Target Type", "Target ID", "Reason", "Status", "Admin Notes", "Created", "Resolved"];
+                  const rows = allReports.map((r) => [
+                    r.id,
+                    r.reporter.name || r.reporter.email,
+                    r.targetType,
+                    r.targetId,
+                    r.reason,
+                    r.status,
+                    r.adminNotes || "",
+                    new Date(r.createdAt).toISOString().slice(0, 10),
+                    r.resolvedAt ? new Date(r.resolvedAt).toISOString().slice(0, 10) : "",
+                  ]);
+                  downloadCSV("reports_export", headers, rows);
+                } catch {
+                  // export error
+                }
               }}
               className="btn-secondary !rounded-lg"
             >
@@ -258,8 +276,8 @@ export default function AdminReports() {
                 <input
                   id="searchReport"
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   placeholder={t("admin.searchReportsPlaceholder", "Search by reporter, reason, or target ID...")}
                   className="input-field !pl-10"
                 />
@@ -303,7 +321,7 @@ export default function AdminReports() {
 
         {/* Results count */}
         <p className="text-body-sm mb-4 animate-fade-in">
-          {t("admin.showingReports", "Showing {{count}} report(s)").replace("{{count}}", String(reports.length))}
+          {t("admin.showingReports", "Showing {{count}} report(s)").replace("{{count}}", String(pagination.total))}
         </p>
 
         {/* Reports Table */}
@@ -480,6 +498,15 @@ export default function AdminReports() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* Admin Notes Modal */}

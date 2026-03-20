@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import Pagination from "@/components/Pagination";
 import { downloadCSV } from "@/lib/csvExport";
 
 interface AdminActionRow {
@@ -175,43 +176,58 @@ function ActionDetails({ action, details }: { action: string; details: string | 
   return null;
 }
 
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export default function AdminActivity() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
-  const [allActions, setAllActions] = useState<AdminActionRow[]>([]);
+  const [actions, setActions] = useState<AdminActionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterAction, setFilterAction] = useState("ALL");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 0 });
 
-  // Fetch all actions once on mount
+  const fetchActions = useCallback(async (currentPage: number, currentFilter: string) => {
+    setLoading(true);
+    try {
+      const actionParam = currentFilter !== "ALL" ? `&action=${currentFilter}` : "";
+      const res = await fetch(`/api/admin/actions?page=${currentPage}&limit=25${actionParam}`);
+      if (res.ok) {
+        const json = await res.json();
+        setActions(json.data);
+        setPagination(json.pagination);
+      }
+    } catch {
+      // Network error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Auth guard + initial fetch
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "ADMIN") {
       router.replace("/login", undefined, { locale: router.locale });
       return;
     }
-
-    const fetchAllActions = async () => {
-      try {
-        const res = await fetch("/api/admin/actions?limit=500");
-        if (res.ok) {
-          setAllActions(await res.json());
-        }
-      } catch {
-        // Network error
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAllActions();
+    fetchActions(page, filterAction);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status, router]);
 
-  // Client-side filtering
-  const actions = useMemo(() => {
-    if (filterAction === "ALL") return allActions;
-    return allActions.filter((a) => a.action === filterAction);
-  }, [allActions, filterAction]);
+  // Reset page to 1 when filter changes
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    setPage(1);
+    fetchActions(1, filterAction);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterAction]);
 
   if (status === "loading" || loading) {
     return (
@@ -244,18 +260,27 @@ export default function AdminActivity() {
           <div className="flex items-center justify-between">
             <h1 className="heading-lg">{t("admin.activityLog", "Activity Log")}</h1>
             <button
-              onClick={() => {
-                const headers = ["Date", "Action", "Admin", "Target Type", "Target ID", "Reason", "Details"];
-                const rows = actions.map((a) => [
-                  new Date(a.createdAt).toISOString().slice(0, 19).replace("T", " "),
-                  a.action,
-                  a.admin.name || a.admin.email,
-                  a.targetType,
-                  a.targetId,
-                  a.reason || "",
-                  a.details || "",
-                ]);
-                downloadCSV("activity_export", headers, rows);
+              onClick={async () => {
+                try {
+                  const actionParam = filterAction !== "ALL" ? `&action=${filterAction}` : "";
+                  const res = await fetch(`/api/admin/actions?limit=10000${actionParam}`);
+                  if (!res.ok) return;
+                  const json = await res.json();
+                  const allData: AdminActionRow[] = json.data ?? json;
+                  const headers = ["Date", "Action", "Admin", "Target Type", "Target ID", "Reason", "Details"];
+                  const rows = allData.map((a) => [
+                    new Date(a.createdAt).toISOString().slice(0, 19).replace("T", " "),
+                    a.action,
+                    a.admin.name || a.admin.email,
+                    a.targetType,
+                    a.targetId,
+                    a.reason || "",
+                    a.details || "",
+                  ]);
+                  downloadCSV("activity_export", headers, rows);
+                } catch {
+                  // Network error
+                }
               }}
               className="btn-secondary !rounded-lg"
             >
@@ -357,6 +382,18 @@ export default function AdminActivity() {
             })
           )}
         </div>
+
+        {/* Pagination */}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          onPageChange={(newPage) => {
+            setPage(newPage);
+            fetchActions(newPage, filterAction);
+          }}
+        />
       </div>
     </Layout>
   );

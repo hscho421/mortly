@@ -18,33 +18,71 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const conversations = await prisma.conversation.findMany({
-        include: {
-          borrower: {
-            select: { id: true, name: true, email: true, status: true },
-          },
-          broker: {
-            include: {
-              user: { select: { id: true, name: true, email: true, status: true } },
+      const { search, status, page: pageStr, limit: limitStr } = req.query;
+
+      const page = Math.max(1, parseInt(pageStr as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 25));
+      const skip = (page - 1) * limit;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: any = {};
+
+      if (status && status !== "ALL") {
+        where.status = status;
+      }
+
+      if (search && typeof search === "string" && search.trim()) {
+        const s = search.trim();
+        where.OR = [
+          { borrower: { name: { contains: s, mode: "insensitive" } } },
+          { borrower: { email: { contains: s, mode: "insensitive" } } },
+          { broker: { user: { name: { contains: s, mode: "insensitive" } } } },
+          { broker: { user: { email: { contains: s, mode: "insensitive" } } } },
+          { broker: { brokerageName: { contains: s, mode: "insensitive" } } },
+        ];
+      }
+
+      const [conversations, total] = await Promise.all([
+        prisma.conversation.findMany({
+          where,
+          include: {
+            borrower: {
+              select: { id: true, name: true, email: true, status: true },
+            },
+            broker: {
+              include: {
+                user: { select: { id: true, name: true, email: true, status: true } },
+              },
+            },
+            request: {
+              select: { id: true, requestType: true, province: true, city: true, status: true },
+            },
+            _count: { select: { messages: true } },
+            messages: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { body: true, createdAt: true, sender: { select: { name: true } } },
+            },
+            review: {
+              select: { id: true, rating: true },
             },
           },
-          request: {
-            select: { id: true, requestType: true, province: true, city: true, status: true },
-          },
-          _count: { select: { messages: true } },
-          messages: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-            select: { body: true, createdAt: true, sender: { select: { name: true } } },
-          },
-          review: {
-            select: { id: true, rating: true },
-          },
-        },
-        orderBy: { updatedAt: "desc" },
-      });
+          orderBy: { updatedAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.conversation.count({ where }),
+      ]);
 
-      return res.status(200).json(conversations);
+      return res.status(200).json({
+        data: conversations,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     }
 
     return res.status(405).json({ error: "Method not allowed" });

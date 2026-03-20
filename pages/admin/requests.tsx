@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import Pagination from "@/components/Pagination";
 
 interface RequestRow {
   id: string;
@@ -34,6 +35,13 @@ interface RequestRow {
   };
 }
 
+interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 const STATUS_BADGE: Record<string, string> = {
   OPEN: "bg-forest-100 text-forest-700",
   IN_PROGRESS: "bg-amber-100 text-amber-800",
@@ -58,11 +66,19 @@ export default function AdminRequests() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
-  const [allRequests, setAllRequests] = useState<RequestRow[]>([]);
+
+  // Paginated data
+  const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // Search & filter state
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterType, setFilterType] = useState("ALL");
+  const [page, setPage] = useState(1);
+
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<{ id: string; text: string; ok: boolean } | null>(null);
 
@@ -78,54 +94,49 @@ export default function AdminRequests() {
   const [deleteModal, setDeleteModal] = useState<{ id: string; province: string; type: string } | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset to page 1 when filters or search change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filterStatus, filterType]);
+
+  // Fetch paginated data
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "25",
+        search: debouncedSearch,
+        status: filterStatus,
+        type: filterType,
+      });
+      const res = await fetch(`/api/admin/requests?${params.toString()}`);
+      if (res.ok) {
+        const json = await res.json();
+        setRequests(json.data);
+        setPagination(json.pagination);
+      }
+    } catch {
+      // Network error
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, filterStatus, filterType]);
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "ADMIN") {
       router.replace("/login", undefined, { locale: router.locale });
       return;
     }
-
-    const fetchRequests = async () => {
-      try {
-        const res = await fetch("/api/admin/requests");
-        if (res.ok) {
-          setAllRequests(await res.json());
-        }
-      } catch {
-        // Network error
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchRequests();
-  }, [session, status, router]);
-
-  const requests = useMemo(() => {
-    let filtered = allRequests;
-
-    if (filterStatus !== "ALL") {
-      filtered = filtered.filter((r) => r.status === filterStatus);
-    }
-
-    if (filterType !== "ALL") {
-      filtered = filtered.filter((r) => r.requestType === filterType);
-    }
-
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      filtered = filtered.filter(
-        (r) =>
-          r.id.toLowerCase().includes(q) ||
-          (r.borrower.name || "").toLowerCase().includes(q) ||
-          r.borrower.email.toLowerCase().includes(q) ||
-          r.province.toLowerCase().includes(q) ||
-          (r.city || "").toLowerCase().includes(q)
-      );
-    }
-
-    return filtered;
-  }, [allRequests, filterStatus, filterType, searchQuery]);
+  }, [session, status, router, fetchRequests]);
 
   const handleStatusChange = async () => {
     if (!statusModal || !newStatus) return;
@@ -139,7 +150,7 @@ export default function AdminRequests() {
       });
 
       if (res.ok) {
-        setAllRequests((prev) =>
+        setRequests((prev) =>
           prev.map((r) => (r.id === statusModal.id ? { ...r, status: newStatus } : r))
         );
         setActionMessage({ id: statusModal.id, text: t("admin.statusUpdated"), ok: true });
@@ -170,9 +181,10 @@ export default function AdminRequests() {
       });
 
       if (res.ok) {
-        setAllRequests((prev) => prev.filter((r) => r.id !== deleteModal.id));
         setDeleteModal(null);
         setDeleteReason("");
+        // Re-fetch current page (may now have fewer items)
+        fetchRequests();
       } else {
         const data = await res.json();
         setActionMessage({ id: deleteModal.id, text: data.error, ok: false });
@@ -185,7 +197,48 @@ export default function AdminRequests() {
     }
   };
 
-  if (status === "loading" || loading) {
+  const handleExportCSV = async () => {
+    try {
+      const params = new URLSearchParams({ limit: "10000" });
+      const res = await fetch(`/api/admin/requests?${params.toString()}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const rows: RequestRow[] = json.data;
+
+      const headers = ["ID", "Borrower Name", "Borrower Email", "Type", "Category", "Property Type", "Province", "City", "Status", "Introductions", "Conversations", "Created"];
+      const csvRows = [
+        headers.join(","),
+        ...rows.map((r) =>
+          [
+            r.id,
+            `"${(r.borrower.name || "").replace(/"/g, '""')}"`,
+            r.borrower.email,
+            r.requestType,
+            r.mortgageCategory,
+            r.propertyType,
+            r.province,
+            r.city || "",
+            r.status,
+            r._count.introductions,
+            r._count.conversations,
+            formatDate(r.createdAt),
+          ].join(",")
+        ),
+      ];
+
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `requests-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Export error
+    }
+  };
+
+  if (status === "loading" || (loading && requests.length === 0)) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -211,10 +264,20 @@ export default function AdminRequests() {
             </svg>
             {t("admin.backToDashboard")}
           </Link>
-          <h1 className="heading-lg">{t("admin.requestManagement", "Request Management")}</h1>
-          <p className="text-body mt-2">
-            {t("admin.requestManagementDesc", "View, search, and manage all borrower mortgage requests.")}
-          </p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="heading-lg">{t("admin.requestManagement", "Request Management")}</h1>
+              <p className="text-body mt-2">
+                {t("admin.requestManagementDesc", "View, search, and manage all borrower mortgage requests.")}
+              </p>
+            </div>
+            <button
+              onClick={handleExportCSV}
+              className="btn-secondary !px-4 !py-2 !text-sm"
+            >
+              {t("admin.exportCSV", "Export CSV")}
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -231,8 +294,8 @@ export default function AdminRequests() {
                 <input
                   id="searchReq"
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   placeholder={t("admin.searchRequestsPlaceholder", "Search by ID, borrower, province, city...")}
                   className="input-field !pl-10"
                 />
@@ -276,7 +339,7 @@ export default function AdminRequests() {
 
         {/* Results count */}
         <p className="text-body-sm mb-4 animate-fade-in">
-          {t("admin.showingRequests", "Showing {{count}} request(s)").replace("{{count}}", String(requests.length))}
+          {t("admin.showingRequests", "Showing {{count}} request(s)").replace("{{count}}", String(pagination.total))}
         </p>
 
         {/* Requests Table */}
@@ -293,7 +356,13 @@ export default function AdminRequests() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-cream-200 bg-white">
-                {requests.map((req) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-12 text-center text-body-sm">
+                      {t("admin.loadingRequests", "Loading requests...")}
+                    </td>
+                  </tr>
+                ) : requests.map((req) => (
                   <tr key={req.id} className="hover:bg-cream-50 transition-colors">
                     {/* Request ID */}
                     <td className="px-4 py-4">
@@ -388,7 +457,7 @@ export default function AdminRequests() {
                     </td>
                   </tr>
                 ))}
-                {requests.length === 0 && (
+                {!loading && requests.length === 0 && (
                   <tr>
                     <td colSpan={8} className="px-5 py-12 text-center text-body-sm">
                       {t("admin.noRequestsFound", "No requests found.")}
@@ -399,6 +468,15 @@ export default function AdminRequests() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          limit={pagination.limit}
+          onPageChange={(p) => setPage(p)}
+        />
       </div>
 
       {/* Detail Modal */}
