@@ -50,17 +50,17 @@ export default function Privacy() {
   const dataCollected = [
     {
       category: t("privacy.data1Title"),
-      items: ["Loan amount and type", "Property type and general location (state/region)", "Timeline and urgency", "Special requirements or preferences"],
+      items: [t("privacy.data1Item1"), t("privacy.data1Item2"), t("privacy.data1Item3"), t("privacy.data1Item4")],
       purpose: t("privacy.data1Purpose"),
     },
     {
       category: t("privacy.data2Title"),
-      items: ["Email address", "Password (hashed, never stored in plain text)", "Communication preferences"],
+      items: [t("privacy.data2Item1"), t("privacy.data2Item2"), t("privacy.data2Item3")],
       purpose: t("privacy.data2Purpose"),
     },
     {
       category: t("privacy.data3Title"),
-      items: ["Full name", "Phone number", "Preferred contact method"],
+      items: [t("privacy.data3Item1"), t("privacy.data3Item2"), t("privacy.data3Item3")],
       purpose: t("privacy.data3Purpose"),
     },
   ];
@@ -69,32 +69,32 @@ export default function Privacy() {
     {
       step: "1",
       title: t("privacy.verify1"),
-      description: "We verify every broker's NMLS license number and confirm it is active and in good standing with state regulators.",
+      description: t("privacy.verify1Desc"),
     },
     {
       step: "2",
       title: t("privacy.verify2"),
-      description: "Brokers must verify their identity through a secure process that matches their professional credentials.",
+      description: t("privacy.verify2Desc"),
     },
     {
       step: "3",
       title: t("privacy.verify3"),
-      description: "We review each broker's professional history, checking for disciplinary actions, complaints, and regulatory issues.",
+      description: t("privacy.verify3Desc"),
     },
     {
       step: "4",
       title: t("privacy.verify4"),
-      description: "Verification is not a one-time event. We continuously monitor license status, review borrower feedback, and investigate complaints to maintain marketplace quality.",
+      description: t("privacy.verify4Desc"),
     },
   ];
 
   return (
     <Layout>
       <Head>
-        <title>Trust &amp; Privacy — MortgageMatch</title>
+        <title>{t("privacy.headTitle")}</title>
         <meta
           name="description"
-          content="Learn how MortgageMatch protects your privacy, what data we collect, and how our broker verification process works."
+          content={t("privacy.metaDesc")}
         />
       </Head>
 
@@ -109,10 +109,10 @@ export default function Privacy() {
             </svg>
           </div>
           <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-4xl sm:text-5xl lg:text-6xl tracking-tight text-cream-100 leading-[1.1]">
-            Trust &amp; Privacy
+            {t("privacy.heroTitle")}
           </h1>
           <p className="animate-fade-in-up opacity-0 stagger-3 mt-6 text-lg text-cream-300/70 leading-relaxed max-w-2xl mx-auto font-body">
-            Privacy is not just a feature at MortgageMatch — it is the foundation of everything we build. Here is exactly how we protect you.
+            {t("privacy.heroDesc")}
           </p>
         </div>
       </section>
