@@ -21,7 +21,7 @@ export default async function handler(
       const { search, status, page: pageStr, limit: limitStr } = req.query;
 
       const page = Math.max(1, parseInt(pageStr as string) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 25));
+      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 20));
       const skip = (page - 1) * limit;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

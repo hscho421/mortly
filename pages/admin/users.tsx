@@ -72,7 +72,7 @@ export default function AdminUsers() {
 
   // Paginated data
   const [users, setUsers] = useState<UserRow[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 1 });
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
 
   // Search with debounce
@@ -138,7 +138,7 @@ export default function AdminUsers() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        limit: "25",
+        limit: "20",
         search: debouncedSearch,
         role: filterRole,
       });

@@ -48,7 +48,7 @@ export default function AdminBrokers() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationMeta>({
     page: 1,
-    limit: 25,
+    limit: 20,
     total: 0,
     totalPages: 1,
   });
@@ -57,7 +57,7 @@ export default function AdminBrokers() {
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/admin/brokers?page=${currentPage}&limit=25&status=${statusFilter}`
+        `/api/admin/brokers?page=${currentPage}&limit=20&status=${statusFilter}`
       );
       if (res.ok) {
         const json = await res.json();

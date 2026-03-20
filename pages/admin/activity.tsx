@@ -191,13 +191,13 @@ export default function AdminActivity() {
   const [loading, setLoading] = useState(true);
   const [filterAction, setFilterAction] = useState("ALL");
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 0 });
 
   const fetchActions = useCallback(async (currentPage: number, currentFilter: string) => {
     setLoading(true);
     try {
       const actionParam = currentFilter !== "ALL" ? `&action=${currentFilter}` : "";
-      const res = await fetch(`/api/admin/actions?page=${currentPage}&limit=25${actionParam}`);
+      const res = await fetch(`/api/admin/actions?page=${currentPage}&limit=20${actionParam}`);
       if (res.ok) {
         const json = await res.json();
         setActions(json.data);

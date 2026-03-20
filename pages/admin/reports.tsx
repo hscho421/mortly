@@ -75,7 +75,7 @@ export default function AdminReports() {
   const { t } = useTranslation("common");
 
   const [reports, setReports] = useState<ReportRow[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -103,7 +103,7 @@ export default function AdminReports() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        limit: "25",
+        limit: "20",
       });
       if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
       if (filterStatus !== "ALL") params.set("status", filterStatus);

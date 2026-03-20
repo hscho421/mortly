@@ -69,7 +69,7 @@ export default function AdminRequests() {
 
   // Paginated data
   const [requests, setRequests] = useState<RequestRow[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
 
   // Search & filter state
@@ -111,7 +111,7 @@ export default function AdminRequests() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        limit: "25",
+        limit: "20",
         search: debouncedSearch,
         status: filterStatus,
         type: filterType,

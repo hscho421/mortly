@@ -79,7 +79,7 @@ export default function AdminConversations() {
   const router = useRouter();
   const { t } = useTranslation("common");
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 25, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -109,7 +109,7 @@ export default function AdminConversations() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        limit: "25",
+        limit: "20",
         search: debouncedSearch,
         status: filterStatus,
       });
