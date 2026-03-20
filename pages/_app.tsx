@@ -31,12 +31,19 @@ function App({
   pageProps: { session, ...pageProps },
 }: AppProps) {
   return (
-    <SessionProvider session={session}>
-      <div className={`${dmSerif.variable} ${outfit.variable} ${notoSansKR.variable}`}>
+    <>
+      <style jsx global>{`
+        :root {
+          --font-display: ${dmSerif.style.fontFamily};
+          --font-body: ${outfit.style.fontFamily};
+          --font-korean: ${notoSansKR.style.fontFamily};
+        }
+      `}</style>
+      <SessionProvider session={session}>
         <Component {...pageProps} />
-      </div>
-      <Analytics />
-    </SessionProvider>
+        <Analytics />
+      </SessionProvider>
+    </>
   );
 }
 
