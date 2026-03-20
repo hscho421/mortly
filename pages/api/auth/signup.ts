@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { hash } from "bcryptjs";
 import prisma from "@/lib/prisma";
+import { generatePublicId } from "@/lib/publicId";
 
 export default async function handler(
   req: NextApiRequest,
@@ -50,6 +51,9 @@ export default async function handler(
     // Hash password
     const passwordHash = await hash(password, 12);
 
+    // Generate unique 9-digit public ID
+    const publicId = await generatePublicId();
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -57,9 +61,11 @@ export default async function handler(
         email,
         passwordHash,
         role,
+        publicId,
       },
       select: {
         id: true,
+        publicId: true,
         name: true,
         email: true,
         role: true,

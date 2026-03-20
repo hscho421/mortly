@@ -26,6 +26,7 @@ interface BrokerDetail {
   createdAt: string;
   user: {
     id: string;
+    publicId: string;
     name: string | null;
     email: string;
     status: string;
@@ -220,8 +221,7 @@ export default function AdminBrokerDetail() {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
               <h1 className="heading-lg">{broker.user.name || broker.brokerageName}</h1>
-              <p className="font-mono text-xs text-forest-700/50 mt-1">Broker ID: {broker.id}</p>
-              <p className="font-mono text-xs text-forest-700/50">User ID: {broker.user.id}</p>
+              <p className="font-mono text-xs text-forest-700/50 mt-1">User ID: {broker.user.publicId}</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`inline-flex items-center rounded-full px-3 py-1.5 font-body text-xs font-semibold uppercase ${STATUS_BADGE[broker.verificationStatus]}`}>

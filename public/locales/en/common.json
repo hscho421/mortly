@@ -756,7 +756,9 @@
     "minChars": "At least 8 characters",
     "requests": "Requests",
     "conversations": "Conversations",
-    "reviewsGiven": "Reviews Given"
+    "reviewsGiven": "Reviews Given",
+    "userId": "User ID",
+    "userIdNote": "Use this ID when contacting support."
   },
   "directory": {
     "badge": "Verified Professionals",

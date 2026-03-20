@@ -15,6 +15,13 @@ interface ReviewItem {
   borrower: { name: string | null };
 }
 
+interface BrokerUser {
+  id: string;
+  publicId: string;
+  name: string | null;
+  email: string;
+}
+
 const PROVINCES = [
   "Alberta",
   "British Columbia",
@@ -52,6 +59,7 @@ export default function BrokerProfilePage() {
     areasServed: "",
     specialties: "",
   });
+  const [brokerUser, setBrokerUser] = useState<BrokerUser | null>(null);
   const [verificationStatus, setVerificationStatus] = useState("PENDING");
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [brokerRating, setBrokerRating] = useState<number | null>(null);
@@ -85,6 +93,7 @@ export default function BrokerProfilePage() {
         });
         setVerificationStatus(data.verificationStatus);
         setBrokerRating(data.rating);
+        if (data.user) setBrokerUser(data.user);
 
         // Fetch reviews
         if (data.id) {
@@ -201,6 +210,20 @@ export default function BrokerProfilePage() {
         )}
 
         <form onSubmit={handleSubmit} className="card-elevated space-y-6 animate-fade-in-up">
+          {brokerUser && (
+            <div>
+              <label className="label-text">{t("settings.userId", "User ID")}</label>
+              <div className="flex items-center gap-2">
+                <p className="font-mono text-sm text-forest-800 bg-cream-100 rounded-lg px-3 py-2">
+                  {brokerUser.publicId}
+                </p>
+                <p className="font-body text-xs text-sage-400">
+                  {t("settings.userIdNote", "Use this ID when contacting support.")}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div>
             <label htmlFor="brokerageName" className="label-text">
               {t("broker.brokerageName")} <span className="text-amber-600">*</span>

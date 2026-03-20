@@ -756,7 +756,9 @@
     "minChars": "8자 이상",
     "requests": "요청",
     "conversations": "대화",
-    "reviewsGiven": "작성한 리뷰"
+    "reviewsGiven": "작성한 리뷰",
+    "userId": "사용자 ID",
+    "userIdNote": "고객 지원 문의 시 이 ID를 사용하세요."
   },
   "directory": {
     "badge": "검증된 전문가",

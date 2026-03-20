@@ -30,7 +30,7 @@ export default async function handler(
         where.OR = [
           { name: { contains: search.trim(), mode: "insensitive" } },
           { email: { contains: search.trim(), mode: "insensitive" } },
-          { id: { contains: search.trim() } },
+          { publicId: { contains: search.trim() } },
         ];
       }
 
@@ -38,6 +38,7 @@ export default async function handler(
         where,
         select: {
           id: true,
+          publicId: true,
           email: true,
           name: true,
           role: true,

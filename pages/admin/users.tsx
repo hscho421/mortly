@@ -9,6 +9,7 @@ import Layout from "@/components/Layout";
 
 interface UserRow {
   id: string;
+  publicId: string;
   email: string;
   name: string | null;
   role: "BORROWER" | "BROKER" | "ADMIN";
@@ -116,7 +117,7 @@ export default function AdminUsers() {
         (u) =>
           (u.name || "").toLowerCase().includes(q) ||
           u.email.toLowerCase().includes(q) ||
-          u.id.toLowerCase().includes(q)
+          u.publicId.includes(q)
       );
     }
 
@@ -258,7 +259,7 @@ export default function AdminUsers() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t("admin.searchPlaceholder", "Search by name, email, or user ID...")}
+                  placeholder={t("admin.searchPlaceholder", "Search by name, email, or ID...")}
                   className="input-field !pl-10"
                 />
               </div>
@@ -332,12 +333,12 @@ export default function AdminUsers() {
                     {/* User ID */}
                     <td className="px-5 py-4">
                       <button
-                        onClick={() => copyId(user.id)}
+                        onClick={() => copyId(user.publicId)}
                         className="group inline-flex items-center gap-1.5 rounded-md bg-cream-100 px-2 py-1 font-mono text-xs text-forest-700/70 transition-colors hover:bg-cream-200"
                         title="Click to copy"
                       >
-                        <span className="max-w-[100px] truncate">{user.id}</span>
-                        {copiedId === user.id ? (
+                        <span>{user.publicId}</span>
+                        {copiedId === user.publicId ? (
                           <svg className="h-3.5 w-3.5 text-forest-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                           </svg>

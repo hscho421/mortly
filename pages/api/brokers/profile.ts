@@ -18,7 +18,7 @@ export default async function handler(
         where: { userId: session.user.id },
         include: {
           user: {
-            select: { id: true, name: true, email: true },
+            select: { id: true, publicId: true, name: true, email: true },
           },
           subscription: true,
         },

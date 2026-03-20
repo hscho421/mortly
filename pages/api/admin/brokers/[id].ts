@@ -27,7 +27,7 @@ export default async function handler(
         where: { id },
         include: {
           user: {
-            select: { id: true, name: true, email: true, status: true, createdAt: true },
+            select: { id: true, publicId: true, name: true, email: true, status: true, createdAt: true },
           },
           reviews: {
             include: {

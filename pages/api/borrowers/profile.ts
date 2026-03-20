@@ -20,6 +20,7 @@ export default async function handler(
         where: { id: session.user.id },
         select: {
           id: true,
+          publicId: true,
           name: true,
           email: true,
           role: true,

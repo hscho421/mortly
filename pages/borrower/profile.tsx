@@ -8,6 +8,7 @@ import type { GetStaticProps } from "next";
 
 interface BorrowerProfile {
   id: string;
+  publicId: string;
   name: string | null;
   email: string;
   role: string;
@@ -191,6 +192,20 @@ export default function BorrowerProfilePage() {
           )}
 
           <form onSubmit={handleUpdateName} className="space-y-5">
+            {profile && (
+              <div>
+                <label className="label-text">{t("settings.userId", "User ID")}</label>
+                <div className="flex items-center gap-2">
+                  <p className="font-mono text-sm text-forest-800 bg-cream-100 rounded-lg px-3 py-2">
+                    {profile.publicId}
+                  </p>
+                  <p className="font-body text-xs text-sage-400">
+                    {t("settings.userIdNote", "Use this ID when contacting support.")}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div>
               <label htmlFor="name" className="label-text">
                 {t("auth.name")}
