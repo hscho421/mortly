@@ -27,6 +27,8 @@ model User {
   reports          Report[]
   reviews          Review[]
   adminActions     AdminAction[] @relation("adminActions")
+  noticesSent      AdminNotice[] @relation("adminNoticesSent")
+  noticesReceived  AdminNotice[] @relation("adminNoticesReceived")
 
   @@map("users")
 }
@@ -281,6 +283,20 @@ model CreditPurchase {
   @@map("credit_purchases")
 }
 
+model AdminNotice {
+  id        String   @id @default(cuid())
+  adminId   String   @map("admin_id")
+  userId    String   @map("user_id")
+  subject   String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  admin     User     @relation("adminNoticesSent", fields: [adminId], references: [id])
+  user      User     @relation("adminNoticesReceived", fields: [userId], references: [id])
+
+  @@map("admin_notices")
+}
+
 model AdminAction {
   id         String   @id @default(cuid())
   adminId    String
@@ -293,6 +309,14 @@ model AdminAction {
   admin      User     @relation("adminActions", fields: [adminId], references: [id])
 
   @@map("admin_actions")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }
 
 enum SubscriptionStatus {

@@ -6,6 +6,9 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
+} from "recharts";
 
 interface DashboardStats {
   totalUsers: number;
@@ -16,12 +19,20 @@ interface DashboardStats {
   totalRequests: number;
 }
 
+interface TrendDay {
+  date: string;
+  users: number;
+  requests: number;
+  conversations: number;
+}
+
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [trends, setTrends] = useState<TrendDay[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,9 +44,12 @@ export default function AdminDashboard() {
 
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/admin/stats");
-        if (res.ok) {
-          const data = await res.json();
+        const [statsRes, trendsRes] = await Promise.all([
+          fetch("/api/admin/stats"),
+          fetch("/api/admin/trends"),
+        ]);
+        if (statsRes.ok) {
+          const data = await statsRes.json();
           setStats({
             totalUsers: data.users,
             pendingVerifications: data.pendingVerifications,
@@ -44,6 +58,9 @@ export default function AdminDashboard() {
             activeConversations: data.activeConversations,
             totalRequests: data.totalRequests,
           });
+        }
+        if (trendsRes.ok) {
+          setTrends(await trendsRes.json());
         }
       } catch {
         // Network error
@@ -169,6 +186,87 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* 30-Day Trends */}
+        {trends.length > 0 && (
+          <div className="card-elevated mb-12 animate-fade-in-up stagger-7">
+            <h2 className="heading-sm mb-1">{t("admin.trends", "30-Day Trends")}</h2>
+            <p className="text-body-sm mb-6">{t("admin.trendsDesc", "Daily new users, requests, and conversations.")}</p>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart
+                data={trends.map((d) => ({
+                  ...d,
+                  label: d.date.slice(5), // MM-DD
+                }))}
+                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0ece4" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={4}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  tickLine={false}
+                  axisLine={false}
+                  allowDecimals={false}
+                  width={30}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1f3528",
+                    border: "none",
+                    borderRadius: 10,
+                    fontSize: 12,
+                    fontFamily: "Outfit, sans-serif",
+                    color: "#f5f0e8",
+                    padding: "10px 16px",
+                    boxShadow: "0 8px 24px rgba(31,53,40,0.25)",
+                  }}
+                  itemStyle={{ color: "#e8e4dc", padding: "3px 0" }}
+                  labelStyle={{ color: "#b8c4ae", fontWeight: 600, marginBottom: 6, fontSize: 11 }}
+                  labelFormatter={(label) => {
+                    const match = trends.find((d) => d.date.slice(5) === label);
+                    if (!match) return label;
+                    return new Date(match.date + "T12:00:00").toLocaleDateString(
+                      router.locale === "ko" ? "ko-KR" : "en-CA",
+                      { weekday: "short", month: "short", day: "numeric" }
+                    );
+                  }}
+                  cursor={{ fill: "rgba(0,0,0,0.04)", radius: 4 }}
+                />
+                <Legend
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 12, fontFamily: "Outfit, sans-serif", paddingTop: 12, color: "#64748b" }}
+                />
+                <Bar
+                  dataKey="users"
+                  name={t("admin.trendUsers", "Users")}
+                  fill="#3d6b4f"
+                  radius={[0, 0, 0, 0]}
+                  stackId="a"
+                />
+                <Bar
+                  dataKey="requests"
+                  name={t("admin.trendRequests", "Requests")}
+                  fill="#8faa7e"
+                  stackId="a"
+                />
+                <Bar
+                  dataKey="conversations"
+                  name={t("admin.trendConversations", "Conversations")}
+                  fill="#c8a86e"
+                  radius={[3, 3, 0, 0]}
+                  stackId="a"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
         {/* Quick Links */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
           <Link
@@ -280,8 +378,23 @@ export default function AdminDashboard() {
             </div>
           </Link>
           <Link
-            href="/admin/manual"
+            href="/admin/settings"
             className="card group flex items-center gap-4 animate-fade-in-up opacity-0 stagger-9"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-sage-100 text-sage-700 transition-colors group-hover:bg-sage-200">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+            </span>
+            <div>
+              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.systemSettings", "System Settings")}</p>
+              <p className="text-body-sm">{t("admin.systemSettingsShort", "Platform config")}</p>
+            </div>
+          </Link>
+          <Link
+            href="/admin/manual"
+            className="card group flex items-center gap-4 animate-fade-in-up opacity-0 stagger-10"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-forest-50 text-forest-700 transition-colors group-hover:bg-forest-100">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

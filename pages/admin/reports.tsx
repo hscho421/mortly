@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import { downloadCSV } from "@/lib/csvExport";
 
 type ReportStatus = "OPEN" | "REVIEWED" | "RESOLVED" | "DISMISSED";
 
@@ -215,7 +216,29 @@ export default function AdminReports() {
             </svg>
             {t("admin.backToDashboard")}
           </Link>
-          <h1 className="heading-lg">{t("admin.reports")}</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="heading-lg">{t("admin.reports")}</h1>
+            <button
+              onClick={() => {
+                const headers = ["ID", "Reporter", "Target Type", "Target ID", "Reason", "Status", "Admin Notes", "Created", "Resolved"];
+                const rows = reports.map((r) => [
+                  r.id,
+                  r.reporter.name || r.reporter.email,
+                  r.targetType,
+                  r.targetId,
+                  r.reason,
+                  r.status,
+                  r.adminNotes || "",
+                  new Date(r.createdAt).toISOString().slice(0, 10),
+                  r.resolvedAt ? new Date(r.resolvedAt).toISOString().slice(0, 10) : "",
+                ]);
+                downloadCSV("reports_export", headers, rows);
+              }}
+              className="btn-secondary !rounded-lg"
+            >
+              {t("admin.exportCsv", "Export CSV")}
+            </button>
+          </div>
           <p className="text-body mt-2">
             {t("admin.reportsDesc", "Review, investigate, and resolve user-submitted reports. Add notes and link to targets.")}
           </p>

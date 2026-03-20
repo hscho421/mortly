@@ -5,359 +5,610 @@ const prisma = new PrismaClient();
 
 const mode = process.argv[2] ?? "mock";
 
+// ─── Helpers ──────────────────────────────────────────────────
+function genPublicId(index: number): string {
+  // Deterministic but realistic 9-digit IDs for seeding
+  return String(100000000 + index * 7919).slice(0, 9); // prime multiplier avoids collisions
+}
+
+function randomDate(daysAgo: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - Math.floor(Math.random() * daysAgo));
+  d.setHours(Math.floor(Math.random() * 24), Math.floor(Math.random() * 60));
+  return d;
+}
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// ─── Data pools ───────────────────────────────────────────────
+const FIRST_NAMES = [
+  "James", "Mary", "Robert", "Patricia", "Michael", "Jennifer", "William", "Linda",
+  "David", "Elizabeth", "Richard", "Susan", "Joseph", "Jessica", "Thomas", "Sarah",
+  "Daniel", "Karen", "Matthew", "Lisa", "Anthony", "Nancy", "Mark", "Betty",
+  "Donald", "Margaret", "Steven", "Sandra", "Andrew", "Ashley", "Paul", "Dorothy",
+  "Joshua", "Kimberly", "Kenneth", "Emily", "Kevin", "Donna", "Brian", "Michelle",
+  "George", "Carol", "Timothy", "Amanda", "Ronald", "Melissa", "Edward", "Deborah",
+  "Jason", "Stephanie", "Jeffrey", "Rebecca", "Ryan", "Sharon", "Jacob", "Laura",
+  "Gary", "Cynthia", "Nicholas", "Kathleen", "Eric", "Amy", "Jonathan", "Angela",
+];
+
+const LAST_NAMES = [
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+  "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
+  "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
+  "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker",
+  "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+  "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell",
+  "Carter", "Roberts", "Kim", "Chen", "Park", "Cho", "Wong", "Singh", "Patel",
+];
+
+const BROKERAGE_NAMES = [
+  "Maple Mortgage Group", "Pacific Rate Finders", "Summit Financial Partners",
+  "Northern Lending Co.", "Coast Capital Mortgages", "Prairie Home Finance",
+  "Great Lakes Mortgage", "Rockies Financial", "Atlantic Mortgage Solutions",
+  "Frontier Rate Experts", "Dominion Lending Hub", "True North Mortgages",
+  "Keystone Mortgage Co.", "Horizon Rate Group", "Metro Home Finance",
+];
+
+const PROVINCES = ["ON", "BC", "AB", "QC", "MB", "SK", "NS", "NB"];
+const CITIES: Record<string, string[]> = {
+  ON: ["Toronto", "Ottawa", "Mississauga", "Brampton", "Hamilton", "London", "Markham", "Vaughan"],
+  BC: ["Vancouver", "Victoria", "Burnaby", "Richmond", "Surrey", "Kelowna"],
+  AB: ["Calgary", "Edmonton", "Red Deer", "Lethbridge"],
+  QC: ["Montreal", "Quebec City", "Laval", "Gatineau"],
+  MB: ["Winnipeg", "Brandon"],
+  SK: ["Saskatoon", "Regina"],
+  NS: ["Halifax", "Dartmouth"],
+  NB: ["Fredericton", "Moncton", "Saint John"],
+};
+const SPECIALTIES = [
+  "First-time buyers", "Refinancing", "Self-employed", "Commercial",
+  "Investment properties", "High-value residential", "Renewals",
+  "Bad credit", "New construction", "Vacation properties",
+];
+
+const REQUEST_NOTES = [
+  "First-time buyer, looking for competitive rates.",
+  "Want to refinance to lower my monthly payments.",
+  "Renewal coming up, exploring better options.",
+  "Self-employed, need flexible income verification.",
+  "Looking for a pre-approval before house hunting.",
+  "Investment property purchase in the suburbs.",
+  "Downsizing from a detached home to a condo.",
+  "Recently divorced, need to refinance existing mortgage.",
+  "New immigrant, building credit in Canada.",
+  "Looking for a vacation property mortgage.",
+];
+
+const REPORT_REASONS = [
+  "Misleading profile information about experience and credentials",
+  "Inappropriate language and unprofessional conduct",
+  "Suspected unlicensed activity",
+  "Spam messages soliciting external services",
+  "Unresponsive after initial consultation",
+  "Requesting personal financial information outside the platform",
+  "Discriminatory language in messages",
+  "Fake reviews or inflated ratings",
+  "Pressure tactics and aggressive sales behavior",
+  "Misrepresenting mortgage rates or terms",
+];
+
+// ─── Clear ────────────────────────────────────────────────────
 async function clearAll() {
-  // Delete in order respecting foreign keys
+  await prisma.adminNotice.deleteMany();
+  await prisma.adminAction.deleteMany();
+  await prisma.review.deleteMany();
   await prisma.message.deleteMany();
   await prisma.conversation.deleteMany();
   await prisma.report.deleteMany();
   await prisma.brokerIntroduction.deleteMany();
+  await prisma.creditPurchase.deleteMany();
   await prisma.subscription.deleteMany();
   await prisma.borrowerRequest.deleteMany();
   await prisma.broker.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.systemSetting.deleteMany();
   console.log("All tables cleared.");
 }
 
+// ─── Mock seed ────────────────────────────────────────────────
 async function seedMock() {
   const hash = await bcrypt.hash("password123", 10);
+  let pubIdx = 1;
 
-  // Users
-  const admin = await prisma.user.create({
-    data: { email: "admin@test.com", passwordHash: hash, role: "ADMIN", name: "Admin User" },
-  });
-  const borrower1 = await prisma.user.create({
-    data: { email: "john@test.com", passwordHash: hash, role: "BORROWER", name: "John Smith" },
-  });
-  const borrower2 = await prisma.user.create({
-    data: { email: "alice@test.com", passwordHash: hash, role: "BORROWER", name: "Alice Johnson" },
-  });
-  const borrower3 = await prisma.user.create({
-    data: { email: "bob@test.com", passwordHash: hash, role: "BORROWER", name: "Bob Williams" },
-  });
-  const brokerUser1 = await prisma.user.create({
-    data: { email: "broker1@test.com", passwordHash: hash, role: "BROKER", name: "Sarah Lee" },
-  });
-  const brokerUser2 = await prisma.user.create({
-    data: { email: "broker2@test.com", passwordHash: hash, role: "BROKER", name: "Mike Chen" },
-  });
+  // ── Admins (3) ──────────────────────────────────────────────
+  const admins = [];
+  for (const [name, email] of [
+    ["Admin User", "admin@test.com"],
+    ["Admin Sarah", "admin2@test.com"],
+    ["Admin Dev", "admin3@test.com"],
+  ] as const) {
+    const u = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hash,
+        role: "ADMIN",
+        name,
+        publicId: genPublicId(pubIdx++),
+        createdAt: randomDate(28),
+      },
+    });
+    admins.push(u);
+  }
+  console.log(`${admins.length} admins created.`);
 
-  console.log("Users created.");
+  // ── Borrowers (35) ──────────────────────────────────────────
+  const borrowers = [];
+  for (let i = 0; i < 35; i++) {
+    const first = FIRST_NAMES[i % FIRST_NAMES.length];
+    const last = LAST_NAMES[i % LAST_NAMES.length];
+    const name = `${first} ${last}`;
+    const email = `borrower${i + 1}@test.com`;
+    const status = i === 30 ? "SUSPENDED" as const : i === 31 ? "BANNED" as const : "ACTIVE" as const;
+    const u = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hash,
+        role: "BORROWER",
+        name,
+        publicId: genPublicId(pubIdx++),
+        status,
+        createdAt: randomDate(25),
+      },
+    });
+    borrowers.push(u);
+  }
+  console.log(`${borrowers.length} borrowers created.`);
 
-  // Brokers
-  const broker1 = await prisma.broker.create({
-    data: {
-      userId: brokerUser1.id,
-      brokerageName: "Maple Mortgage Group",
-      province: "ON",
-      licenseNumber: "M08001234",
-      bio: "15 years of experience helping first-time buyers in the GTA.",
-      yearsExperience: 15,
-      areasServed: "Toronto, Mississauga, Brampton",
-      specialties: "First-time buyers, Refinancing",
-      verificationStatus: "VERIFIED",
-      subscriptionTier: "PRO",
-      rating: 4.8,
-      completedMatches: 47,
-      responseCredits: 10,
-    },
-  });
-  const broker2 = await prisma.broker.create({
-    data: {
-      userId: brokerUser2.id,
-      brokerageName: "Pacific Rate Finders",
-      province: "BC",
-      licenseNumber: "X300567",
-      bio: "Specializing in competitive rates for self-employed borrowers.",
-      yearsExperience: 8,
-      areasServed: "Vancouver, Burnaby, Richmond",
-      specialties: "Self-employed, Commercial",
-      verificationStatus: "PENDING",
-      subscriptionTier: "BASIC",
-      rating: 4.5,
-      completedMatches: 22,
-      responseCredits: 5,
-    },
-  });
+  // ── Broker users (15) ──────────────────────────────────────
+  const brokerUsers = [];
+  const tiers: ("FREE" | "BASIC" | "PRO" | "PREMIUM")[] = [
+    "PREMIUM", "PRO", "PRO", "BASIC", "BASIC",
+    "BASIC", "FREE", "FREE", "FREE", "PRO",
+    "PREMIUM", "BASIC", "FREE", "PRO", "BASIC",
+  ];
+  const verStatuses: ("VERIFIED" | "PENDING" | "REJECTED")[] = [
+    "VERIFIED", "VERIFIED", "VERIFIED", "VERIFIED", "VERIFIED",
+    "VERIFIED", "VERIFIED", "PENDING", "PENDING", "VERIFIED",
+    "VERIFIED", "PENDING", "REJECTED", "VERIFIED", "VERIFIED",
+  ];
+  const brokerRecords = [];
 
-  console.log("Brokers created.");
+  for (let i = 0; i < 15; i++) {
+    const first = FIRST_NAMES[35 + (i % (FIRST_NAMES.length - 35))];
+    const last = LAST_NAMES[35 + (i % (LAST_NAMES.length - 35))];
+    const name = `${first} ${last}`;
+    const email = `broker${i + 1}@test.com`;
+    const province = PROVINCES[i % PROVINCES.length];
+    const u = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hash,
+        role: "BROKER",
+        name,
+        publicId: genPublicId(pubIdx++),
+        status: i === 12 ? "SUSPENDED" : "ACTIVE",
+        createdAt: randomDate(25),
+      },
+    });
+    brokerUsers.push(u);
 
-  // Borrower Requests
-  const req1 = await prisma.borrowerRequest.create({
-    data: {
-      borrowerId: borrower1.id,
-      requestType: "PURCHASE",
-      province: "ON",
-      city: "Toronto",
-      propertyType: "CONDO",
-      priceRangeMin: 500000,
-      priceRangeMax: 700000,
-      downPaymentPercent: "10%",
-      employmentType: "FULL_TIME",
-      creditScoreBand: "GOOD",
-      mortgageAmountMin: 450000,
-      mortgageAmountMax: 630000,
-      preferredTerm: "5 years",
-      preferredType: "FIXED",
-      closingTimeline: "3-6 months",
-      notes: "First-time buyer looking for a condo downtown.",
-      status: "OPEN",
-    },
-  });
-  const req2 = await prisma.borrowerRequest.create({
-    data: {
-      borrowerId: borrower2.id,
-      requestType: "REFINANCE",
-      province: "BC",
-      city: "Vancouver",
-      propertyType: "DETACHED",
-      priceRangeMin: 1200000,
-      priceRangeMax: 1500000,
-      downPaymentPercent: "30%",
-      employmentType: "SELF_EMPLOYED",
-      creditScoreBand: "EXCELLENT",
-      mortgageAmountMin: 800000,
-      mortgageAmountMax: 1050000,
-      preferredTerm: "3 years",
-      preferredType: "VARIABLE",
-      closingTimeline: "1-3 months",
-      status: "IN_PROGRESS",
-    },
-  });
-  const req3 = await prisma.borrowerRequest.create({
-    data: {
-      borrowerId: borrower3.id,
-      requestType: "RENEWAL",
-      province: "ON",
-      city: "Mississauga",
-      propertyType: "TOWNHOUSE",
-      priceRangeMin: 800000,
-      priceRangeMax: 950000,
-      employmentType: "FULL_TIME",
-      creditScoreBand: "FAIR",
-      mortgageAmountMin: 600000,
-      mortgageAmountMax: 750000,
-      preferredType: "NOT_SURE",
-      closingTimeline: "6+ months",
-      status: "OPEN",
-    },
-  });
+    const tier = tiers[i];
+    const yrs = 2 + Math.floor(Math.random() * 20);
+    const credits =
+      tier === "FREE" ? Math.floor(Math.random() * 3) :
+      tier === "BASIC" ? 5 + Math.floor(Math.random() * 10) :
+      tier === "PRO" ? 15 + Math.floor(Math.random() * 30) :
+      50 + Math.floor(Math.random() * 100);
 
-  console.log("Borrower requests created.");
+    const specialtyCount = 1 + Math.floor(Math.random() * 3);
+    const shuffled = [...SPECIALTIES].sort(() => Math.random() - 0.5);
+    const specs = shuffled.slice(0, specialtyCount).join(", ");
+    const cities = CITIES[province] || ["City"];
 
-  // Broker Introductions
-  await prisma.brokerIntroduction.create({
-    data: {
-      requestId: req1.id,
-      brokerId: broker1.id,
-      howCanHelp: "I specialize in first-time condo purchases in the GTA.",
-      experience: "Helped 200+ first-time buyers close in Toronto.",
-      lenderNetwork: "Big 5 banks + monoline lenders",
-      personalMessage: "Hi John, I'd love to help you find the right condo mortgage!",
-      estimatedTimeline: "2-4 weeks",
-    },
-  });
-  await prisma.brokerIntroduction.create({
-    data: {
-      requestId: req2.id,
-      brokerId: broker2.id,
-      howCanHelp: "Expert at refinancing for self-employed borrowers in BC.",
-      experience: "8 years handling complex income documentation.",
-      lenderNetwork: "Alternative lenders + credit unions",
-      personalMessage: "Hi Alice, I can get you competitive rates even with self-employed income.",
-      estimatedTimeline: "3-5 weeks",
-    },
-  });
-  await prisma.brokerIntroduction.create({
-    data: {
-      requestId: req1.id,
-      brokerId: broker2.id,
-      howCanHelp: "I can offer competitive rates from BC-based lenders.",
-      personalMessage: "John, happy to explore some out-of-province options for you.",
-    },
-  });
-  await prisma.brokerIntroduction.create({
-    data: {
-      requestId: req3.id,
-      brokerId: broker1.id,
-      howCanHelp: "Renewal is a great time to renegotiate your rate.",
-      experience: "Helped dozens of clients save on renewals.",
-      personalMessage: "Bob, let's make sure you're getting the best renewal rate possible.",
-      estimatedTimeline: "1-2 weeks",
-    },
-  });
+    const broker = await prisma.broker.create({
+      data: {
+        userId: u.id,
+        brokerageName: BROKERAGE_NAMES[i % BROKERAGE_NAMES.length],
+        province,
+        licenseNumber: `${province.charAt(0)}${String(8000000 + i * 1111).slice(0, 7)}`,
+        mortgageCategory: i < 10 ? "BOTH" : i < 13 ? "RESIDENTIAL" : "COMMERCIAL",
+        bio: `${yrs} years of experience helping clients with ${specs.toLowerCase()}.`,
+        yearsExperience: yrs,
+        areasServed: cities.slice(0, 2 + Math.floor(Math.random() * 2)).join(", "),
+        specialties: specs,
+        verificationStatus: verStatuses[i],
+        subscriptionTier: tier,
+        rating: verStatuses[i] === "VERIFIED" ? parseFloat((3.5 + Math.random() * 1.5).toFixed(1)) : null,
+        completedMatches: verStatuses[i] === "VERIFIED" ? Math.floor(Math.random() * 100) : 0,
+        responseCredits: credits,
+        createdAt: randomDate(25),
+      },
+    });
+    brokerRecords.push(broker);
+  }
+  console.log(`${brokerUsers.length} brokers created.`);
 
-  console.log("Broker introductions created.");
+  // ── Borrower requests (25) ─────────────────────────────────
+  const requestTypes: ("PURCHASE" | "REFINANCE" | "RENEWAL")[] = ["PURCHASE", "REFINANCE", "RENEWAL"];
+  const propertyTypes: ("CONDO" | "TOWNHOUSE" | "DETACHED" | "OTHER")[] = ["CONDO", "TOWNHOUSE", "DETACHED", "OTHER"];
+  const employmentTypes: ("FULL_TIME" | "PART_TIME" | "SELF_EMPLOYED" | "CONTRACT" | "RETIRED")[] = [
+    "FULL_TIME", "PART_TIME", "SELF_EMPLOYED", "CONTRACT", "RETIRED",
+  ];
+  const creditBands: ("EXCELLENT" | "GOOD" | "FAIR" | "POOR" | "NOT_SURE")[] = [
+    "EXCELLENT", "GOOD", "FAIR", "POOR", "NOT_SURE",
+  ];
+  const mortgageTypes: ("FIXED" | "VARIABLE" | "NOT_SURE")[] = ["FIXED", "VARIABLE", "NOT_SURE"];
+  const reqStatuses: ("OPEN" | "IN_PROGRESS" | "CLOSED" | "EXPIRED")[] = ["OPEN", "OPEN", "OPEN", "IN_PROGRESS", "IN_PROGRESS", "CLOSED", "EXPIRED"];
 
-  // Conversations & Messages
-  const conv1 = await prisma.conversation.create({
-    data: {
-      requestId: req1.id,
-      borrowerId: borrower1.id,
-      brokerId: broker1.id,
-      status: "ACTIVE",
-    },
-  });
-  const conv2 = await prisma.conversation.create({
-    data: {
-      requestId: req2.id,
-      borrowerId: borrower2.id,
-      brokerId: broker2.id,
-      status: "ACTIVE",
-    },
-  });
-  const conv3 = await prisma.conversation.create({
-    data: {
-      requestId: req3.id,
-      borrowerId: borrower3.id,
-      brokerId: broker1.id,
-      status: "ACTIVE",
-    },
-  });
+  const requests = [];
+  for (let i = 0; i < 25; i++) {
+    const borrower = borrowers[i % borrowers.length];
+    const province = PROVINCES[i % PROVINCES.length];
+    const cities = CITIES[province] || ["City"];
+    const priceMin = (200 + Math.floor(Math.random() * 800)) * 1000;
+    const priceMax = priceMin + (100 + Math.floor(Math.random() * 400)) * 1000;
+    const category = i < 20 ? "RESIDENTIAL" as const : "COMMERCIAL" as const;
 
-  await prisma.message.createMany({
-    data: [
-      { conversationId: conv1.id, senderId: brokerUser1.id, body: "Hi John! I'd love to help you find the perfect condo." },
-      { conversationId: conv1.id, senderId: borrower1.id, body: "Thanks Sarah! I'm looking at units near the subway." },
-      { conversationId: conv1.id, senderId: brokerUser1.id, body: "Great choice. I have lenders offering 4.89% fixed for 5 years." },
-      { conversationId: conv1.id, senderId: borrower1.id, body: "That sounds competitive. What are the fees?" },
-      { conversationId: conv2.id, senderId: brokerUser2.id, body: "Hi Alice, I reviewed your profile. Let's talk about your refinance." },
-      { conversationId: conv2.id, senderId: borrower2.id, body: "Hi Mike! I want to lower my rate and access some equity." },
-      { conversationId: conv2.id, senderId: brokerUser2.id, body: "With your credit score, we can definitely find something great." },
-      { conversationId: conv3.id, senderId: brokerUser1.id, body: "Bob, your renewal is coming up. Let's beat your current rate." },
-      { conversationId: conv3.id, senderId: borrower3.id, body: "Yes please! My current rate is 5.4% fixed." },
-      { conversationId: conv3.id, senderId: brokerUser1.id, body: "I can get you 4.79% right now. Want me to start the paperwork?" },
-    ],
-  });
+    const req = await prisma.borrowerRequest.create({
+      data: {
+        borrowerId: borrower.id,
+        mortgageCategory: category,
+        requestType: pick(requestTypes),
+        province,
+        city: pick(cities),
+        propertyType: pick(propertyTypes),
+        priceRangeMin: priceMin,
+        priceRangeMax: priceMax,
+        downPaymentPercent: `${5 + Math.floor(Math.random() * 30)}%`,
+        employmentType: pick(employmentTypes),
+        creditScoreBand: pick(creditBands),
+        mortgageAmountMin: Math.round(priceMin * 0.7),
+        mortgageAmountMax: Math.round(priceMax * 0.9),
+        preferredTerm: pick(["1 year", "3 years", "5 years"]),
+        preferredType: pick(mortgageTypes),
+        closingTimeline: pick(["1-3 months", "3-6 months", "6+ months"]),
+        notes: pick(REQUEST_NOTES),
+        status: pick(reqStatuses),
+        createdAt: randomDate(25),
+      },
+    });
+    requests.push(req);
+  }
+  console.log(`${requests.length} borrower requests created.`);
 
-  console.log("Conversations and messages created.");
+  // ── Broker introductions (40) ──────────────────────────────
+  const introMessages = [
+    "I'd love to help you with this. My experience is directly relevant.",
+    "I have access to lenders that can offer very competitive rates for your situation.",
+    "Let me know if you'd like to chat — I've handled many similar cases.",
+    "I specialize in exactly this type of mortgage. Happy to discuss!",
+    "With my lender network, I can likely find you a better rate than your bank.",
+  ];
+  const introSet = new Set<string>();
+  let introCount = 0;
+  for (let i = 0; i < 40; i++) {
+    const reqIdx = i % requests.length;
+    const brokerIdx = Math.floor(i / requests.length + i) % brokerRecords.length;
+    const key = `${requests[reqIdx].id}-${brokerRecords[brokerIdx].id}`;
+    if (introSet.has(key)) continue;
+    if (verStatuses[brokerIdx] !== "VERIFIED") continue;
+    introSet.add(key);
 
-  // Reports
-  await prisma.report.createMany({
-    data: [
-      { id: "rpt_1", reporterId: borrower1.id, targetType: "Broker", targetId: broker2.id, reason: "Misleading profile information about experience and credentials", status: "OPEN" },
-      { id: "rpt_2", reporterId: borrower2.id, targetType: "Message", targetId: "msg_482", reason: "Inappropriate language and unprofessional conduct", status: "OPEN" },
-      { id: "rpt_3", reporterId: borrower3.id, targetType: "Broker", targetId: broker1.id, reason: "Suspected unlicensed activity in Ontario", status: "REVIEWED" },
-      { id: "rpt_4", reporterId: borrower1.id, targetType: "Message", targetId: "msg_391", reason: "Spam messages soliciting external services", status: "RESOLVED" },
-      { id: "rpt_5", reporterId: borrower2.id, targetType: "Broker", targetId: broker1.id, reason: "Unresponsive after initial consultation, possible bait-and-switch", status: "OPEN" },
-      { id: "rpt_6", reporterId: borrower3.id, targetType: "Message", targetId: "msg_520", reason: "Requesting personal financial information outside the platform", status: "OPEN" },
-    ],
-  });
+    await prisma.brokerIntroduction.create({
+      data: {
+        requestId: requests[reqIdx].id,
+        brokerId: brokerRecords[brokerIdx].id,
+        howCanHelp: pick(introMessages),
+        experience: `${2 + Math.floor(Math.random() * 15)} years in this area.`,
+        lenderNetwork: pick(["Big 5 banks + monoline lenders", "Credit unions + alternative lenders", "Full spectrum — banks, monolines, private"]),
+        personalMessage: pick(introMessages),
+        estimatedTimeline: pick(["1-2 weeks", "2-4 weeks", "3-5 weeks"]),
+        createdAt: randomDate(25),
+      },
+    });
+    introCount++;
+  }
+  console.log(`${introCount} broker introductions created.`);
 
-  console.log("Reports created.");
-  console.log("\nSeed complete! Test accounts (password: password123):");
-  console.log("  Admin:    admin@test.com");
-  console.log("  Borrower: john@test.com / alice@test.com / bob@test.com");
-  console.log("  Broker:   broker1@test.com / broker2@test.com");
+  // ── Conversations (15) & Messages ──────────────────────────
+  const conversations = [];
+  const convSet = new Set<string>();
+  for (let i = 0; i < 15; i++) {
+    const req = requests[i % requests.length];
+    const brokerIdx = i % brokerRecords.length;
+    if (verStatuses[brokerIdx] !== "VERIFIED") continue;
+    const key = `${req.id}-${brokerRecords[brokerIdx].id}`;
+    if (convSet.has(key)) continue;
+    convSet.add(key);
+
+    const conv = await prisma.conversation.create({
+      data: {
+        requestId: req.id,
+        borrowerId: req.borrowerId,
+        brokerId: brokerRecords[brokerIdx].id,
+        status: i < 12 ? "ACTIVE" : "CLOSED",
+        createdAt: randomDate(25),
+      },
+    });
+    conversations.push({ conv, borrowerId: req.borrowerId, brokerUserId: brokerUsers[brokerIdx].id });
+  }
+
+  // Messages for each conversation (3-8 messages each)
+  const msgTemplatesBroker = [
+    "Hi! I reviewed your request and I think I can help.",
+    "Thanks for your interest. Let me outline what I can offer.",
+    "I have access to several lenders that would be a great fit for your needs.",
+    "Would you be available for a quick call this week?",
+    "I've prepared a preliminary rate comparison for you.",
+    "Happy to answer any questions about the process.",
+    "I can get pre-approval paperwork started right away.",
+  ];
+  const msgTemplatesBorrower = [
+    "Thanks for reaching out! I have a few questions.",
+    "What rates are you seeing right now for my situation?",
+    "How long does the approval process usually take?",
+    "Can you handle the full process end-to-end?",
+    "What fees should I expect?",
+    "Sounds great, let's move forward!",
+    "I need to discuss with my partner first.",
+  ];
+
+  for (const { conv, borrowerId, brokerUserId } of conversations) {
+    const msgCount = 3 + Math.floor(Math.random() * 6);
+    const msgs = [];
+    for (let j = 0; j < msgCount; j++) {
+      const isBroker = j % 2 === 0;
+      msgs.push({
+        conversationId: conv.id,
+        senderId: isBroker ? brokerUserId : borrowerId,
+        body: isBroker ? pick(msgTemplatesBroker) : pick(msgTemplatesBorrower),
+        createdAt: new Date(conv.createdAt.getTime() + j * 3600000 * (1 + Math.random() * 12)),
+      });
+    }
+    await prisma.message.createMany({ data: msgs });
+  }
+  console.log(`${conversations.length} conversations with messages created.`);
+
+  // ── Reviews (8) ────────────────────────────────────────────
+  let reviewCount = 0;
+  for (let i = 0; i < Math.min(8, conversations.length); i++) {
+    const { conv, borrowerId } = conversations[i];
+    const brokerIdx = i % brokerRecords.length;
+    try {
+      await prisma.review.create({
+        data: {
+          conversationId: conv.id,
+          borrowerId,
+          brokerId: brokerRecords[brokerIdx].id,
+          rating: 3 + Math.floor(Math.random() * 3),
+          comment: pick([
+            "Great experience, very responsive and professional.",
+            "Good service overall. Would recommend.",
+            "Helped me find a competitive rate. Happy with the outcome.",
+            "Very knowledgeable but communication could be faster.",
+            "Excellent broker, went above and beyond.",
+            "Average experience, nothing special but got the job done.",
+            "Outstanding service from start to finish!",
+            null,
+          ]),
+          createdAt: randomDate(25),
+        },
+      });
+      reviewCount++;
+    } catch {
+      // skip duplicates
+    }
+  }
+  console.log(`${reviewCount} reviews created.`);
+
+  // ── Reports (10) ──────────────────────────────────────────
+  const reportStatuses: ("OPEN" | "REVIEWED" | "RESOLVED" | "DISMISSED")[] = [
+    "OPEN", "OPEN", "OPEN", "OPEN", "REVIEWED", "REVIEWED", "RESOLVED", "RESOLVED", "DISMISSED", "OPEN",
+  ];
+  for (let i = 0; i < 10; i++) {
+    const reporter = borrowers[i % borrowers.length];
+    const targetBroker = brokerRecords[i % brokerRecords.length];
+    const status = reportStatuses[i];
+    await prisma.report.create({
+      data: {
+        reporterId: reporter.id,
+        targetType: i % 3 === 0 ? "CONVERSATION" : "BROKER",
+        targetId: i % 3 === 0 ? (conversations[i % conversations.length]?.conv.id ?? targetBroker.id) : targetBroker.id,
+        reason: REPORT_REASONS[i % REPORT_REASONS.length],
+        status,
+        adminNotes: status === "RESOLVED" ? "Investigated and action taken." : status === "DISMISSED" ? "No violation found." : null,
+        resolvedAt: status === "RESOLVED" || status === "DISMISSED" ? randomDate(10) : null,
+        createdAt: randomDate(25),
+      },
+    });
+  }
+  console.log("10 reports created.");
+
+  // ── Admin actions (20) ────────────────────────────────────
+  const actionTypes = [
+    { action: "CREDIT_ADJUST", targetType: "BROKER", details: (i: number) => JSON.stringify({ amount: [-5, 10, 3, -2, 15][i % 5], previousBalance: 10, newBalance: 10 + [-5, 10, 3, -2, 15][i % 5] }) },
+    { action: "VERIFY_BROKER", targetType: "BROKER", details: () => JSON.stringify({ previousStatus: "PENDING", newStatus: "VERIFIED" }) },
+    { action: "REJECT_BROKER", targetType: "BROKER", details: () => JSON.stringify({ previousStatus: "PENDING", newStatus: "REJECTED" }) },
+    { action: "SUSPEND_USER", targetType: "USER", details: () => JSON.stringify({ previousStatus: "ACTIVE", newStatus: "SUSPENDED" }) },
+    { action: "REACTIVATE_USER", targetType: "USER", details: () => JSON.stringify({ previousStatus: "SUSPENDED", newStatus: "ACTIVE" }) },
+    { action: "CLOSE_REQUEST", targetType: "REQUEST", details: () => JSON.stringify({ previousStatus: "OPEN", newStatus: "CLOSED" }) },
+    { action: "RESOLVE_REPORT", targetType: "REPORT", details: () => JSON.stringify({ previousStatus: "OPEN", newStatus: "RESOLVED", reportTargetType: "BROKER" }) },
+    { action: "DISMISS_REPORT", targetType: "REPORT", details: () => JSON.stringify({ previousStatus: "OPEN", newStatus: "DISMISSED", reportTargetType: "BROKER" }) },
+    { action: "SEND_NOTICE", targetType: "USER", details: () => JSON.stringify({ subject: "Account reminder" }) },
+    { action: "UPDATE_SETTINGS", targetType: "SYSTEM", details: () => JSON.stringify({ free_tier_credits: "5" }) },
+  ];
+
+  for (let i = 0; i < 20; i++) {
+    const at = actionTypes[i % actionTypes.length];
+    const target = at.targetType === "BROKER" ? brokerRecords[i % brokerRecords.length].id :
+                   at.targetType === "USER" ? borrowers[i % borrowers.length].id :
+                   at.targetType === "REQUEST" ? requests[i % requests.length].id :
+                   "settings";
+    await prisma.adminAction.create({
+      data: {
+        adminId: admins[i % admins.length].id,
+        action: at.action,
+        targetType: at.targetType,
+        targetId: target,
+        details: at.details(i),
+        reason: i % 3 === 0 ? pick(["Policy violation", "User request", "Routine check", "Promotional bonus", "Spam investigation"]) : null,
+        createdAt: randomDate(25),
+      },
+    });
+  }
+  console.log("20 admin actions created.");
+
+  // ── Admin notices (5) ─────────────────────────────────────
+  for (let i = 0; i < 5; i++) {
+    await prisma.adminNotice.create({
+      data: {
+        adminId: admins[0].id,
+        userId: borrowers[i].id,
+        subject: pick(["Welcome to MortgageMatch", "Account Update", "Important Notice", "Profile Reminder", "Policy Update"]),
+        body: pick([
+          "Welcome! Your account is set up and ready to use.",
+          "We've updated our terms of service. Please review them at your earliest convenience.",
+          "Your profile is incomplete. Please update your information to get the best matches.",
+          "We noticed unusual activity on your account. Please verify your identity.",
+          "Your request has been reviewed by our team. No further action is needed.",
+        ]),
+        read: i < 2,
+        createdAt: randomDate(25),
+      },
+    });
+  }
+  console.log("5 admin notices created.");
+
+  // ── Credit purchases (8) ─────────────────────────────────
+  for (let i = 0; i < 8; i++) {
+    const broker = brokerRecords[i % brokerRecords.length];
+    const isSmall = i % 2 === 0;
+    await prisma.creditPurchase.create({
+      data: {
+        brokerId: broker.id,
+        packType: isSmall ? "SMALL" : "LARGE",
+        credits: isSmall ? 5 : 20,
+        amount: isSmall ? 2499 : 7999,
+        createdAt: randomDate(25),
+      },
+    });
+  }
+  console.log("8 credit purchases created.");
+
+  // ── System settings ───────────────────────────────────────
+  const defaults: [string, string][] = [
+    ["platform_name", "MortgageMatch"],
+    ["support_email", "support@mortgagematch.ca"],
+    ["free_tier_credits", "3"],
+    ["basic_tier_credits", "15"],
+    ["pro_tier_credits", "40"],
+    ["premium_tier_credits", "100"],
+    ["max_requests_per_user", "5"],
+    ["request_expiry_days", "30"],
+    ["maintenance_mode", "false"],
+  ];
+  for (const [key, value] of defaults) {
+    await prisma.systemSetting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+  }
+  console.log("System settings seeded.");
+
+  // ── Summary ───────────────────────────────────────────────
+  const totalUsers = admins.length + borrowers.length + brokerUsers.length;
+  console.log(`\nSeed complete! ${totalUsers} users created (password: password123)`);
+  console.log("\nKey test accounts:");
+  console.log("  Admin:     admin@test.com");
+  console.log("  Borrower:  borrower1@test.com … borrower35@test.com");
+  console.log("  Broker:    broker1@test.com … broker15@test.com");
+  console.log("\nSpecial states:");
+  console.log("  Suspended borrower: borrower31@test.com");
+  console.log("  Banned borrower:    borrower32@test.com");
+  console.log("  Suspended broker:   broker13@test.com (also REJECTED)");
+  console.log("  Pending brokers:    broker8, broker9, broker12");
+  console.log("  Tier spread: FREE(4), BASIC(4), PRO(4), PREMIUM(3)");
 }
 
+// ─── Empty seed ───────────────────────────────────────────────
 async function seedEmpty() {
   const hash = await bcrypt.hash("123", 10);
+  let pubIdx = 900;
 
   // Admin
   await prisma.user.create({
-    data: { email: "admin@test.com", passwordHash: hash, role: "ADMIN", name: "Admin User" },
+    data: { email: "admin@test.com", passwordHash: hash, role: "ADMIN", name: "Admin User", publicId: genPublicId(pubIdx++) },
   });
 
   // Borrowers
   await prisma.user.create({
-    data: { email: "borrower1@test.com", passwordHash: hash, role: "BORROWER", name: "John Smith" },
+    data: { email: "borrower1@test.com", passwordHash: hash, role: "BORROWER", name: "John Smith", publicId: genPublicId(pubIdx++) },
   });
   await prisma.user.create({
-    data: { email: "borrower2@test.com", passwordHash: hash, role: "BORROWER", name: "Alice Johnson" },
+    data: { email: "borrower2@test.com", passwordHash: hash, role: "BORROWER", name: "Alice Johnson", publicId: genPublicId(pubIdx++) },
   });
 
-  // Broker — FREE tier
-  const freeBrokerUser = await prisma.user.create({
-    data: { email: "broker-free@test.com", passwordHash: hash, role: "BROKER", name: "David Park" },
-  });
-  await prisma.broker.create({
-    data: {
-      userId: freeBrokerUser.id,
-      brokerageName: "Park Mortgage Services",
-      province: "ON",
-      licenseNumber: "M08009001",
-      bio: "New to the platform, exploring opportunities.",
-      yearsExperience: 3,
-      areasServed: "Toronto, Markham",
-      specialties: "First-time buyers",
-      verificationStatus: "VERIFIED",
-      subscriptionTier: "FREE",
-      responseCredits: 0,
-    },
-  });
+  // Brokers — one per tier
+  for (const [email, name, tier, credits, province, license] of [
+    ["broker-free@test.com", "David Park", "FREE", 0, "ON", "M08009001"],
+    ["broker-basic@test.com", "Sarah Lee", "BASIC", 5, "ON", "M08001234"],
+    ["broker-pro@test.com", "Mike Chen", "PRO", 20, "BC", "X300567"],
+    ["broker-premium@test.com", "Jessica Wang", "PREMIUM", 999, "AB", "A20045678"],
+  ] as const) {
+    const u = await prisma.user.create({
+      data: { email, passwordHash: hash, role: "BROKER", name, publicId: genPublicId(pubIdx++) },
+    });
+    await prisma.broker.create({
+      data: {
+        userId: u.id,
+        brokerageName: `${name.split(" ")[1]} Mortgage Services`,
+        province,
+        licenseNumber: license,
+        bio: `Experienced mortgage broker.`,
+        yearsExperience: 5,
+        areasServed: (CITIES[province] || ["City"]).slice(0, 2).join(", "),
+        specialties: "General",
+        verificationStatus: "VERIFIED",
+        subscriptionTier: tier,
+        responseCredits: credits,
+      },
+    });
+  }
 
-  // Broker — BASIC tier (1 credit)
-  const basicBrokerUser = await prisma.user.create({
-    data: { email: "broker-basic@test.com", passwordHash: hash, role: "BROKER", name: "Sarah Lee" },
-  });
-  await prisma.broker.create({
-    data: {
-      userId: basicBrokerUser.id,
-      brokerageName: "Maple Mortgage Group",
-      province: "ON",
-      licenseNumber: "M08001234",
-      bio: "Helping first-time buyers in the GTA for over a decade.",
-      yearsExperience: 12,
-      areasServed: "Toronto, Mississauga, Brampton",
-      specialties: "First-time buyers, Refinancing",
-      verificationStatus: "VERIFIED",
-      subscriptionTier: "BASIC",
-      responseCredits: 1,
-    },
-  });
-
-  // Broker — PRO tier
-  const proBrokerUser = await prisma.user.create({
-    data: { email: "broker-pro@test.com", passwordHash: hash, role: "BROKER", name: "Mike Chen" },
-  });
-  await prisma.broker.create({
-    data: {
-      userId: proBrokerUser.id,
-      brokerageName: "Pacific Rate Finders",
-      province: "BC",
-      licenseNumber: "X300567",
-      bio: "Specializing in competitive rates for self-employed borrowers.",
-      yearsExperience: 8,
-      areasServed: "Vancouver, Burnaby, Richmond",
-      specialties: "Self-employed, Commercial",
-      verificationStatus: "VERIFIED",
-      subscriptionTier: "PRO",
-      responseCredits: 20,
-    },
-  });
-
-  // Broker — PREMIUM tier
-  const premiumBrokerUser = await prisma.user.create({
-    data: { email: "broker-premium@test.com", passwordHash: hash, role: "BROKER", name: "Jessica Wang" },
-  });
-  await prisma.broker.create({
-    data: {
-      userId: premiumBrokerUser.id,
-      brokerageName: "Summit Financial Partners",
-      province: "AB",
-      licenseNumber: "A20045678",
-      bio: "Full-service brokerage handling residential and commercial mortgages across Western Canada.",
-      yearsExperience: 18,
-      areasServed: "Calgary, Edmonton, Red Deer",
-      specialties: "Commercial, Investment properties, High-value residential",
-      verificationStatus: "VERIFIED",
-      subscriptionTier: "PREMIUM",
-      rating: 4.9,
-      completedMatches: 85,
-      responseCredits: 999,
-    },
-  });
+  // System settings
+  for (const [key, value] of [
+    ["platform_name", "MortgageMatch"],
+    ["support_email", "support@mortgagematch.ca"],
+    ["free_tier_credits", "3"],
+    ["basic_tier_credits", "15"],
+    ["pro_tier_credits", "40"],
+    ["premium_tier_credits", "100"],
+    ["max_requests_per_user", "5"],
+    ["request_expiry_days", "30"],
+    ["maintenance_mode", "false"],
+  ] as const) {
+    await prisma.systemSetting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+  }
 
   console.log("Empty seed complete! All passwords: 123");
   console.log("\nAccounts:");
   console.log("  Admin:    admin@test.com");
   console.log("  Borrower: borrower1@test.com / borrower2@test.com");
   console.log("  Broker:   broker-free@test.com   (FREE, 0 credits)");
-  console.log("  Broker:   broker-basic@test.com  (BASIC, 1 credit)");
+  console.log("  Broker:   broker-basic@test.com  (BASIC, 5 credits)");
   console.log("  Broker:   broker-pro@test.com    (PRO, 20 credits)");
   console.log("  Broker:   broker-premium@test.com (PREMIUM, 999 credits)");
 }
 
+// ─── Main ─────────────────────────────────────────────────────
 async function main() {
   console.log(`Running seed in "${mode}" mode...\n`);
 

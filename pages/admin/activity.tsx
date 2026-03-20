@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import { downloadCSV } from "@/lib/csvExport";
 
 interface AdminActionRow {
   id: string;
@@ -240,7 +241,27 @@ export default function AdminActivity() {
             </svg>
             {t("admin.backToDashboard", "Back to Dashboard")}
           </Link>
-          <h1 className="heading-lg">{t("admin.activityLog", "Activity Log")}</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="heading-lg">{t("admin.activityLog", "Activity Log")}</h1>
+            <button
+              onClick={() => {
+                const headers = ["Date", "Action", "Admin", "Target Type", "Target ID", "Reason", "Details"];
+                const rows = actions.map((a) => [
+                  new Date(a.createdAt).toISOString().slice(0, 19).replace("T", " "),
+                  a.action,
+                  a.admin.name || a.admin.email,
+                  a.targetType,
+                  a.targetId,
+                  a.reason || "",
+                  a.details || "",
+                ]);
+                downloadCSV("activity_export", headers, rows);
+              }}
+              className="btn-secondary !rounded-lg"
+            >
+              {t("admin.exportCsv", "Export CSV")}
+            </button>
+          </div>
           <p className="text-body mt-2">
             {t("admin.activityLogDesc", "History of all admin actions taken on the platform.")}
           </p>

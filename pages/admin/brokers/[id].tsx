@@ -152,6 +152,35 @@ export default function AdminBrokerDetail() {
     fetchBroker();
   }, [session, status, router, id]);
 
+  const handleAccountStatusChange = async (newStatus: string) => {
+    if (!broker) return;
+    setActionLoading(true);
+    setActionMessage(null);
+
+    try {
+      const res = await fetch(`/api/admin/users/${broker.user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        setBroker((prev) =>
+          prev ? { ...prev, user: { ...prev.user, status: newStatus } } : prev
+        );
+        setActionMessage({ text: t("admin.statusUpdated"), ok: true });
+      } else {
+        const data = await res.json();
+        setActionMessage({ text: data.error, ok: false });
+      }
+    } catch {
+      setActionMessage({ text: "Failed to update", ok: false });
+    } finally {
+      setActionLoading(false);
+      setTimeout(() => setActionMessage(null), 3000);
+    }
+  };
+
   const handleVerificationChange = async (newStatus: string) => {
     if (!broker) return;
     setActionLoading(true);
@@ -348,6 +377,46 @@ export default function AdminBrokerDetail() {
               {actionMessage.text}
             </p>
           )}
+        </div>
+
+        {/* Account Actions */}
+        <div className="card-elevated mb-6 animate-fade-in-up stagger-3">
+          <h2 className="heading-sm mb-4">{t("admin.accountActions", "Account Actions")}</h2>
+          <div className="flex items-center gap-3 flex-wrap">
+            {broker.user.status === "ACTIVE" && (
+              <>
+                <button
+                  onClick={() => handleAccountStatusChange("SUSPENDED")}
+                  disabled={actionLoading}
+                  className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {actionLoading ? "..." : t("admin.suspendUser", "Suspend")}
+                </button>
+                <button
+                  onClick={() => handleAccountStatusChange("BANNED")}
+                  disabled={actionLoading}
+                  className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {actionLoading ? "..." : t("admin.banUser", "Ban")}
+                </button>
+              </>
+            )}
+            {broker.user.status !== "ACTIVE" && (
+              <button
+                onClick={() => handleAccountStatusChange("ACTIVE")}
+                disabled={actionLoading}
+                className="btn-primary !rounded-lg disabled:opacity-50"
+              >
+                {actionLoading ? "..." : t("admin.reactivate", "Reactivate")}
+              </button>
+            )}
+          </div>
+          <p className="mt-2 font-body text-xs text-forest-700/50">
+            {t("admin.currentAccountStatus", "Current account status:")}{" "}
+            <span className={`font-semibold ${broker.user.status === "ACTIVE" ? "text-forest-600" : broker.user.status === "SUSPENDED" ? "text-amber-700" : "text-rose-600"}`}>
+              {broker.user.status}
+            </span>
+          </p>
         </div>
 
         {/* Recent Introductions */}
