@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useTranslation } from "next-i18next";
