@@ -127,9 +127,7 @@ export default function AdminManual() {
   }
 
   if (!session || session.user.role !== "ADMIN") {
-    if (status !== "loading") {
-      router.replace("/login", undefined, { locale: router.locale });
-    }
+    router.replace("/login", undefined, { locale: router.locale });
     return null;
   }
 
