@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { generateConversationPublicId } from "@/lib/publicId";
 
 export default async function handler(
   req: NextApiRequest,
@@ -91,8 +92,10 @@ export default async function handler(
         return res.status(200).json(existing);
       }
 
+      const convoPublicId = await generateConversationPublicId();
       const conversation = await prisma.conversation.create({
         data: {
+          publicId: convoPublicId,
           requestId: request.id,
           borrowerId: session.user.id,
           brokerId,

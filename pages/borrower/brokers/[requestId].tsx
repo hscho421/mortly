@@ -232,7 +232,7 @@ export default function BrokerComparison() {
                         </div>
                       </div>
                     </div>
-                    <ReportButton targetType="BROKER" targetId={broker.id} />
+                    <ReportButton targetType="BROKER" targetId={broker.user.publicId} />
                   </div>
 
                   {/* Message preview / full */}

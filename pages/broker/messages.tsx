@@ -9,6 +9,7 @@ import type { GetStaticProps } from "next";
 
 interface ConversationListItem {
   id: string;
+  publicId?: string;
   status: string;
   updatedAt: string;
   messages: { body: string; createdAt: string; senderId: string }[];
@@ -470,6 +471,9 @@ export default function BrokerMessagesPage() {
                       <p className="text-body-sm truncate">
                         {formatRequestType(activeConversation.request.requestType)}{" "}
                         in {activeConversation.request.province}
+                        {activeConversation.publicId && (
+                          <span className="ml-2 font-mono text-[10px] text-sage-400">#{activeConversation.publicId}</span>
+                        )}
                       </p>
                     )}
                   </div>

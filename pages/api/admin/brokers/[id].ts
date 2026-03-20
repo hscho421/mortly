@@ -23,9 +23,9 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const broker = await prisma.broker.findUnique({
-        where: { id },
-        include: {
+      // Support lookup by user publicId (9-digit) or broker internal id
+      const isPublicId = /^\d{9}$/.test(id);
+      const brokerInclude = {
           user: {
             select: { id: true, publicId: true, name: true, email: true, status: true, createdAt: true },
           },
@@ -33,7 +33,7 @@ export default async function handler(
             include: {
               borrower: { select: { id: true, name: true } },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: "desc" as const },
             take: 20,
           },
           introductions: {
@@ -42,7 +42,7 @@ export default async function handler(
                 select: { id: true, requestType: true, province: true, city: true, status: true },
               },
             },
-            orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: "desc" as const },
             take: 20,
           },
           conversations: {
@@ -51,19 +51,28 @@ export default async function handler(
               request: { select: { id: true, requestType: true, province: true } },
               _count: { select: { messages: true } },
             },
-            orderBy: { updatedAt: "desc" },
+            orderBy: { updatedAt: "desc" as const },
             take: 20,
           },
           subscription: true,
           creditPurchases: {
-            orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: "desc" as const },
             take: 10,
           },
           _count: {
             select: { introductions: true, conversations: true, reviews: true, creditPurchases: true },
           },
-        },
-      });
+      };
+
+      const broker = isPublicId
+        ? await prisma.broker.findFirst({
+            where: { user: { publicId: id } },
+            include: brokerInclude,
+          })
+        : await prisma.broker.findUnique({
+            where: { id },
+            include: brokerInclude,
+          });
 
       if (!broker) {
         return res.status(404).json({ error: "Broker not found" });
@@ -81,6 +90,7 @@ export default async function handler(
 
       const broker = await prisma.broker.findUnique({
         where: { id },
+        include: { user: { select: { publicId: true } } },
       });
 
       if (!broker) {
@@ -103,7 +113,7 @@ export default async function handler(
             adminId: session.user.id,
             action: actionMap[verificationStatus] || "UPDATE_BROKER",
             targetType: "BROKER",
-            targetId: id,
+            targetId: broker.user.publicId,
             details: JSON.stringify({
               previousStatus: broker.verificationStatus,
               newStatus: verificationStatus,

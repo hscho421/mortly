@@ -13,6 +13,7 @@ type SubscriptionTier = "BASIC" | "PRO" | "PREMIUM";
 
 interface BrokerRow {
   id: string;
+  userPublicId: string;
   userName: string;
   brokerageName: string;
   province: string;
@@ -65,6 +66,7 @@ export default function AdminBrokers() {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           json.data.map((b: any) => ({
             id: b.id,
+            userPublicId: b.user?.publicId ?? "—",
             userName: b.user?.name ?? "Unknown",
             brokerageName: b.brokerageName,
             province: b.province,
@@ -178,6 +180,9 @@ export default function AdminBrokers() {
               <thead>
                 <tr className="bg-forest-800">
                   <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    User ID
+                  </th>
+                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
                     Name
                   </th>
                   <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
@@ -206,6 +211,9 @@ export default function AdminBrokers() {
               <tbody className="divide-y divide-cream-200 bg-white">
                 {brokers.map((broker) => (
                   <tr key={broker.id} className="hover:bg-cream-50 transition-colors">
+                    <td className="whitespace-nowrap px-5 py-4 font-mono text-xs text-forest-700/70">
+                      {broker.userPublicId}
+                    </td>
                     <td className="whitespace-nowrap px-5 py-4 font-body text-sm font-semibold text-forest-800">
                       {broker.userName}
                     </td>
@@ -283,7 +291,7 @@ export default function AdminBrokers() {
                 {brokers.length === 0 && (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={9}
                       className="px-5 py-12 text-center text-body-sm"
                     >
                       No brokers found for the selected filter.

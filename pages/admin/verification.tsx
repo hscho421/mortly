@@ -35,15 +35,12 @@ export default function AdminVerification() {
 
     const fetchPending = async () => {
       try {
-        const res = await fetch("/api/admin/brokers");
+        const res = await fetch("/api/admin/brokers?status=PENDING&limit=100");
         if (res.ok) {
-          const data = await res.json();
+          const json = await res.json();
           setPending(
-            data
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .filter((b: any) => b.verificationStatus === "PENDING")
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              .map((b: any) => ({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            json.data.map((b: any) => ({
                 id: b.id,
                 userName: b.user?.name ?? "Unknown",
                 brokerageName: b.brokerageName,

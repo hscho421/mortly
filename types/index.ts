@@ -20,7 +20,7 @@ export type {
   Report,
 };
 
-export type BrokerWithUser = Broker & { user: Pick<User, "name" | "email"> };
+export type BrokerWithUser = Broker & { user: Pick<User, "publicId" | "name" | "email"> };
 
 export type IntroductionWithBroker = BrokerIntroduction & {
   broker: BrokerWithUser;

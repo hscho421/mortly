@@ -59,7 +59,7 @@ function formatDate(dateStr: string): string {
 function getTargetLink(targetType: string, targetId: string): string | null {
   switch (targetType) {
     case "BROKER":
-      return `/admin/brokers`;
+      return `/admin/brokers/${targetId}`;
     case "REQUEST":
       return `/admin/requests`;
     case "CONVERSATION":
@@ -376,10 +376,10 @@ export default function AdminReports() {
                               href={targetLink}
                               className="font-mono text-[10px] text-forest-600 hover:underline"
                             >
-                              {report.targetId.slice(0, 16)}...
+                              {report.targetId}
                             </Link>
                           ) : (
-                            <span className="font-mono text-[10px] text-forest-700/50">{report.targetId.slice(0, 16)}...</span>
+                            <span className="font-mono text-[10px] text-forest-700/50">{report.targetId}</span>
                           )}
                         </div>
                       </td>

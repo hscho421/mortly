@@ -31,3 +31,19 @@ export async function generateRequestPublicId(): Promise<string> {
   }
   throw new Error("Failed to generate unique request public ID");
 }
+
+/**
+ * Generates a unique 9-digit public ID for a conversation.
+ * Retries up to 10 times if a collision is found.
+ */
+export async function generateConversationPublicId(): Promise<string> {
+  for (let i = 0; i < 10; i++) {
+    const id = String(Math.floor(100000000 + Math.random() * 900000000));
+    const existing = await prisma.conversation.findUnique({
+      where: { publicId: id },
+      select: { id: true },
+    });
+    if (!existing) return id;
+  }
+  throw new Error("Failed to generate unique conversation public ID");
+}

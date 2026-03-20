@@ -71,7 +71,7 @@ export default async function handler(
             adminId: session.user.id,
             action: actionMap[status],
             targetType: "USER",
-            targetId: id,
+            targetId: user.publicId,
             details: JSON.stringify({ previousStatus: user.status, newStatus: status }),
             reason: reason || null,
           },

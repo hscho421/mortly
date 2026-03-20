@@ -22,6 +22,7 @@ interface MessageItem {
 
 interface ConversationDetail {
   id: string;
+  publicId: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -189,7 +190,7 @@ export default function AdminConversationDetail() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="heading-lg">{t("admin.conversationDetail", "Conversation Detail")}</h1>
-              <p className="font-mono text-xs text-forest-700/50 mt-1">{conversation.id}</p>
+              <p className="font-mono text-xs text-forest-700/50 mt-1">ID: {conversation.publicId}</p>
             </div>
             {conversation.status === "ACTIVE" && (
               <button
@@ -268,7 +269,7 @@ export default function AdminConversationDetail() {
           )}
         </div>
 
-        {/* Messages */}
+        {/* Chat Messages */}
         <div className="animate-fade-in-up stagger-2">
           <h2 className="heading-sm mb-4">
             {t("admin.messageThread", "Message Thread")} ({conversation.messages.length})
@@ -279,35 +280,75 @@ export default function AdminConversationDetail() {
               <p className="text-body-sm">{t("admin.noMessages", "No messages in this conversation.")}</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {conversation.messages.map((msg) => {
-                const roleInfo = ROLE_COLORS[msg.sender.role] || ROLE_COLORS.BORROWER;
-                const isAdmin = msg.sender.role === "ADMIN";
+            <div className="card-elevated !p-0 overflow-hidden">
+              {/* Chat container */}
+              <div className="bg-cream-50 px-4 py-6 space-y-4 max-h-[600px] overflow-y-auto">
+                {conversation.messages.map((msg) => {
+                  const roleInfo = ROLE_COLORS[msg.sender.role] || ROLE_COLORS.BORROWER;
+                  const isBorrower = msg.sender.role === "BORROWER";
+                  const isBroker = msg.sender.role === "BROKER";
+                  const isAdmin = msg.sender.role === "ADMIN";
 
-                return (
-                  <div
-                    key={msg.id}
-                    className={`card px-5 py-4 ${isAdmin ? "border-l-4 border-amber-400 bg-amber-50/30" : ""}`}
-                  >
-                    <div className="flex items-start justify-between gap-4 mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-body text-[10px] font-semibold uppercase ${roleInfo.bg} ${roleInfo.text}`}>
-                          {roleInfo.label}
-                        </span>
-                        <span className="font-body text-sm font-semibold text-forest-800">
-                          {msg.sender.name || msg.sender.email}
-                        </span>
+                  // Admin messages: centered system-style
+                  if (isAdmin) {
+                    return (
+                      <div key={msg.id} className="flex justify-center">
+                        <div className="max-w-[85%] rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-center">
+                          <p className="font-body text-xs font-semibold text-amber-700 mb-1">
+                            {msg.sender.name || "Admin"}
+                          </p>
+                          <p className="font-body text-sm text-amber-800 whitespace-pre-wrap break-words">
+                            {msg.body}
+                          </p>
+                          <p className="font-body text-[10px] text-amber-600/60 mt-1.5">
+                            {formatDateTime(msg.createdAt)}
+                          </p>
+                        </div>
                       </div>
-                      <span className="font-body text-xs text-forest-700/40 whitespace-nowrap">
-                        {formatDateTime(msg.createdAt)}
-                      </span>
+                    );
+                  }
+
+                  // Borrower: left-aligned, Broker: right-aligned
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex ${isBroker ? "justify-end" : "justify-start"}`}
+                    >
+                      <div className={`max-w-[75%] ${isBroker ? "order-2" : ""}`}>
+                        {/* Sender label */}
+                        <div className={`flex items-center gap-1.5 mb-1 ${isBroker ? "justify-end" : ""}`}>
+                          <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 font-body text-[9px] font-semibold uppercase ${roleInfo.bg} ${roleInfo.text}`}>
+                            {isBorrower ? "B" : "K"}
+                          </span>
+                          <span className="font-body text-[11px] font-medium text-forest-700/60">
+                            {msg.sender.name || msg.sender.email}
+                          </span>
+                        </div>
+
+                        {/* Bubble */}
+                        <div
+                          className={`rounded-2xl px-4 py-2.5 shadow-sm ${
+                            isBorrower
+                              ? "bg-white border border-cream-200 rounded-tl-md"
+                              : "bg-forest-600 text-white rounded-tr-md"
+                          }`}
+                        >
+                          <p className={`font-body text-sm whitespace-pre-wrap break-words ${
+                            isBorrower ? "text-forest-800" : "text-white"
+                          }`}>
+                            {msg.body}
+                          </p>
+                        </div>
+
+                        {/* Timestamp */}
+                        <p className={`font-body text-[10px] text-forest-700/40 mt-1 ${isBroker ? "text-right" : ""}`}>
+                          {formatDateTime(msg.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                    <p className="font-body text-sm text-forest-700/90 whitespace-pre-wrap break-words">
-                      {msg.body}
-                    </p>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

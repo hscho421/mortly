@@ -39,7 +39,7 @@ export default async function handler(
 
       const targetUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true },
+        select: { id: true, publicId: true },
       });
       if (!targetUser) {
         return res.status(404).json({ error: "User not found" });
@@ -63,7 +63,7 @@ export default async function handler(
           adminId: session.user.id,
           action: "SEND_NOTICE",
           targetType: "USER",
-          targetId: userId,
+          targetId: targetUser.publicId,
           details: JSON.stringify({ subject }),
         },
       });

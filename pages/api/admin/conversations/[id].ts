@@ -16,15 +16,18 @@ export default async function handler(
     return res.status(403).json({ error: "Admin access required" });
   }
 
-  const { id } = req.query;
-  if (!id || typeof id !== "string") {
+  const { id: rawId } = req.query;
+  if (!rawId || typeof rawId !== "string") {
     return res.status(400).json({ error: "Invalid conversation ID" });
   }
+
+  // Support lookup by publicId (9-digit) or internal id
+  const lookup = /^\d{9}$/.test(rawId) ? { publicId: rawId } : { id: rawId };
 
   try {
     if (req.method === "GET") {
       const conversation = await prisma.conversation.findUnique({
-        where: { id },
+        where: lookup,
         include: {
           messages: {
             orderBy: { createdAt: "asc" },
@@ -64,7 +67,7 @@ export default async function handler(
       }
 
       const conversation = await prisma.conversation.findUnique({
-        where: { id },
+        where: lookup,
       });
 
       if (!conversation) {
@@ -78,14 +81,14 @@ export default async function handler(
       // Send admin closure message
       await prisma.message.create({
         data: {
-          conversationId: id,
+          conversationId: conversation.id,
           senderId: session.user.id,
           body: "[Admin] This conversation has been closed by an administrator." + (reason ? ` Reason: ${reason}` : ""),
         },
       });
 
       const updated = await prisma.conversation.update({
-        where: { id },
+        where: { id: conversation.id },
         data: { status: "CLOSED" },
       });
 
@@ -95,7 +98,7 @@ export default async function handler(
           adminId: session.user.id,
           action: "CLOSE_CONVERSATION",
           targetType: "CONVERSATION",
-          targetId: id,
+          targetId: conversation.publicId,
           details: JSON.stringify({
             borrowerId: conversation.borrowerId,
             brokerId: conversation.brokerId,

@@ -35,7 +35,7 @@ export default async function handler(
             broker: {
               include: {
                 user: {
-                  select: { id: true, name: true, email: true },
+                  select: { id: true, publicId: true, name: true, email: true },
                 },
               },
             },
@@ -92,7 +92,7 @@ export default async function handler(
           broker: {
             include: {
               user: {
-                select: { id: true, name: true, email: true },
+                select: { id: true, publicId: true, name: true, email: true },
               },
             },
           },

@@ -36,7 +36,7 @@ export default async function handler(
           where,
           include: {
             user: {
-              select: { name: true },
+              select: { name: true, publicId: true },
             },
           },
           orderBy: { createdAt: "desc" },

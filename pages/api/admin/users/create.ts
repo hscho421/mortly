@@ -59,7 +59,7 @@ export default async function handler(
         adminId: session.user.id,
         action: "CREATE_ADMIN",
         targetType: "USER",
-        targetId: user.id,
+        targetId: user.publicId,
         details: JSON.stringify({ email: user.email, name: user.name }),
       },
     });

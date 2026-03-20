@@ -327,6 +327,7 @@ async function seedMock() {
 
     const conv = await prisma.conversation.create({
       data: {
+        publicId: String(200000000 + i),
         requestId: req.id,
         borrowerId: req.borrowerId,
         brokerId: brokerRecords[brokerIdx].id,

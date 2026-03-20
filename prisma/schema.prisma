@@ -116,6 +116,7 @@ model BrokerIntroduction {
 
 model Conversation {
   id         String             @id @default(cuid())
+  publicId   String             @unique
   requestId  String
   borrowerId String
   brokerId   String

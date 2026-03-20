@@ -44,7 +44,7 @@ export default async function handler(
         ];
       }
 
-      const [reports, total] = await Promise.all([
+      const [rawReports, total] = await Promise.all([
         prisma.report.findMany({
           where,
           include: {
@@ -58,6 +58,51 @@ export default async function handler(
         }),
         prisma.report.count({ where }),
       ]);
+
+      // Resolve CUID targetIds to publicIds for display
+      const reports = await Promise.all(
+        rawReports.map(async (report) => {
+          // Already a publicId (9-digit number)
+          if (/^\d{9}$/.test(report.targetId)) return report;
+
+          let publicId: string | null = null;
+          try {
+            if (report.targetType === "BROKER") {
+              // Old reports stored broker.id (CUID), try broker lookup first
+              const broker = await prisma.broker.findUnique({
+                where: { id: report.targetId },
+                include: { user: { select: { publicId: true } } },
+              });
+              if (broker) {
+                publicId = broker.user.publicId;
+              } else {
+                // Might be a userId
+                const user = await prisma.user.findUnique({
+                  where: { id: report.targetId },
+                  select: { publicId: true },
+                });
+                publicId = user?.publicId ?? null;
+              }
+            } else if (report.targetType === "REQUEST") {
+              const request = await prisma.borrowerRequest.findUnique({
+                where: { id: report.targetId },
+                select: { publicId: true },
+              });
+              publicId = request?.publicId ?? null;
+            } else if (report.targetType === "CONVERSATION") {
+              const convo = await prisma.conversation.findUnique({
+                where: { id: report.targetId },
+                select: { publicId: true },
+              });
+              publicId = convo?.publicId ?? null;
+            }
+          } catch {
+            // Target may have been deleted
+          }
+
+          return { ...report, targetId: publicId || report.targetId };
+        })
+      );
 
       return res.status(200).json({
         data: reports,

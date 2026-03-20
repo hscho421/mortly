@@ -159,7 +159,7 @@ export default function BrokerRequestDetailPage() {
               {request.requestType} in {request.city ? `${request.city}, ` : ""}
               {request.province}
             </h1>
-            <ReportButton targetType="REQUEST" targetId={request.id} />
+            <ReportButton targetType="REQUEST" targetId={request.publicId} />
           </div>
           <p className="text-body-sm mb-8">
             Posted {formatDate(request.createdAt as unknown as string)} &middot;{" "}

@@ -673,6 +673,7 @@ export default function BorrowerMessagesPage() {
                     </div>
                     <p className="text-body-sm truncate">
                       {conversation.broker.brokerageName}
+                      <span className="ml-2 font-mono text-[10px] text-sage-400">#{conversation.publicId}</span>
                     </p>
                   </div>
 

@@ -10,6 +10,7 @@ import Pagination from "@/components/Pagination";
 
 interface ConversationRow {
   id: string;
+  publicId: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -246,6 +247,9 @@ export default function AdminConversations() {
               <thead>
                 <tr className="bg-forest-800">
                   <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    ID
+                  </th>
+                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
                     {t("admin.participants", "Participants")}
                   </th>
                   <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
@@ -273,6 +277,11 @@ export default function AdminConversations() {
                   const lastMsg = convo.messages[0];
                   return (
                     <tr key={convo.id} className="hover:bg-cream-50 transition-colors">
+                      {/* Conversation ID */}
+                      <td className="whitespace-nowrap px-4 py-4 font-mono text-xs text-forest-700/70">
+                        {convo.publicId}
+                      </td>
+
                       {/* Participants */}
                       <td className="px-4 py-4">
                         <div className="space-y-1">
@@ -370,7 +379,7 @@ export default function AdminConversations() {
                 })}
                 {conversations.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-body-sm">
+                    <td colSpan={8} className="px-5 py-12 text-center text-body-sm">
                       {t("admin.noConversationsFound", "No conversations found.")}
                     </td>
                   </tr>

@@ -30,7 +30,7 @@ export default async function handler(
 
       const broker = await prisma.broker.findUnique({
         where: { id: brokerId },
-        include: { user: { select: { name: true, email: true } } },
+        include: { user: { select: { publicId: true, name: true, email: true } } },
       });
 
       if (!broker) {
@@ -59,7 +59,7 @@ export default async function handler(
             adminId: session.user.id,
             action: "CREDIT_ADJUST",
             targetType: "BROKER",
-            targetId: brokerId,
+            targetId: broker.user.publicId,
             details: JSON.stringify({
               amount,
               previousBalance: broker.responseCredits,
