@@ -207,7 +207,7 @@ export default function HowItWorks() {
               {brokerSteps.map((step, index) => (
                 <div
                   key={step.number}
-                  className={`animate-slide-in-right opacity-0 stagger-${Math.min(index + 1, 6)} relative flex items-center gap-6 md:pl-0`}
+                  className={`animate-slide-in-right opacity-0 stagger-${Math.min(index + 1, 6)} relative flex items-center gap-4 sm:gap-6 md:pl-0`}
                 >
                   <div className="flex-shrink-0 relative z-10">
                     <div className="w-12 h-12 rounded-full bg-amber-500 text-forest-900 flex items-center justify-center font-display text-lg">

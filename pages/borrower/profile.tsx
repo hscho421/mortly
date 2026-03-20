@@ -153,16 +153,16 @@ export default function BorrowerProfilePage() {
 
         {/* Account stats */}
         {profile && (
-          <div className="grid grid-cols-3 gap-4 mb-8 animate-fade-in-up stagger-1">
-            <div className="card-elevated !p-5 text-center">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8 animate-fade-in-up stagger-1">
+            <div className="card-elevated !p-3 sm:!p-5 text-center">
               <p className="heading-md text-amber-600">{profile._count.borrowerRequests}</p>
               <p className="text-body-sm mt-1">{t("settings.requests", "Requests")}</p>
             </div>
-            <div className="card-elevated !p-5 text-center">
+            <div className="card-elevated !p-3 sm:!p-5 text-center">
               <p className="heading-md text-amber-600">{profile._count.conversations}</p>
               <p className="text-body-sm mt-1">{t("settings.conversations", "Conversations")}</p>
             </div>
-            <div className="card-elevated !p-5 text-center">
+            <div className="card-elevated !p-3 sm:!p-5 text-center">
               <p className="heading-md text-amber-600">{profile._count.reviews}</p>
               <p className="text-body-sm mt-1">{t("settings.reviewsGiven", "Reviews Given")}</p>
             </div>

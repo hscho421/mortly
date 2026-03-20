@@ -133,7 +133,7 @@ export default function BorrowerDashboard() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
             {requests.map((req, i) => {
               const staggerClass =
                 i < 6 ? `stagger-${i + 1}` : "stagger-6";
@@ -168,7 +168,7 @@ export default function BorrowerDashboard() {
                   </p>
 
                   {/* Details grid */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
+                  <div className="grid grid-cols-2 gap-x-2 sm:gap-x-4 gap-y-2 mb-4">
                     <div>
                       <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
                         {t("request.priceRange")}

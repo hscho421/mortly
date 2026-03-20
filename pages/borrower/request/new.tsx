@@ -196,7 +196,7 @@ export default function NewRequest() {
               {(["RESIDENTIAL", "COMMERCIAL"] as const).map((cat) => (
                 <label
                   key={cat}
-                  className={`relative flex flex-col items-center gap-3 rounded-2xl border-2 px-6 py-8 cursor-pointer text-center transition-all duration-200 ${
+                  className={`relative flex flex-col items-center gap-3 rounded-2xl border-2 px-4 py-5 sm:px-6 sm:py-8 cursor-pointer text-center transition-all duration-200 ${
                     form.mortgageCategory === cat
                       ? "border-forest-600 bg-forest-50 ring-2 ring-forest-600/10"
                       : "border-cream-300 bg-white hover:border-sage-300"
@@ -241,7 +241,7 @@ export default function NewRequest() {
 
             <div>
               <span className="label-text">{t("request.requestType")}</span>
-              <div className="flex flex-wrap gap-4 mt-2">
+              <div className="flex flex-wrap gap-2 sm:gap-4 mt-2">
                 {(["PURCHASE", "REFINANCE", "RENEWAL"] as const).map((type) => (
                   <label
                     key={type}
@@ -268,7 +268,7 @@ export default function NewRequest() {
               Property Details
             </legend>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label htmlFor="province" className="label-text">
                   {t("request.province")}
@@ -306,7 +306,7 @@ export default function NewRequest() {
 
             <div>
               <span className="label-text">{t("request.propertyType")}</span>
-              <div className="flex flex-wrap gap-4 mt-2">
+              <div className="flex flex-wrap gap-2 sm:gap-4 mt-2">
                 {(["CONDO", "TOWNHOUSE", "DETACHED", "OTHER"] as const).map(
                   (type) => (
                     <label
@@ -328,7 +328,7 @@ export default function NewRequest() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label htmlFor="priceRangeMin" className="label-text">
                   {t("request.priceRange")} ({t("request.min")} $)
@@ -391,7 +391,7 @@ export default function NewRequest() {
               Financial Profile
             </legend>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label htmlFor="incomeRangeMin" className="label-text">
                   {t("request.income")} ({t("request.min")} $)
@@ -454,7 +454,7 @@ export default function NewRequest() {
 
             <div>
               <span className="label-text">{t("request.creditScore")}</span>
-              <div className="flex flex-wrap gap-3 mt-2">
+              <div className="flex flex-wrap gap-2 sm:gap-3 mt-2">
                 {(
                   ["EXCELLENT", "GOOD", "FAIR", "POOR", "NOT_SURE"] as const
                 ).map((band) => (
@@ -478,7 +478,7 @@ export default function NewRequest() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label htmlFor="debtRangeMin" className="label-text">
                   {t("request.existingDebts")} ({t("request.min")} $)
@@ -520,7 +520,7 @@ export default function NewRequest() {
               Mortgage Preferences
             </legend>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label htmlFor="mortgageAmountMin" className="label-text">
                   {t("request.mortgageAmount")} ({t("request.min")} $)
@@ -555,7 +555,7 @@ export default function NewRequest() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label htmlFor="preferredTerm" className="label-text">
                   {t("request.preferredTerm")}
@@ -577,7 +577,7 @@ export default function NewRequest() {
 
               <div>
                 <span className="label-text">{t("request.preferredType")}</span>
-                <div className="flex flex-wrap gap-3 mt-2">
+                <div className="flex flex-wrap gap-2 sm:gap-3 mt-2">
                   {(["FIXED", "VARIABLE", "NOT_SURE"] as const).map((type) => (
                     <label
                       key={type}

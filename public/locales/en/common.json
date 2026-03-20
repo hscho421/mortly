@@ -605,5 +605,12 @@
     "selectBroker": "Select This Broker",
     "showLess": "Show Less",
     "viewFull": "View Full Introduction"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "heading": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "goHome": "Go Home",
+    "submitRequest": "Submit a Request"
   }
 }

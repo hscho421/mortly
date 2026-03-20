@@ -140,7 +140,7 @@ export default function BrokerComparison() {
         )}
 
         {/* Sort controls */}
-        <div className="flex items-center gap-3 mb-6 animate-fade-in-up stagger-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6 animate-fade-in-up stagger-3">
           <span className="text-body-sm">{t("brokerIntros.sortBy")}</span>
           {(
             [
@@ -152,7 +152,7 @@ export default function BrokerComparison() {
             <button
               key={value}
               onClick={() => setSort(value)}
-              className={`px-4 py-2 text-sm font-body font-medium rounded-xl transition-all duration-200 ${
+              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-body font-medium rounded-xl transition-all duration-200 min-h-[44px] ${
                 sort === value
                   ? "bg-forest-800 text-cream-100 shadow-md shadow-forest-800/20"
                   : "bg-cream-200 text-forest-700 hover:bg-cream-300"
@@ -188,7 +188,7 @@ export default function BrokerComparison() {
                   {/* Broker header */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-lg font-display font-bold shrink-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-base sm:text-lg font-display font-bold shrink-0">
                         {(broker.user.name || "B").charAt(0).toUpperCase()}
                       </div>
                       <div>

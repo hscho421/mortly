@@ -21,14 +21,14 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-forest-800 via-forest-900 to-forest-800" />
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_40%,_theme(colors.amber.400),_transparent_60%)]" />
         <div className="relative section-padding max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-12 gap-12 items-center min-h-[70vh]">
+          <div className="grid lg:grid-cols-12 gap-6 lg:gap-12 items-center min-h-[70vh]">
             <div className="lg:col-span-7">
               <div className="animate-fade-in-up opacity-0 stagger-1">
                 <span className="inline-block font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-400 mb-6">
                   {t("home.badge")}
                 </span>
               </div>
-              <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-5xl sm:text-6xl lg:text-7xl tracking-tight text-cream-100 leading-[1.05]">
+              <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-cream-100 leading-[1.05]">
                 {t("home.title1")}
                 <br />
                 {t("home.title2")}
@@ -77,7 +77,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-8 lg:gap-12">
             {/* Step 1 */}
             <div className="card animate-fade-in-up opacity-0 stagger-1">
               <div className="flex items-center gap-4 mb-6">
@@ -126,7 +126,7 @@ export default function Home() {
       {/* Trust Indicators */}
       <section className="section-padding bg-cream-50">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-12 gap-16 items-start">
+          <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
             <div className="lg:col-span-4 animate-fade-in-up opacity-0">
               <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
                 {t("home.whyUs")}
@@ -141,8 +141,8 @@ export default function Home() {
 
             <div className="lg:col-span-8 space-y-6">
               {/* Privacy Shield */}
-              <div className="card-elevated animate-fade-in-up opacity-0 stagger-1 flex gap-6">
-                <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-forest-50 text-forest-600 flex items-center justify-center">
+              <div className="card-elevated animate-fade-in-up opacity-0 stagger-1 flex gap-4 sm:gap-6">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-forest-50 text-forest-600 flex items-center justify-center">
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
@@ -156,8 +156,8 @@ export default function Home() {
               </div>
 
               {/* Verified Brokers */}
-              <div className="card-elevated animate-fade-in-up opacity-0 stagger-2 flex gap-6">
-                <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <div className="card-elevated animate-fade-in-up opacity-0 stagger-2 flex gap-4 sm:gap-6">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                   </svg>
@@ -171,8 +171,8 @@ export default function Home() {
               </div>
 
               {/* No Commitment */}
-              <div className="card-elevated animate-fade-in-up opacity-0 stagger-3 flex gap-6">
-                <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-sage-50 text-sage-600 flex items-center justify-center">
+              <div className="card-elevated animate-fade-in-up opacity-0 stagger-3 flex gap-4 sm:gap-6">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-sage-50 text-sage-600 flex items-center justify-center">
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

@@ -163,7 +163,7 @@ export default function ForBrokers() {
       {/* Stats */}
       <section className="py-16 bg-forest-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center">
             {[
               { value: "93%", label: t("forBrokers.satisfactionRate") },
               { value: "4.8x", label: t("forBrokers.roiVsAds") },
@@ -171,7 +171,7 @@ export default function ForBrokers() {
               { value: "100%", label: t("forBrokers.activeMarkets") },
             ].map((stat, index) => (
               <div key={stat.label} className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)}`}>
-                <div className="font-display text-4xl text-amber-400">{stat.value}</div>
+                <div className="font-display text-3xl sm:text-4xl text-amber-400">{stat.value}</div>
                 <div className="mt-2 text-sm text-cream-300/60 font-body">{stat.label}</div>
               </div>
             ))}

@@ -174,7 +174,7 @@ export default function Pricing() {
                   {tier.name}
                 </h3>
                 <div className="mt-4 flex items-baseline gap-1">
-                  <span className={`font-display text-5xl ${tier.featured ? "text-cream-100" : "text-forest-800"}`}>
+                  <span className={`font-display text-4xl sm:text-5xl ${tier.featured ? "text-cream-100" : "text-forest-800"}`}>
                     {tier.price}
                   </span>
                   <span className={`font-body text-sm ${tier.featured ? "text-cream-300/60" : "text-sage-400"}`}>
@@ -237,7 +237,7 @@ export default function Pricing() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b-2 border-cream-300">
-                  <th className="py-5 pl-6 pr-4 text-sm font-semibold text-forest-800 w-1/3 font-body">{t("pricing.feature")}</th>
+                  <th className="py-4 sm:py-5 pl-4 sm:pl-6 pr-3 sm:pr-4 text-xs sm:text-sm font-semibold text-forest-800 min-w-[120px] font-body">{t("pricing.feature")}</th>
                   {tiers.map((tier) => (
                     <th key={tier.name} className="py-5 px-4 text-center">
                       <span className={`text-sm font-semibold font-body ${tier.featured ? "text-forest-800" : "text-forest-700"}`}>
@@ -253,7 +253,7 @@ export default function Pricing() {
               <tbody>
                 {comparisonRows.map((row, index) => (
                   <tr key={row.key} className={`border-b border-cream-200 ${index % 2 === 0 ? "bg-cream-50/50" : ""}`}>
-                    <td className="py-4 pl-6 pr-4 text-sm text-forest-700/80 font-body">{row.label}</td>
+                    <td className="py-3 sm:py-4 pl-4 sm:pl-6 pr-3 sm:pr-4 text-xs sm:text-sm text-forest-700/80 font-body">{row.label}</td>
                     {tiers.map((tier) => (
                       <td key={tier.name} className="py-4 px-4 text-center">
                         <CellValue value={tier.features[row.key as keyof typeof tier.features]} />

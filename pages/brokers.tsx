@@ -140,7 +140,7 @@ export default function BrokerDirectoryPage() {
                   {/* Main info */}
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
-                    <div className="w-14 h-14 rounded-xl bg-forest-100 text-forest-700 flex items-center justify-center text-xl font-display font-bold shrink-0">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-forest-100 text-forest-700 flex items-center justify-center text-lg sm:text-xl font-display font-bold shrink-0">
                       {(broker.user.name || "B").charAt(0).toUpperCase()}
                     </div>
 
@@ -160,7 +160,7 @@ export default function BrokerDirectoryPage() {
 
                       <p className="text-body-sm mb-1">{broker.brokerageName}</p>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-body text-sage-400">
+                      <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-4 gap-y-1 text-xs font-body text-sage-400">
                         <span>{broker.province}</span>
                         {broker.yearsExperience != null && (
                           <span>{broker.yearsExperience} {t("directory.yearsExp", "years experience")}</span>
@@ -274,7 +274,7 @@ export default function BrokerDirectoryPage() {
                       )}
 
                       {/* CTA */}
-                      <div className="mt-6 rounded-xl bg-forest-50 border border-forest-200 p-4 flex items-center justify-between">
+                      <div className="mt-6 rounded-xl bg-forest-50 border border-forest-200 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <p className="text-body-sm font-medium">
                           {t("directory.ctaText", "Want this broker to reach out to you?")}
                         </p>

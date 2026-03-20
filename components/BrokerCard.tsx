@@ -70,10 +70,10 @@ export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) 
           <img
             src={broker.profilePhoto}
             alt={broker.user.name || "Broker"}
-            className="h-14 w-14 rounded-xl object-cover ring-2 ring-cream-200"
+            className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl object-cover ring-2 ring-cream-200"
           />
         ) : (
-          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-forest-100 to-sage-100 text-forest-600">
+          <div className="flex h-10 w-10 sm:h-14 sm:w-14 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-forest-100 to-sage-100 text-forest-600">
             <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
             </svg>
