@@ -229,21 +229,8 @@ export default function BrokerMessagesPage() {
         throw new Error(data.message || "Failed to send message");
       }
 
-      const sent: FullMessage = await res.json();
-      setMessages((prev) => [...prev, sent]);
-
-      // Update conversation list preview
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === activeConvId
-            ? {
-                ...c,
-                updatedAt: sent.createdAt,
-                messages: [{ body: sent.body, createdAt: sent.createdAt, senderId: sent.senderId }],
-              }
-            : c
-        )
-      );
+      // Message will be added via Supabase Realtime — no need to add here
+      await res.json();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to send");
       setNewMessage(body);

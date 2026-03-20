@@ -257,10 +257,8 @@ export default function BorrowerMessagesPage() {
         throw new Error(data.message || "Failed to send message");
       }
 
-      const sent: Message = await res.json();
-      setMessages((prev) => [...prev, sent]);
-      // refresh list to update preview
-      fetchConversations();
+      // Message will be added via Supabase Realtime — no need to add here
+      await res.json();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to send");
       setNewMessage(body);
