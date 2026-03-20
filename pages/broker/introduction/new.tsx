@@ -37,7 +37,7 @@ export default function NewIntroductionPage() {
   useEffect(() => {
     if (status === "loading" || !requestId) return;
     if (!session || session.user.role !== "BROKER") {
-      router.push("/login");
+      router.push("/login", undefined, { locale: router.locale });
       return;
     }
 
@@ -103,7 +103,7 @@ export default function NewIntroductionPage() {
         return;
       }
 
-      router.push("/broker/requests");
+      router.push("/broker/requests", undefined, { locale: router.locale });
     } catch {
       setError("An unexpected error occurred. Please try again.");
       setIsSubmitting(false);

@@ -90,7 +90,7 @@ export default function NewRequest() {
 
   if (status === "unauthenticated" || !session) {
     if (typeof window !== "undefined") {
-      router.replace("/api/auth/signin?callbackUrl=/borrower/request/new");
+      router.replace("/login?callbackUrl=/borrower/request/new", undefined, { locale: router.locale });
     }
     return (
       <Layout>
@@ -131,7 +131,7 @@ export default function NewRequest() {
       }
 
       const data = await res.json();
-      router.push(`/borrower/request/${data.id}`);
+      router.push(`/borrower/request/${data.id}`, undefined, { locale: router.locale });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

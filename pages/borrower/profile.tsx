@@ -40,7 +40,7 @@ export default function BorrowerProfilePage() {
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "BORROWER") {
-      router.push("/login");
+      router.push("/login", undefined, { locale: router.locale });
       return;
     }
 

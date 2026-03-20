@@ -49,7 +49,7 @@ export default function BrokerOnboardingPage() {
 
   if (!session || session.user.role !== "BROKER") {
     if (typeof window !== "undefined") {
-      router.push("/login");
+      router.push("/login", undefined, { locale: router.locale });
     }
     return null;
   }
@@ -83,7 +83,7 @@ export default function BrokerOnboardingPage() {
         return;
       }
 
-      router.push("/broker/dashboard");
+      router.push("/broker/dashboard", undefined, { locale: router.locale });
     } catch {
       setError("An unexpected error occurred. Please try again.");
       setIsSubmitting(false);

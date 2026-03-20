@@ -92,7 +92,7 @@ export default function BrokerBillingPage() {
 
   if (!session || session.user.role !== "BROKER") {
     if (typeof window !== "undefined") {
-      router.push("/login");
+      router.push("/login", undefined, { locale: router.locale });
     }
     return null;
   }

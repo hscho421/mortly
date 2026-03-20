@@ -112,7 +112,7 @@ export default function BorrowerMessagesPage() {
   /* ---- auth guard ---- */
   useEffect(() => {
     if (authStatus === "unauthenticated") {
-      router.replace("/login");
+      router.replace("/login", undefined, { locale: router.locale });
     }
   }, [authStatus, router]);
 

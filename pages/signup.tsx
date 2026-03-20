@@ -72,12 +72,12 @@ export default function SignupPage() {
 
       if (signInResult?.error) {
         // Account created but login failed - redirect to login
-        router.push("/login");
+        router.push("/login", undefined, { locale: router.locale });
         return;
       }
 
       const redirectUrl = ROLE_REDIRECTS[role] || "/";
-      router.push(redirectUrl);
+      router.push(redirectUrl, undefined, { locale: router.locale });
     } catch {
       setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);

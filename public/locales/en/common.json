@@ -159,7 +159,18 @@
     "property": "Property",
     "financial": "Financial",
     "mortgagePreferences": "Mortgage Preferences",
-    "notSpecified": "Not specified"
+    "notSpecified": "Not specified",
+    "expired": "Expired",
+    "expirationNote": "Requests expire after 30 days of inactivity.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure? This will permanently delete your request and all related conversations.",
+    "deleteSuccess": "Request deleted successfully.",
+    "editSuccess": "Request updated successfully.",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "deleting": "Deleting..."
   },
   "messages": {
     "title": "Messages",
@@ -537,6 +548,15 @@
     "recentReviews": "Recent Reviews",
     "ctaText": "Want this broker to reach out to you?",
     "ctaBtn": "Submit a Request"
+  },
+  "report": {
+    "title": "Report",
+    "reason": "Reason",
+    "submit": "Submit Report",
+    "success": "Report submitted successfully. Thank you.",
+    "error": "Something went wrong. Please try again.",
+    "duplicate": "You have already reported this item.",
+    "placeholder": "Describe the issue or concern..."
   },
   "brokerIntros": {
     "title": "Broker Introductions",

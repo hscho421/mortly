@@ -43,8 +43,9 @@ export default function LoginPage() {
       const session = await sessionRes.json();
       const role = session?.user?.role;
 
-      const redirectUrl = ROLE_REDIRECTS[role] || "/";
-      router.push(redirectUrl);
+      const callbackUrl = router.query.callbackUrl as string | undefined;
+      const redirectUrl = callbackUrl || ROLE_REDIRECTS[role] || "/";
+      router.push(redirectUrl, undefined, { locale: router.locale });
     } catch {
       setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);

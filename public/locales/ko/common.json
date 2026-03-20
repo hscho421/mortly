@@ -159,7 +159,18 @@
     "property": "부동산",
     "financial": "재무 정보",
     "mortgagePreferences": "모기지 선호사항",
-    "notSpecified": "미지정"
+    "notSpecified": "미지정",
+    "expired": "만료됨",
+    "expirationNote": "요청은 30일간 활동이 없으면 만료됩니다.",
+    "edit": "수정",
+    "delete": "삭제",
+    "deleteConfirm": "정말 삭제하시겠습니까? 요청과 관련된 모든 대화가 영구적으로 삭제됩니다.",
+    "deleteSuccess": "요청이 삭제되었습니다.",
+    "editSuccess": "요청이 성공적으로 업데이트되었습니다.",
+    "saveChanges": "변경사항 저장",
+    "saving": "저장 중...",
+    "cancel": "취소",
+    "deleting": "삭제 중..."
   },
   "messages": {
     "title": "메시지",
@@ -537,6 +548,15 @@
     "recentReviews": "최근 리뷰",
     "ctaText": "이 브로커의 연락을 받고 싶으신가요?",
     "ctaBtn": "요청서 제출"
+  },
+  "report": {
+    "title": "신고",
+    "reason": "사유",
+    "submit": "신고 제출",
+    "success": "신고가 접수되었습니다. 감사합니다.",
+    "error": "문제가 발생했습니다. 다시 시도해 주세요.",
+    "duplicate": "이미 신고한 항목입니다.",
+    "placeholder": "문제 또는 우려 사항을 설명해 주세요..."
   },
   "brokerIntros": {
     "title": "브로커 소개",

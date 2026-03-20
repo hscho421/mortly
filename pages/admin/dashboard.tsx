@@ -25,7 +25,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login");
+      router.replace("/login", undefined, { locale: router.locale });
       return;
     }
 

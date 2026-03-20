@@ -62,7 +62,7 @@ export default function BrokerProfilePage() {
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "BROKER") {
-      router.push("/login");
+      router.push("/login", undefined, { locale: router.locale });
       return;
     }
 

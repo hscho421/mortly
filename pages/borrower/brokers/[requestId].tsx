@@ -5,6 +5,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
+import ReportButton from "@/components/ReportButton";
 import type { IntroductionWithBroker } from "@/types";
 
 type SortOption = "fastest" | "highest_rated" | "most_experienced";
@@ -73,7 +74,7 @@ export default function BrokerComparison() {
 
   useEffect(() => {
     if (authStatus === "unauthenticated") {
-      router.replace("/api/auth/signin");
+      router.replace("/login", undefined, { locale: router.locale });
       return;
     }
     fetchIntroductions();
@@ -96,7 +97,7 @@ export default function BrokerComparison() {
       }
 
       const data = await res.json();
-      router.push(`/borrower/messages?id=${data.id}`);
+      router.push(`/borrower/messages?id=${data.id}`, undefined, { locale: router.locale });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSelectingId(null);
@@ -230,6 +231,7 @@ export default function BrokerComparison() {
                         </div>
                       </div>
                     </div>
+                    <ReportButton targetType="BROKER" targetId={broker.id} />
                   </div>
 
                   {/* Message preview / full */}

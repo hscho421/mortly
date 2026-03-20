@@ -42,7 +42,7 @@ export default function AdminBrokers() {
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login");
+      router.replace("/login", undefined, { locale: router.locale });
       return;
     }
 
@@ -227,7 +227,7 @@ export default function AdminBrokers() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() =>
-                            router.push(`/admin/brokers/${broker.id}`)
+                            router.push(`/admin/brokers/${broker.id}`, undefined, { locale: router.locale })
                           }
                           className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
                         >

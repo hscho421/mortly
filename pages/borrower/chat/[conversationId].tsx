@@ -80,7 +80,7 @@ export default function ChatPage() {
   // Initial load
   useEffect(() => {
     if (authStatus === "unauthenticated") {
-      router.replace("/api/auth/signin");
+      router.replace("/login", undefined, { locale: router.locale });
       return;
     }
     if (authStatus === "authenticated" && conversationId) {

@@ -69,7 +69,7 @@ export default function Navbar() {
 
           {/* Desktop center links */}
           <div className="hidden items-center md:flex">
-            <div className="flex items-center rounded-full bg-cream-200/50 px-1 py-1">
+            <div className="flex items-center rounded-full bg-cream-300/50 px-1 py-1">
               {publicLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -89,7 +89,7 @@ export default function Navbar() {
           {/* Desktop right section */}
           <div className="hidden items-center gap-1 md:flex">
             {/* Language switcher */}
-            <div className="flex items-center rounded-full bg-cream-200/50 p-0.5 mr-2">
+            <div className="flex items-center rounded-full bg-cream-300/50 p-0.5 mr-2">
               <button
                 onClick={() => switchLocale("en")}
                 className={`rounded-full px-2 py-1 font-body text-[11px] font-semibold tracking-wide transition-all duration-200 ${

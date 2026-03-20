@@ -100,7 +100,7 @@ export default function BrokerChatPage() {
   useEffect(() => {
     if (authStatus === "loading") return;
     if (!session || session.user.role !== "BROKER") {
-      router.replace("/login");
+      router.replace("/login", undefined, { locale: router.locale });
       return;
     }
     if (id) {

@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import ReportButton from "@/components/ReportButton";
 import type { RequestWithIntroductions } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -34,7 +35,7 @@ export default function BrokerRequestDetailPage() {
   useEffect(() => {
     if (status === "loading" || !id) return;
     if (!session || session.user.role !== "BROKER") {
-      router.push("/login");
+      router.push("/login", undefined, { locale: router.locale });
       return;
     }
 
@@ -127,10 +128,13 @@ export default function BrokerRequestDetailPage() {
             </span>
           </div>
 
-          <h1 className="heading-lg mb-2">
-            {request.requestType} in {request.city ? `${request.city}, ` : ""}
-            {request.province}
-          </h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="heading-lg mb-2">
+              {request.requestType} in {request.city ? `${request.city}, ` : ""}
+              {request.province}
+            </h1>
+            <ReportButton targetType="REQUEST" targetId={request.id} />
+          </div>
           <p className="text-body-sm mb-8">
             Posted {formatDate(request.createdAt as unknown as string)} &middot;{" "}
             {request._count?.introductions ?? 0} broker response(s)

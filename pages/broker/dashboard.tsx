@@ -59,7 +59,7 @@ export default function BrokerDashboardPage() {
     if (status === "loading") return;
 
     if (!session || session.user.role !== "BROKER") {
-      router.push("/login");
+      router.push("/login", undefined, { locale: router.locale });
       return;
     }
 
@@ -72,7 +72,7 @@ export default function BrokerDashboardPage() {
         const profileRes = await fetch("/api/brokers/profile");
 
         if (profileRes.status === 404) {
-          router.push("/broker/onboarding");
+          router.push("/broker/onboarding", undefined, { locale: router.locale });
           return;
         }
 

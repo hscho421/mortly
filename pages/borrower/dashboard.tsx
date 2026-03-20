@@ -49,7 +49,7 @@ export default function BorrowerDashboard() {
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
-      router.push("/login");
+      router.push("/login", undefined, { locale: router.locale });
       return;
     }
 
@@ -140,11 +140,13 @@ export default function BorrowerDashboard() {
               const introCount =
                 req._count?.introductions ?? req.introductions?.length ?? 0;
 
+              const isExpired = req.status === "EXPIRED";
+
               return (
                 <Link
                   key={req.id}
                   href={`/borrower/request/${req.id}`}
-                  className={`card-elevated group block transition-all hover:shadow-lg hover:-translate-y-0.5 animate-fade-in-up ${staggerClass}`}
+                  className={`card-elevated group block transition-all animate-fade-in-up ${staggerClass} ${isExpired ? "opacity-60" : "hover:shadow-lg hover:-translate-y-0.5"}`}
                 >
                   {/* Top row: type + status */}
                   <div className="flex items-center justify-between mb-3">
@@ -213,6 +215,13 @@ export default function BorrowerDashboard() {
               );
             })}
           </div>
+        )}
+
+        {/* Expiration note */}
+        {requests.length > 0 && (
+          <p className="mt-8 text-center font-body text-xs text-forest-700/50">
+            {t("request.expirationNote")}
+          </p>
         )}
       </div>
     </Layout>
