@@ -41,12 +41,20 @@ export default async function handler(
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      if (session.user.role === "BROKER" && request.status !== "OPEN") {
-        const hasResponded = request.introductions.some(
-          (intro: { broker: { userId: string } }) => intro.broker.userId === session.user.id
-        );
-        if (!hasResponded) {
-          return res.status(403).json({ error: "Forbidden" });
+      if (session.user.role === "BROKER") {
+        const broker = await prisma.broker.findUnique({
+          where: { userId: session.user.id },
+        });
+        if (!broker || broker.verificationStatus !== "VERIFIED") {
+          return res.status(403).json({ error: "Broker must be verified to view requests" });
+        }
+        if (request.status !== "OPEN") {
+          const hasResponded = request.introductions.some(
+            (intro: { broker: { userId: string } }) => intro.broker.userId === session.user.id
+          );
+          if (!hasResponded) {
+            return res.status(403).json({ error: "Forbidden" });
+          }
         }
       }
 

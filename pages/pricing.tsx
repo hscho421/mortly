@@ -24,6 +24,26 @@ export default function Pricing() {
 
   const tiers = [
     {
+      name: t("pricing.freeName"),
+      price: "$0",
+      period: "",
+      description: t("pricing.freeDesc"),
+      features: {
+        introductions: t("pricing.val_none"),
+        profile: t("pricing.val_standardListing"),
+        placement: false,
+        badge: false,
+        notifications: false,
+        leadFilters: false,
+        analytics: false,
+        accountManager: false,
+        teamTools: false,
+        support: false,
+      },
+      cta: t("pricing.freeCta"),
+      featured: false,
+    },
+    {
       name: t("pricing.basicName"),
       price: "$49",
       period: t("pricing.perMonth"),
@@ -154,8 +174,8 @@ export default function Pricing() {
 
       {/* Pricing Cards */}
       <section className="section-padding bg-cream-100">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {tiers.map((tier, index) => (
               <div
                 key={tier.name}
@@ -224,7 +244,7 @@ export default function Pricing() {
 
       {/* Comparison Table */}
       <section className="section-padding bg-cream-50">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
               {t("pricing.compareBadge")}

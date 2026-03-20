@@ -9,6 +9,18 @@ export default function ForBrokers() {
 
   const tiers = [
     {
+      name: t("pricing.freeName"),
+      price: "$0",
+      period: "",
+      description: t("pricing.freeDesc"),
+      features: [
+        t("pricing.val_standardListing"),
+        t("pricing.feat_introductions") + ": " + t("pricing.val_none"),
+      ],
+      cta: t("pricing.freeCta"),
+      featured: false,
+    },
+    {
       name: t("pricing.basicName"),
       price: "$49",
       period: t("pricing.perMonth"),
@@ -190,7 +202,7 @@ export default function ForBrokers() {
             <p className="text-body mt-4">{t("forBrokers.pricingSubtitle")}</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {tiers.map((tier, index) => (
               <div
                 key={tier.name}

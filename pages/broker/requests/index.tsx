@@ -69,6 +69,10 @@ export default function BrokerRequestsPage() {
         if (filterMortgageCategory) params.set("mortgageCategory", filterMortgageCategory);
 
         const res = await fetch(`/api/requests?${params.toString()}`);
+        if (res.status === 403) {
+          setError("NOT_VERIFIED");
+          return;
+        }
         if (!res.ok) throw new Error("Failed to fetch requests");
         const data = await res.json();
         setRequests(data);
@@ -94,6 +98,30 @@ export default function BrokerRequestsPage() {
 
   if (!session || session.user.role !== "BROKER") {
     return null;
+  }
+
+  // Show verification required message
+  if (error === "NOT_VERIFIED") {
+    return (
+      <Layout>
+        <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
+          <div className="card-elevated text-center py-16 animate-fade-in-up">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+              <svg className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+              </svg>
+            </div>
+            <h2 className="heading-md mb-2">{t("broker.verificationRequired", "Verification Required")}</h2>
+            <p className="text-body mb-6 max-w-md mx-auto">
+              {t("broker.verificationRequiredDesc", "Your broker profile must be verified before you can browse borrower requests. Please wait for admin approval.")}
+            </p>
+            <Link href="/broker/dashboard" className="btn-primary">
+              {t("nav.dashboard")}
+            </Link>
+          </div>
+        </div>
+      </Layout>
+    );
   }
 
   // Filter out requests the broker has already responded to

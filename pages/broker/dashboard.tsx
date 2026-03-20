@@ -54,6 +54,7 @@ export default function BrokerDashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -83,21 +84,28 @@ export default function BrokerDashboardPage() {
         const brokerProfile: BrokerProfile = await profileRes.json();
         setProfile(brokerProfile);
 
+        // Show congrats banner on first visit after verification
+        if (brokerProfile.verificationStatus === "VERIFIED") {
+          const key = `mm_verified_seen_${brokerProfile.id}`;
+          if (!localStorage.getItem(key)) {
+            setShowVerifiedBanner(true);
+            localStorage.setItem(key, "1");
+          }
+        }
+
         // Fetch requests and conversations in parallel
         const [requestsRes, conversationsRes] = await Promise.all([
           fetch("/api/requests"),
           fetch("/api/conversations"),
         ]);
 
-        if (!requestsRes.ok) {
-          throw new Error("Failed to fetch requests");
-        }
-        if (!conversationsRes.ok) {
-          throw new Error("Failed to fetch conversations");
-        }
-
-        const requests: BorrowerRequest[] = await requestsRes.json();
-        const conversations: Conversation[] = await conversationsRes.json();
+        // Unverified brokers get 403 on requests — handle gracefully
+        const requests: BorrowerRequest[] = requestsRes.ok
+          ? await requestsRes.json()
+          : [];
+        const conversations: Conversation[] = conversationsRes.ok
+          ? await conversationsRes.json()
+          : [];
 
         // Count open requests
         const openRequests = requests.length;
@@ -169,6 +177,7 @@ export default function BrokerDashboardPage() {
   const verificationStatus = profile?.verificationStatus || "PENDING";
 
   const tierColors: Record<string, string> = {
+    FREE: "bg-cream-200 text-forest-600",
     BASIC: "bg-sage-100 text-sage-700",
     PRO: "bg-forest-100 text-forest-700",
     PREMIUM: "bg-amber-100 text-amber-700",
@@ -304,6 +313,73 @@ export default function BrokerDashboardPage() {
             </span>
           </div>
         </div>
+
+        {/* Verified congratulations banner */}
+        {showVerifiedBanner && (
+          <div className="mb-8 rounded-2xl bg-forest-50 border border-forest-300 p-5 animate-fade-in-up relative">
+            <button
+              onClick={() => setShowVerifiedBanner(false)}
+              className="absolute top-4 right-4 text-forest-400 hover:text-forest-600 transition-colors"
+              aria-label="Dismiss"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest-200">
+                <svg className="w-5 h-5 text-forest-700" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-body text-base font-semibold text-forest-800">{t("broker.verifiedCongrats", "Congratulations! You're Verified")}</p>
+                <p className="font-body text-sm text-forest-700 mt-1">
+                  {t("broker.verifiedCongratsDesc", "Your broker profile has been verified. You can now browse borrower requests and start connecting with clients.")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Verification pending banner */}
+        {verificationStatus === "PENDING" && (
+          <div className="mb-8 rounded-2xl bg-amber-50 border border-amber-200 p-5 animate-fade-in">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.999L13.732 4.001c-.77-1.333-2.694-1.333-3.464 0L3.34 16.001C2.57 17.334 3.532 19 5.072 19z" />
+              </svg>
+              <div>
+                <p className="font-body text-sm font-semibold text-amber-800">{t("broker.verificationPending", "Verification Pending")}</p>
+                <p className="font-body text-sm text-amber-700 mt-1">
+                  {t("broker.verificationPendingDesc", "Your license is under review. Once verified, you'll be able to browse borrower requests.")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Free plan banner */}
+        {verificationStatus === "VERIFIED" && subscriptionTier === "FREE" && (
+          <div className="mb-8 rounded-2xl bg-forest-50 border border-forest-200 p-5 animate-fade-in">
+            <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-forest-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="font-body text-sm font-semibold text-forest-800">{t("broker.freePlanNotice", "You're on the Free Plan")}</p>
+                  <p className="font-body text-sm text-forest-700 mt-1">
+                    {t("broker.freePlanDesc", "You can browse requests but cannot send introductions to borrowers. Upgrade to start connecting with clients.")}
+                  </p>
+                </div>
+              </div>
+              <Link href="/broker/billing" className="btn-amber shrink-0 !py-2 !px-4 !text-xs">
+                {t("broker.upgradePlan", "Upgrade Plan")}
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

@@ -23,9 +23,25 @@ interface Plan {
 
 const PLANS: Plan[] = [
   {
+    name: "Free",
+    tier: "FREE",
+    price: "$0",
+    period: "",
+    credits: "No response credits",
+    features: [
+      { text: "Get verified on the platform", included: true },
+      { text: "Browse all open requests", included: true },
+      { text: "Basic profile listing", included: true },
+      { text: "Send introductions", included: false },
+      { text: "Priority placement", included: false },
+      { text: "Analytics dashboard", included: false },
+    ],
+    highlighted: false,
+  },
+  {
     name: "Basic",
     tier: "BASIC",
-    price: "$0",
+    price: "$49",
     period: "/month",
     credits: "5 response credits/month",
     features: [
@@ -77,7 +93,7 @@ export default function BrokerBillingPage() {
   const router = useRouter();
   const { t } = useTranslation("common");
 
-  const [currentTier] = useState("BASIC");
+  const [currentTier] = useState("FREE");
   const [responseCredits] = useState(8);
 
   if (status === "loading") {
@@ -123,7 +139,7 @@ export default function BrokerBillingPage() {
 
         {/* Plan comparison */}
         <h2 className="heading-md mb-6 animate-fade-in stagger-2">{t("broker.choosePlan")}</h2>
-        <div className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {PLANS.map((plan, i) => (
             <div
               key={plan.tier}

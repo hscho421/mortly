@@ -21,6 +21,12 @@ export default async function handler(
       if (session.user.role === "BORROWER") {
         where.borrowerId = session.user.id;
       } else if (session.user.role === "BROKER") {
+        const broker = await prisma.broker.findUnique({
+          where: { userId: session.user.id },
+        });
+        if (!broker || broker.verificationStatus !== "VERIFIED") {
+          return res.status(403).json({ error: "Broker must be verified to view requests" });
+        }
         where.status = "OPEN";
       } else {
         return res.status(403).json({ error: "Forbidden" });

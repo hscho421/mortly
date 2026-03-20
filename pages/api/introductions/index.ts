@@ -20,6 +20,40 @@ export default async function handler(
         return res.status(400).json({ error: "requestId query parameter is required" });
       }
 
+      // Broker requesting all their introductions
+      if (requestId === "all" && session.user.role === "BROKER") {
+        const broker = await prisma.broker.findUnique({
+          where: { userId: session.user.id },
+        });
+        if (!broker) {
+          return res.status(404).json({ error: "Broker profile not found" });
+        }
+
+        const introductions = await prisma.brokerIntroduction.findMany({
+          where: { brokerId: broker.id },
+          include: {
+            broker: {
+              include: {
+                user: {
+                  select: { id: true, name: true, email: true },
+                },
+              },
+            },
+            request: {
+              select: {
+                id: true,
+                requestType: true,
+                province: true,
+                city: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        return res.status(200).json(introductions);
+      }
+
       const where: Record<string, unknown> = { requestId };
 
       if (session.user.role === "BORROWER") {
@@ -73,6 +107,10 @@ export default async function handler(
 
       if (broker.verificationStatus !== "VERIFIED") {
         return res.status(403).json({ error: "Broker must be verified to send introductions" });
+      }
+
+      if (broker.subscriptionTier === "FREE") {
+        return res.status(403).json({ error: "Free plan brokers cannot send introductions. Please upgrade your plan." });
       }
 
       if (broker.responseCredits <= 0) {

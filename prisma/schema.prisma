@@ -74,10 +74,10 @@ model Broker {
   specialties        String?
   profilePhoto       String?
   verificationStatus VerificationStatus   @default(PENDING)
-  subscriptionTier   SubscriptionTier     @default(BASIC)
+  subscriptionTier   SubscriptionTier     @default(FREE)
   rating             Float?
   completedMatches   Int                  @default(0)
-  responseCredits    Int                  @default(5)
+  responseCredits    Int                  @default(0)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   introductions      BrokerIntroduction[]
@@ -245,6 +245,7 @@ enum VerificationStatus {
 }
 
 enum SubscriptionTier {
+  FREE
   BASIC
   PRO
   PREMIUM
