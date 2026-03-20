@@ -535,8 +535,6 @@
     "setting_basic_tier_credits_desc": "Monthly credits for basic-tier brokers.",
     "setting_pro_tier_credits": "Pro Tier Credits",
     "setting_pro_tier_credits_desc": "Monthly credits for pro-tier brokers.",
-    "setting_premium_tier_credits": "Premium Tier Credits",
-    "setting_premium_tier_credits_desc": "Monthly credits for premium-tier brokers.",
     "setting_max_requests_per_user": "Max Requests Per User",
     "setting_max_requests_per_user_desc": "Maximum open requests a borrower can have.",
     "setting_request_expiry_days": "Request Expiry (Days)",

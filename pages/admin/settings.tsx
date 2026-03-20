@@ -20,7 +20,6 @@ const SETTING_FIELDS: SettingField[] = [
   { key: "free_tier_credits", label: "Free Tier Credits", type: "number", description: "Monthly credits for free-tier brokers." },
   { key: "basic_tier_credits", label: "Basic Tier Credits", type: "number", description: "Monthly credits for basic-tier brokers." },
   { key: "pro_tier_credits", label: "Pro Tier Credits", type: "number", description: "Monthly credits for pro-tier brokers." },
-  { key: "premium_tier_credits", label: "Premium Tier Credits", type: "number", description: "Monthly credits for premium-tier brokers." },
   { key: "max_requests_per_user", label: "Max Requests Per User", type: "number", description: "Maximum open requests a borrower can have." },
   { key: "request_expiry_days", label: "Request Expiry (Days)", type: "number", description: "Days before an open request auto-expires." },
   { key: "maintenance_mode", label: "Maintenance Mode", type: "toggle", description: "When enabled, non-admin users see a maintenance page." },

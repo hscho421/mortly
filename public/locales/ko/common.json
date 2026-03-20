@@ -535,8 +535,6 @@
     "setting_basic_tier_credits_desc": "기본 등급 브로커의 월간 크레딧입니다.",
     "setting_pro_tier_credits": "프로 등급 크레딧",
     "setting_pro_tier_credits_desc": "프로 등급 브로커의 월간 크레딧입니다.",
-    "setting_premium_tier_credits": "프리미엄 등급 크레딧",
-    "setting_premium_tier_credits_desc": "프리미엄 등급 브로커의 월간 크레딧입니다.",
     "setting_max_requests_per_user": "사용자당 최대 요청 수",
     "setting_max_requests_per_user_desc": "차용자가 보유할 수 있는 최대 활성 요청 수입니다.",
     "setting_request_expiry_days": "요청 만료 (일)",

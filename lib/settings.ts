@@ -7,7 +7,6 @@ const DEFAULTS: Record<string, string> = {
   free_tier_credits: "0",
   basic_tier_credits: "5",
   pro_tier_credits: "20",
-  premium_tier_credits: "999",
 };
 
 export async function getSetting(key: string): Promise<string> {
