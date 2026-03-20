@@ -279,6 +279,20 @@ export default function AdminDashboard() {
               <p className="text-body-sm">{t("admin.recentActions", "Recent actions")}</p>
             </div>
           </Link>
+          <Link
+            href="/admin/manual"
+            className="card group flex items-center gap-4 animate-fade-in-up opacity-0 stagger-9"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-forest-50 text-forest-700 transition-colors group-hover:bg-forest-100">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+              </svg>
+            </span>
+            <div>
+              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.manual", "Admin Manual")}</p>
+              <p className="text-body-sm">{t("admin.manualDesc", "Portal usage guide")}</p>
+            </div>
+          </Link>
         </div>
 
       </div>
