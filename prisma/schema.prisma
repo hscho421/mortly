@@ -85,6 +85,7 @@ model Broker {
   conversations      Conversation[]
   subscription       Subscription?
   reviews            Review[]
+  creditPurchases    CreditPurchase[]
 
   @@map("brokers")
 }
@@ -249,6 +250,23 @@ enum SubscriptionTier {
   BASIC
   PRO
   PREMIUM
+}
+
+enum CreditPackType {
+  SMALL
+  LARGE
+}
+
+model CreditPurchase {
+  id        String         @id @default(cuid())
+  brokerId  String
+  packType  CreditPackType
+  credits   Int
+  amount    Int            // price in cents
+  createdAt DateTime       @default(now())
+  broker    Broker         @relation(fields: [brokerId], references: [id])
+
+  @@map("credit_purchases")
 }
 
 enum SubscriptionStatus {

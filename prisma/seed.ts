@@ -250,6 +250,114 @@ async function seedMock() {
   console.log("  Broker:   broker1@test.com / broker2@test.com");
 }
 
+async function seedEmpty() {
+  const hash = await bcrypt.hash("123", 10);
+
+  // Admin
+  await prisma.user.create({
+    data: { email: "admin@test.com", passwordHash: hash, role: "ADMIN", name: "Admin User" },
+  });
+
+  // Borrowers
+  await prisma.user.create({
+    data: { email: "borrower1@test.com", passwordHash: hash, role: "BORROWER", name: "John Smith" },
+  });
+  await prisma.user.create({
+    data: { email: "borrower2@test.com", passwordHash: hash, role: "BORROWER", name: "Alice Johnson" },
+  });
+
+  // Broker — FREE tier
+  const freeBrokerUser = await prisma.user.create({
+    data: { email: "broker-free@test.com", passwordHash: hash, role: "BROKER", name: "David Park" },
+  });
+  await prisma.broker.create({
+    data: {
+      userId: freeBrokerUser.id,
+      brokerageName: "Park Mortgage Services",
+      province: "ON",
+      licenseNumber: "M08009001",
+      bio: "New to the platform, exploring opportunities.",
+      yearsExperience: 3,
+      areasServed: "Toronto, Markham",
+      specialties: "First-time buyers",
+      verificationStatus: "VERIFIED",
+      subscriptionTier: "FREE",
+      responseCredits: 0,
+    },
+  });
+
+  // Broker — BASIC tier (1 credit)
+  const basicBrokerUser = await prisma.user.create({
+    data: { email: "broker-basic@test.com", passwordHash: hash, role: "BROKER", name: "Sarah Lee" },
+  });
+  await prisma.broker.create({
+    data: {
+      userId: basicBrokerUser.id,
+      brokerageName: "Maple Mortgage Group",
+      province: "ON",
+      licenseNumber: "M08001234",
+      bio: "Helping first-time buyers in the GTA for over a decade.",
+      yearsExperience: 12,
+      areasServed: "Toronto, Mississauga, Brampton",
+      specialties: "First-time buyers, Refinancing",
+      verificationStatus: "VERIFIED",
+      subscriptionTier: "BASIC",
+      responseCredits: 1,
+    },
+  });
+
+  // Broker — PRO tier
+  const proBrokerUser = await prisma.user.create({
+    data: { email: "broker-pro@test.com", passwordHash: hash, role: "BROKER", name: "Mike Chen" },
+  });
+  await prisma.broker.create({
+    data: {
+      userId: proBrokerUser.id,
+      brokerageName: "Pacific Rate Finders",
+      province: "BC",
+      licenseNumber: "X300567",
+      bio: "Specializing in competitive rates for self-employed borrowers.",
+      yearsExperience: 8,
+      areasServed: "Vancouver, Burnaby, Richmond",
+      specialties: "Self-employed, Commercial",
+      verificationStatus: "VERIFIED",
+      subscriptionTier: "PRO",
+      responseCredits: 20,
+    },
+  });
+
+  // Broker — PREMIUM tier
+  const premiumBrokerUser = await prisma.user.create({
+    data: { email: "broker-premium@test.com", passwordHash: hash, role: "BROKER", name: "Jessica Wang" },
+  });
+  await prisma.broker.create({
+    data: {
+      userId: premiumBrokerUser.id,
+      brokerageName: "Summit Financial Partners",
+      province: "AB",
+      licenseNumber: "A20045678",
+      bio: "Full-service brokerage handling residential and commercial mortgages across Western Canada.",
+      yearsExperience: 18,
+      areasServed: "Calgary, Edmonton, Red Deer",
+      specialties: "Commercial, Investment properties, High-value residential",
+      verificationStatus: "VERIFIED",
+      subscriptionTier: "PREMIUM",
+      rating: 4.9,
+      completedMatches: 85,
+      responseCredits: 999,
+    },
+  });
+
+  console.log("Empty seed complete! All passwords: 123");
+  console.log("\nAccounts:");
+  console.log("  Admin:    admin@test.com");
+  console.log("  Borrower: borrower1@test.com / borrower2@test.com");
+  console.log("  Broker:   broker-free@test.com   (FREE, 0 credits)");
+  console.log("  Broker:   broker-basic@test.com  (BASIC, 1 credit)");
+  console.log("  Broker:   broker-pro@test.com    (PRO, 20 credits)");
+  console.log("  Broker:   broker-premium@test.com (PREMIUM, 999 credits)");
+}
+
 async function main() {
   console.log(`Running seed in "${mode}" mode...\n`);
 
@@ -258,32 +366,7 @@ async function main() {
   if (mode === "mock") {
     await seedMock();
   } else if (mode === "empty") {
-    const hash = await bcrypt.hash("password123", 10);
-
-    await prisma.user.create({
-      data: { email: "admin@test.com", passwordHash: hash, role: "ADMIN", name: "Admin User" },
-    });
-    await prisma.user.create({
-      data: { email: "john@test.com", passwordHash: hash, role: "BORROWER", name: "John Smith" },
-    });
-    await prisma.user.create({
-      data: { email: "alice@test.com", passwordHash: hash, role: "BORROWER", name: "Alice Johnson" },
-    });
-    await prisma.user.create({
-      data: { email: "bob@test.com", passwordHash: hash, role: "BORROWER", name: "Bob Williams" },
-    });
-    await prisma.user.create({
-      data: { email: "broker1@test.com", passwordHash: hash, role: "BROKER", name: "Sarah Lee" },
-    });
-    await prisma.user.create({
-      data: { email: "broker2@test.com", passwordHash: hash, role: "BROKER", name: "Mike Chen" },
-    });
-
-    console.log("Users created (no requests/brokers/conversations).");
-    console.log("\nTest accounts (password: password123):");
-    console.log("  Admin:    admin@test.com");
-    console.log("  Borrower: john@test.com / alice@test.com / bob@test.com");
-    console.log("  Broker:   broker1@test.com / broker2@test.com");
+    await seedEmpty();
   } else {
     console.error(`Unknown mode: "${mode}". Use "mock" or "empty".`);
     process.exit(1);

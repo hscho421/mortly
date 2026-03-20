@@ -31,6 +31,8 @@ export default function BrokerRequestDetailPage() {
   const [request, setRequest] = useState<RequestWithIntroductions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [brokerCredits, setBrokerCredits] = useState<number | null>(null);
+  const [brokerTier, setBrokerTier] = useState("");
 
   useEffect(() => {
     if (status === "loading" || !id) return;
@@ -53,7 +55,21 @@ export default function BrokerRequestDetailPage() {
       }
     };
 
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch("/api/brokers/profile");
+        if (res.ok) {
+          const data = await res.json();
+          setBrokerCredits(data.responseCredits ?? 0);
+          setBrokerTier(data.subscriptionTier || "");
+        }
+      } catch {
+        // ignore
+      }
+    };
+
     fetchRequest();
+    fetchProfile();
   }, [session, status, router, id]);
 
   if (status === "loading" || isLoading) {
@@ -191,6 +207,22 @@ export default function BrokerRequestDetailPage() {
                 <p className="font-body text-sm font-medium text-forest-800">
                   {t("broker.alreadySubmitted")}
                 </p>
+              </div>
+            </div>
+          ) : (brokerTier === "BASIC" || brokerTier === "PRO") && brokerCredits === 0 ? (
+            <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-200">
+                    <svg className="h-4 w-4 text-amber-700" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                    </svg>
+                  </div>
+                  <p className="font-body text-sm font-medium text-forest-800">{t("credits.noCreditsIntro")}</p>
+                </div>
+                <Link href="/broker/billing" className="btn-amber shrink-0 text-center">
+                  {t("credits.buyCredits")}
+                </Link>
               </div>
             </div>
           ) : (

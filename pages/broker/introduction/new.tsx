@@ -22,6 +22,8 @@ export default function NewIntroductionPage() {
 
   const [request, setRequest] = useState<BorrowerRequest | null>(null);
   const [isLoadingRequest, setIsLoadingRequest] = useState(true);
+  const [brokerCredits, setBrokerCredits] = useState<number | null>(null);
+  const [brokerTier, setBrokerTier] = useState("");
 
   const [form, setForm] = useState<Omit<CreateIntroductionInput, "requestId">>({
     howCanHelp: "",
@@ -55,8 +57,25 @@ export default function NewIntroductionPage() {
       }
     };
 
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch("/api/brokers/profile");
+        if (res.ok) {
+          const data = await res.json();
+          setBrokerCredits(data.responseCredits ?? 0);
+          setBrokerTier(data.subscriptionTier || "");
+        }
+      } catch {
+        // ignore
+      }
+    };
+
     fetchRequest();
+    fetchProfile();
   }, [session, status, router, requestId]);
+
+  const noCredits =
+    (brokerTier === "BASIC" || brokerTier === "PRO") && brokerCredits === 0;
 
   if (status === "loading") {
     return (
@@ -171,6 +190,28 @@ export default function NewIntroductionPage() {
           </div>
         ) : null}
 
+        {noCredits && (
+          <div className="mb-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6 animate-fade-in">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200">
+                <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-body text-sm font-semibold text-forest-800">{t("credits.noCreditsTitle")}</h3>
+                <p className="mt-1 font-body text-sm text-forest-700/70">{t("credits.noCreditsIntro")}</p>
+                <Link
+                  href="/broker/billing"
+                  className="mt-3 inline-flex items-center gap-1 font-body text-sm font-semibold text-amber-700 hover:text-amber-800 transition-colors"
+                >
+                  {t("credits.goToBilling")} &rarr;
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 animate-fade-in">
             <p className="font-body text-sm text-red-700">{error}</p>
@@ -274,7 +315,7 @@ export default function NewIntroductionPage() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !!noCredits}
             className="btn-amber w-full disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? t("broker.saving") : t("broker.save")}
