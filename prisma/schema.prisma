@@ -115,19 +115,21 @@ model BrokerIntroduction {
 }
 
 model Conversation {
-  id         String             @id @default(cuid())
-  publicId   String             @unique
-  requestId  String
-  borrowerId String
-  brokerId   String
-  status     ConversationStatus @default(ACTIVE)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-  borrower   User               @relation(fields: [borrowerId], references: [id])
-  broker     Broker             @relation(fields: [brokerId], references: [id])
-  request    BorrowerRequest    @relation(fields: [requestId], references: [id])
-  messages   Message[]
-  review     Review?
+  id                 String             @id @default(cuid())
+  publicId           String             @unique
+  requestId          String
+  borrowerId         String
+  brokerId           String
+  status             ConversationStatus @default(ACTIVE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  borrowerLastReadAt DateTime?          @map("borrower_last_read_at")
+  brokerLastReadAt   DateTime?          @map("broker_last_read_at")
+  borrower           User               @relation(fields: [borrowerId], references: [id])
+  broker             Broker             @relation(fields: [brokerId], references: [id])
+  request            BorrowerRequest    @relation(fields: [requestId], references: [id])
+  messages           Message[]
+  review             Review?
 
   @@unique([requestId, brokerId])
   @@map("conversations")

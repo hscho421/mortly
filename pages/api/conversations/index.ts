@@ -31,6 +31,8 @@ export default async function handler(
         return res.status(403).json({ error: "Forbidden" });
       }
 
+      const isBorrower = session.user.role === "BORROWER";
+
       const conversations = await prisma.conversation.findMany({
         where,
         include: {
@@ -53,7 +55,24 @@ export default async function handler(
         orderBy: { updatedAt: "desc" },
       });
 
-      return res.status(200).json(conversations);
+      // Compute unread count per conversation
+      const userId = session.user.id;
+      const withUnread = await Promise.all(
+        conversations.map(async (c) => {
+          const lastReadAt = isBorrower ? c.borrowerLastReadAt : c.brokerLastReadAt;
+          const unreadWhere: Record<string, unknown> = {
+            conversationId: c.id,
+            senderId: { not: userId },
+          };
+          if (lastReadAt) {
+            unreadWhere.createdAt = { gt: lastReadAt };
+          }
+          const unreadCount = await prisma.message.count({ where: unreadWhere });
+          return { ...c, unreadCount };
+        })
+      );
+
+      return res.status(200).json(withUnread);
     }
 
     if (req.method === "POST") {

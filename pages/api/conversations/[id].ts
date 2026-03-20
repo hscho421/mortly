@@ -56,6 +56,15 @@ export default async function handler(
         return res.status(403).json({ error: "Forbidden" });
       }
 
+      // Mark conversation as read for this user
+      const isBorrower = conversation.borrowerId === session.user.id;
+      await prisma.conversation.update({
+        where: { id: conversation.id },
+        data: isBorrower
+          ? { borrowerLastReadAt: new Date() }
+          : { brokerLastReadAt: new Date() },
+      });
+
       return res.status(200).json(conversation);
     }
 

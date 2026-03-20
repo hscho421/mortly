@@ -12,6 +12,7 @@ interface ConversationListItem {
   publicId?: string;
   status: string;
   updatedAt: string;
+  unreadCount?: number;
   messages: { body: string; createdAt: string; senderId: string }[];
   broker: {
     id: string;
@@ -119,6 +120,9 @@ export default function BrokerMessagesPage() {
   useEffect(() => {
     if (authStatus === "authenticated") {
       fetchConversations();
+      // Poll for new messages / unread counts every 15 seconds
+      const interval = setInterval(fetchConversations, 15000);
+      return () => clearInterval(interval);
     }
   }, [authStatus, fetchConversations]);
 
@@ -197,7 +201,14 @@ export default function BrokerMessagesPage() {
     setActiveConversation(null);
     setNewMessage("");
     setMobileView("chat");
-    fetchActiveConversation(convId);
+    fetchActiveConversation(convId).then(() => {
+      // Clear unread count locally for this conversation
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
+      );
+      // Tell Navbar to refresh its badge
+      window.dispatchEvent(new Event("refresh-unread"));
+    });
   }
 
   // Send message
@@ -339,6 +350,7 @@ export default function BrokerMessagesPage() {
                 const lastMessage =
                   conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
                 const isActive = conv.id === activeConvId;
+                const hasUnread = (conv.unreadCount ?? 0) > 0;
 
                 return (
                   <button
@@ -347,18 +359,25 @@ export default function BrokerMessagesPage() {
                     className={`w-full text-left px-5 py-4 border-b border-cream-200 transition-colors duration-150 hover:bg-cream-200/60 ${
                       isActive
                         ? "bg-cream-200 border-l-[3px] border-l-amber-500"
-                        : ""
+                        : hasUnread
+                          ? "bg-amber-50/40"
+                          : ""
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
-                      <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-display font-bold text-sm">
+                      <div className="relative shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-display font-bold text-sm">
                         B
+                        {hasUnread && (
+                          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 font-body text-[10px] font-bold text-white">
+                            {conv.unreadCount! > 9 ? "9+" : conv.unreadCount}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-body text-sm font-semibold text-forest-800 truncate">
+                          <span className={`font-body text-sm truncate ${hasUnread ? "font-bold text-forest-900" : "font-semibold text-forest-800"}`}>
                             {t("messages.borrowerLabel")}
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
@@ -367,7 +386,7 @@ export default function BrokerMessagesPage() {
                                 {t("status.closed")}
                               </span>
                             )}
-                            <span className="font-body text-[11px] text-forest-700/40">
+                            <span className={`font-body text-[11px] ${hasUnread ? "text-amber-600 font-semibold" : "text-forest-700/40"}`}>
                               {lastMessage
                                 ? formatRelativeTime(lastMessage.createdAt)
                                 : formatRelativeTime(conv.updatedAt)}
@@ -381,7 +400,7 @@ export default function BrokerMessagesPage() {
                         </p>
 
                         {lastMessage ? (
-                          <p className="text-body-sm mt-1 truncate">
+                          <p className={`text-body-sm mt-1 truncate ${hasUnread ? "text-forest-700 font-medium" : ""}`}>
                             {lastMessage.body}
                           </p>
                         ) : (
