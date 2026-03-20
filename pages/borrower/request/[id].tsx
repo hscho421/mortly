@@ -95,32 +95,37 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 
   const id = ctx.params?.id as string;
 
-  const request = await prisma.borrowerRequest.findUnique({
-    where: { id },
-    include: {
-      introductions: {
-        include: {
-          broker: {
-            include: {
-              user: { select: { name: true, email: true } },
+  try {
+    const request = await prisma.borrowerRequest.findUnique({
+      where: { id },
+      include: {
+        introductions: {
+          include: {
+            broker: {
+              include: {
+                user: { select: { name: true, email: true } },
+              },
             },
           },
         },
+        _count: { select: { introductions: true } },
       },
-      _count: { select: { introductions: true } },
-    },
-  });
+    });
 
-  if (!request || request.borrowerId !== session.user.id) {
+    if (!request || request.borrowerId !== session.user.id) {
+      return { notFound: true };
+    }
+
+    return {
+      props: {
+        request: JSON.parse(JSON.stringify(request)),
+        ...(await serverSideTranslations(ctx.locale ?? "en", ["common"])),
+      },
+    };
+  } catch (error) {
+    console.error("Error loading request detail:", error);
     return { notFound: true };
   }
-
-  return {
-    props: {
-      request: JSON.parse(JSON.stringify(request)),
-      ...(await serverSideTranslations(ctx.locale ?? "en", ["common"])),
-    },
-  };
 };
 
 export default function RequestDetail({
