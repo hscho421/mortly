@@ -63,9 +63,8 @@ export default function Navbar() {
                 <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="font-display text-lg text-forest-800 tracking-tight">
-              Mortgage<span className="text-amber-600">Match</span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo/logo-text.svg" alt="MortgageMatch" className="h-6" />
           </Link>
 
           {/* Desktop center links */}
