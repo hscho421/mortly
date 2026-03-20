@@ -120,9 +120,6 @@ export default function BrokerMessagesPage() {
   useEffect(() => {
     if (authStatus === "authenticated") {
       fetchConversations();
-      // Poll for new messages / unread counts every 15 seconds
-      const interval = setInterval(fetchConversations, 15000);
-      return () => clearInterval(interval);
     }
   }, [authStatus, fetchConversations]);
 

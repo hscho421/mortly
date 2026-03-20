@@ -49,17 +49,18 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchNotices();
-    // Poll for unread updates every 30 seconds
-    const interval = setInterval(fetchNotices, 30000);
-    return () => clearInterval(interval);
   }, [fetchNotices]);
 
-  // Listen for custom event to refresh unread badge (fired from message pages)
+  // Refresh unread badge on custom event (from message pages) and route changes
   useEffect(() => {
     const handler = () => fetchNotices();
     window.addEventListener("refresh-unread", handler);
-    return () => window.removeEventListener("refresh-unread", handler);
-  }, [fetchNotices]);
+    router.events.on("routeChangeComplete", handler);
+    return () => {
+      window.removeEventListener("refresh-unread", handler);
+      router.events.off("routeChangeComplete", handler);
+    };
+  }, [fetchNotices, router.events]);
 
   // Close dropdown on click outside
   useEffect(() => {

@@ -20,54 +20,50 @@ export default async function handler(
     const userId = session.user.id;
     const isBroker = session.user.role === "BROKER";
 
-    let brokerRecord: { id: string } | null = null;
+    let brokerId: string | undefined;
     if (isBroker) {
-      brokerRecord = await prisma.broker.findUnique({
+      const broker = await prisma.broker.findUnique({
         where: { userId },
         select: { id: true },
       });
+      brokerId = broker?.id;
     }
 
-    // Find all active conversations the user is part of
+    // Get all active conversations with their lastReadAt in one query
     const conversations = await prisma.conversation.findMany({
       where: {
         status: "ACTIVE",
-        ...(isBroker
-          ? { brokerId: brokerRecord?.id }
-          : { borrowerId: userId }),
+        ...(isBroker ? { brokerId } : { borrowerId: userId }),
       },
       select: {
         id: true,
-        borrowerId: true,
         borrowerLastReadAt: true,
         brokerLastReadAt: true,
-        _count: {
-          select: { messages: true },
-        },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { senderId: true, createdAt: true },
-        },
       },
     });
 
-    // Count conversations with messages after the user's lastReadAt
-    let unread = 0;
-    for (const c of conversations) {
-      if (c.messages.length === 0) continue;
-      const lastMsg = c.messages[0];
-      // Skip if the last message is from us
-      if (lastMsg.senderId === userId) continue;
-
-      const lastReadAt = isBroker ? c.brokerLastReadAt : c.borrowerLastReadAt;
-      // If never read, or last message is after lastReadAt, it's unread
-      if (!lastReadAt || lastMsg.createdAt > lastReadAt) {
-        unread++;
-      }
+    if (conversations.length === 0) {
+      return res.status(200).json({ unread: 0 });
     }
 
-    return res.status(200).json({ unread });
+    // Build OR conditions for a single query across all conversations
+    const orConditions = conversations.map((c) => {
+      const lastReadAt = isBroker ? c.brokerLastReadAt : c.borrowerLastReadAt;
+      return {
+        conversationId: c.id,
+        senderId: { not: userId },
+        ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+      };
+    });
+
+    // Single query: count distinct conversations that have unread messages
+    const unreadConversations = await prisma.message.findMany({
+      where: { OR: orConditions },
+      select: { conversationId: true },
+      distinct: ["conversationId"],
+    });
+
+    return res.status(200).json({ unread: unreadConversations.length });
   } catch (error) {
     console.error("Error fetching unread count:", error);
     return res.status(500).json({ error: "Internal server error" });
