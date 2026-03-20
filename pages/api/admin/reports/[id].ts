@@ -22,11 +22,51 @@ export default async function handler(
   }
 
   try {
-    if (req.method === "PUT") {
-      const { status } = req.body;
+    if (req.method === "GET") {
+      const report = await prisma.report.findUnique({
+        where: { id },
+        include: {
+          reporter: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      });
 
-      if (!status) {
-        return res.status(400).json({ error: "status is required" });
+      if (!report) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      // Fetch target details based on targetType
+      let targetDetails = null;
+      if (report.targetType === "BROKER") {
+        targetDetails = await prisma.broker.findUnique({
+          where: { id: report.targetId },
+          include: { user: { select: { id: true, name: true, email: true } } },
+        });
+      } else if (report.targetType === "REQUEST") {
+        targetDetails = await prisma.borrowerRequest.findUnique({
+          where: { id: report.targetId },
+          include: { borrower: { select: { id: true, name: true, email: true } } },
+        });
+      } else if (report.targetType === "CONVERSATION") {
+        targetDetails = await prisma.conversation.findUnique({
+          where: { id: report.targetId },
+          include: {
+            borrower: { select: { id: true, name: true, email: true } },
+            broker: { include: { user: { select: { id: true, name: true, email: true } } } },
+            _count: { select: { messages: true } },
+          },
+        });
+      }
+
+      return res.status(200).json({ ...report, targetDetails });
+    }
+
+    if (req.method === "PUT") {
+      const { status, adminNotes } = req.body;
+
+      if (!status && adminNotes === undefined) {
+        return res.status(400).json({ error: "status or adminNotes is required" });
       }
 
       const report = await prisma.report.findUnique({
@@ -37,10 +77,38 @@ export default async function handler(
         return res.status(404).json({ error: "Report not found" });
       }
 
+      const previousStatus = report.status;
+
+      const updateData: Record<string, unknown> = {};
+      if (status) updateData.status = status;
+      if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+      if (status === "RESOLVED" || status === "DISMISSED") {
+        updateData.resolvedAt = new Date();
+      }
+
       const updated = await prisma.report.update({
         where: { id },
-        data: { status },
+        data: updateData,
       });
+
+      // Log admin action when status changes
+      if (status && status !== previousStatus) {
+        await prisma.adminAction.create({
+          data: {
+            adminId: session.user.id,
+            action: status === "RESOLVED" ? "RESOLVE_REPORT" : status === "DISMISSED" ? "DISMISS_REPORT" : "UPDATE_REPORT",
+            targetType: "REPORT",
+            targetId: id,
+            details: JSON.stringify({
+              previousStatus,
+              newStatus: status,
+              reportTargetType: report.targetType,
+              reportTargetId: report.targetId,
+            }),
+            reason: adminNotes || null,
+          },
+        });
+      }
 
       return res.status(200).json(updated);
     }

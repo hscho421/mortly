@@ -18,7 +18,7 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const [users, pendingVerifications, activeRequests, openReports] =
+      const [users, pendingVerifications, activeRequests, openReports, activeConversations, totalRequests] =
         await Promise.all([
           prisma.user.count(),
           prisma.broker.count({
@@ -30,6 +30,10 @@ export default async function handler(
           prisma.report.count({
             where: { status: "OPEN" },
           }),
+          prisma.conversation.count({
+            where: { status: "ACTIVE" },
+          }),
+          prisma.borrowerRequest.count(),
         ]);
 
       return res.status(200).json({
@@ -37,6 +41,8 @@ export default async function handler(
         pendingVerifications,
         activeRequests,
         openReports,
+        activeConversations,
+        totalRequests,
       });
     }
 

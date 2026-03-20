@@ -29,6 +29,14 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
 
+        if (user.status === "SUSPENDED") {
+          throw new Error("Your account has been suspended. Please contact support.");
+        }
+
+        if (user.status === "BANNED") {
+          throw new Error("Your account has been banned.");
+        }
+
         return {
           id: user.id,
           email: user.email,

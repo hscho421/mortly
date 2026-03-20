@@ -22,6 +22,56 @@ export default async function handler(
   }
 
   try {
+    if (req.method === "GET") {
+      const broker = await prisma.broker.findUnique({
+        where: { id },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, status: true, createdAt: true },
+          },
+          reviews: {
+            include: {
+              borrower: { select: { id: true, name: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          },
+          introductions: {
+            include: {
+              request: {
+                select: { id: true, requestType: true, province: true, city: true, status: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          },
+          conversations: {
+            include: {
+              borrower: { select: { id: true, name: true, email: true } },
+              request: { select: { id: true, requestType: true, province: true } },
+              _count: { select: { messages: true } },
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 20,
+          },
+          subscription: true,
+          creditPurchases: {
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          },
+          _count: {
+            select: { introductions: true, conversations: true, reviews: true, creditPurchases: true },
+          },
+        },
+      });
+
+      if (!broker) {
+        return res.status(404).json({ error: "Broker not found" });
+      }
+
+      return res.status(200).json(broker);
+    }
+
     if (req.method === "PUT") {
       const { verificationStatus } = req.body;
 
@@ -37,10 +87,30 @@ export default async function handler(
         return res.status(404).json({ error: "Broker not found" });
       }
 
-      const updated = await prisma.broker.update({
-        where: { id },
-        data: { verificationStatus },
-      });
+      const actionMap: Record<string, string> = {
+        VERIFIED: "VERIFY_BROKER",
+        REJECTED: "REJECT_BROKER",
+        PENDING: "RESET_BROKER_VERIFICATION",
+      };
+
+      const [updated] = await prisma.$transaction([
+        prisma.broker.update({
+          where: { id },
+          data: { verificationStatus },
+        }),
+        prisma.adminAction.create({
+          data: {
+            adminId: session.user.id,
+            action: actionMap[verificationStatus] || "UPDATE_BROKER",
+            targetType: "BROKER",
+            targetId: id,
+            details: JSON.stringify({
+              previousStatus: broker.verificationStatus,
+              newStatus: verificationStatus,
+            }),
+          },
+        }),
+      ]);
 
       return res.status(200).json(updated);
     }

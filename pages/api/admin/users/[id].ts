@@ -1,0 +1,89 @@
+import type { NextApiRequest, NextApiResponse } from "next";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (session.user.role !== "ADMIN") {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+
+  const { id } = req.query;
+
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ error: "User ID is required" });
+  }
+
+  try {
+    if (req.method === "PUT") {
+      const { status } = req.body;
+
+      const validStatuses = ["ACTIVE", "SUSPENDED", "BANNED"];
+      if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status. Use ACTIVE, SUSPENDED, or BANNED." });
+      }
+
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Prevent admins from suspending/banning other admins
+      if (user.role === "ADMIN" && status !== "ACTIVE") {
+        return res.status(403).json({ error: "Cannot suspend or ban admin accounts." });
+      }
+
+      // Prevent self-suspension
+      if (user.id === session.user.id) {
+        return res.status(403).json({ error: "Cannot change your own account status." });
+      }
+
+      const actionMap: Record<string, string> = {
+        SUSPENDED: "SUSPEND_USER",
+        BANNED: "BAN_USER",
+        ACTIVE: "REACTIVATE_USER",
+      };
+
+      const { reason } = req.body;
+
+      const [updated] = await prisma.$transaction([
+        prisma.user.update({
+          where: { id },
+          data: { status },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            status: true,
+          },
+        }),
+        prisma.adminAction.create({
+          data: {
+            adminId: session.user.id,
+            action: actionMap[status],
+            targetType: "USER",
+            targetId: id,
+            details: JSON.stringify({ previousStatus: user.status, newStatus: status }),
+            reason: reason || null,
+          },
+        }),
+      ]);
+
+      return res.status(200).json(updated);
+    }
+
+    return res.status(405).json({ error: "Method not allowed" });
+  } catch (error) {
+    console.error("Error in /api/admin/users/[id]:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}

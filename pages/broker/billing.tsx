@@ -352,12 +352,12 @@ export default function BrokerBillingPage() {
                 <div
                   key={pack.type}
                   className={`relative rounded-xl border-2 p-5 transition-all ${
-                    pack.best
+                    "best" in pack && pack.best
                       ? "border-amber-400 bg-amber-50"
                       : "border-cream-300 bg-cream-50"
                   }`}
                 >
-                  {pack.best && (
+                  {"best" in pack && pack.best && (
                     <span className="absolute -top-2.5 right-4 rounded-full bg-amber-500 px-3 py-0.5 font-body text-xs font-semibold text-forest-900">
                       {t("credits.bestValue")}
                     </span>
