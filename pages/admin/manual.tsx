@@ -186,7 +186,7 @@ export default function AdminManual() {
             {/* Overview */}
             <Section id="overview" title={t("manual.overviewTitle", "Overview")}>
               <P>{t("manual.overviewP1", "The admin portal gives you full control over the MortgageMatch platform. From here you can manage users, verify brokers, oversee requests and conversations, handle reports, and review a complete audit trail of all administrative actions.")}</P>
-              <P>{t("manual.overviewP2", "All admin pages use client-side filtering — data is loaded once when the page opens, and search/filter changes are instant without reloading. Every action you take (status changes, credit adjustments, verifications, deletions) is automatically logged to the activity log.")}</P>
+              <P>{t("manual.overviewP2v2", "All admin list pages use server-side pagination (20 items per page) with page navigation controls. Search and filter changes trigger a fresh data load. Every action you take (status changes, credit adjustments, verifications, deletions) is automatically logged to the activity log.")}</P>
               <Tip>{t("manual.overviewTip", "Tip: All admin pages are accessible from the dashboard quick links. You can also navigate directly via the URL bar (e.g., /admin/users, /admin/requests).")}</Tip>
             </Section>
 
@@ -266,6 +266,7 @@ export default function AdminManual() {
               <SubSection title={t("manual.brokerListColumns", "Table Columns")}>
                 <BulletList items={[
                   t("manual.brokerCol1", "Name — the broker's display name"),
+                  t("manual.brokerCol1b", "User ID — the broker's user 9-digit public ID"),
                   t("manual.brokerCol2", "Brokerage — the brokerage company name"),
                   t("manual.brokerCol3", "Province — where the broker is licensed"),
                   t("manual.brokerCol4", "License # — the broker's license number"),
@@ -342,17 +343,19 @@ export default function AdminManual() {
                 <BulletList items={[
                   t("manual.convoList1", "Search by participant name, email, or brokerage name"),
                   t("manual.convoList2", "Filter by status: Active or Closed"),
-                  t("manual.convoList3", "Each row shows: participants (with account status badges if suspended/banned), related request info, message count, last message preview, and review rating if exists"),
+                  t("manual.convoList3v2", "Each row shows: conversation public ID, participants (with account status badges if suspended/banned), related request info, message count, last message preview, and review rating if exists"),
                 ]} />
               </SubSection>
 
               <SubSection title={t("manual.conversationDetail", "Viewing a Conversation")}>
-                <P>{t("manual.convoDetailP1", "Click 'Messages' to open the full conversation thread (/admin/conversations/[id]). Here you can see:")}</P>
+                <P>{t("manual.convoDetailP1v2", "Click 'Messages' to open the conversation detail (/admin/conversations/[id]). Messages are displayed as chat bubbles:")}</P>
                 <BulletList items={[
-                  t("manual.convoDetail1", "Every message with sender name, role badge (Borrower/Broker/Admin), and timestamp"),
-                  t("manual.convoDetail2", "Admin closure messages are highlighted with an amber border"),
-                  t("manual.convoDetail3", "Conversation info card showing borrower, broker, request details, and status"),
+                  t("manual.convoDetail1v2", "Borrower messages appear as white bubbles on the left side"),
+                  t("manual.convoDetail2v2", "Broker messages appear as green bubbles on the right side"),
+                  t("manual.convoDetail3v2", "Admin system messages (e.g., closure notices) appear centered with an amber background"),
                   t("manual.convoDetail4", "If a review was left, it shows the star rating and comment"),
+                  t("manual.convoDetail5", "The conversation public ID is shown in the page header"),
+                  t("manual.convoDetail6", "Conversation info card shows borrower, broker, request details, and status"),
                 ]} />
               </SubSection>
 
@@ -391,7 +394,7 @@ export default function AdminManual() {
 
               <SubSection title={t("manual.reportActions", "Available Actions")}>
                 <BulletList items={[
-                  t("manual.reportAction1", "View Target — click the target badge (Broker/Request/Conversation) to navigate to the relevant admin page for investigation"),
+                  t("manual.reportAction1v2", "View Target — click the target's public ID to navigate directly to the broker detail page or conversation detail page for investigation"),
                   t("manual.reportAction2", "Add/Edit Notes — open the notes modal to record your investigation findings, resolution details, or follow-up actions. You can also change the report status from this modal."),
                   t("manual.reportAction3", "Resolve — marks the report as resolved and records the resolution timestamp"),
                   t("manual.reportAction4", "Dismiss — marks the report as dismissed (no action taken)"),
@@ -522,16 +525,44 @@ export default function AdminManual() {
               <Warning>{t("manual.settingsWarning", "Warning: Settings changes take effect immediately. Changing tier credits affects future billing cycles, not retroactively.")}</Warning>
             </Section>
 
-            {/* Public User IDs */}
-            <Section id="public-ids" title={t("manual.publicIdsTitle", "Public User IDs")}>
-              <P>{t("manual.publicIdsP1", "Every user on the platform has a unique 9-digit public ID (e.g., 482913756). This ID is shown to users on their profile page and to admins in the user management table.")}</P>
-              <BulletList items={[
-                t("manual.publicId1", "Users see their ID on their profile/settings page with a note to use it when contacting support"),
-                t("manual.publicId2", "Admins can search by public ID in the user management page"),
-                t("manual.publicId3", "The public ID is displayed on the broker detail page for quick reference"),
-                t("manual.publicId4", "Click any public ID in the admin table to copy it to your clipboard"),
-              ]} />
-              <P>{t("manual.publicIdsP2", "Internal database IDs (CUIDs) are never shown to users. When a user contacts support, ask for their 9-digit user ID to quickly locate their account.")}</P>
+            {/* Public IDs */}
+            <Section id="public-ids" title={t("manual.publicIdsTitle", "Public IDs")}>
+              <P>{t("manual.publicIdsP1v2", "Every user, borrower request, and conversation on the platform has a unique 9-digit public ID (e.g., 482913756). Internal database IDs (CUIDs) are never exposed anywhere in the interface.")}</P>
+
+              <SubSection title={t("manual.publicIdUsers", "User IDs")}>
+                <BulletList items={[
+                  t("manual.publicId1", "Users see their ID on their profile/settings page with a note to use it when contacting support"),
+                  t("manual.publicId2", "Admins can search by public ID in the user management page"),
+                  t("manual.publicId3", "The public ID is displayed on the broker detail page for quick reference"),
+                  t("manual.publicId4", "Click any public ID in the admin table to copy it to your clipboard"),
+                ]} />
+              </SubSection>
+
+              <SubSection title={t("manual.publicIdRequests", "Request IDs")}>
+                <BulletList items={[
+                  t("manual.publicIdReq1", "Every borrower request has a unique 9-digit public ID displayed in admin request management"),
+                  t("manual.publicIdReq2", "Request IDs are used in search, CSV exports, and the activity log"),
+                  t("manual.publicIdReq3", "Borrowers see their request public ID in the dashboard and request detail pages"),
+                ]} />
+              </SubSection>
+
+              <SubSection title={t("manual.publicIdConversations", "Conversation IDs")}>
+                <BulletList items={[
+                  t("manual.publicIdConvo1", "Every conversation has a unique 9-digit public ID shown in conversation oversight"),
+                  t("manual.publicIdConvo2", "Borrowers and brokers see the conversation ID in their chat headers"),
+                  t("manual.publicIdConvo3", "Clicking a conversation ID in reports navigates directly to the conversation detail page"),
+                ]} />
+              </SubSection>
+
+              <SubSection title={t("manual.publicIdReports", "In Reports & Activity Log")}>
+                <BulletList items={[
+                  t("manual.publicIdReport1", "All report target IDs display as public IDs — click to navigate to the target's detail page"),
+                  t("manual.publicIdReport2", "All admin action target IDs in the activity log use public IDs"),
+                  t("manual.publicIdReport3", "Legacy records with old internal IDs are automatically resolved to public IDs when displayed"),
+                ]} />
+              </SubSection>
+
+              <P>{t("manual.publicIdsP2v2", "When a user contacts support, ask for their 9-digit ID to quickly locate their account, request, or conversation.")}</P>
             </Section>
 
             {/* Audit Trail */}
