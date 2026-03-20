@@ -214,7 +214,7 @@ export default function HowItWorks() {
                       {step.number}
                     </div>
                   </div>
-                  <div className="card-elevated flex-1">
+                  <div className="card-elevated flex-1 flex flex-col justify-center">
                     <h3 className="heading-sm mb-2">{step.title}</h3>
                     <p className="text-body-sm">{step.description}</p>
                   </div>

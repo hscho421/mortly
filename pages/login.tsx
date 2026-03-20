@@ -112,7 +112,16 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="opacity-0 animate-fade-in-up stagger-4 pt-1">
+              <div className="flex justify-end opacity-0 animate-fade-in-up stagger-4">
+                <Link
+                  href="/forgot-password"
+                  className="font-body text-sm text-forest-600 underline decoration-amber-400 decoration-2 underline-offset-2 transition-colors hover:text-forest-500"
+                >
+                  {t("auth.forgotPassword", "Forgot Password?")}
+                </Link>
+              </div>
+
+              <div className="opacity-0 animate-fade-in-up stagger-5 pt-1">
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -123,7 +132,7 @@ export default function LoginPage() {
               </div>
             </form>
 
-            <div className="mt-8 border-t border-cream-300 pt-6 opacity-0 animate-fade-in-up stagger-5">
+            <div className="mt-8 border-t border-cream-300 pt-6 opacity-0 animate-fade-in-up stagger-6">
               <p className="text-center text-body-sm">
                 {t("auth.noAccount")}{" "}
                 <Link
