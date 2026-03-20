@@ -7,7 +7,8 @@
     "messages": "메시지",
     "login": "로그인",
     "getStarted": "시작하기",
-    "signOut": "로그아웃"
+    "signOut": "로그아웃",
+    "brokers": "브로커"
   },
   "footer": {
     "tagline": "캐나다 주택 구매자와 신뢰할 수 있는 모기지 브로커를 익명으로 안전하게 연결합니다.",
@@ -482,6 +483,41 @@
     "verify2": "전문 배경 및 참조 확인",
     "verify3": "지속적인 성과 및 규정 준수 모니터링",
     "verify4": "고객 피드백 및 평점 정기 검토"
+  },
+  "review": {
+    "title": "경험 평가",
+    "subtitle": "이 브로커와의 경험은 어떠셨나요?",
+    "commentPlaceholder": "경험을 공유해 주세요 (선택사항)...",
+    "skip": "건너뛰기",
+    "submit": "리뷰 제출",
+    "submitting": "제출 중...",
+    "rating1": "나쁨",
+    "rating2": "보통",
+    "rating3": "좋음",
+    "rating4": "매우 좋음",
+    "rating5": "훌륭함",
+    "myReviews": "내 리뷰",
+    "noReviews": "아직 리뷰가 없습니다",
+    "noReviewsDesc": "대화가 종료된 후 차용인의 리뷰가 여기에 표시됩니다.",
+    "reviewSingular": "개 리뷰",
+    "reviewPlural": "개 리뷰"
+  },
+  "directory": {
+    "badge": "검증된 전문가",
+    "title": "브로커 디렉토리",
+    "subtitle": "캐나다 전역의 검증된 모기지 브로커를 둘러보세요. 준비가 되면 요청서를 제출하여 브로커의 연락을 받으세요.",
+    "brokerFound": "명의 브로커",
+    "brokersFound": "명의 브로커",
+    "noBrokers": "브로커를 찾을 수 없습니다",
+    "noBrokersDesc": "필터를 조정하거나 나중에 다시 확인하세요.",
+    "yearsExp": "년 경력",
+    "viewProfile": "프로필 보기",
+    "showLess": "간략히 보기",
+    "about": "소개",
+    "areasServed": "서비스 지역",
+    "recentReviews": "최근 리뷰",
+    "ctaText": "이 브로커의 연락을 받고 싶으신가요?",
+    "ctaBtn": "요청서 제출"
   },
   "brokerIntros": {
     "title": "브로커 소개",

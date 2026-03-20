@@ -7,7 +7,8 @@
     "messages": "Messages",
     "login": "Login",
     "getStarted": "Get Started",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "brokers": "Brokers"
   },
   "footer": {
     "tagline": "Connecting Canadian homebuyers with trusted mortgage brokers, anonymously and securely.",
@@ -482,6 +483,41 @@
     "verify2": "Professional background and reference checks",
     "verify3": "Ongoing performance and compliance monitoring",
     "verify4": "Regular review of client feedback and ratings"
+  },
+  "review": {
+    "title": "Rate Your Experience",
+    "subtitle": "How was your experience with this broker?",
+    "commentPlaceholder": "Share your experience (optional)...",
+    "skip": "Skip",
+    "submit": "Submit Review",
+    "submitting": "Submitting...",
+    "rating1": "Poor",
+    "rating2": "Fair",
+    "rating3": "Good",
+    "rating4": "Very Good",
+    "rating5": "Excellent",
+    "myReviews": "My Reviews",
+    "noReviews": "No Reviews Yet",
+    "noReviewsDesc": "Reviews from borrowers will appear here after conversations are closed.",
+    "reviewSingular": "review",
+    "reviewPlural": "reviews"
+  },
+  "directory": {
+    "badge": "Verified Professionals",
+    "title": "Broker Directory",
+    "subtitle": "Browse verified mortgage brokers across Canada. When you're ready, submit a request to have brokers come to you.",
+    "brokerFound": "broker found",
+    "brokersFound": "brokers found",
+    "noBrokers": "No Brokers Found",
+    "noBrokersDesc": "Try adjusting your filters or check back later.",
+    "yearsExp": "years experience",
+    "viewProfile": "View Profile",
+    "showLess": "Show Less",
+    "about": "About",
+    "areasServed": "Areas Served",
+    "recentReviews": "Recent Reviews",
+    "ctaText": "Want this broker to reach out to you?",
+    "ctaBtn": "Submit a Request"
   },
   "brokerIntros": {
     "title": "Broker Introductions",

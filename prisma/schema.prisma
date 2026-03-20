@@ -23,6 +23,7 @@ model User {
   conversations    Conversation[]
   messages         Message[]
   reports          Report[]
+  reviews          Review[]
 
   @@map("users")
 }
@@ -81,6 +82,7 @@ model Broker {
   user               User                 @relation(fields: [userId], references: [id])
   conversations      Conversation[]
   subscription       Subscription?
+  reviews            Review[]
 
   @@map("brokers")
 }
@@ -115,6 +117,7 @@ model Conversation {
   broker     Broker             @relation(fields: [brokerId], references: [id])
   request    BorrowerRequest    @relation(fields: [requestId], references: [id])
   messages   Message[]
+  review     Review?
 
   @@unique([requestId, brokerId])
   @@map("conversations")
@@ -130,6 +133,22 @@ model Message {
   sender         User         @relation(fields: [senderId], references: [id])
 
   @@map("messages")
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  rating         Int
+  comment        String?
+  brokerId       String
+  borrowerId     String
+  conversationId String       @unique
+  createdAt      DateTime     @default(now())
+  broker         Broker       @relation(fields: [brokerId], references: [id])
+  borrower       User         @relation(fields: [borrowerId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  @@unique([conversationId, borrowerId])
+  @@map("reviews")
 }
 
 model Subscription {

@@ -30,6 +30,7 @@ export default function Navbar() {
 
   const publicLinks = [
     { href: "/how-it-works", label: t("nav.howItWorks") },
+    { href: "/brokers", label: t("nav.brokers") },
     { href: "/for-brokers", label: t("nav.forBrokers") },
     { href: "/pricing", label: t("nav.pricing") },
   ];
