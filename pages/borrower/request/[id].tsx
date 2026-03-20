@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import nextI18NextConfig from "@/next-i18next.config.js";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
 import type { CreateRequestInput } from "@/types";
@@ -87,7 +88,7 @@ type RequestData = any;
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return {
     props: {
-      ...(await serverSideTranslations(ctx.locale ?? "en", ["common"])),
+      ...(await serverSideTranslations(ctx.locale ?? "en", ["common"], nextI18NextConfig)),
     },
   };
 };
