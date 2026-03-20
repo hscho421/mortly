@@ -42,6 +42,7 @@ interface BrokerProfile extends CreateBrokerProfileInput {
   responseCredits: number;
   rating: number | null;
   completedMatches: number;
+  user?: BrokerUser;
 }
 
 export default function BrokerProfilePage() {

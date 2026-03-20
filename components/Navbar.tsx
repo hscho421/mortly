@@ -1,12 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSession, signOut } from "next-auth/react";
 import { useTranslation } from "next-i18next";
 
+interface Notice {
+  id: string;
+  subject: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const noticeRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
@@ -16,6 +28,54 @@ export default function Navbar() {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Fetch notices and unread messages for logged-in non-admin users
+  const fetchNotices = useCallback(async () => {
+    if (!session || session.user.role === "ADMIN") return;
+    try {
+      const [noticesRes, unreadRes] = await Promise.all([
+        fetch("/api/notices"),
+        fetch("/api/messages/unread"),
+      ]);
+      if (noticesRes.ok) setNotices(await noticesRes.json());
+      if (unreadRes.ok) {
+        const data = await unreadRes.json();
+        setUnreadMessages(data.unread);
+      }
+    } catch {
+      // silent
+    }
+  }, [session]);
+
+  useEffect(() => {
+    fetchNotices();
+  }, [fetchNotices]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (noticeRef.current && !noticeRef.current.contains(e.target as Node)) {
+        setNoticeOpen(false);
+      }
+    };
+    if (noticeOpen) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [noticeOpen]);
+
+  const markAsRead = async (id: string) => {
+    setNotices((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await fetch("/api/notices", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+    } catch {
+      // silent
+    }
+  };
+
+  const unreadCount = notices.filter((n) => !n.read).length;
 
   const switchLocale = (locale: string) => {
     router.push(router.asPath, router.asPath, { locale });
@@ -142,7 +202,86 @@ export default function Navbar() {
                     <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
                     </svg>
+                    {unreadMessages > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 font-body text-[10px] font-bold text-white">
+                        {unreadMessages > 9 ? "9+" : unreadMessages}
+                      </span>
+                    )}
                   </Link>
+                )}
+
+                {/* Notification bell */}
+                {showUserLinks && (
+                  <div className="relative" ref={noticeRef}>
+                    <button
+                      onClick={() => setNoticeOpen(!noticeOpen)}
+                      className={`group relative rounded-lg p-2 transition-all duration-200 ${
+                        noticeOpen
+                          ? "bg-forest-100 text-forest-800"
+                          : "text-forest-500 hover:bg-cream-200 hover:text-forest-700"
+                      }`}
+                      title={t("nav.notifications", "Notifications")}
+                    >
+                      <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                      </svg>
+                      {unreadCount > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 font-body text-[10px] font-bold text-white">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Dropdown */}
+                    {noticeOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-white shadow-xl ring-1 ring-forest-900/5 animate-fade-in overflow-hidden z-50">
+                        <div className="px-4 py-3 border-b border-cream-200">
+                          <p className="font-body text-sm font-semibold text-forest-800">
+                            {t("nav.notifications", "Notifications")}
+                          </p>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto">
+                          {notices.length === 0 ? (
+                            <div className="px-4 py-8 text-center">
+                              <p className="font-body text-sm text-forest-700/50">
+                                {t("nav.noNotifications", "No notifications")}
+                              </p>
+                            </div>
+                          ) : (
+                            notices.map((notice) => (
+                              <button
+                                key={notice.id}
+                                onClick={() => markAsRead(notice.id)}
+                                className={`w-full text-left px-4 py-3 border-b border-cream-100 transition-colors hover:bg-cream-50 ${
+                                  !notice.read ? "bg-forest-50/30" : ""
+                                }`}
+                              >
+                                <div className="flex items-start gap-2">
+                                  {!notice.read && (
+                                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-forest-500" />
+                                  )}
+                                  <div className={!notice.read ? "" : "pl-4"}>
+                                    <p className={`font-body text-sm ${!notice.read ? "font-semibold text-forest-800" : "text-forest-700"}`}>
+                                      {notice.subject}
+                                    </p>
+                                    <p className="font-body text-xs text-forest-700/60 mt-0.5 line-clamp-2">
+                                      {notice.body}
+                                    </p>
+                                    <p className="font-body text-[10px] text-forest-700/40 mt-1">
+                                      {new Date(notice.createdAt).toLocaleDateString(
+                                        router.locale === "ko" ? "ko-KR" : "en-CA",
+                                        { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <Link
@@ -289,7 +428,30 @@ export default function Navbar() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
                   </svg>
                   {t("nav.messages")}
+                  {unreadMessages > 0 && (
+                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 font-body text-[10px] font-bold text-white">
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </span>
+                  )}
                 </Link>
+              )}
+
+              {/* Mobile notifications */}
+              {showUserLinks && (
+                <button
+                  onClick={() => { setMobileOpen(false); setNoticeOpen(!noticeOpen); }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-body text-[13px] font-medium text-forest-600/70 transition-all duration-200 hover:bg-white/60 hover:text-forest-800"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                  </svg>
+                  {t("nav.notifications", "Notifications")}
+                  {unreadCount > 0 && (
+                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 font-body text-[10px] font-bold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
               )}
 
               <Link

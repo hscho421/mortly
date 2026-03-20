@@ -18,6 +18,10 @@ const SECTION_IDS = [
   "conversations",
   "reports",
   "activity-log",
+  "csv-export",
+  "bulk-actions",
+  "notices",
+  "settings",
   "public-ids",
   "audit-trail",
 ];
@@ -168,6 +172,10 @@ export default function AdminManual() {
               <NavItem href="#conversations" label={t("manual.navConversations", "Conversation Oversight")} active={activeSection === "conversations"} />
               <NavItem href="#reports" label={t("manual.navReports", "Reports")} active={activeSection === "reports"} />
               <NavItem href="#activity-log" label={t("manual.navActivityLog", "Activity Log")} active={activeSection === "activity-log"} />
+              <NavItem href="#csv-export" label={t("manual.navCsvExport", "CSV Export")} active={activeSection === "csv-export"} />
+              <NavItem href="#bulk-actions" label={t("manual.navBulkActions", "Bulk Actions")} active={activeSection === "bulk-actions"} />
+              <NavItem href="#notices" label={t("manual.navNotices", "Admin Notices")} active={activeSection === "notices"} />
+              <NavItem href="#settings" label={t("manual.navSettings", "System Settings")} active={activeSection === "settings"} />
               <NavItem href="#public-ids" label={t("manual.navPublicIds", "Public User IDs")} active={activeSection === "public-ids"} />
               <NavItem href="#audit-trail" label={t("manual.navAuditTrail", "Audit Trail")} active={activeSection === "audit-trail"} />
             </div>
@@ -194,6 +202,15 @@ export default function AdminManual() {
                 t("manual.dashboardStat6", "Total Requests — all borrower requests ever created"),
               ]} />
               <P>{t("manual.dashboardP2", "Below the stats, quick link cards take you directly to each admin tool. Each card shows a live count so you can prioritize where to look first.")}</P>
+
+              <SubSection title={t("manual.trendsTitle", "30-Day Trends Chart")}>
+                <P>{t("manual.trendsP1", "The dashboard includes a 30-day trends chart showing daily counts of new users, requests, and conversations as a stacked bar chart.")}</P>
+                <BulletList items={[
+                  t("manual.trend1", "Hover over any bar to see exact counts for that date"),
+                  t("manual.trend2", "The chart updates automatically when the dashboard loads"),
+                  t("manual.trend3", "Date labels show in Korean format when viewing in Korean language"),
+                ]} />
+              </SubSection>
             </Section>
 
             {/* User Management */}
@@ -404,6 +421,8 @@ export default function AdminManual() {
                   t("manual.action12", "RESOLVE_REPORT — report resolutions"),
                   t("manual.action13", "DISMISS_REPORT — report dismissals"),
                   t("manual.action14", "UPDATE_REPORT — report note/status updates"),
+                  t("manual.action15", "SEND_NOTICE — admin notice sent to a user"),
+                  t("manual.action16", "UPDATE_SETTINGS — system settings changes"),
                 ]} />
               </SubSection>
 
@@ -412,6 +431,95 @@ export default function AdminManual() {
               </SubSection>
 
               <P>{t("manual.activityFilterP1", "Use the filter dropdown to narrow the log to specific action types. This is useful for auditing specific categories of actions (e.g., all credit adjustments, all bans).")}</P>
+            </Section>
+
+            {/* CSV Export */}
+            <Section id="csv-export" title={t("manual.csvExportTitle", "CSV Export")}>
+              <P>{t("manual.csvExportP1", "Several admin pages include a CSV export button that lets you download the current data as a spreadsheet-compatible file.")}</P>
+
+              <SubSection title={t("manual.csvExportPages", "Pages with CSV Export")}>
+                <BulletList items={[
+                  t("manual.csvExportPage1", "User Management — exports all users with name, email, public ID, role, status, and join date"),
+                  t("manual.csvExportPage2", "Reports — exports all reports with reporter, target, reason, status, and dates"),
+                  t("manual.csvExportPage3", "Activity Log — exports all admin actions with admin name, action type, target, details, and timestamp"),
+                ]} />
+              </SubSection>
+
+              <SubSection title={t("manual.csvExportNotes", "Notes")}>
+                <BulletList items={[
+                  t("manual.csvExportNote1", "The exported file includes all data, not just the currently filtered view"),
+                  t("manual.csvExportNote2", "Files are named with the current date (e.g., users_2025-01-15.csv)"),
+                  t("manual.csvExportNote3", "CSV files include a BOM header for proper Excel encoding of special characters and Korean text"),
+                ]} />
+              </SubSection>
+            </Section>
+
+            {/* Bulk Actions */}
+            <Section id="bulk-actions" title={t("manual.bulkActionsTitle", "Bulk Actions")}>
+              <P>{t("manual.bulkActionsP1", "The user management page supports bulk actions, allowing you to apply status changes to multiple users at once.")}</P>
+
+              <SubSection title={t("manual.bulkActionsHow", "How to Use")}>
+                <BulletList items={[
+                  t("manual.bulkHow1", "Use the checkboxes in the leftmost column to select individual users"),
+                  t("manual.bulkHow2", "Use the header checkbox to select or deselect all visible users"),
+                  t("manual.bulkHow3", "A bulk action bar appears at the top when users are selected, showing the count"),
+                  t("manual.bulkHow4", "Choose an action: Suspend All, Ban All, or Reactivate All"),
+                  t("manual.bulkHow5", "Click 'Clear' to deselect all users"),
+                ]} />
+              </SubSection>
+
+              <Warning>{t("manual.bulkActionsWarning", "Warning: Bulk actions apply immediately to all selected users. Admin accounts are excluded from selection. Each individual status change is logged separately in the activity log.")}</Warning>
+            </Section>
+
+            {/* Admin Notices */}
+            <Section id="notices" title={t("manual.noticesTitle", "Admin Notices")}>
+              <P>{t("manual.noticesP1", "Admins can send notices directly to individual users. Notices appear as a bell notification in the user's navigation bar.")}</P>
+
+              <SubSection title={t("manual.noticesSending", "Sending a Notice")}>
+                <BulletList items={[
+                  t("manual.noticeSend1", "On the user management page, click the 'Notice' button in any non-admin user's action column"),
+                  t("manual.noticeSend2", "Enter a subject line and message body in the modal"),
+                  t("manual.noticeSend3", "Click 'Send Notice' to deliver the notification"),
+                  t("manual.noticeSend4", "The action is logged in the activity log as SEND_NOTICE"),
+                ]} />
+              </SubSection>
+
+              <SubSection title={t("manual.noticesReceiving", "How Users See Notices")}>
+                <BulletList items={[
+                  t("manual.noticeReceive1", "A bell icon with a red badge appears in the navigation bar showing unread count"),
+                  t("manual.noticeReceive2", "Clicking the bell opens a dropdown with all notices, newest first"),
+                  t("manual.noticeReceive3", "Unread notices show a blue dot indicator"),
+                  t("manual.noticeReceive4", "Clicking a notice marks it as read"),
+                ]} />
+              </SubSection>
+
+              <Tip>{t("manual.noticesTip", "Tip: Use notices for account warnings, policy reminders, or important platform announcements targeted at specific users.")}</Tip>
+            </Section>
+
+            {/* System Settings */}
+            <Section id="settings" title={t("manual.settingsTitle", "System Settings")}>
+              <P>{t("manual.settingsP1", "The settings page (/admin/settings) allows you to configure platform-wide values without code changes. Changes are saved to the database and logged in the activity log.")}</P>
+
+              <SubSection title={t("manual.settingsAvailable", "Available Settings")}>
+                <BulletList items={[
+                  t("manual.setting1", "Platform Name — the display name of the platform"),
+                  t("manual.setting2", "Support Email — the contact email shown to users"),
+                  t("manual.setting3", "Free / Basic / Pro / Premium Tier Credits — default monthly credits for each subscription tier"),
+                  t("manual.setting4", "Max Requests Per User — maximum number of active requests a borrower can have"),
+                  t("manual.setting5", "Request Expiry Days — number of days before an open request expires automatically"),
+                  t("manual.setting6", "Maintenance Mode — toggle to enable/disable a maintenance mode flag"),
+                ]} />
+              </SubSection>
+
+              <SubSection title={t("manual.settingsNotes", "Notes")}>
+                <BulletList items={[
+                  t("manual.settingsNote1", "Changes are tracked as drafts until you click 'Save Changes'"),
+                  t("manual.settingsNote2", "Only modified values are saved — unchanged settings are not rewritten"),
+                  t("manual.settingsNote3", "All setting changes are logged as UPDATE_SETTINGS in the activity log"),
+                ]} />
+              </SubSection>
+
+              <Warning>{t("manual.settingsWarning", "Warning: Settings changes take effect immediately. Changing tier credits affects future billing cycles, not retroactively.")}</Warning>
             </Section>
 
             {/* Public User IDs */}
