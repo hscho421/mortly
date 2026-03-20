@@ -66,9 +66,12 @@ export default async function handler(
         return res.status(400).json({ error: "requestId and brokerId are required" });
       }
 
-      // Verify the request belongs to the session user
+      // Resolve publicId to internal id
+      const reqLookup = /^\d{9}$/.test(requestId)
+        ? { publicId: requestId }
+        : { id: requestId };
       const request = await prisma.borrowerRequest.findUnique({
-        where: { id: requestId },
+        where: reqLookup,
       });
 
       if (!request) {
@@ -81,7 +84,7 @@ export default async function handler(
 
       // Check for existing conversation to prevent duplicates
       const existing = await prisma.conversation.findFirst({
-        where: { requestId, brokerId },
+        where: { requestId: request.id, brokerId },
       });
 
       if (existing) {
@@ -90,7 +93,7 @@ export default async function handler(
 
       const conversation = await prisma.conversation.create({
         data: {
-          requestId,
+          requestId: request.id,
           borrowerId: session.user.id,
           brokerId,
         },

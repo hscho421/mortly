@@ -10,6 +10,7 @@ import Pagination from "@/components/Pagination";
 
 interface RequestRow {
   id: string;
+  publicId: string;
   requestType: string;
   mortgageCategory: string;
   province: string;
@@ -151,7 +152,7 @@ export default function AdminRequests() {
 
       if (res.ok) {
         setRequests((prev) =>
-          prev.map((r) => (r.id === statusModal.id ? { ...r, status: newStatus } : r))
+          prev.map((r) => (r.publicId === statusModal.id ? { ...r, status: newStatus } : r))
         );
         setActionMessage({ id: statusModal.id, text: t("admin.statusUpdated"), ok: true });
         setStatusModal(null);
@@ -210,7 +211,7 @@ export default function AdminRequests() {
         headers.join(","),
         ...rows.map((r) =>
           [
-            r.id,
+            r.publicId,
             `"${(r.borrower.name || "").replace(/"/g, '""')}"`,
             r.borrower.email,
             r.requestType,
@@ -369,9 +370,9 @@ export default function AdminRequests() {
                       <button
                         onClick={() => setDetailRequest(req)}
                         className="font-mono text-xs text-forest-600 hover:text-forest-800 hover:underline"
-                        title={req.id}
+                        title={req.publicId}
                       >
-                        {req.id.slice(0, 12)}...
+                        {req.publicId}
                       </button>
                     </td>
 
@@ -401,7 +402,7 @@ export default function AdminRequests() {
                       <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ${STATUS_BADGE[req.status] || STATUS_BADGE.OPEN}`}>
                         {req.status}
                       </span>
-                      {actionMessage?.id === req.id && (
+                      {actionMessage?.id === req.publicId && (
                         <p className={`mt-1 font-body text-[10px] ${actionMessage.ok ? "text-forest-600" : "text-rose-600"}`}>
                           {actionMessage.text}
                         </p>
@@ -436,7 +437,7 @@ export default function AdminRequests() {
                         </button>
                         <button
                           onClick={() => {
-                            setStatusModal({ id: req.id, currentStatus: req.status });
+                            setStatusModal({ id: req.publicId, currentStatus: req.status });
                             setNewStatus("");
                             setStatusReason("");
                           }}
@@ -446,7 +447,7 @@ export default function AdminRequests() {
                         </button>
                         <button
                           onClick={() => {
-                            setDeleteModal({ id: req.id, province: req.province, type: req.requestType });
+                            setDeleteModal({ id: req.publicId, province: req.province, type: req.requestType });
                             setDeleteReason("");
                           }}
                           className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98]"
@@ -494,7 +495,7 @@ export default function AdminRequests() {
             </button>
 
             <h3 className="heading-md mb-1">{t("admin.requestDetails", "Request Details")}</h3>
-            <p className="font-mono text-xs text-forest-700/50 mb-6">{detailRequest.id}</p>
+            <p className="font-mono text-xs text-forest-700/50 mb-6">{detailRequest.publicId}</p>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>

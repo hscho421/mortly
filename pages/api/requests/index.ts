@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { generateRequestPublicId } from "@/lib/publicId";
 
 export default async function handler(
   req: NextApiRequest,
@@ -74,8 +75,10 @@ export default async function handler(
         });
       }
 
+      const publicId = await generateRequestPublicId();
       const request = await prisma.borrowerRequest.create({
         data: {
+          publicId,
           borrowerId: session.user.id,
           mortgageCategory: mortgageCategory || "RESIDENTIAL",
           requestType,

@@ -16,15 +16,19 @@ export default async function handler(
     return res.status(403).json({ error: "Admin access required" });
   }
 
-  const { id } = req.query;
-  if (!id || typeof id !== "string") {
+  const { id: publicId } = req.query;
+  if (!publicId || typeof publicId !== "string") {
     return res.status(400).json({ error: "Invalid request ID" });
   }
+
+  const lookup = /^\d{9}$/.test(publicId)
+    ? { publicId }
+    : { id: publicId };
 
   try {
     if (req.method === "GET") {
       const request = await prisma.borrowerRequest.findUnique({
-        where: { id },
+        where: lookup,
         include: {
           borrower: {
             select: { id: true, name: true, email: true, status: true },
@@ -79,7 +83,7 @@ export default async function handler(
       }
 
       const request = await prisma.borrowerRequest.findUnique({
-        where: { id },
+        where: lookup,
       });
 
       if (!request) {
@@ -89,14 +93,14 @@ export default async function handler(
       const previousStatus = request.status;
 
       const updated = await prisma.borrowerRequest.update({
-        where: { id },
+        where: { id: request.id },
         data: { status },
       });
 
       // If closing, also close active conversations
       if (status === "CLOSED") {
         const activeConversations = await prisma.conversation.findMany({
-          where: { requestId: id, status: "ACTIVE" },
+          where: { requestId: request.id, status: "ACTIVE" },
         });
 
         for (const convo of activeConversations) {
@@ -121,7 +125,7 @@ export default async function handler(
           adminId: session.user.id,
           action: status === "CLOSED" ? "CLOSE_REQUEST" : status === "OPEN" ? "REOPEN_REQUEST" : "UPDATE_REQUEST_STATUS",
           targetType: "REQUEST",
-          targetId: id,
+          targetId: request.publicId,
           details: JSON.stringify({ previousStatus, newStatus: status }),
           reason: reason || null,
         },
@@ -134,7 +138,7 @@ export default async function handler(
       const { reason } = req.body || {};
 
       const request = await prisma.borrowerRequest.findUnique({
-        where: { id },
+        where: lookup,
       });
 
       if (!request) {
@@ -143,7 +147,7 @@ export default async function handler(
 
       // Delete related data in correct order (respecting foreign keys)
       const conversations = await prisma.conversation.findMany({
-        where: { requestId: id },
+        where: { requestId: request.id },
         select: { id: true },
       });
 
@@ -157,16 +161,16 @@ export default async function handler(
           where: { conversationId: { in: conversationIds } },
         });
         await prisma.conversation.deleteMany({
-          where: { requestId: id },
+          where: { requestId: request.id },
         });
       }
 
       await prisma.brokerIntroduction.deleteMany({
-        where: { requestId: id },
+        where: { requestId: request.id },
       });
 
       await prisma.borrowerRequest.delete({
-        where: { id },
+        where: { id: request.id },
       });
 
       // Log the admin action
@@ -175,7 +179,7 @@ export default async function handler(
           adminId: session.user.id,
           action: "DELETE_REQUEST",
           targetType: "REQUEST",
-          targetId: id,
+          targetId: request.publicId,
           details: JSON.stringify({
             requestType: request.requestType,
             province: request.province,

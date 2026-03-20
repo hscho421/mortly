@@ -304,13 +304,13 @@ export default function BrokerRequestsPage() {
                   </div>
                   <div className="flex shrink-0 flex-col gap-2">
                     <Link
-                      href={`/broker/requests/${req.id}`}
+                      href={`/broker/requests/${req.publicId}`}
                       className="btn-secondary text-center text-xs px-4 py-2"
                     >
                       {t("broker.viewDetails")}
                     </Link>
                     <Link
-                      href={`/broker/introduction/new?requestId=${req.id}`}
+                      href={`/broker/introduction/new?requestId=${req.publicId}`}
                       className="btn-primary text-center text-xs px-4 py-2"
                     >
                       {t("broker.respondToRequest")}

@@ -145,7 +145,7 @@ export default function BorrowerDashboard() {
               return (
                 <Link
                   key={req.id}
-                  href={`/borrower/request/${req.id}`}
+                  href={`/borrower/request/${req.publicId}`}
                   className={`card-elevated group block transition-all animate-fade-in-up ${staggerClass} ${isExpired ? "opacity-60" : "hover:shadow-lg hover:-translate-y-0.5"}`}
                 >
                   {/* Top row: type + status */}

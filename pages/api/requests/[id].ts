@@ -12,15 +12,20 @@ export default async function handler(
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { id } = req.query;
-  if (!id || typeof id !== "string") {
+  const { id: publicId } = req.query;
+  if (!publicId || typeof publicId !== "string") {
     return res.status(400).json({ error: "Invalid request ID" });
   }
 
   try {
+    // Look up by publicId or fall back to internal id for backwards compatibility
+    const lookup = /^\d{9}$/.test(publicId)
+      ? { publicId }
+      : { id: publicId };
+
     if (req.method === "GET") {
       const request = await prisma.borrowerRequest.findUnique({
-        where: { id },
+        where: lookup,
         include: {
           _count: {
             select: { introductions: true },
@@ -63,7 +68,7 @@ export default async function handler(
 
     if (req.method === "PUT") {
       const request = await prisma.borrowerRequest.findUnique({
-        where: { id },
+        where: lookup,
       });
 
       if (!request) {
@@ -77,13 +82,13 @@ export default async function handler(
       const { status } = req.body;
 
       const updated = await prisma.borrowerRequest.update({
-        where: { id },
+        where: { id: request.id },
         data: { status },
       });
 
       if (status === "CLOSED") {
         const activeConversations = await prisma.conversation.findMany({
-          where: { requestId: id, status: "ACTIVE" },
+          where: { requestId: request.id, status: "ACTIVE" },
         });
 
         for (const convo of activeConversations) {
@@ -107,7 +112,7 @@ export default async function handler(
 
     if (req.method === "PATCH") {
       const request = await prisma.borrowerRequest.findUnique({
-        where: { id },
+        where: lookup,
       });
 
       if (!request) {
@@ -146,7 +151,7 @@ export default async function handler(
       } = req.body;
 
       const updated = await prisma.borrowerRequest.update({
-        where: { id },
+        where: { id: request.id },
         data: {
           mortgageCategory,
           requestType,
@@ -176,7 +181,7 @@ export default async function handler(
 
     if (req.method === "DELETE") {
       const request = await prisma.borrowerRequest.findUnique({
-        where: { id },
+        where: lookup,
       });
 
       if (!request) {
@@ -193,7 +198,7 @@ export default async function handler(
 
       // Delete related data in correct order (respecting foreign keys)
       const conversations = await prisma.conversation.findMany({
-        where: { requestId: id },
+        where: { requestId: request.id },
         select: { id: true },
       });
 
@@ -212,18 +217,18 @@ export default async function handler(
 
         // Delete conversations
         await prisma.conversation.deleteMany({
-          where: { requestId: id },
+          where: { requestId: request.id },
         });
       }
 
       // Delete introductions
       await prisma.brokerIntroduction.deleteMany({
-        where: { requestId: id },
+        where: { requestId: request.id },
       });
 
       // Delete the request itself
       await prisma.borrowerRequest.delete({
-        where: { id },
+        where: { id: request.id },
       });
 
       return res.status(200).json({ success: true });

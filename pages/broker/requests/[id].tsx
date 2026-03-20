@@ -228,7 +228,7 @@ export default function BrokerRequestDetailPage() {
             </div>
           ) : (
             <Link
-              href={`/broker/introduction/new?requestId=${request.id}`}
+              href={`/broker/introduction/new?requestId=${request.publicId}`}
               className="btn-primary w-full sm:w-auto text-center"
             >
               {t("broker.submitIntroduction")}

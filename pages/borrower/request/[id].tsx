@@ -217,7 +217,7 @@ export default function RequestDetail() {
     setSaving(true);
 
     try {
-      const res = await fetch(`/api/requests/${request.id}`, {
+      const res = await fetch(`/api/requests/${request.publicId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -245,7 +245,7 @@ export default function RequestDetail() {
     setError("");
 
     try {
-      const res = await fetch(`/api/requests/${request.id}`, {
+      const res = await fetch(`/api/requests/${request.publicId}`, {
         method: "DELETE",
       });
 
@@ -359,7 +359,7 @@ export default function RequestDetail() {
             </div>
             {introCount > 0 ? (
               <Link
-                href={`/borrower/brokers/${request.id}`}
+                href={`/borrower/brokers/${request.publicId}`}
                 className="btn-amber"
               >
                 {t("request.viewBrokerIntros")}

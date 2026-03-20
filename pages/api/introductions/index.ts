@@ -54,12 +54,23 @@ export default async function handler(
         return res.status(200).json(introductions);
       }
 
-      const where: Record<string, unknown> = { requestId };
+      // Resolve publicId to internal id
+      const requestLookup = /^\d{9}$/.test(requestId)
+        ? { publicId: requestId }
+        : { id: requestId };
+      const resolvedRequest = await prisma.borrowerRequest.findUnique({
+        where: requestLookup,
+        select: { id: true, borrowerId: true },
+      });
+      if (!resolvedRequest) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+      const internalRequestId = resolvedRequest.id;
+
+      const where: Record<string, unknown> = { requestId: internalRequestId };
 
       if (session.user.role === "BORROWER") {
-        const request = await prisma.borrowerRequest.findUnique({
-          where: { id: requestId },
-        });
+        const request = resolvedRequest;
         if (!request || request.borrowerId !== session.user.id) {
           return res.status(403).json({ error: "Forbidden" });
         }
@@ -125,10 +136,23 @@ export default async function handler(
         });
       }
 
+      // Resolve publicId to internal id for POST
+      const postLookup = /^\d{9}$/.test(requestId)
+        ? { publicId: requestId }
+        : { id: requestId };
+      const postRequest = await prisma.borrowerRequest.findUnique({
+        where: postLookup,
+        select: { id: true },
+      });
+      if (!postRequest) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+      const internalReqId = postRequest.id;
+
       const existing = await prisma.brokerIntroduction.findUnique({
         where: {
           requestId_brokerId: {
-            requestId,
+            requestId: internalReqId,
             brokerId: broker.id,
           },
         },
@@ -141,7 +165,7 @@ export default async function handler(
       const [introduction] = await prisma.$transaction([
         prisma.brokerIntroduction.create({
           data: {
-            requestId,
+            requestId: internalReqId,
             brokerId: broker.id,
             howCanHelp,
             personalMessage,

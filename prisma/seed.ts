@@ -254,6 +254,7 @@ async function seedMock() {
 
     const req = await prisma.borrowerRequest.create({
       data: {
+        publicId: String(100000000 + i),
         borrowerId: borrower.id,
         mortgageCategory: category,
         requestType: pick(requestTypes),

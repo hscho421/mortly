@@ -5,6 +5,7 @@ import StatusBadge from "./StatusBadge";
 interface RequestCardProps {
   request: {
     id: string;
+    publicId: string;
     requestType: string;
     province: string;
     city?: string | null;
@@ -128,7 +129,7 @@ export default function RequestCard({ request }: RequestCardProps) {
           </span>
         </div>
         <Link
-          href={`/requests/${request.id}`}
+          href={`/requests/${request.publicId}`}
           className="font-body text-sm font-semibold text-forest-700 transition-colors hover:text-amber-600"
         >
           View Details &rarr;

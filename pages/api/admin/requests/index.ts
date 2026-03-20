@@ -38,7 +38,7 @@ export default async function handler(
       if (search && typeof search === "string" && search.trim()) {
         const s = search.trim();
         where.OR = [
-          { id: { contains: s } },
+          { publicId: { contains: s } },
           { province: { contains: s, mode: "insensitive" } },
           { city: { contains: s, mode: "insensitive" } },
           { borrower: { name: { contains: s, mode: "insensitive" } } },
