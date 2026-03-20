@@ -212,7 +212,7 @@ export default function Home() {
       {/* Disclaimer */}
       <section className="py-8 bg-cream-200/50 border-t border-cream-300">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-forest-700/50 text-center leading-relaxed font-body">
+          <p className="text-xs text-forest-700/75 text-center leading-relaxed font-body">
             <strong>Disclaimer:</strong> {t("home.disclaimerFull")}
           </p>
         </div>
