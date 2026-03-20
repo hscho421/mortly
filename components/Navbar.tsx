@@ -128,6 +128,19 @@ export default function Navbar() {
                     )}
                   </Link>
                 )}
+                <Link
+                  href={session.user?.role === "BROKER" ? "/broker/profile" : "/borrower/profile"}
+                  className={`relative font-body text-sm font-medium transition-colors duration-200 ${
+                    isActive("/borrower/profile") || isActive("/broker/profile")
+                      ? "text-forest-800"
+                      : "text-forest-700/60 hover:text-forest-800"
+                  }`}
+                >
+                  {t("nav.settings", "Settings")}
+                  {(isActive("/borrower/profile") || isActive("/broker/profile")) && (
+                    <span className="absolute -bottom-1 left-0 h-0.5 w-full rounded-full bg-amber-500" />
+                  )}
+                </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
                   className="rounded-lg border border-cream-400 px-4 py-2 font-body text-sm font-medium text-forest-700 transition-all hover:border-forest-300 hover:bg-white"
@@ -236,6 +249,17 @@ export default function Navbar() {
                     {t("nav.messages")}
                   </Link>
                 )}
+                <Link
+                  href={session.user?.role === "BROKER" ? "/broker/profile" : "/borrower/profile"}
+                  onClick={() => setMobileOpen(false)}
+                  className={`block rounded-lg px-4 py-2.5 font-body text-sm font-medium ${
+                    isActive("/borrower/profile") || isActive("/broker/profile")
+                      ? "bg-forest-50 text-forest-800"
+                      : "text-forest-700/70 hover:bg-cream-200 hover:text-forest-800"
+                  }`}
+                >
+                  {t("nav.settings", "Settings")}
+                </Link>
                 <button
                   onClick={() => {
                     setMobileOpen(false);

@@ -8,7 +8,8 @@
     "login": "Login",
     "getStarted": "Get Started",
     "signOut": "Sign Out",
-    "brokers": "Brokers"
+    "brokers": "Brokers",
+    "settings": "Settings"
   },
   "footer": {
     "tagline": "Connecting Canadian homebuyers with trusted mortgage brokers, anonymously and securely.",
@@ -501,6 +502,24 @@
     "noReviewsDesc": "Reviews from borrowers will appear here after conversations are closed.",
     "reviewSingular": "review",
     "reviewPlural": "reviews"
+  },
+  "settings": {
+    "title": "Account Settings",
+    "subtitle": "Manage your profile and account preferences.",
+    "profileInfo": "Profile Information",
+    "profileUpdated": "Profile updated successfully.",
+    "emailNote": "Email cannot be changed.",
+    "memberSince": "Member Since",
+    "saveChanges": "Save Changes",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "passwordChanged": "Password changed successfully.",
+    "changePasswordBtn": "Change Password",
+    "changingPassword": "Changing...",
+    "minChars": "At least 8 characters",
+    "requests": "Requests",
+    "conversations": "Conversations",
+    "reviewsGiven": "Reviews Given"
   },
   "directory": {
     "badge": "Verified Professionals",

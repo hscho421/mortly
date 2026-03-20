@@ -8,7 +8,8 @@
     "login": "로그인",
     "getStarted": "시작하기",
     "signOut": "로그아웃",
-    "brokers": "브로커"
+    "brokers": "브로커",
+    "settings": "설정"
   },
   "footer": {
     "tagline": "캐나다 주택 구매자와 신뢰할 수 있는 모기지 브로커를 익명으로 안전하게 연결합니다.",
@@ -501,6 +502,24 @@
     "noReviewsDesc": "대화가 종료된 후 차용인의 리뷰가 여기에 표시됩니다.",
     "reviewSingular": "개 리뷰",
     "reviewPlural": "개 리뷰"
+  },
+  "settings": {
+    "title": "계정 설정",
+    "subtitle": "프로필 및 계정 설정을 관리하세요.",
+    "profileInfo": "프로필 정보",
+    "profileUpdated": "프로필이 업데이트되었습니다.",
+    "emailNote": "이메일은 변경할 수 없습니다.",
+    "memberSince": "가입일",
+    "saveChanges": "변경사항 저장",
+    "changePassword": "비밀번호 변경",
+    "currentPassword": "현재 비밀번호",
+    "passwordChanged": "비밀번호가 변경되었습니다.",
+    "changePasswordBtn": "비밀번호 변경",
+    "changingPassword": "변경 중...",
+    "minChars": "8자 이상",
+    "requests": "요청",
+    "conversations": "대화",
+    "reviewsGiven": "작성한 리뷰"
   },
   "directory": {
     "badge": "검증된 전문가",
