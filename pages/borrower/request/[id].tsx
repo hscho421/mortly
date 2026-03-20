@@ -123,7 +123,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
       },
     };
   } catch (error) {
-    console.error("Error loading request detail:", error);
+    console.error("Error loading request detail:", error instanceof Error ? error.message : error, error instanceof Error ? error.stack : "");
     return { notFound: true };
   }
 };
