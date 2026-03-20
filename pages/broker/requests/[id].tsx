@@ -123,6 +123,15 @@ export default function BrokerRequestDetailPage() {
             <span className="inline-flex items-center rounded-full bg-sage-100 px-2.5 py-0.5 font-body text-xs font-semibold text-sage-700">
               {request.propertyType}
             </span>
+            {(request as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory && (
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 font-body text-xs font-semibold text-amber-700">
+                {(request as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory === "RESIDENTIAL"
+                  ? t("broker.residential")
+                  : (request as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory === "COMMERCIAL"
+                    ? t("broker.commercial")
+                    : t("broker.both")}
+              </span>
+            )}
             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${statusColors[request.status] || "bg-sage-100 text-sage-700"}`}>
               {request.status}
             </span>

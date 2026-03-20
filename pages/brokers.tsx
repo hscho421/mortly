@@ -36,6 +36,7 @@ interface BrokerListing {
   specialties: string | null;
   rating: number | null;
   completedMatches: number;
+  mortgageCategory?: string | null;
   user: { name: string | null };
   reviews: BrokerReview[];
 }
@@ -171,6 +172,15 @@ export default function BrokerDirectoryPage() {
                             </svg>
                             {broker.rating.toFixed(1)}
                             <span className="text-sage-300">({broker.completedMatches})</span>
+                          </span>
+                        )}
+                        {broker.mortgageCategory && (
+                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                            {broker.mortgageCategory === "RESIDENTIAL"
+                              ? t("broker.residential")
+                              : broker.mortgageCategory === "COMMERCIAL"
+                                ? t("broker.commercial")
+                                : t("broker.both")}
                           </span>
                         )}
                       </div>

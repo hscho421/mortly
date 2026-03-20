@@ -115,6 +115,7 @@ export default async function handler(
       }
 
       const {
+        mortgageCategory,
         requestType,
         province,
         city,
@@ -139,6 +140,7 @@ export default async function handler(
       const updated = await prisma.borrowerRequest.update({
         where: { id },
         data: {
+          mortgageCategory,
           requestType,
           province,
           city,

@@ -39,6 +39,7 @@ export type RequestWithIntroductions = BorrowerRequest & {
 
 // Form types for creating entities
 export interface CreateRequestInput {
+  mortgageCategory: string;
   requestType: string;
   province: string;
   city?: string;
@@ -74,6 +75,7 @@ export interface CreateBrokerProfileInput {
   brokerageName: string;
   province: string;
   licenseNumber: string;
+  mortgageCategory?: string;
   bio?: string;
   yearsExperience?: number;
   areasServed?: string;

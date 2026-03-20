@@ -13,6 +13,7 @@ interface BrokerCardProps {
       verificationStatus: string;
       specialties?: string | null;
       profilePhoto?: string | null;
+      mortgageCategory?: string | null;
       user: {
         name?: string | null;
       };
@@ -97,6 +98,15 @@ export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) 
             <p className="font-body text-xs text-sage-400">
               {broker.yearsExperience} {broker.yearsExperience === 1 ? "year" : "years"} experience
             </p>
+          )}
+          {broker.mortgageCategory && (
+            <span className="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 font-body text-[11px] font-medium text-amber-700">
+              {broker.mortgageCategory === "RESIDENTIAL"
+                ? "Residential"
+                : broker.mortgageCategory === "COMMERCIAL"
+                  ? "Commercial"
+                  : "Residential & Commercial"}
+            </span>
           )}
         </div>
       </div>

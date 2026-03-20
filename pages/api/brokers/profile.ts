@@ -83,6 +83,7 @@ export default async function handler(
         areasServed,
         specialties,
         profilePhoto,
+        mortgageCategory,
       } = req.body;
 
       const safeData: Record<string, unknown> = {};
@@ -94,6 +95,7 @@ export default async function handler(
       if (areasServed !== undefined) safeData.areasServed = areasServed;
       if (specialties !== undefined) safeData.specialties = specialties;
       if (profilePhoto !== undefined) safeData.profilePhoto = profilePhoto;
+      if (mortgageCategory !== undefined) safeData.mortgageCategory = mortgageCategory;
 
       const updated = await prisma.broker.update({
         where: { userId: session.user.id },

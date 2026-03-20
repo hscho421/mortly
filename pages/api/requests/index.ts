@@ -60,7 +60,7 @@ export default async function handler(
         return res.status(403).json({ error: "Only borrowers can create requests" });
       }
 
-      const { requestType, province, propertyType, ...rest } = req.body;
+      const { mortgageCategory, requestType, province, propertyType, ...rest } = req.body;
 
       if (!requestType || !province || !propertyType) {
         return res.status(400).json({
@@ -71,6 +71,7 @@ export default async function handler(
       const request = await prisma.borrowerRequest.create({
         data: {
           borrowerId: session.user.id,
+          mortgageCategory: mortgageCategory || "RESIDENTIAL",
           requestType,
           province,
           propertyType,

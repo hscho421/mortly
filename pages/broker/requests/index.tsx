@@ -50,6 +50,7 @@ export default function BrokerRequestsPage() {
   const [filterProvince, setFilterProvince] = useState("");
   const [filterRequestType, setFilterRequestType] = useState("");
   const [filterPropertyType, setFilterPropertyType] = useState("");
+  const [filterMortgageCategory, setFilterMortgageCategory] = useState("");
 
   useEffect(() => {
     if (status === "loading") return;
@@ -65,6 +66,7 @@ export default function BrokerRequestsPage() {
         if (filterProvince) params.set("province", filterProvince);
         if (filterRequestType) params.set("requestType", filterRequestType);
         if (filterPropertyType) params.set("propertyType", filterPropertyType);
+        if (filterMortgageCategory) params.set("mortgageCategory", filterMortgageCategory);
 
         const res = await fetch(`/api/requests?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch requests");
@@ -78,7 +80,7 @@ export default function BrokerRequestsPage() {
     };
 
     fetchRequests();
-  }, [session, status, router, filterProvince, filterRequestType, filterPropertyType]);
+  }, [session, status, router, filterProvince, filterRequestType, filterPropertyType, filterMortgageCategory]);
 
   if (status === "loading") {
     return (
@@ -112,7 +114,7 @@ export default function BrokerRequestsPage() {
 
         {/* Filters */}
         <div className="card-elevated mb-8 animate-fade-in-up stagger-1">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label htmlFor="filterProvince" className="label-text">
                 {t("request.province")}
@@ -164,6 +166,21 @@ export default function BrokerRequestsPage() {
                 ))}
               </select>
             </div>
+            <div>
+              <label htmlFor="filterMortgageCategory" className="label-text">
+                {t("broker.categoryFilter")}
+              </label>
+              <select
+                id="filterMortgageCategory"
+                value={filterMortgageCategory}
+                onChange={(e) => setFilterMortgageCategory(e.target.value)}
+                className="input-field"
+              >
+                <option value="">{t("broker.allTypes")}</option>
+                <option value="RESIDENTIAL">{t("broker.residential")}</option>
+                <option value="COMMERCIAL">{t("broker.commercial")}</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -213,6 +230,15 @@ export default function BrokerRequestsPage() {
                       <span className="inline-flex items-center rounded-full bg-sage-100 px-2.5 py-0.5 font-body text-xs font-semibold text-sage-700">
                         {req.propertyType}
                       </span>
+                      {(req as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory && (
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 font-body text-xs font-semibold text-amber-700">
+                          {(req as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory === "RESIDENTIAL"
+                            ? t("broker.residential")
+                            : (req as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory === "COMMERCIAL"
+                              ? t("broker.commercial")
+                              : t("broker.both")}
+                        </span>
+                      )}
                       <span className="font-body text-xs text-forest-700/50">
                         {t("broker.posted")} {formatDate(req.createdAt as unknown as string)}
                       </span>

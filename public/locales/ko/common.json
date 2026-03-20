@@ -170,7 +170,12 @@
     "saveChanges": "변경사항 저장",
     "saving": "저장 중...",
     "cancel": "취소",
-    "deleting": "삭제 중..."
+    "deleting": "삭제 중...",
+    "mortgageCategory": "모기지 유형",
+    "residential": "주거용",
+    "commercial": "상업용",
+    "residentialDesc": "주택 구매, 재융자 또는 갱신",
+    "commercialDesc": "상업용 부동산 또는 사업 모기지"
   },
   "messages": {
     "title": "메시지",
@@ -267,7 +272,12 @@
     "billingHistory": "결제 내역",
     "noBillingHistory": "결제 내역이 없습니다.",
     "noBillingHistoryDesc": "업그레이드 후 청구서와 결제 내역이 여기에 표시됩니다.",
-    "profileSubtitle": "브로커 프로필 정보를 업데이트하세요."
+    "profileSubtitle": "브로커 프로필 정보를 업데이트하세요.",
+    "mortgageCategory": "모기지 전문 분야",
+    "residential": "주거용",
+    "commercial": "상업용",
+    "both": "주거용 & 상업용",
+    "categoryFilter": "유형"
   },
   "admin": {
     "dashboard": "관리자 대시보드",

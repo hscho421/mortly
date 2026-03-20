@@ -170,7 +170,12 @@
     "saveChanges": "Save Changes",
     "saving": "Saving...",
     "cancel": "Cancel",
-    "deleting": "Deleting..."
+    "deleting": "Deleting...",
+    "mortgageCategory": "Mortgage Category",
+    "residential": "Residential",
+    "commercial": "Commercial",
+    "residentialDesc": "Home purchase, refinance, or renewal",
+    "commercialDesc": "Commercial property or business mortgage"
   },
   "messages": {
     "title": "Messages",
@@ -267,7 +272,12 @@
     "billingHistory": "Billing History",
     "noBillingHistory": "No billing history yet.",
     "noBillingHistoryDesc": "Invoices and payment history will appear here once you upgrade.",
-    "profileSubtitle": "Update your broker profile information."
+    "profileSubtitle": "Update your broker profile information.",
+    "mortgageCategory": "Mortgage Specialization",
+    "residential": "Residential",
+    "commercial": "Commercial",
+    "both": "Residential & Commercial",
+    "categoryFilter": "Category"
   },
   "admin": {
     "dashboard": "Admin Dashboard",

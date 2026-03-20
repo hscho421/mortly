@@ -139,6 +139,7 @@ export default function RequestDetail({
   const [successMsg, setSuccessMsg] = useState("");
 
   const [form, setForm] = useState<CreateRequestInput>({
+    mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
     requestType: request.requestType,
     province: request.province,
     city: request.city || "",
@@ -178,6 +179,7 @@ export default function RequestDetail({
     setIsEditing(false);
     setError("");
     setForm({
+      mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
       requestType: request.requestType,
       province: request.province,
       city: request.city || "",
@@ -357,6 +359,52 @@ export default function RequestDetail({
             </div>
 
             <div className="space-y-10 mt-4">
+              {/* Section 0: Mortgage Category */}
+              <fieldset className="space-y-6">
+                <legend className="heading-sm border-b divider pb-3 w-full">
+                  {t("request.mortgageCategory")}
+                </legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {(["RESIDENTIAL", "COMMERCIAL"] as const).map((cat) => (
+                    <label
+                      key={cat}
+                      className={`relative flex flex-col items-center gap-3 rounded-2xl border-2 px-6 py-8 cursor-pointer text-center transition-all duration-200 ${
+                        form.mortgageCategory === cat
+                          ? "border-forest-600 bg-forest-50 ring-2 ring-forest-600/10"
+                          : "border-cream-300 bg-white hover:border-sage-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="mortgageCategory"
+                        value={cat}
+                        checked={form.mortgageCategory === cat}
+                        onChange={() => updateField("mortgageCategory", cat)}
+                        className="sr-only"
+                      />
+                      <svg
+                        className={`w-10 h-10 ${form.mortgageCategory === cat ? "text-forest-600" : "text-sage-400"}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        {cat === "RESIDENTIAL" ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                        )}
+                      </svg>
+                      <span className="text-base font-semibold font-body text-forest-800">
+                        {cat === "RESIDENTIAL" ? t("request.residential") : t("request.commercial")}
+                      </span>
+                      <span className="text-sm font-body text-sage-500">
+                        {cat === "RESIDENTIAL" ? t("request.residentialDesc") : t("request.commercialDesc")}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
               {/* Section 1: Request basics */}
               <fieldset className="space-y-6">
                 <legend className="heading-sm border-b divider pb-3 w-full">
@@ -762,6 +810,8 @@ export default function RequestDetail({
             </div>
 
             <div>
+              <DetailRow label={t("request.mortgageCategory")} value={request.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} />
+
               <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
                 {t("request.property")}
               </h3>

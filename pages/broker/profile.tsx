@@ -46,6 +46,7 @@ export default function BrokerProfilePage() {
     brokerageName: "",
     province: "",
     licenseNumber: "",
+    mortgageCategory: "BOTH",
     bio: "",
     yearsExperience: undefined,
     areasServed: "",
@@ -76,6 +77,7 @@ export default function BrokerProfilePage() {
           brokerageName: data.brokerageName,
           province: data.province,
           licenseNumber: data.licenseNumber,
+          mortgageCategory: data.mortgageCategory || "BOTH",
           bio: data.bio || "",
           yearsExperience: data.yearsExperience ?? undefined,
           areasServed: data.areasServed || "",
@@ -248,6 +250,39 @@ export default function BrokerProfilePage() {
               onChange={handleChange}
               className="input-field"
             />
+          </div>
+
+          <div>
+            <label className="label-text mb-3 block">
+              {t("broker.mortgageCategory")}
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {(["RESIDENTIAL", "COMMERCIAL", "BOTH"] as const).map((cat) => {
+                const labelKey =
+                  cat === "RESIDENTIAL"
+                    ? "broker.residential"
+                    : cat === "COMMERCIAL"
+                      ? "broker.commercial"
+                      : "broker.both";
+                const isSelected = form.mortgageCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({ ...prev, mortgageCategory: cat }))
+                    }
+                    className={`rounded-xl border-2 px-3 py-3 text-center font-body text-sm font-medium transition-all ${
+                      isSelected
+                        ? "border-forest-600 bg-forest-50 text-forest-800"
+                        : "border-cream-200 bg-white text-sage-500 hover:border-forest-300 hover:bg-cream-50"
+                    }`}
+                  >
+                    {t(labelKey)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <hr className="divider" />
