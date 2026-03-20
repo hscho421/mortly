@@ -272,6 +272,8 @@
     "mostPopular": "Most Popular",
     "currentPlanBtn": "Current Plan",
     "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "unlimited": "Unlimited",
     "billingHistory": "Billing History",
     "noBillingHistory": "No billing history yet.",
     "noBillingHistoryDesc": "Invoices and payment history will appear here once you upgrade.",

@@ -124,7 +124,9 @@ export default async function handler(
         return res.status(403).json({ error: "Free plan brokers cannot send introductions. Please upgrade your plan." });
       }
 
-      if (broker.responseCredits <= 0) {
+      const isPremium = broker.subscriptionTier === "PREMIUM";
+
+      if (!isPremium && broker.responseCredits <= 0) {
         return res.status(403).json({ error: "No response credits remaining" });
       }
 
@@ -162,8 +164,11 @@ export default async function handler(
         return res.status(409).json({ error: "You have already responded to this request" });
       }
 
-      const [introduction] = await prisma.$transaction([
-        prisma.brokerIntroduction.create({
+      let introduction;
+
+      if (isPremium) {
+        // PREMIUM brokers have unlimited credits — no deduction needed
+        introduction = await prisma.brokerIntroduction.create({
           data: {
             requestId: internalReqId,
             brokerId: broker.id,
@@ -171,18 +176,39 @@ export default async function handler(
             personalMessage,
             ...rest,
           },
-        }),
-        prisma.broker.update({
-          where: { id: broker.id },
-          data: { responseCredits: { decrement: 1 } },
-        }),
-      ]);
+        });
+      } else {
+        introduction = await prisma.$transaction(async (tx) => {
+          // Atomically check and decrement credits to prevent race conditions
+          const updated = await tx.broker.updateMany({
+            where: { id: broker.id, responseCredits: { gt: 0 } },
+            data: { responseCredits: { decrement: 1 } },
+          });
+
+          if (updated.count === 0) {
+            throw new Error("NO_CREDITS");
+          }
+
+          return tx.brokerIntroduction.create({
+            data: {
+              requestId: internalReqId,
+              brokerId: broker.id,
+              howCanHelp,
+              personalMessage,
+              ...rest,
+            },
+          });
+        });
+      }
 
       return res.status(201).json(introduction);
     }
 
     return res.status(405).json({ error: "Method not allowed" });
   } catch (error) {
+    if (error instanceof Error && error.message === "NO_CREDITS") {
+      return res.status(403).json({ error: "No response credits remaining" });
+    }
     console.error("Error in /api/introductions:", error);
     return res.status(500).json({ error: "Internal server error" });
   }

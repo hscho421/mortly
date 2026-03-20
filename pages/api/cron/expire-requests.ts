@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prisma";
+import { getSettingInt } from "@/lib/settings";
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,14 +16,15 @@ export default async function handler(
   }
 
   try {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const expiryDays = await getSettingInt("request_expiry_days") || 30;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - expiryDays);
 
     const result = await prisma.borrowerRequest.updateMany({
       where: {
         status: "OPEN",
         createdAt: {
-          lt: thirtyDaysAgo,
+          lt: cutoff,
         },
       },
       data: {

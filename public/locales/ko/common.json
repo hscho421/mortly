@@ -272,6 +272,8 @@
     "mostPopular": "가장 인기",
     "currentPlanBtn": "현재 요금제",
     "upgrade": "업그레이드",
+    "downgrade": "다운그레이드",
+    "unlimited": "무제한",
     "billingHistory": "결제 내역",
     "noBillingHistory": "결제 내역이 없습니다.",
     "noBillingHistoryDesc": "업그레이드 후 청구서와 결제 내역이 여기에 표시됩니다.",

@@ -21,6 +21,8 @@ interface Plan {
   highlighted: boolean;
 }
 
+const TIER_RANK: Record<string, number> = { FREE: 0, BASIC: 1, PRO: 2, PREMIUM: 3 };
+
 const CREDIT_PACKS = [
   { type: "SMALL", credits: 3, price: "$29", label: "smallPack" },
   { type: "LARGE", credits: 10, price: "$79", label: "largePack", best: true },
@@ -204,7 +206,7 @@ export default function BrokerBillingPage() {
             <div className="text-right">
               <p className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("broker.responseCredits")}</p>
               <p className={`font-display text-3xl tracking-tight ${responseCredits === 0 ? "text-red-600" : "text-amber-700"}`}>
-                {currentTier === "PREMIUM" ? "∞" : responseCredits}
+                {currentTier === "PREMIUM" ? t("broker.unlimited", "Unlimited") : responseCredits}
               </p>
             </div>
           </div>
@@ -306,7 +308,11 @@ export default function BrokerBillingPage() {
                 }`}
                 disabled={currentTier === plan.tier}
               >
-                {currentTier === plan.tier ? t("broker.currentPlanBtn") : t("broker.upgrade")}
+                {currentTier === plan.tier
+                  ? t("broker.currentPlanBtn")
+                  : (TIER_RANK[plan.tier] ?? 0) > (TIER_RANK[currentTier] ?? 0)
+                    ? t("broker.upgrade")
+                    : t("broker.downgrade", "Downgrade")}
               </button>
             </div>
           ))}

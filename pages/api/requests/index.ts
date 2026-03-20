@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { generateRequestPublicId } from "@/lib/publicId";
+import { getSettingInt } from "@/lib/settings";
 
 export default async function handler(
   req: NextApiRequest,
@@ -72,6 +73,20 @@ export default async function handler(
       if (!requestType || !province || !propertyType) {
         return res.status(400).json({
           error: "requestType, province, and propertyType are required",
+        });
+      }
+
+      // Enforce max active requests per user
+      const maxRequests = await getSettingInt("max_requests_per_user") || 5;
+      const activeCount = await prisma.borrowerRequest.count({
+        where: {
+          borrowerId: session.user.id,
+          status: { in: ["OPEN", "IN_PROGRESS"] },
+        },
+      });
+      if (activeCount >= maxRequests) {
+        return res.status(400).json({
+          error: `You can have at most ${maxRequests} active requests. Please close or wait for existing requests to expire.`,
         });
       }
 
