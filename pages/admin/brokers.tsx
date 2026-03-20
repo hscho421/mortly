@@ -52,6 +52,7 @@ export default function AdminBrokers() {
         if (res.ok) {
           const data = await res.json();
           setBrokers(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data.map((b: any) => ({
               id: b.id,
               userName: b.user?.name ?? "Unknown",

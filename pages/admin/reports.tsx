@@ -44,6 +44,7 @@ export default function AdminReports() {
         if (res.ok) {
           const data = await res.json();
           setReports(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data.map((r: any) => ({
               id: r.id,
               reporterName: r.reporter?.name ?? "Unknown",

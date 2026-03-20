@@ -40,7 +40,9 @@ export default function AdminVerification() {
           const data = await res.json();
           setPending(
             data
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               .filter((b: any) => b.verificationStatus === "PENDING")
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               .map((b: any) => ({
                 id: b.id,
                 userName: b.user?.name ?? "Unknown",

@@ -65,6 +65,7 @@ export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) 
       {/* Broker header */}
       <div className="flex items-start gap-4">
         {broker.profilePhoto ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={broker.profilePhoto}
             alt={broker.user.name || "Broker"}
