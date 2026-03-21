@@ -8,6 +8,7 @@ import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
 import type { RequestWithIntroductions } from "@/types";
+import { isV2Request, PRODUCT_LABEL_KEYS } from "@/lib/requestConfig";
 
 function formatCurrency(val: number | null | undefined) {
   if (val == null) return "--";
@@ -150,9 +151,21 @@ export default function BorrowerDashboard() {
                 >
                   {/* Top row: type + status */}
                   <div className="flex items-center justify-between mb-3">
-                    <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
-                      {displayLabel(req.requestType)}
-                    </span>
+                    {isV2Request(req) ? (
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
+                        req.mortgageCategory === "COMMERCIAL"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-forest-100 text-forest-700"
+                      }`}>
+                        {req.mortgageCategory === "COMMERCIAL"
+                          ? t("request.commercial")
+                          : t("request.residential")}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
+                        {displayLabel(req.requestType)}
+                      </span>
+                    )}
                     <StatusBadge status={req.status} />
                   </div>
 
@@ -162,32 +175,50 @@ export default function BorrowerDashboard() {
                     {req.province || "--"}
                   </h3>
 
-                  {/* Property type */}
-                  <p className="text-body-sm mb-4">
-                    {displayLabel(req.propertyType)}
-                  </p>
+                  {isV2Request(req) ? (
+                    <>
+                      {/* Product type pills */}
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {(req.productTypes ?? []).map((pt) => (
+                          <span
+                            key={pt}
+                            className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-[11px] font-medium text-forest-700"
+                          >
+                            {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Legacy: Property type */}
+                      <p className="text-body-sm mb-4">
+                        {displayLabel(req.propertyType)}
+                      </p>
 
-                  {/* Details grid */}
-                  <div className="grid grid-cols-2 gap-x-2 sm:gap-x-4 gap-y-2 mb-4">
-                    <div>
-                      <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
-                        {t("request.priceRange")}
-                      </span>
-                      <p className="font-body text-sm font-medium text-forest-800">
-                        {formatCurrency(req.priceRangeMin)} -{" "}
-                        {formatCurrency(req.priceRangeMax)}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
-                        {t("request.mortgageAmount")}
-                      </span>
-                      <p className="font-body text-sm font-medium text-forest-800">
-                        {formatCurrency(req.mortgageAmountMin)} -{" "}
-                        {formatCurrency(req.mortgageAmountMax)}
-                      </p>
-                    </div>
-                  </div>
+                      {/* Legacy: Details grid */}
+                      <div className="grid grid-cols-2 gap-x-2 sm:gap-x-4 gap-y-2 mb-4">
+                        <div>
+                          <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
+                            {t("request.priceRange")}
+                          </span>
+                          <p className="font-body text-sm font-medium text-forest-800">
+                            {formatCurrency(req.priceRangeMin)} -{" "}
+                            {formatCurrency(req.priceRangeMax)}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
+                            {t("request.mortgageAmount")}
+                          </span>
+                          <p className="font-body text-sm font-medium text-forest-800">
+                            {formatCurrency(req.mortgageAmountMin)} -{" "}
+                            {formatCurrency(req.mortgageAmountMax)}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-3 border-t border-cream-200">

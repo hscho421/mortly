@@ -7,6 +7,8 @@ import type { RequestWithIntroductions } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import { isV2Request, PRODUCT_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
+import StatusBadge from "@/components/StatusBadge";
 
 const PROVINCES = [
   "",
@@ -21,9 +23,6 @@ const PROVINCES = [
   "Quebec",
   "Saskatchewan",
 ];
-
-const REQUEST_TYPES = ["", "PURCHASE", "REFINANCE", "RENEWAL"];
-const PROPERTY_TYPES = ["", "CONDO", "TOWNHOUSE", "DETACHED", "OTHER"];
 
 function formatCurrency(value: number | null | undefined): string {
   if (value == null) return "N/A";
@@ -48,8 +47,6 @@ export default function BrokerRequestsPage() {
   const [error, setError] = useState("");
 
   const [filterProvince, setFilterProvince] = useState("");
-  const [filterRequestType, setFilterRequestType] = useState("");
-  const [filterPropertyType, setFilterPropertyType] = useState("");
   const [filterMortgageCategory, setFilterMortgageCategory] = useState("");
 
   useEffect(() => {
@@ -64,8 +61,6 @@ export default function BrokerRequestsPage() {
       try {
         const params = new URLSearchParams();
         if (filterProvince) params.set("province", filterProvince);
-        if (filterRequestType) params.set("requestType", filterRequestType);
-        if (filterPropertyType) params.set("propertyType", filterPropertyType);
         if (filterMortgageCategory) params.set("mortgageCategory", filterMortgageCategory);
 
         const res = await fetch(`/api/requests?${params.toString()}`);
@@ -84,7 +79,7 @@ export default function BrokerRequestsPage() {
     };
 
     fetchRequests();
-  }, [session, status, router, filterProvince, filterRequestType, filterPropertyType, filterMortgageCategory]);
+  }, [session, status, router, filterProvince, filterMortgageCategory]);
 
   if (status === "loading") {
     return (
@@ -142,7 +137,7 @@ export default function BrokerRequestsPage() {
 
         {/* Filters */}
         <div className="card-elevated mb-8 animate-fade-in-up stagger-1">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="filterProvince" className="label-text">
                 {t("request.province")}
@@ -161,40 +156,6 @@ export default function BrokerRequestsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="filterRequestType" className="label-text">
-                {t("request.requestType")}
-              </label>
-              <select
-                id="filterRequestType"
-                value={filterRequestType}
-                onChange={(e) => setFilterRequestType(e.target.value)}
-                className="input-field"
-              >
-                {REQUEST_TYPES.map((rt) => (
-                  <option key={rt} value={rt}>
-                    {rt || t("broker.allTypes")}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="filterPropertyType" className="label-text">
-                {t("request.propertyType")}
-              </label>
-              <select
-                id="filterPropertyType"
-                value={filterPropertyType}
-                onChange={(e) => setFilterPropertyType(e.target.value)}
-                className="input-field"
-              >
-                {PROPERTY_TYPES.map((pt) => (
-                  <option key={pt} value={pt}>
-                    {pt || t("broker.allPropertyTypes")}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
               <label htmlFor="filterMortgageCategory" className="label-text">
                 {t("broker.categoryFilter")}
               </label>
@@ -205,8 +166,8 @@ export default function BrokerRequestsPage() {
                 className="input-field"
               >
                 <option value="">{t("broker.allTypes")}</option>
-                <option value="RESIDENTIAL">{t("broker.residential")}</option>
-                <option value="COMMERCIAL">{t("broker.commercial")}</option>
+                <option value="RESIDENTIAL">{t("request.residential")}</option>
+                <option value="COMMERCIAL">{t("request.commercial")}</option>
               </select>
             </div>
           </div>
@@ -244,81 +205,120 @@ export default function BrokerRequestsPage() {
         {/* Request cards */}
         {!isLoading && filteredRequests.length > 0 && (
           <div className="space-y-4">
-            {filteredRequests.map((req, i) => (
-              <div
-                key={req.id}
-                className={`card animate-fade-in-up stagger-${Math.min(i + 2, 6)}`}
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex-1">
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
-                        {req.requestType}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-sage-100 px-2.5 py-0.5 font-body text-xs font-semibold text-sage-700">
-                        {req.propertyType}
-                      </span>
-                      {(req as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory && (
-                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 font-body text-xs font-semibold text-amber-700">
-                          {(req as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory === "RESIDENTIAL"
-                            ? t("broker.residential")
-                            : (req as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory === "COMMERCIAL"
-                              ? t("broker.commercial")
-                              : t("broker.both")}
+            {filteredRequests.map((req, i) => {
+              const v2 = isV2Request(req);
+              return (
+                <div
+                  key={req.id}
+                  className={`card animate-fade-in-up stagger-${Math.min(i + 2, 6)}`}
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1">
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        {v2 ? (
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
+                            req.mortgageCategory === "COMMERCIAL"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-forest-100 text-forest-700"
+                          }`}>
+                            {req.mortgageCategory === "COMMERCIAL"
+                              ? t("request.commercial")
+                              : t("request.residential")}
+                          </span>
+                        ) : (
+                          <>
+                            <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
+                              {req.requestType}
+                            </span>
+                            <span className="inline-flex items-center rounded-full bg-sage-100 px-2.5 py-0.5 font-body text-xs font-semibold text-sage-700">
+                              {req.propertyType}
+                            </span>
+                          </>
+                        )}
+                        <StatusBadge status={req.status} />
+                        <span className="font-body text-xs text-forest-700/50">
+                          {t("broker.posted")} {formatDate(req.createdAt as unknown as string)}
                         </span>
+                      </div>
+
+                      <h3 className="heading-sm">
+                        {v2
+                          ? `${req.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} — ${req.city ? `${req.city}, ` : ""}${req.province}`
+                          : `${req.requestType} in ${req.city ? `${req.city}, ` : ""}${req.province}`
+                        }
+                      </h3>
+
+                      {v2 ? (
+                        <>
+                          {/* Product pills */}
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {(req.productTypes ?? []).map((pt) => (
+                              <span
+                                key={pt}
+                                className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-xs font-medium text-forest-700"
+                              >
+                                {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+                            {req.desiredTimeline && (
+                              <div>
+                                <span className="font-body text-xs font-medium text-forest-700/50">{t("request.desiredTimeline")}</span>
+                                <p className="font-body text-sm text-forest-800">{t(TIMELINE_LABEL_KEYS[req.desiredTimeline!] || req.desiredTimeline!)}</p>
+                              </div>
+                            )}
+                            <div>
+                              <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
+                              <p className="font-body text-sm text-forest-800">{req._count?.introductions ?? 0}</p>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+                          <div>
+                            <span className="font-body text-xs font-medium text-forest-700/50">{t("request.priceRange")}</span>
+                            <p className="font-body text-sm text-forest-800">
+                              {formatCurrency(req.priceRangeMin)} - {formatCurrency(req.priceRangeMax)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-body text-xs font-medium text-forest-700/50">{t("request.mortgageAmount")}</span>
+                            <p className="font-body text-sm text-forest-800">
+                              {formatCurrency(req.mortgageAmountMin)} - {formatCurrency(req.mortgageAmountMax)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-body text-xs font-medium text-forest-700/50">{t("request.closingTimeline")}</span>
+                            <p className="font-body text-sm text-forest-800">
+                              {req.closingTimeline || t("request.notSpecified")}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
+                            <p className="font-body text-sm text-forest-800">{req._count?.introductions ?? 0}</p>
+                          </div>
+                        </div>
                       )}
-                      <span className="font-body text-xs text-forest-700/50">
-                        {t("broker.posted")} {formatDate(req.createdAt as unknown as string)}
-                      </span>
                     </div>
-                    <h3 className="heading-sm">
-                      {req.requestType} in {req.city ? `${req.city}, ` : ""}
-                      {req.province}
-                    </h3>
-                    <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
-                      <div>
-                        <span className="font-body text-xs font-medium text-forest-700/50">{t("request.priceRange")}</span>
-                        <p className="font-body text-sm text-forest-800">
-                          {formatCurrency(req.priceRangeMin)} - {formatCurrency(req.priceRangeMax)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-body text-xs font-medium text-forest-700/50">{t("request.mortgageAmount")}</span>
-                        <p className="font-body text-sm text-forest-800">
-                          {formatCurrency(req.mortgageAmountMin)} - {formatCurrency(req.mortgageAmountMax)}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-body text-xs font-medium text-forest-700/50">{t("request.closingTimeline")}</span>
-                        <p className="font-body text-sm text-forest-800">
-                          {req.closingTimeline || t("request.notSpecified")}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
-                        <p className="font-body text-sm text-forest-800">
-                          {req._count?.introductions ?? 0}
-                        </p>
-                      </div>
+                    <div className="flex shrink-0 flex-col gap-2">
+                      <Link
+                        href={`/broker/requests/${req.publicId}`}
+                        className="btn-secondary text-center text-xs px-4 py-2"
+                      >
+                        {t("broker.viewDetails")}
+                      </Link>
+                      <Link
+                        href={`/broker/introduction/new?requestId=${req.publicId}`}
+                        className="btn-primary text-center text-xs px-4 py-2"
+                      >
+                        {t("broker.respondToRequest")}
+                      </Link>
                     </div>
-                  </div>
-                  <div className="flex shrink-0 flex-col gap-2">
-                    <Link
-                      href={`/broker/requests/${req.publicId}`}
-                      className="btn-secondary text-center text-xs px-4 py-2"
-                    >
-                      {t("broker.viewDetails")}
-                    </Link>
-                    <Link
-                      href={`/broker/introduction/new?requestId=${req.publicId}`}
-                      className="btn-primary text-center text-xs px-4 py-2"
-                    >
-                      {t("broker.respondToRequest")}
-                    </Link>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

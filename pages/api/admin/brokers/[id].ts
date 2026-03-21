@@ -32,7 +32,7 @@ export default async function handler(
           introductions: {
             include: {
               request: {
-                select: { id: true, requestType: true, province: true, city: true, status: true },
+                select: { id: true, requestType: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true, schemaVersion: true },
               },
             },
             orderBy: { createdAt: "desc" as const },
@@ -41,7 +41,7 @@ export default async function handler(
           conversations: {
             include: {
               borrower: { select: { id: true, name: true, email: true } },
-              request: { select: { id: true, requestType: true, province: true } },
+              request: { select: { id: true, requestType: true, province: true, mortgageCategory: true, productTypes: true, schemaVersion: true } },
               _count: { select: { messages: true } },
             },
             orderBy: { updatedAt: "desc" as const },

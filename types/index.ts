@@ -29,7 +29,7 @@ export type IntroductionWithBroker = BrokerIntroduction & {
 export type ConversationWithParticipants = Conversation & {
   broker: BrokerWithUser;
   messages: Message[];
-  request: Pick<BorrowerRequest, "id" | "requestType" | "province" | "city">;
+  request: Pick<BorrowerRequest, "id" | "province" | "city" | "mortgageCategory" | "productTypes" | "schemaVersion" | "requestType">;
 };
 
 export type RequestWithIntroductions = BorrowerRequest & {
@@ -37,27 +37,33 @@ export type RequestWithIntroductions = BorrowerRequest & {
   _count: { introductions: number };
 };
 
-// Form types for creating entities
+// ── v2 Request Details ───────────────────────────────────────
+
+export interface ResidentialDetails {
+  purposeOfUse: "OWNER_OCCUPIED" | "RENTAL";
+  incomeTypes: string[];
+  incomeTypeOther?: string;
+  annualIncome: string;
+}
+
+export interface CommercialDetails {
+  businessType: string;
+  corporateAnnualIncome: string;
+  corporateAnnualExpenses: string;
+  ownerNetIncome: string;
+}
+
+export type RequestDetails = ResidentialDetails | CommercialDetails;
+
+// ── Form Input Types ─────────────────────────────────────────
+
 export interface CreateRequestInput {
-  mortgageCategory: string;
-  requestType: string;
+  mortgageCategory: "RESIDENTIAL" | "COMMERCIAL";
+  productTypes: string[];
   province: string;
   city?: string;
-  propertyType: string;
-  priceRangeMin?: number;
-  priceRangeMax?: number;
-  downPaymentPercent?: string;
-  incomeRangeMin?: number;
-  incomeRangeMax?: number;
-  employmentType?: string;
-  creditScoreBand?: string;
-  debtRangeMin?: number;
-  debtRangeMax?: number;
-  mortgageAmountMin?: number;
-  mortgageAmountMax?: number;
-  preferredTerm?: string;
-  preferredType?: string;
-  closingTimeline?: string;
+  details: RequestDetails;
+  desiredTimeline?: string;
   notes?: string;
 }
 

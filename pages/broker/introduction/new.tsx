@@ -8,6 +8,7 @@ import type { CreateIntroductionInput } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import { isV2Request, PRODUCT_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 
 function formatCurrency(value: number | null | undefined): string {
   if (value == null) return "N/A";
@@ -159,34 +160,64 @@ export default function NewIntroductionPage() {
             <h2 className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">
               {t("broker.requestSummary")}
             </h2>
-            <p className="heading-sm">
-              {request.requestType} in {request.city ? `${request.city}, ` : ""}
-              {request.province}
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2">
-              <div>
-                <span className="font-body text-xs font-medium text-forest-700/50">{t("request.property")}</span>
-                <p className="font-body text-sm text-forest-800">{request.propertyType}</p>
-              </div>
-              <div>
-                <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.price")}</span>
-                <p className="font-body text-sm text-forest-800">
-                  {formatCurrency(request.priceRangeMin)} - {formatCurrency(request.priceRangeMax)}
+            {isV2Request(request) ? (
+              <>
+                <p className="heading-sm">
+                  {request.mortgageCategory === "COMMERCIAL"
+                    ? t("request.commercial")
+                    : t("request.residential")}{" "}
+                  — {request.city ? `${request.city}, ` : ""}
+                  {request.province}
                 </p>
-              </div>
-              <div>
-                <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.mortgage")}</span>
-                <p className="font-body text-sm text-forest-800">
-                  {formatCurrency(request.mortgageAmountMin)} - {formatCurrency(request.mortgageAmountMax)}
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {(request.productTypes ?? []).map((pt) => (
+                    <span
+                      key={pt}
+                      className="inline-flex items-center rounded-full bg-cream-300 px-2 py-0.5 font-body text-xs font-medium text-forest-700"
+                    >
+                      {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
+                    </span>
+                  ))}
+                </div>
+                {request.desiredTimeline && (
+                  <div className="mt-3">
+                    <span className="font-body text-xs font-medium text-forest-700/50">{t("request.desiredTimeline")}</span>
+                    <p className="font-body text-sm text-forest-800">{t(TIMELINE_LABEL_KEYS[request.desiredTimeline!] || request.desiredTimeline!)}</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="heading-sm">
+                  {request.requestType} in {request.city ? `${request.city}, ` : ""}
+                  {request.province}
                 </p>
-              </div>
-              <div>
-                <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.timeline")}</span>
-                <p className="font-body text-sm text-forest-800">
-                  {request.closingTimeline || t("request.notSpecified")}
-                </p>
-              </div>
-            </div>
+                <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2">
+                  <div>
+                    <span className="font-body text-xs font-medium text-forest-700/50">{t("request.property")}</span>
+                    <p className="font-body text-sm text-forest-800">{request.propertyType}</p>
+                  </div>
+                  <div>
+                    <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.price")}</span>
+                    <p className="font-body text-sm text-forest-800">
+                      {formatCurrency(request.priceRangeMin)} - {formatCurrency(request.priceRangeMax)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.mortgage")}</span>
+                    <p className="font-body text-sm text-forest-800">
+                      {formatCurrency(request.mortgageAmountMin)} - {formatCurrency(request.mortgageAmountMax)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.timeline")}</span>
+                    <p className="font-body text-sm text-forest-800">
+                      {request.closingTimeline || t("request.notSpecified")}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         ) : null}
 

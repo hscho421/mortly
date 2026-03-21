@@ -7,6 +7,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import Pagination from "@/components/Pagination";
+import { getRequestTitle } from "@/lib/requestConfig";
 
 interface ConversationRow {
   id: string;
@@ -32,10 +33,13 @@ interface ConversationRow {
   };
   request: {
     id: string;
-    requestType: string;
+    requestType?: string | null;
     province: string;
     city: string | null;
     status: string;
+    mortgageCategory?: string | null;
+    productTypes?: string[] | null;
+    schemaVersion?: number | null;
   };
   _count: { messages: number };
   messages: Array<{
@@ -303,7 +307,7 @@ export default function AdminConversations() {
 
                       {/* Related Request */}
                       <td className="px-4 py-4">
-                        <p className="font-body text-sm text-forest-800">{convo.request.requestType}</p>
+                        <p className="font-body text-sm text-forest-800">{getRequestTitle(convo.request)}</p>
                         <p className="font-body text-[10px] text-forest-700/50">
                           {convo.request.province}{convo.request.city ? `, ${convo.request.city}` : ""} ·{" "}
                           <span className={convo.request.status === "OPEN" ? "text-forest-600" : "text-sage-500"}>{convo.request.status}</span>

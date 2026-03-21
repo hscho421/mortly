@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { GetServerSideProps } from "next";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
@@ -8,43 +8,9 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
-import type { CreateRequestInput } from "@/types";
-
-const PROVINCES = [
-  "Alberta",
-  "British Columbia",
-  "Manitoba",
-  "New Brunswick",
-  "Newfoundland and Labrador",
-  "Northwest Territories",
-  "Nova Scotia",
-  "Nunavut",
-  "Ontario",
-  "Prince Edward Island",
-  "Quebec",
-  "Saskatchewan",
-  "Yukon",
-];
-
-const DOWN_PAYMENT_OPTIONS = ["5%", "10%", "15%", "20%+"];
-
-const PREFERRED_TERMS = [
-  "1 year",
-  "2 years",
-  "3 years",
-  "4 years",
-  "5 years",
-  "7 years",
-  "10 years",
-];
-
-const CLOSING_TIMELINES = [
-  "Within 30 days",
-  "1-3 months",
-  "3-6 months",
-  "6-12 months",
-  "Just exploring",
-];
+import RequestForm from "@/components/RequestForm";
+import type { CreateRequestInput, ResidentialDetails, CommercialDetails } from "@/types";
+import { isV2Request, PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 
 function formatCurrency(val: number | null | undefined) {
   if (val == null) return "--";
@@ -105,18 +71,9 @@ export default function RequestDetail() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-
-  const [form, setForm] = useState<CreateRequestInput>({
-    mortgageCategory: "RESIDENTIAL",
-    requestType: "PURCHASE",
-    province: "",
-    city: "",
-    propertyType: "CONDO",
-  });
 
   const fetchRequest = useCallback(async () => {
     if (!id) return;
@@ -132,28 +89,6 @@ export default function RequestDetail() {
       const data = await res.json();
       setRequest(data);
       setIntroCount(data._count?.introductions ?? data.introductions?.length ?? 0);
-      setForm({
-        mortgageCategory: data.mortgageCategory || "RESIDENTIAL",
-        requestType: data.requestType,
-        province: data.province,
-        city: data.city || "",
-        propertyType: data.propertyType,
-        priceRangeMin: data.priceRangeMin ?? undefined,
-        priceRangeMax: data.priceRangeMax ?? undefined,
-        downPaymentPercent: data.downPaymentPercent || "",
-        incomeRangeMin: data.incomeRangeMin ?? undefined,
-        incomeRangeMax: data.incomeRangeMax ?? undefined,
-        employmentType: data.employmentType || "",
-        creditScoreBand: data.creditScoreBand || "",
-        debtRangeMin: data.debtRangeMin ?? undefined,
-        debtRangeMax: data.debtRangeMax ?? undefined,
-        mortgageAmountMin: data.mortgageAmountMin ?? undefined,
-        mortgageAmountMax: data.mortgageAmountMax ?? undefined,
-        preferredTerm: data.preferredTerm || "",
-        preferredType: data.preferredType || "",
-        closingTimeline: data.closingTimeline || "",
-        notes: data.notes || "",
-      });
     } catch {
       setError("Failed to load request");
     } finally {
@@ -170,74 +105,23 @@ export default function RequestDetail() {
     fetchRequest();
   }, [authStatus, session, fetchRequest, router]);
 
-  function updateField<K extends keyof CreateRequestInput>(
-    key: K,
-    value: CreateRequestInput[K]
-  ) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
+  async function handleEdit(data: CreateRequestInput) {
+    const res = await fetch(`/api/requests/${request.publicId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
 
-  function handleNumberChange(key: keyof CreateRequestInput, raw: string) {
-    const parsed = raw === "" ? undefined : Number(raw);
-    updateField(key, parsed as CreateRequestInput[typeof key]);
-  }
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.error || "Failed to update request");
+    }
 
-  function handleCancelEdit() {
+    const updated = await res.json();
+    setRequest((prev: RequestData) => ({ ...prev, ...updated }));
     setIsEditing(false);
-    setError("");
-    if (request) {
-      setForm({
-        mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
-        requestType: request.requestType,
-        province: request.province,
-        city: request.city || "",
-        propertyType: request.propertyType,
-        priceRangeMin: request.priceRangeMin ?? undefined,
-        priceRangeMax: request.priceRangeMax ?? undefined,
-        downPaymentPercent: request.downPaymentPercent || "",
-        incomeRangeMin: request.incomeRangeMin ?? undefined,
-        incomeRangeMax: request.incomeRangeMax ?? undefined,
-        employmentType: request.employmentType || "",
-        creditScoreBand: request.creditScoreBand || "",
-        debtRangeMin: request.debtRangeMin ?? undefined,
-        debtRangeMax: request.debtRangeMax ?? undefined,
-        mortgageAmountMin: request.mortgageAmountMin ?? undefined,
-        mortgageAmountMax: request.mortgageAmountMax ?? undefined,
-        preferredTerm: request.preferredTerm || "",
-        preferredType: request.preferredType || "",
-        closingTimeline: request.closingTimeline || "",
-        notes: request.notes || "",
-      });
-    }
-  }
-
-  async function handleSaveEdit(e: FormEvent) {
-    e.preventDefault();
-    setError("");
-    setSaving(true);
-
-    try {
-      const res = await fetch(`/api/requests/${request.publicId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to update request");
-      }
-
-      const updated = await res.json();
-      setRequest((prev: RequestData) => ({ ...prev, ...updated }));
-      setIsEditing(false);
-      setSuccessMsg(t("request.editSuccess"));
-      setTimeout(() => setSuccessMsg(""), 4000);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setSaving(false);
-    }
+    setSuccessMsg(t("request.editSuccess"));
+    setTimeout(() => setSuccessMsg(""), 4000);
   }
 
   async function handleDelete() {
@@ -262,13 +146,6 @@ export default function RequestDetail() {
     }
   }
 
-  const radioOptionClass = (isSelected: boolean) =>
-    `flex items-center gap-2 rounded-xl border px-4 py-3 cursor-pointer text-sm font-body transition-all duration-200 ${
-      isSelected
-        ? "border-forest-600 bg-forest-50 text-forest-800 ring-2 ring-forest-600/10"
-        : "border-cream-300 bg-white hover:border-sage-300 text-forest-700"
-    }`;
-
   if (loading || !request) {
     return (
       <Layout>
@@ -280,6 +157,25 @@ export default function RequestDetail() {
   }
 
   const isOpen = request.status === "OPEN";
+  const v2 = isV2Request(request);
+
+  // Build initial values for editing a v2 request
+  const editInitialValues: CreateRequestInput | undefined = v2
+    ? {
+        mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
+        productTypes: request.productTypes || [],
+        province: request.province,
+        city: request.city || "",
+        details: request.details || {},
+        desiredTimeline: request.desiredTimeline || "",
+        notes: request.notes || "",
+      }
+    : undefined;
+
+  // Get the page title
+  const pageTitle = v2
+    ? (request.mortgageCategory === "COMMERCIAL" ? t("request.commercialRequest") : t("request.residentialRequest"))
+    : `${displayLabel(request.requestType)} ${t("request.requestLabel")}`;
 
   return (
     <Layout>
@@ -312,9 +208,7 @@ export default function RequestDetail() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-fade-in-up stagger-1">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="heading-lg">
-                {displayLabel(request.requestType)} {t("request.requestLabel")}
-              </h1>
+              <h1 className="heading-lg">{pageTitle}</h1>
               <StatusBadge status={request.status} />
             </div>
             <p className="text-body-sm">
@@ -372,532 +266,47 @@ export default function RequestDetail() {
           </div>
         </div>
 
-        {/* Request details - read-only or edit mode */}
+        {/* Request details - edit mode or read-only */}
         {isEditing ? (
-          <form onSubmit={handleSaveEdit} className="card-elevated animate-fade-in-up stagger-3">
-            <div className="pb-4 mb-2 border-b divider">
-              <h2 className="heading-md">{t("request.edit")}</h2>
-            </div>
-
-            <div className="space-y-10 mt-4">
-              {/* Section 0: Mortgage Category */}
-              <fieldset className="space-y-6">
-                <legend className="heading-sm border-b divider pb-3 w-full">
-                  {t("request.mortgageCategory")}
-                </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(["RESIDENTIAL", "COMMERCIAL"] as const).map((cat) => (
-                    <label
-                      key={cat}
-                      className={`relative flex flex-col items-center gap-3 rounded-2xl border-2 px-6 py-8 cursor-pointer text-center transition-all duration-200 ${
-                        form.mortgageCategory === cat
-                          ? "border-forest-600 bg-forest-50 ring-2 ring-forest-600/10"
-                          : "border-cream-300 bg-white hover:border-sage-300"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="mortgageCategory"
-                        value={cat}
-                        checked={form.mortgageCategory === cat}
-                        onChange={() => updateField("mortgageCategory", cat)}
-                        className="sr-only"
-                      />
-                      <svg
-                        className={`w-10 h-10 ${form.mortgageCategory === cat ? "text-forest-600" : "text-sage-400"}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        {cat === "RESIDENTIAL" ? (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                        ) : (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
-                        )}
-                      </svg>
-                      <span className="text-base font-semibold font-body text-forest-800">
-                        {cat === "RESIDENTIAL" ? t("request.residential") : t("request.commercial")}
-                      </span>
-                      <span className="text-sm font-body text-sage-500">
-                        {cat === "RESIDENTIAL" ? t("request.residentialDesc") : t("request.commercialDesc")}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-
-              {/* Section 1: Request basics */}
-              <fieldset className="space-y-6">
-                <legend className="heading-sm border-b divider pb-3 w-full">
-                  {t("request.requestType")}
-                </legend>
-                <div>
-                  <span className="label-text">{t("request.requestType")}</span>
-                  <div className="flex flex-wrap gap-4 mt-2">
-                    {(["PURCHASE", "REFINANCE", "RENEWAL"] as const).map((type) => (
-                      <label
-                        key={type}
-                        className={radioOptionClass(form.requestType === type)}
-                      >
-                        <input
-                          type="radio"
-                          name="requestType"
-                          value={type}
-                          checked={form.requestType === type}
-                          onChange={() => updateField("requestType", type)}
-                          className="accent-forest-600"
-                        />
-                        {type.charAt(0) + type.slice(1).toLowerCase()}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </fieldset>
-
-              {/* Section 2: Property details */}
-              <fieldset className="space-y-6">
-                <legend className="heading-sm border-b divider pb-3 w-full">
-                  {t("request.property")}
-                </legend>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="province" className="label-text">
-                      {t("request.province")}
-                    </label>
-                    <select
-                      id="province"
-                      value={form.province}
-                      onChange={(e) => updateField("province", e.target.value)}
-                      required
-                      className="input-field"
-                    >
-                      <option value="">{t("request.selectProvince")}</option>
-                      {PROVINCES.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="city" className="label-text">
-                      {t("request.city")}
-                    </label>
-                    <input
-                      id="city"
-                      type="text"
-                      value={form.city || ""}
-                      onChange={(e) => updateField("city", e.target.value)}
-                      placeholder="e.g. Toronto"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <span className="label-text">{t("request.propertyType")}</span>
-                  <div className="flex flex-wrap gap-4 mt-2">
-                    {(["CONDO", "TOWNHOUSE", "DETACHED", "OTHER"] as const).map(
-                      (type) => (
-                        <label
-                          key={type}
-                          className={radioOptionClass(form.propertyType === type)}
-                        >
-                          <input
-                            type="radio"
-                            name="propertyType"
-                            value={type}
-                            checked={form.propertyType === type}
-                            onChange={() => updateField("propertyType", type)}
-                            className="accent-forest-600"
-                          />
-                          {type.charAt(0) + type.slice(1).toLowerCase()}
-                        </label>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="priceRangeMin" className="label-text">
-                      {t("request.priceRange")} ({t("request.min")} $)
-                    </label>
-                    <input
-                      id="priceRangeMin"
-                      type="number"
-                      min={0}
-                      value={form.priceRangeMin ?? ""}
-                      onChange={(e) => handleNumberChange("priceRangeMin", e.target.value)}
-                      placeholder="e.g. 300000"
-                      className="input-field"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="priceRangeMax" className="label-text">
-                      {t("request.priceRange")} ({t("request.max")} $)
-                    </label>
-                    <input
-                      id="priceRangeMax"
-                      type="number"
-                      min={0}
-                      value={form.priceRangeMax ?? ""}
-                      onChange={(e) => handleNumberChange("priceRangeMax", e.target.value)}
-                      placeholder="e.g. 600000"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="downPaymentPercent" className="label-text">
-                    {t("request.downPayment")}
-                  </label>
-                  <select
-                    id="downPaymentPercent"
-                    value={form.downPaymentPercent || ""}
-                    onChange={(e) => updateField("downPaymentPercent", e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="">Select an option</option>
-                    {DOWN_PAYMENT_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-              </fieldset>
-
-              {/* Section 3: Financial profile */}
-              <fieldset className="space-y-6">
-                <legend className="heading-sm border-b divider pb-3 w-full">
-                  {t("request.financial")}
-                </legend>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="incomeRangeMin" className="label-text">
-                      {t("request.income")} ({t("request.min")} $)
-                    </label>
-                    <input
-                      id="incomeRangeMin"
-                      type="number"
-                      min={0}
-                      value={form.incomeRangeMin ?? ""}
-                      onChange={(e) => handleNumberChange("incomeRangeMin", e.target.value)}
-                      placeholder="e.g. 80000"
-                      className="input-field"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="incomeRangeMax" className="label-text">
-                      {t("request.income")} ({t("request.max")} $)
-                    </label>
-                    <input
-                      id="incomeRangeMax"
-                      type="number"
-                      min={0}
-                      value={form.incomeRangeMax ?? ""}
-                      onChange={(e) => handleNumberChange("incomeRangeMax", e.target.value)}
-                      placeholder="e.g. 120000"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="employmentType" className="label-text">
-                    {t("request.employmentType")}
-                  </label>
-                  <select
-                    id="employmentType"
-                    value={form.employmentType || ""}
-                    onChange={(e) => updateField("employmentType", e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="">Select employment type</option>
-                    {[
-                      ["FULL_TIME", "Full Time"],
-                      ["PART_TIME", "Part Time"],
-                      ["SELF_EMPLOYED", "Self Employed"],
-                      ["CONTRACT", "Contract"],
-                      ["RETIRED", "Retired"],
-                      ["OTHER", "Other"],
-                    ].map(([val, label]) => (
-                      <option key={val} value={val}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <span className="label-text">{t("request.creditScore")}</span>
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    {(["EXCELLENT", "GOOD", "FAIR", "POOR", "NOT_SURE"] as const).map((band) => (
-                      <label
-                        key={band}
-                        className={radioOptionClass(form.creditScoreBand === band)}
-                      >
-                        <input
-                          type="radio"
-                          name="creditScoreBand"
-                          value={band}
-                          checked={form.creditScoreBand === band}
-                          onChange={() => updateField("creditScoreBand", band)}
-                          className="accent-forest-600"
-                        />
-                        {band === "NOT_SURE"
-                          ? "Not Sure"
-                          : band.charAt(0) + band.slice(1).toLowerCase()}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="debtRangeMin" className="label-text">
-                      {t("request.existingDebts")} ({t("request.min")} $)
-                    </label>
-                    <input
-                      id="debtRangeMin"
-                      type="number"
-                      min={0}
-                      value={form.debtRangeMin ?? ""}
-                      onChange={(e) => handleNumberChange("debtRangeMin", e.target.value)}
-                      placeholder="e.g. 0"
-                      className="input-field"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="debtRangeMax" className="label-text">
-                      {t("request.existingDebts")} ({t("request.max")} $)
-                    </label>
-                    <input
-                      id="debtRangeMax"
-                      type="number"
-                      min={0}
-                      value={form.debtRangeMax ?? ""}
-                      onChange={(e) => handleNumberChange("debtRangeMax", e.target.value)}
-                      placeholder="e.g. 20000"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-              </fieldset>
-
-              {/* Section 4: Mortgage preferences */}
-              <fieldset className="space-y-6">
-                <legend className="heading-sm border-b divider pb-3 w-full">
-                  {t("request.mortgagePreferences")}
-                </legend>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="mortgageAmountMin" className="label-text">
-                      {t("request.mortgageAmount")} ({t("request.min")} $)
-                    </label>
-                    <input
-                      id="mortgageAmountMin"
-                      type="number"
-                      min={0}
-                      value={form.mortgageAmountMin ?? ""}
-                      onChange={(e) => handleNumberChange("mortgageAmountMin", e.target.value)}
-                      placeholder="e.g. 250000"
-                      className="input-field"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="mortgageAmountMax" className="label-text">
-                      {t("request.mortgageAmount")} ({t("request.max")} $)
-                    </label>
-                    <input
-                      id="mortgageAmountMax"
-                      type="number"
-                      min={0}
-                      value={form.mortgageAmountMax ?? ""}
-                      onChange={(e) => handleNumberChange("mortgageAmountMax", e.target.value)}
-                      placeholder="e.g. 500000"
-                      className="input-field"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="preferredTerm" className="label-text">
-                      {t("request.preferredTerm")}
-                    </label>
-                    <select
-                      id="preferredTerm"
-                      value={form.preferredTerm || ""}
-                      onChange={(e) => updateField("preferredTerm", e.target.value)}
-                      className="input-field"
-                    >
-                      <option value="">Select a term</option>
-                      {PREFERRED_TERMS.map((term) => (
-                        <option key={term} value={term}>{term}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <span className="label-text">{t("request.preferredType")}</span>
-                    <div className="flex flex-wrap gap-3 mt-2">
-                      {(["FIXED", "VARIABLE", "NOT_SURE"] as const).map((type) => (
-                        <label
-                          key={type}
-                          className={radioOptionClass(form.preferredType === type)}
-                        >
-                          <input
-                            type="radio"
-                            name="preferredType"
-                            value={type}
-                            checked={form.preferredType === type}
-                            onChange={() => updateField("preferredType", type)}
-                            className="accent-forest-600"
-                          />
-                          {type === "NOT_SURE"
-                            ? "Not Sure"
-                            : type.charAt(0) + type.slice(1).toLowerCase()}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="closingTimeline" className="label-text">
-                    {t("request.closingTimeline")}
-                  </label>
-                  <select
-                    id="closingTimeline"
-                    value={form.closingTimeline || ""}
-                    onChange={(e) => updateField("closingTimeline", e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="">Select a timeline</option>
-                    {CLOSING_TIMELINES.map((tl) => (
-                      <option key={tl} value={tl}>{tl}</option>
-                    ))}
-                  </select>
-                </div>
-              </fieldset>
-
-              {/* Section 5: Additional notes */}
-              <fieldset className="space-y-6">
-                <legend className="heading-sm border-b divider pb-3 w-full">
-                  {t("request.additionalNotes")}
-                </legend>
-                <div>
-                  <label htmlFor="notes" className="label-text">
-                    {t("request.additionalNotes")}
-                  </label>
-                  <textarea
-                    id="notes"
-                    rows={4}
-                    value={form.notes || ""}
-                    onChange={(e) => updateField("notes", e.target.value)}
-                    placeholder="e.g. First-time buyer, looking for pre-approval, unique income situation..."
-                    className="input-field"
-                  />
-                </div>
-              </fieldset>
-
-              {/* Action buttons */}
-              <div className="pt-6 border-t divider flex items-center gap-4">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="btn-primary px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? t("request.saving") : t("request.saveChanges")}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="btn-secondary px-8 py-3"
-                >
-                  {t("request.cancel")}
-                </button>
+          <div className="animate-fade-in-up stagger-3">
+            {v2 && editInitialValues ? (
+              <RequestForm
+                initialValues={editInitialValues}
+                onSubmit={handleEdit}
+                submitLabel={t("request.saveChanges")}
+                submittingLabel={t("request.saving")}
+              />
+            ) : (
+              /* v1 requests: show a message that editing is not supported in new format */
+              <div className="card-elevated text-center py-12">
+                <p className="text-body-sm">This request uses a legacy format. Please create a new request instead.</p>
+                <Link href="/borrower/request/new" className="btn-primary mt-4 inline-block">
+                  {t("request.newRequestTitle")}
+                </Link>
               </div>
-            </div>
-          </form>
+            )}
+            {v2 && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="btn-secondary mt-4 px-8 py-3"
+              >
+                {t("request.cancel")}
+              </button>
+            )}
+          </div>
         ) : (
           /* Read-only details */
           <div className="card-elevated animate-fade-in-up stagger-3">
             <div className="pb-4 mb-2 border-b divider">
-              <h2 className="heading-md">
-                {t("request.requestDetails")}
-              </h2>
+              <h2 className="heading-md">{t("request.requestDetails")}</h2>
             </div>
 
-            <div>
-              <DetailRow label={t("request.mortgageCategory")} value={request.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} />
-
-              <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
-                {t("request.property")}
-              </h3>
-              <DetailRow label={t("request.requestType")} value={displayLabel(request.requestType)} />
-              <DetailRow label={t("request.province")} value={request.province || "--"} />
-              <DetailRow label={t("request.city")} value={request.city || "--"} />
-              <DetailRow label={t("request.propertyType")} value={displayLabel(request.propertyType)} />
-              <DetailRow
-                label={t("request.priceRange")}
-                value={`${formatCurrency(request.priceRangeMin)} - ${formatCurrency(request.priceRangeMax)}`}
-              />
-              <DetailRow
-                label={t("request.downPayment")}
-                value={request.downPaymentPercent || "--"}
-              />
-
-              <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
-                {t("request.financial")}
-              </h3>
-              <DetailRow
-                label={t("request.income")}
-                value={`${formatCurrency(request.incomeRangeMin)} - ${formatCurrency(request.incomeRangeMax)}`}
-              />
-              <DetailRow
-                label={t("request.employmentType")}
-                value={displayLabel(request.employmentType)}
-              />
-              <DetailRow
-                label={t("request.creditScore")}
-                value={displayLabel(request.creditScoreBand)}
-              />
-              <DetailRow
-                label={t("request.existingDebts")}
-                value={`${formatCurrency(request.debtRangeMin)} - ${formatCurrency(request.debtRangeMax)}`}
-              />
-
-              <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
-                {t("request.mortgagePreferences")}
-              </h3>
-              <DetailRow
-                label={t("request.mortgageAmount")}
-                value={`${formatCurrency(request.mortgageAmountMin)} - ${formatCurrency(request.mortgageAmountMax)}`}
-              />
-              <DetailRow
-                label={t("request.preferredTerm")}
-                value={request.preferredTerm || "--"}
-              />
-              <DetailRow
-                label={t("request.preferredType")}
-                value={displayLabel(request.preferredType)}
-              />
-              <DetailRow
-                label={t("request.closingTimeline")}
-                value={request.closingTimeline || "--"}
-              />
-
-              {request.notes && (
-                <>
-                  <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
-                    {t("request.additionalNotes")}
-                  </h3>
-                  <p className="text-body py-3">{request.notes}</p>
-                </>
-              )}
-            </div>
+            {v2 ? (
+              <V2ReadOnlyView request={request} />
+            ) : (
+              <V1ReadOnlyView request={request} />
+            )}
           </div>
         )}
 
@@ -906,9 +315,7 @@ export default function RequestDetail() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
             <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6 animate-fade-in-up">
               <h3 className="heading-md mb-2">{t("request.delete")}</h3>
-              <p className="text-body-sm mb-6">
-                {t("request.deleteConfirm")}
-              </p>
+              <p className="text-body-sm mb-6">{t("request.deleteConfirm")}</p>
               <div className="flex items-center gap-3 justify-end">
                 <button
                   onClick={() => setShowDeleteModal(false)}
@@ -930,5 +337,158 @@ export default function RequestDetail() {
         )}
       </div>
     </Layout>
+  );
+}
+
+// ── v2 Read-Only View ─────────────────────────────────────────
+
+function V2ReadOnlyView({ request }: { request: RequestData }) {
+  const { t } = useTranslation("common");
+  const isResidential = request.mortgageCategory === "RESIDENTIAL";
+  const details = request.details || {};
+
+  return (
+    <div>
+      <DetailRow
+        label={t("request.mortgageCategory")}
+        value={isResidential ? t("request.residential") : t("request.commercial")}
+      />
+
+      {/* Product types */}
+      <div className="flex justify-between py-3 border-b border-cream-200">
+        <span className="text-body-sm">{t("request.selectProducts", "Services")}</span>
+        <div className="flex flex-wrap gap-1.5 justify-end max-w-[60%]">
+          {(request.productTypes || []).map((p: string) => (
+            <span
+              key={p}
+              className="inline-flex items-center rounded-full bg-forest-50 px-2.5 py-0.5 font-body text-xs font-medium text-forest-700"
+            >
+              {t(PRODUCT_LABEL_KEYS[p] || p)}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Location */}
+      <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
+        {t("request.province")}
+      </h3>
+      <DetailRow label={t("request.province")} value={request.province || "--"} />
+      <DetailRow label={t("request.city")} value={request.city || "--"} />
+
+      {/* Category-specific details */}
+      {isResidential ? (
+        <>
+          <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
+            {t("request.applicantInfo")}
+          </h3>
+          <DetailRow
+            label={t("request.purposeOfUse")}
+            value={(details as ResidentialDetails).purposeOfUse === "RENTAL" ? t("request.rental") : t("request.ownerOccupied")}
+          />
+          <div className="flex justify-between py-3 border-b border-cream-200">
+            <span className="text-body-sm">{t("request.incomeType")}</span>
+            <div className="flex flex-wrap gap-1.5 justify-end max-w-[60%]">
+              {((details as ResidentialDetails).incomeTypes || []).map((inc: string) => (
+                <span
+                  key={inc}
+                  className="inline-flex items-center rounded-full bg-cream-200 px-2.5 py-0.5 font-body text-xs font-medium text-forest-700"
+                >
+                  {t(INCOME_TYPE_LABEL_KEYS[inc] || inc)}
+                </span>
+              ))}
+            </div>
+          </div>
+          {(details as ResidentialDetails).incomeTypeOther && (
+            <DetailRow label={t("request.incomeTypes.other")} value={(details as ResidentialDetails).incomeTypeOther || "--"} />
+          )}
+          <DetailRow label={t("request.annualIncome")} value={(details as ResidentialDetails).annualIncome || "--"} />
+        </>
+      ) : (
+        <>
+          <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
+            {t("request.businessInfo")}
+          </h3>
+          <DetailRow label={t("request.businessType")} value={(details as CommercialDetails).businessType || "--"} />
+          <DetailRow label={t("request.corporateIncome")} value={(details as CommercialDetails).corporateAnnualIncome || "--"} />
+          <DetailRow label={t("request.corporateExpenses")} value={(details as CommercialDetails).corporateAnnualExpenses || "--"} />
+          <DetailRow label={t("request.ownerNetIncome")} value={(details as CommercialDetails).ownerNetIncome || "--"} />
+        </>
+      )}
+
+      {/* Timeline */}
+      <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
+        {t("request.desiredTimeline")}
+      </h3>
+      <DetailRow label={t("request.desiredTimeline")} value={request.desiredTimeline ? t(TIMELINE_LABEL_KEYS[request.desiredTimeline] || request.desiredTimeline) : "--"} />
+
+      {/* Notes */}
+      {request.notes && (
+        <>
+          <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
+            {t("request.additionalDetailsLabel")}
+          </h3>
+          <p className="text-body py-3">{request.notes}</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── v1 Legacy Read-Only View ──────────────────────────────────
+
+function V1ReadOnlyView({ request }: { request: RequestData }) {
+  const { t } = useTranslation("common");
+  return (
+    <div>
+      <DetailRow label={t("request.mortgageCategory")} value={request.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} />
+
+      <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
+        {t("request.property")}
+      </h3>
+      <DetailRow label={t("request.requestType")} value={displayLabel(request.requestType)} />
+      <DetailRow label={t("request.province")} value={request.province || "--"} />
+      <DetailRow label={t("request.city")} value={request.city || "--"} />
+      <DetailRow label={t("request.propertyType")} value={displayLabel(request.propertyType)} />
+      <DetailRow
+        label={t("request.priceRange")}
+        value={`${formatCurrency(request.priceRangeMin)} - ${formatCurrency(request.priceRangeMax)}`}
+      />
+      <DetailRow label={t("request.downPayment")} value={request.downPaymentPercent || "--"} />
+
+      <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
+        {t("request.financial")}
+      </h3>
+      <DetailRow
+        label={t("request.income")}
+        value={`${formatCurrency(request.incomeRangeMin)} - ${formatCurrency(request.incomeRangeMax)}`}
+      />
+      <DetailRow label={t("request.employmentType")} value={displayLabel(request.employmentType)} />
+      <DetailRow label={t("request.creditScore")} value={displayLabel(request.creditScoreBand)} />
+      <DetailRow
+        label={t("request.existingDebts")}
+        value={`${formatCurrency(request.debtRangeMin)} - ${formatCurrency(request.debtRangeMax)}`}
+      />
+
+      <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
+        {t("request.mortgagePreferences")}
+      </h3>
+      <DetailRow
+        label={t("request.mortgageAmount")}
+        value={`${formatCurrency(request.mortgageAmountMin)} - ${formatCurrency(request.mortgageAmountMax)}`}
+      />
+      <DetailRow label={t("request.preferredTerm")} value={request.preferredTerm || "--"} />
+      <DetailRow label={t("request.preferredType")} value={displayLabel(request.preferredType)} />
+      <DetailRow label={t("request.closingTimeline")} value={request.closingTimeline || "--"} />
+
+      {request.notes && (
+        <>
+          <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
+            {t("request.additionalNotes")}
+          </h3>
+          <p className="text-body py-3">{request.notes}</p>
+        </>
+      )}
+    </div>
   );
 }

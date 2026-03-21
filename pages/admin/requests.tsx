@@ -7,15 +7,18 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import Pagination from "@/components/Pagination";
+import { isV2Request, getRequestTitle, PRODUCT_LABEL_KEYS } from "@/lib/requestConfig";
 
 interface RequestRow {
   id: string;
   publicId: string;
-  requestType: string;
+  requestType?: string | null;
   mortgageCategory: string;
   province: string;
   city: string | null;
-  propertyType: string;
+  propertyType?: string | null;
+  productTypes?: string[] | null;
+  schemaVersion?: number | null;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -214,9 +217,9 @@ export default function AdminRequests() {
             r.publicId,
             `"${(r.borrower.name || "").replace(/"/g, '""')}"`,
             r.borrower.email,
-            r.requestType,
+            getRequestTitle(r),
             r.mortgageCategory,
-            r.propertyType,
+            r.propertyType || "",
             r.province,
             r.city || "",
             r.status,
@@ -387,8 +390,11 @@ export default function AdminRequests() {
                     {/* Type */}
                     <td className="whitespace-nowrap px-4 py-4">
                       <div>
-                        <span className="font-body text-sm text-forest-800">{req.requestType}</span>
-                        <p className="font-body text-[10px] text-forest-700/50">{req.mortgageCategory} · {req.propertyType}</p>
+                        <span className="font-body text-sm text-forest-800">{getRequestTitle(req)}</span>
+                        <p className="font-body text-[10px] text-forest-700/50">
+                          {req.mortgageCategory}
+                          {!isV2Request(req) && req.propertyType ? ` · ${req.propertyType}` : ""}
+                        </p>
                       </div>
                     </td>
 
@@ -447,7 +453,7 @@ export default function AdminRequests() {
                         </button>
                         <button
                           onClick={() => {
-                            setDeleteModal({ id: req.publicId, province: req.province, type: req.requestType });
+                            setDeleteModal({ id: req.publicId, province: req.province, type: getRequestTitle(req) });
                             setDeleteReason("");
                           }}
                           className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98]"
@@ -511,12 +517,25 @@ export default function AdminRequests() {
               </div>
               <div>
                 <p className="label-text">{t("admin.type", "Type")}</p>
-                <p className="font-body text-sm text-forest-800">{detailRequest.requestType} · {detailRequest.mortgageCategory}</p>
+                <p className="font-body text-sm text-forest-800">{getRequestTitle(detailRequest)} · {detailRequest.mortgageCategory}</p>
               </div>
-              <div>
-                <p className="label-text">{t("admin.propertyType", "Property Type")}</p>
-                <p className="font-body text-sm text-forest-800">{detailRequest.propertyType}</p>
-              </div>
+              {isV2Request(detailRequest) ? (
+                <div className="col-span-2">
+                  <p className="label-text">{t("request.selectProducts", "Products")}</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {(detailRequest.productTypes ?? []).map((pt) => (
+                      <span key={pt} className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-xs font-medium text-forest-700">
+                        {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="label-text">{t("admin.propertyType", "Property Type")}</p>
+                  <p className="font-body text-sm text-forest-800">{detailRequest.propertyType || "—"}</p>
+                </div>
+              )}
               <div>
                 <p className="label-text">{t("admin.location", "Location")}</p>
                 <p className="font-body text-sm text-forest-800">{detailRequest.province}{detailRequest.city ? `, ${detailRequest.city}` : ""}</p>

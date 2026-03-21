@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { validateProductTypes } from "@/lib/requestConfig";
 
 export default async function handler(
   req: NextApiRequest,
@@ -127,6 +128,43 @@ export default async function handler(
         return res.status(400).json({ error: "Can only edit requests with OPEN status" });
       }
 
+      // v2 request editing
+      if (request.schemaVersion === 2) {
+        const {
+          mortgageCategory,
+          productTypes,
+          province,
+          city,
+          details,
+          desiredTimeline,
+          notes,
+        } = req.body;
+
+        // Validate product types if provided
+        if (productTypes) {
+          const cat = mortgageCategory || request.mortgageCategory;
+          if (!validateProductTypes(cat, productTypes)) {
+            return res.status(400).json({ error: "Invalid product type for selected category" });
+          }
+        }
+
+        const updated = await prisma.borrowerRequest.update({
+          where: { id: request.id },
+          data: {
+            ...(mortgageCategory && { mortgageCategory }),
+            ...(productTypes && { productTypes }),
+            ...(province && { province }),
+            ...(city !== undefined && { city: city || null }),
+            ...(details && { details }),
+            ...(desiredTimeline !== undefined && { desiredTimeline: desiredTimeline || null }),
+            ...(notes !== undefined && { notes: notes || null }),
+          },
+        });
+
+        return res.status(200).json(updated);
+      }
+
+      // v1 legacy request editing
       const {
         mortgageCategory,
         requestType,

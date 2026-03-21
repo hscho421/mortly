@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import { getRequestTitle } from "@/lib/requestConfig";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/lib/supabase";
 import type { ConversationWithParticipants } from "@/types";
@@ -32,7 +33,7 @@ interface ConversationListItem {
     user: { id: string; name: string | null; email: string };
   };
   borrower: { id: string; name: string | null; email: string };
-  request: { id: string; requestType: string; province: string };
+  request: { id: string; requestType?: string | null; province: string; mortgageCategory?: string | null; schemaVersion?: number | null };
 }
 
 /* ────────────────────────────────────────────── */
@@ -458,7 +459,7 @@ export default function BorrowerMessagesPage() {
                         {/* Badges row */}
                         <div className="flex items-center gap-2 mb-1">
                           <span className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-[10px] font-medium text-forest-700">
-                            {displayLabel(conv.request.requestType)}
+                            {getRequestTitle(conv.request)}
                           </span>
                           {conv.status === "CLOSED" && (
                             <span className="inline-flex items-center rounded-full bg-sage-100 px-2 py-0.5 font-body text-[10px] font-medium text-sage-500">

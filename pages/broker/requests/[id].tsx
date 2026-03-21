@@ -4,11 +4,12 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import ReportButton from "@/components/ReportButton";
-import type { RequestWithIntroductions } from "@/types";
+import type { RequestWithIntroductions, ResidentialDetails, CommercialDetails } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetStaticProps, GetStaticPaths } from "next";
+import { isV2Request, PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 
 function formatCurrency(value: number | null | undefined): string {
   if (value == null) return "N/A";
@@ -134,20 +135,25 @@ export default function BrokerRequestDetailPage() {
         <div className="card-elevated animate-fade-in-up">
           {/* Header badges */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
-              {request.requestType}
-            </span>
-            <span className="inline-flex items-center rounded-full bg-sage-100 px-2.5 py-0.5 font-body text-xs font-semibold text-sage-700">
-              {request.propertyType}
-            </span>
-            {(request as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory && (
-              <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 font-body text-xs font-semibold text-amber-700">
-                {(request as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory === "RESIDENTIAL"
-                  ? t("broker.residential")
-                  : (request as RequestWithIntroductions & { mortgageCategory?: string }).mortgageCategory === "COMMERCIAL"
-                    ? t("broker.commercial")
-                    : t("broker.both")}
+            {isV2Request(request) ? (
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
+                request.mortgageCategory === "COMMERCIAL"
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-forest-100 text-forest-700"
+              }`}>
+                {request.mortgageCategory === "COMMERCIAL"
+                  ? t("request.commercial")
+                  : t("request.residential")}
               </span>
+            ) : (
+              <>
+                <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
+                  {request.requestType}
+                </span>
+                <span className="inline-flex items-center rounded-full bg-sage-100 px-2.5 py-0.5 font-body text-xs font-semibold text-sage-700">
+                  {request.propertyType}
+                </span>
+              </>
             )}
             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${statusColors[request.status] || "bg-sage-100 text-sage-700"}`}>
               {request.status}
@@ -156,8 +162,10 @@ export default function BrokerRequestDetailPage() {
 
           <div className="flex items-start justify-between gap-3">
             <h1 className="heading-lg mb-2">
-              {request.requestType} in {request.city ? `${request.city}, ` : ""}
-              {request.province}
+              {isV2Request(request)
+                ? `${request.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} — ${request.city ? `${request.city}, ` : ""}${request.province}`
+                : `${request.requestType} in ${request.city ? `${request.city}, ` : ""}${request.province}`
+              }
             </h1>
             <ReportButton targetType="REQUEST" targetId={request.publicId} />
           </div>
@@ -168,32 +176,126 @@ export default function BrokerRequestDetailPage() {
 
           <hr className="divider mb-8" />
 
-          {/* Details grid */}
-          <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {[
-              { label: t("request.priceRange"), value: `${formatCurrency(request.priceRangeMin)} - ${formatCurrency(request.priceRangeMax)}` },
-              { label: t("request.mortgageAmount"), value: `${formatCurrency(request.mortgageAmountMin)} - ${formatCurrency(request.mortgageAmountMax)}` },
-              { label: t("request.downPayment"), value: request.downPaymentPercent || t("request.notSpecified") },
-              { label: t("request.closingTimeline"), value: request.closingTimeline || t("request.notSpecified") },
-              { label: t("request.employmentType"), value: request.employmentType || t("request.notSpecified") },
-              { label: t("request.creditScore"), value: request.creditScoreBand || t("request.notSpecified") },
-              { label: t("request.income"), value: `${formatCurrency(request.incomeRangeMin)} - ${formatCurrency(request.incomeRangeMax)}` },
-              { label: t("request.existingDebts"), value: `${formatCurrency(request.debtRangeMin)} - ${formatCurrency(request.debtRangeMax)}` },
-              { label: t("request.preferredTerm"), value: request.preferredTerm || t("request.notSpecified") },
-              { label: t("request.preferredType"), value: request.preferredType || t("request.notSpecified") },
-            ].map((item) => (
-              <div key={item.label} className="rounded-xl bg-cream-100 p-4">
-                <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{item.label}</h3>
-                <p className="mt-1 font-body text-sm font-medium text-forest-800">{item.value}</p>
+          {isV2Request(request) ? (
+            <>
+              {/* v2: Product pills */}
+              <div className="mb-6">
+                <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50 mb-3">
+                  {t("request.selectProducts")}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {(request.productTypes ?? []).map((pt) => (
+                    <span
+                      key={pt}
+                      className="inline-flex items-center rounded-full bg-cream-200 px-3 py-1 font-body text-sm font-medium text-forest-700"
+                    >
+                      {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
+                    </span>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
 
-          {request.notes && (
-            <div className="mb-8 rounded-xl bg-cream-100 p-5">
-              <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.additionalNotes")}</h3>
-              <p className="mt-2 font-body text-sm text-forest-800 whitespace-pre-wrap">{request.notes}</p>
-            </div>
+              {/* v2: Category-specific details */}
+              <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {request.mortgageCategory === "COMMERCIAL" ? (
+                  <>
+                    {(() => {
+                      const d = request.details as CommercialDetails | null;
+                      return d ? (
+                        <>
+                          <div className="rounded-xl bg-cream-100 p-4">
+                            <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.businessType")}</h3>
+                            <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.businessType || t("request.notSpecified")}</p>
+                          </div>
+                          <div className="rounded-xl bg-cream-100 p-4">
+                            <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.corporateIncome")}</h3>
+                            <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.corporateAnnualIncome || t("request.notSpecified")}</p>
+                          </div>
+                          <div className="rounded-xl bg-cream-100 p-4">
+                            <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.corporateExpenses")}</h3>
+                            <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.corporateAnnualExpenses || t("request.notSpecified")}</p>
+                          </div>
+                          <div className="rounded-xl bg-cream-100 p-4">
+                            <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.ownerNetIncome")}</h3>
+                            <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.ownerNetIncome || t("request.notSpecified")}</p>
+                          </div>
+                        </>
+                      ) : null;
+                    })()}
+                  </>
+                ) : (
+                  <>
+                    {(() => {
+                      const d = request.details as ResidentialDetails | null;
+                      return d ? (
+                        <>
+                          <div className="rounded-xl bg-cream-100 p-4">
+                            <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.purposeOfUse")}</h3>
+                            <p className="mt-1 font-body text-sm font-medium text-forest-800">
+                              {d.purposeOfUse === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")}
+                            </p>
+                          </div>
+                          <div className="rounded-xl bg-cream-100 p-4">
+                            <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.incomeType")}</h3>
+                            <p className="mt-1 font-body text-sm font-medium text-forest-800">
+                              {(d.incomeTypes ?? []).map((it) => t(INCOME_TYPE_LABEL_KEYS[it] ?? it)).join(", ")}
+                              {d.incomeTypeOther ? ` (${d.incomeTypeOther})` : ""}
+                            </p>
+                          </div>
+                          <div className="rounded-xl bg-cream-100 p-4">
+                            <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.annualIncome")}</h3>
+                            <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.annualIncome || t("request.notSpecified")}</p>
+                          </div>
+                        </>
+                      ) : null;
+                    })()}
+                  </>
+                )}
+                {request.desiredTimeline && (
+                  <div className="rounded-xl bg-cream-100 p-4">
+                    <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.desiredTimeline")}</h3>
+                    <p className="mt-1 font-body text-sm font-medium text-forest-800">{t(TIMELINE_LABEL_KEYS[request.desiredTimeline] || request.desiredTimeline)}</p>
+                  </div>
+                )}
+              </div>
+
+              {request.notes && (
+                <div className="mb-8 rounded-xl bg-cream-100 p-5">
+                  <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.additionalNotes")}</h3>
+                  <p className="mt-2 font-body text-sm text-forest-800 whitespace-pre-wrap">{request.notes}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* v1: Legacy details grid */}
+              <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {[
+                  { label: t("request.priceRange"), value: `${formatCurrency(request.priceRangeMin)} - ${formatCurrency(request.priceRangeMax)}` },
+                  { label: t("request.mortgageAmount"), value: `${formatCurrency(request.mortgageAmountMin)} - ${formatCurrency(request.mortgageAmountMax)}` },
+                  { label: t("request.downPayment"), value: request.downPaymentPercent || t("request.notSpecified") },
+                  { label: t("request.closingTimeline"), value: request.closingTimeline || t("request.notSpecified") },
+                  { label: t("request.employmentType"), value: request.employmentType || t("request.notSpecified") },
+                  { label: t("request.creditScore"), value: request.creditScoreBand || t("request.notSpecified") },
+                  { label: t("request.income"), value: `${formatCurrency(request.incomeRangeMin)} - ${formatCurrency(request.incomeRangeMax)}` },
+                  { label: t("request.existingDebts"), value: `${formatCurrency(request.debtRangeMin)} - ${formatCurrency(request.debtRangeMax)}` },
+                  { label: t("request.preferredTerm"), value: request.preferredTerm || t("request.notSpecified") },
+                  { label: t("request.preferredType"), value: request.preferredType || t("request.notSpecified") },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-xl bg-cream-100 p-4">
+                    <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{item.label}</h3>
+                    <p className="mt-1 font-body text-sm font-medium text-forest-800">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {request.notes && (
+                <div className="mb-8 rounded-xl bg-cream-100 p-5">
+                  <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.additionalNotes")}</h3>
+                  <p className="mt-2 font-body text-sm text-forest-800 whitespace-pre-wrap">{request.notes}</p>
+                </div>
+              )}
+            </>
           )}
 
           {/* CTA */}

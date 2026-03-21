@@ -37,10 +37,20 @@ model BorrowerRequest {
   publicId           String               @unique
   borrowerId         String
   mortgageCategory   MortgageCategory     @default(RESIDENTIAL)
-  requestType        RequestType
+  productTypes       String[]             @default([])
   province           String
   city               String?
-  propertyType       PropertyType
+  details            Json?
+  desiredTimeline    String?
+  notes              String?
+  status             RequestStatus        @default(OPEN)
+  schemaVersion      Int                  @default(1)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  // Legacy columns (kept for v1 backward compatibility)
+  requestType        RequestType?
+  propertyType       PropertyType?
   priceRangeMin      Int?
   priceRangeMax      Int?
   downPaymentPercent String?
@@ -55,10 +65,7 @@ model BorrowerRequest {
   preferredTerm      String?
   preferredType      MortgageType?
   closingTimeline    String?
-  notes              String?
-  status             RequestStatus        @default(OPEN)
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+
   borrower           User                 @relation(fields: [borrowerId], references: [id])
   introductions      BrokerIntroduction[]
   conversations      Conversation[]

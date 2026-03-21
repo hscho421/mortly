@@ -7,6 +7,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
+import { getRequestTitle } from "@/lib/requestConfig";
 
 interface MessageItem {
   id: string;
@@ -44,10 +45,12 @@ interface ConversationDetail {
   };
   request: {
     id: string;
-    requestType: string;
+    requestType?: string | null;
     province: string;
     city: string | null;
     status: string;
+    mortgageCategory?: string | null;
+    schemaVersion?: number | null;
   };
   messages: MessageItem[];
 }
@@ -229,7 +232,7 @@ export default function AdminConversationDetail() {
             <div>
               <p className="label-text mb-1">{t("admin.relatedRequest", "Related Request")}</p>
               <p className="font-body text-sm text-forest-800">
-                {conversation.request.requestType} · {conversation.request.province}
+                {getRequestTitle(conversation.request)} · {conversation.request.province}
                 {conversation.request.city ? `, ${conversation.request.city}` : ""}
               </p>
               <p className="font-body text-xs text-forest-700/50 mt-1">

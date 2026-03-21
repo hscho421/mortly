@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import { getRequestTitle } from "@/lib/requestConfig";
 
 interface ConversationListItem {
   id: string;
@@ -22,7 +23,7 @@ interface ConversationListItem {
     user: { id: string; name: string | null; email: string };
   };
   borrower: { id: string; name: string | null; email: string };
-  request: { id: string; requestType: string; province: string };
+  request: { id: string; requestType?: string | null; province: string; mortgageCategory?: string | null; schemaVersion?: number | null };
 }
 
 interface FullMessage {
@@ -379,7 +380,7 @@ export default function BrokerMessagesPage() {
                         </div>
 
                         <p className="font-body text-xs text-sage-500 mt-0.5">
-                          {formatRequestType(conv.request.requestType)} in{" "}
+                          {getRequestTitle(conv.request)} in{" "}
                           {conv.request.province}
                         </p>
 
@@ -472,7 +473,7 @@ export default function BrokerMessagesPage() {
                     </h2>
                     {activeConversation?.request && (
                       <p className="text-body-sm truncate">
-                        {formatRequestType(activeConversation.request.requestType)}{" "}
+                        {getRequestTitle(activeConversation.request)}{" "}
                         in {activeConversation.request.province}
                         {activeConversation.publicId && (
                           <span className="ml-2 font-mono text-[10px] text-sage-400">#{activeConversation.publicId}</span>

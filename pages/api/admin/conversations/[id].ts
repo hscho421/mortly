@@ -46,7 +46,7 @@ export default async function handler(
             },
           },
           request: {
-            select: { id: true, requestType: true, province: true, city: true, status: true },
+            select: { id: true, requestType: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true, schemaVersion: true },
           },
         },
       });

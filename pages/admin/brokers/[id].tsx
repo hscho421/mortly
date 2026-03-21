@@ -7,6 +7,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
+import { getRequestTitle } from "@/lib/requestConfig";
 
 interface BrokerDetail {
   id: string;
@@ -36,10 +37,12 @@ interface BrokerDetail {
     createdAt: string;
     request: {
       id: string;
-      requestType: string;
+      requestType?: string | null;
       province: string;
       city: string | null;
       status: string;
+      mortgageCategory?: string | null;
+      schemaVersion?: number | null;
     };
   }>;
   conversations: Array<{
@@ -47,7 +50,7 @@ interface BrokerDetail {
     status: string;
     updatedAt: string;
     borrower: { id: string; name: string | null; email: string };
-    request: { id: string; requestType: string; province: string };
+    request: { id: string; requestType?: string | null; province: string; mortgageCategory?: string | null; schemaVersion?: number | null };
     _count: { messages: number };
   }>;
   subscription: {
@@ -417,7 +420,7 @@ export default function AdminBrokerDetail() {
                 <div key={intro.id} className="flex items-center justify-between rounded-lg bg-cream-50 px-4 py-3">
                   <div>
                     <p className="font-body text-sm text-forest-800">
-                      {intro.request.requestType} · {intro.request.province}
+                      {getRequestTitle(intro.request)} · {intro.request.province}
                       {intro.request.city ? `, ${intro.request.city}` : ""}
                     </p>
                     <p className="font-body text-xs text-forest-700/50">
@@ -452,7 +455,7 @@ export default function AdminBrokerDetail() {
                 <div key={convo.id} className="flex items-center justify-between rounded-lg bg-cream-50 px-4 py-3">
                   <div>
                     <p className="font-body text-sm text-forest-800">
-                      {convo.borrower.name || convo.borrower.email} · {convo.request.requestType}
+                      {convo.borrower.name || convo.borrower.email} · {getRequestTitle(convo.request)}
                     </p>
                     <p className="font-body text-xs text-forest-700/50">
                       <span className={convo.status === "ACTIVE" ? "text-forest-600" : "text-sage-500"}>

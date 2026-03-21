@@ -7,6 +7,7 @@ import type { ConversationWithParticipants } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import { getRequestTitle } from "@/lib/requestConfig";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-CA", {
@@ -123,7 +124,7 @@ export default function BrokerConversationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-body text-sm font-semibold text-forest-800">
-                          {conv.request.requestType} in{" "}
+                          {getRequestTitle(conv.request)} in{" "}
                           {conv.request.city ? `${conv.request.city}, ` : ""}
                           {conv.request.province}
                         </h3>

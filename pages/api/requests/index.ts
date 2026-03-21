@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { generateRequestPublicId } from "@/lib/publicId";
 import { getSettingInt } from "@/lib/settings";
+import { validateProductTypes } from "@/lib/requestConfig";
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,7 +17,7 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
-      const { province, requestType, propertyType } = req.query;
+      const { province, mortgageCategory } = req.query;
 
       const where: Record<string, unknown> = {};
 
@@ -37,11 +38,8 @@ export default async function handler(
       if (province && typeof province === "string") {
         where.province = province;
       }
-      if (requestType && typeof requestType === "string") {
-        where.requestType = requestType;
-      }
-      if (propertyType && typeof propertyType === "string") {
-        where.propertyType = propertyType;
+      if (mortgageCategory && typeof mortgageCategory === "string") {
+        where.mortgageCategory = mortgageCategory;
       }
 
       const requests = await prisma.borrowerRequest.findMany({
@@ -68,16 +66,53 @@ export default async function handler(
         return res.status(403).json({ error: "Only borrowers can create requests" });
       }
 
-      const { mortgageCategory, requestType, province, propertyType, ...rest } = req.body;
+      const {
+        mortgageCategory,
+        productTypes,
+        province,
+        city,
+        details,
+        desiredTimeline,
+        notes,
+      } = req.body;
 
-      if (!requestType || !province || !propertyType) {
-        return res.status(400).json({
-          error: "requestType, province, and propertyType are required",
-        });
+      // ── Validate required fields ─────────────────────────────
+      if (!mortgageCategory || !["RESIDENTIAL", "COMMERCIAL"].includes(mortgageCategory)) {
+        return res.status(400).json({ error: "mortgageCategory must be RESIDENTIAL or COMMERCIAL" });
       }
 
-      // Enforce max active requests per user
-      const maxRequests = await getSettingInt("max_requests_per_user") || 5;
+      if (!province) {
+        return res.status(400).json({ error: "Province is required" });
+      }
+
+      if (!Array.isArray(productTypes) || productTypes.length === 0) {
+        return res.status(400).json({ error: "At least one product type is required" });
+      }
+
+      if (!validateProductTypes(mortgageCategory, productTypes)) {
+        return res.status(400).json({ error: "Invalid product type for selected category" });
+      }
+
+      // ── Category-specific validation ─────────────────────────
+      if (mortgageCategory === "RESIDENTIAL") {
+        if (!details?.purposeOfUse || !["OWNER_OCCUPIED", "RENTAL"].includes(details.purposeOfUse)) {
+          return res.status(400).json({ error: "Purpose of use is required for residential requests" });
+        }
+        if (!Array.isArray(details?.incomeTypes) || details.incomeTypes.length === 0) {
+          return res.status(400).json({ error: "At least one income type is required for residential requests" });
+        }
+      } else {
+        // COMMERCIAL
+        if (!details?.businessType) {
+          return res.status(400).json({ error: "Business type is required for commercial requests" });
+        }
+        if (!notes) {
+          return res.status(400).json({ error: "Additional details are required for commercial requests" });
+        }
+      }
+
+      // ── Enforce max active requests ──────────────────────────
+      const maxRequests = await getSettingInt("max_requests_per_user") || 10;
       const activeCount = await prisma.borrowerRequest.count({
         where: {
           borrowerId: session.user.id,
@@ -95,11 +130,14 @@ export default async function handler(
         data: {
           publicId,
           borrowerId: session.user.id,
-          mortgageCategory: mortgageCategory || "RESIDENTIAL",
-          requestType,
+          mortgageCategory,
+          productTypes,
           province,
-          propertyType,
-          ...rest,
+          city: city || null,
+          details: details || undefined,
+          desiredTimeline: desiredTimeline || null,
+          notes: notes || null,
+          schemaVersion: 2,
         },
       });
 

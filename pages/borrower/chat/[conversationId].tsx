@@ -8,6 +8,7 @@ import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
 import type { ConversationWithParticipants } from "@/types";
 import type { Message } from "@/types";
+import { getRequestTitle } from "@/lib/requestConfig";
 
 function formatTime(date: string) {
   return new Date(date).toLocaleTimeString("en-CA", {
@@ -189,9 +190,7 @@ export default function ChatPage() {
                   <span>
                     {" "}
                     &middot;{" "}
-                    {conversation.request.requestType
-                      .replace(/_/g, " ")
-                      .replace(/\b\w/g, (c) => c.toUpperCase())}{" "}
+                    {getRequestTitle(conversation.request)}{" "}
                     in {conversation.request.province}
                   </span>
                 )}

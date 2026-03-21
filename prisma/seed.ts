@@ -82,6 +82,20 @@ const REQUEST_NOTES = [
   "Looking for a vacation property mortgage.",
 ];
 
+const RESIDENTIAL_PRODUCTS = [
+  "NEW_MORTGAGE", "PRE_APPROVAL", "REFINANCING", "RENEWAL",
+  "PERSONAL_LOC", "REVERSE_MORTGAGE", "AUTO_LOAN",
+  "DEBT_CONSOLIDATION", "EQUITY_LOAN",
+];
+const COMMERCIAL_PRODUCTS = ["SMALL_BUSINESS_LOAN", "COMMERCIAL_LOC"];
+const INCOME_TYPES = ["EMPLOYMENT", "SELF_EMPLOYMENT", "DIVIDEND", "RENTAL", "FOREIGN", "OTHER"];
+const TIMELINE_OPTIONS = ["ASAP", "1_MONTH", "3_MONTHS", "6_MONTHS", "1_YEAR_PLUS"];
+const BUSINESS_TYPES = [
+  "Restaurant", "Retail Store", "Tech Startup", "Construction",
+  "Real Estate Development", "Medical Practice", "Law Firm",
+  "Consulting", "Manufacturing", "Import/Export",
+];
+
 const REPORT_REASONS = [
   "Misleading profile information about experience and credentials",
   "Inappropriate language and unprofessional conduct",
@@ -228,16 +242,7 @@ async function seedMock() {
   }
   console.log(`${brokerUsers.length} brokers created.`);
 
-  // ── Borrower requests (25) ─────────────────────────────────
-  const requestTypes: ("PURCHASE" | "REFINANCE" | "RENEWAL")[] = ["PURCHASE", "REFINANCE", "RENEWAL"];
-  const propertyTypes: ("CONDO" | "TOWNHOUSE" | "DETACHED" | "OTHER")[] = ["CONDO", "TOWNHOUSE", "DETACHED", "OTHER"];
-  const employmentTypes: ("FULL_TIME" | "PART_TIME" | "SELF_EMPLOYED" | "CONTRACT" | "RETIRED")[] = [
-    "FULL_TIME", "PART_TIME", "SELF_EMPLOYED", "CONTRACT", "RETIRED",
-  ];
-  const creditBands: ("EXCELLENT" | "GOOD" | "FAIR" | "POOR" | "NOT_SURE")[] = [
-    "EXCELLENT", "GOOD", "FAIR", "POOR", "NOT_SURE",
-  ];
-  const mortgageTypes: ("FIXED" | "VARIABLE" | "NOT_SURE")[] = ["FIXED", "VARIABLE", "NOT_SURE"];
+  // ── Borrower requests (25) — v2 schema ─────────────────────
   const reqStatuses: ("OPEN" | "IN_PROGRESS" | "CLOSED" | "EXPIRED")[] = ["OPEN", "OPEN", "OPEN", "IN_PROGRESS", "IN_PROGRESS", "CLOSED", "EXPIRED"];
 
   const requests = [];
@@ -245,29 +250,40 @@ async function seedMock() {
     const borrower = borrowers[i % borrowers.length];
     const province = PROVINCES[i % PROVINCES.length];
     const cities = CITIES[province] || ["City"];
-    const priceMin = (200 + Math.floor(Math.random() * 800)) * 1000;
-    const priceMax = priceMin + (100 + Math.floor(Math.random() * 400)) * 1000;
-    const category = i < 20 ? "RESIDENTIAL" as const : "COMMERCIAL" as const;
+    const isCommercial = i >= 20; // last 5 are commercial
+    const category = isCommercial ? "COMMERCIAL" as const : "RESIDENTIAL" as const;
+
+    // Pick 1-3 random products for the category
+    const pool = isCommercial ? COMMERCIAL_PRODUCTS : RESIDENTIAL_PRODUCTS;
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    const productTypes = shuffled.slice(0, 1 + Math.floor(Math.random() * Math.min(3, pool.length)));
+
+    // Build category-specific details
+    const details = isCommercial
+      ? {
+          businessType: pick(BUSINESS_TYPES),
+          corporateAnnualIncome: `$${200 + Math.floor(Math.random() * 800)},000`,
+          corporateAnnualExpenses: `$${100 + Math.floor(Math.random() * 500)},000`,
+          ownerNetIncome: `$${80 + Math.floor(Math.random() * 200)},000`,
+        }
+      : {
+          purposeOfUse: i % 3 === 0 ? "RENTAL" : "OWNER_OCCUPIED",
+          incomeTypes: [...INCOME_TYPES].sort(() => Math.random() - 0.5).slice(0, 1 + Math.floor(Math.random() * 3)),
+          ...(i % 5 === 0 ? { incomeTypeOther: "Freelance consulting" } : {}),
+          annualIncome: `$${50 + Math.floor(Math.random() * 200)},000`,
+        };
 
     const req = await prisma.borrowerRequest.create({
       data: {
         publicId: String(100000000 + i),
         borrowerId: borrower.id,
+        schemaVersion: 2,
         mortgageCategory: category,
-        requestType: pick(requestTypes),
+        productTypes,
         province,
         city: pick(cities),
-        propertyType: pick(propertyTypes),
-        priceRangeMin: priceMin,
-        priceRangeMax: priceMax,
-        downPaymentPercent: `${5 + Math.floor(Math.random() * 30)}%`,
-        employmentType: pick(employmentTypes),
-        creditScoreBand: pick(creditBands),
-        mortgageAmountMin: Math.round(priceMin * 0.7),
-        mortgageAmountMax: Math.round(priceMax * 0.9),
-        preferredTerm: pick(["1 year", "3 years", "5 years"]),
-        preferredType: pick(mortgageTypes),
-        closingTimeline: pick(["1-3 months", "3-6 months", "6+ months"]),
+        details,
+        desiredTimeline: pick(TIMELINE_OPTIONS),
         notes: pick(REQUEST_NOTES),
         status: pick(reqStatuses),
         createdAt: randomDate(25),
@@ -275,7 +291,7 @@ async function seedMock() {
     });
     requests.push(req);
   }
-  console.log(`${requests.length} borrower requests created.`);
+  console.log(`${requests.length} borrower requests created (v2 schema).`);
 
   // ── Broker introductions (40) ──────────────────────────────
   const introMessages = [
@@ -472,7 +488,7 @@ async function seedMock() {
     ["free_tier_credits", "3"],
     ["basic_tier_credits", "15"],
     ["pro_tier_credits", "40"],
-    ["max_requests_per_user", "5"],
+    ["max_requests_per_user", "10"],
     ["request_expiry_days", "30"],
     ["maintenance_mode", "false"],
   ];
@@ -552,7 +568,7 @@ async function seedEmpty() {
     ["free_tier_credits", "3"],
     ["basic_tier_credits", "15"],
     ["pro_tier_credits", "40"],
-    ["max_requests_per_user", "5"],
+    ["max_requests_per_user", "10"],
     ["request_expiry_days", "30"],
     ["maintenance_mode", "false"],
   ] as const) {

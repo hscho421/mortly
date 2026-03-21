@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import { getRequestTitle } from "@/lib/requestConfig";
 
 interface IntroductionItem {
   id: string;
@@ -17,9 +18,11 @@ interface IntroductionItem {
   conversationId?: string | null;
   request?: {
     id: string;
-    requestType: string;
+    requestType?: string | null;
     province: string;
     city?: string | null;
+    mortgageCategory?: string | null;
+    schemaVersion?: number | null;
   };
 }
 
@@ -147,7 +150,7 @@ export default function BrokerIntroductionsPage() {
                   {/* Top row: request type + status */}
                   <div className="flex items-center justify-between mb-3">
                     <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
-                      {displayLabel(intro.request?.requestType)}
+                      {intro.request ? getRequestTitle(intro.request) : "--"}
                     </span>
                     {hasConversation ? (
                       <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-inset ring-emerald-600/20">

@@ -7,6 +7,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetStaticProps, GetStaticPaths } from "next";
+import { getRequestTitle } from "@/lib/requestConfig";
 
 interface ConversationData {
   id: string;
@@ -19,9 +20,12 @@ interface ConversationData {
   };
   request: {
     id: string;
-    requestType: string;
+    requestType?: string | null;
     province: string;
     city: string | null;
+    mortgageCategory?: string | null;
+    productTypes?: string[] | null;
+    schemaVersion?: number | null;
   };
   messages: (Message & {
     sender: { id: string; name: string | null; email: string; role: string };
@@ -213,7 +217,7 @@ export default function BrokerChatPage() {
                 {t("messages.borrowerLabel")}
               </h2>
               <p className="text-body-sm truncate">
-                {displayLabel(conversation.request?.requestType)} in{" "}
+                {conversation.request ? getRequestTitle(conversation.request) : ""} in{" "}
                 {conversation.request?.province}
               </p>
             </div>
