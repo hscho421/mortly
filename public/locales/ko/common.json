@@ -1192,6 +1192,11 @@
     "goHome": "홈으로",
     "submitRequest": "요청서 제출"
   },
+  "serverError": {
+    "title": "서버 오류",
+    "heading": "문제가 발생했습니다",
+    "description": "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+  },
   "credits": {
     "noCreditsTitle": "응답 크레딧 소진",
     "noCreditsDesc": "이번 달 응답 크레딧을 모두 사용하셨습니다. 크레딧 팩을 구매하여 모기지 신청인과 계속 연결하세요.",

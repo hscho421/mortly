@@ -1192,6 +1192,11 @@
     "goHome": "Go Home",
     "submitRequest": "Submit a Request"
   },
+  "serverError": {
+    "title": "Server Error",
+    "heading": "Something went wrong",
+    "description": "We're experiencing a temporary issue. Please try again in a moment."
+  },
   "credits": {
     "noCreditsTitle": "Out of Response Credits",
     "noCreditsDesc": "You've used all your response credits this month. Purchase a credit pack to keep connecting with borrowers.",
