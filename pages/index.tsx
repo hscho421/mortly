@@ -1,10 +1,14 @@
 import Link from "next/link";
 import Head from "next/head";
 import Layout from "@/components/Layout";
+import LiveActivityMarquee from "@/components/LiveActivityMarquee";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import type { LiveRequest } from "@/types";
+import type { InferGetStaticPropsType } from "next";
+import { createHash } from "crypto";
 
-export default function Home() {
+export default function Home({ liveRequests }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { t } = useTranslation("common");
   return (
     <Layout>
@@ -64,6 +68,11 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Live Request Activity */}
+      {liveRequests && liveRequests.length > 0 && (
+        <LiveActivityMarquee requests={liveRequests} />
+      )}
 
       {/* How It Works */}
       <section className="section-padding bg-cream-100">
@@ -221,8 +230,45 @@ export default function Home() {
   );
 }
 
-export const getStaticProps = async ({ locale }: { locale: string }) => ({
-  props: {
-    ...(await serverSideTranslations(locale ?? "en", ["common"])),
-  },
-});
+export const getStaticProps = async ({ locale }: { locale: string }) => {
+  // Dynamic import to avoid bundling Prisma client-side
+  const { default: prisma } = await import("@/lib/prisma");
+
+  let liveRequests: LiveRequest[] = [];
+  try {
+    const rows = await prisma.borrowerRequest.findMany({
+      where: { status: { in: ["OPEN", "IN_PROGRESS"] }, schemaVersion: 2 },
+      select: {
+        id: true,
+        mortgageCategory: true,
+        productTypes: true,
+        province: true,
+        city: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+
+    liveRequests = rows.map((r) => ({
+      key: createHash("sha256").update(r.id).digest("hex").slice(0, 8),
+      mortgageCategory: r.mortgageCategory,
+      productTypes: r.productTypes.slice(0, 2),
+      province: r.province,
+      city: r.city,
+      status: r.status,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  } catch {
+    // If DB is unreachable during build, render without live data
+  }
+
+  return {
+    props: {
+      ...(await serverSideTranslations(locale ?? "en", ["common"])),
+      liveRequests,
+    },
+    revalidate: 300,
+  };
+};

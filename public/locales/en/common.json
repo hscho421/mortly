@@ -57,7 +57,14 @@
     "readyTitle": "Ready to Find Your Broker?",
     "readyDesc": "Submit your anonymous request in minutes and let brokers come to you.",
     "getStartedFree": "Get Started Free",
-    "disclaimerFull": "MortgageMatch is a marketplace platform that connects borrowers with licensed mortgage brokers. We do not provide mortgage advice, make lending decisions, or act as a lender. All mortgage products and services are offered by independent, licensed brokers. Please consult with a qualified professional before making any financial decisions."
+    "disclaimerFull": "MortgageMatch is a marketplace platform that connects borrowers with licensed mortgage brokers. We do not provide mortgage advice, make lending decisions, or act as a lender. All mortgage products and services are offered by independent, licensed brokers. Please consult with a qualified professional before making any financial decisions.",
+    "live": {
+      "title": "Live Request Activity",
+      "subtitle": "Borrowers are submitting requests right now",
+      "seekingBroker": "Seeking Broker",
+      "brokerMatched": "Broker Matched",
+      "timeAgo": "{{time}} ago"
+    }
   },
   "auth": {
     "loginTitle": "Welcome Back",

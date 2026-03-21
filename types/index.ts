@@ -77,6 +77,18 @@ export interface CreateIntroductionInput {
   estimatedTimeline?: string;
 }
 
+// ── Live Activity (Homepage) ────────────────────────────────
+
+export interface LiveRequest {
+  key: string;
+  mortgageCategory: string;
+  productTypes: string[];
+  province: string;
+  city: string | null;
+  status: string;
+  createdAt: string;
+}
+
 export interface CreateBrokerProfileInput {
   brokerageName: string;
   province: string;
