@@ -27,7 +27,7 @@
     "createAccount": "계정 만들기",
     "signIn": "로그인",
     "copyright": "mortly All rights reserved.",
-    "disclaimer": "mortly는 연결 플랫폼입니다. 모기지 상담이나 대출 서비스를 제공하지 않습니다."
+    "disclaimer": "mortly는 모기지 마켓플레이스입니다. 모기지 상담이나 대출 서비스를 제공하지 않습니다."
   },
   "home": {
     "title1": "브로커들이",
@@ -38,7 +38,7 @@
     "subtitle": "내 조건에 딱 맞는 모기지 브로커를 익명으로 비교해보세요.",
     "submitRequest": "둘러보기",
     "getStartedNow": "지금 시작하기",
-    "theProcess": "이용 절차",
+    "theProcess": "이용절차",
     "threeSteps": "간단한 3단계로 이상적인 브로커를 만나세요",
     "step1Title": "요청서 제출",
     "step1Desc": "익명으로 모기지 필요사항을 설명하세요. 개인정보 없이 대출 금액, 부동산 유형, 일정, 선호사항만 공유합니다.",
@@ -882,7 +882,7 @@
     "dismissed": "기각됨"
   },
   "howItWorks": {
-    "badge": "이용 절차",
+    "badge": "이용절차",
     "title": "mortly 이용 방법",
     "subtitle": "모기지 신청인이 주도권을 갖고, 브로커가 적합한 고객을 찾을 수 있는 투명하고 프라이버시 우선 프로세스입니다.",
     "forBorrowers": "모기지 신청인을 위한 안내",
