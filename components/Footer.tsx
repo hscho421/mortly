@@ -30,6 +30,9 @@ export default function Footer() {
               <Link href="/for-borrowers" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
                 {t("nav.forBorrowers")}
               </Link>
+              <Link href="/about" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
+                {t("about.badge")}
+              </Link>
               <Link href="/for-brokers" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
                 {t("nav.forBrokers")}
               </Link>

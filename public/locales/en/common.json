@@ -1197,6 +1197,22 @@
     "heading": "Something went wrong",
     "description": "We're experiencing a temporary issue. Please try again in a moment."
   },
+  "about": {
+    "badge": "About Us",
+    "title": "About mortly",
+    "subtitle": "We're building a better way to find a mortgage broker in Canada.",
+    "missionTitle": "Our Mission",
+    "missionDesc": "The mortgage process in Canada is broker-driven, but finding the right broker is opaque and overwhelming. mortly flips the script — borrowers describe their needs anonymously, and qualified brokers compete to earn their business.",
+    "diffTitle": "What Makes Us Different",
+    "diff1Title": "Privacy First",
+    "diff1Desc": "Your identity stays hidden until you choose to connect. Compare brokers without the pressure.",
+    "diff2Title": "Brokers Compete for You",
+    "diff2Desc": "Instead of chasing brokers, let them come to you with tailored proposals.",
+    "diff3Title": "Built for Korean Canadians",
+    "diff3Desc": "Fully bilingual in English and Korean — because finding a mortgage shouldn't have a language barrier.",
+    "ctaTitle": "Ready to get started?",
+    "ctaDesc": "Submit your anonymous request and let brokers come to you."
+  },
   "credits": {
     "noCreditsTitle": "Out of Response Credits",
     "noCreditsDesc": "You've used all your response credits this month. Purchase a credit pack to keep connecting with borrowers.",
