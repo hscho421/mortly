@@ -27,18 +27,10 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
         <div className="relative section-padding max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-12 gap-6 lg:gap-12 items-center min-h-[70vh]">
             <div className="lg:col-span-7">
-              <div className="animate-fade-in-up opacity-0 stagger-1">
-                <span className="inline-block font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-400 mb-6">
-                  {t("home.badge")}
-                </span>
-              </div>
-              <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-cream-100 leading-[1.05]">
-                {t("home.title1")}
+              <h1 className="animate-fade-in-up opacity-0 stagger-1 font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-cream-100 leading-[1.05]">
+                {t("home.title1")} <span className="text-amber-300 whitespace-nowrap">{t("home.title1Accent")}</span> {t("home.title1After")}
                 <br />
-                {t("home.title2")}
-                <span className="text-amber-400">&mdash;</span>
-                <br />
-                <em className="text-amber-300">{t("home.title3")}</em>
+                {t("home.title2")}{t("home.title3") ? (<><br /><em className="text-amber-300">{t("home.title3")}</em></>) : null}<span className="text-cream-100">.</span>
               </h1>
               <p className="animate-fade-in-up opacity-0 stagger-3 mt-8 text-lg text-cream-300/80 leading-relaxed max-w-xl font-body">
                 {t("home.subtitle")}

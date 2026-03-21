@@ -30,11 +30,12 @@
     "disclaimer": "MortgageMatch는 연결 플랫폼입니다. 모기지 상담이나 대출 서비스를 제공하지 않습니다."
   },
   "home": {
-    "badge": "프라이버시 우선 모기지 마켓플레이스",
-    "title1": "내 조건에 맞는",
-    "title2": "브로커를",
-    "title3": "먼저 비교해보세요",
-    "subtitle": "모기지 조건을 익명으로 공유하고, 관심 있는 브로커들의 제안을 받아보세요.",
+    "title1": "브로커들이",
+    "title1Accent": "먼저 제안하는",
+    "title1After": "",
+    "title2": "새로운 모기지 방식",
+    "title3": "",
+    "subtitle": "내 조건에 딱 맞는 모기지 브로커를 익명으로 비교해보세요.",
     "submitRequest": "요청서 제출",
     "imBroker": "브로커입니다",
     "theProcess": "이용 절차",

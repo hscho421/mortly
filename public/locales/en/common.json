@@ -30,11 +30,12 @@
     "disclaimer": "MortgageMatch is a connection platform. We do not provide mortgage advice or lending services."
   },
   "home": {
-    "badge": "Privacy-First Mortgage Marketplace",
-    "title1": "Find Your Perfect",
-    "title2": "Mortgage Broker",
-    "title3": "Anonymously",
-    "subtitle": "MortgageMatch is the privacy-first marketplace where you describe your mortgage needs without revealing your identity. Verified brokers compete for your business, and you choose who to connect with — on your terms.",
+    "title1": "Brokers",
+    "title1Accent": "Compete.",
+    "title1After": "",
+    "title2": "You Choose",
+    "title3": "",
+    "subtitle": "Describe your mortgage needs anonymously. Verified brokers propose to you first — compare and connect on your terms.",
     "submitRequest": "Submit Your Request",
     "imBroker": "I'm a Broker",
     "theProcess": "The Process",
