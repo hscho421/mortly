@@ -29,7 +29,6 @@ export default async function handler(
             select: {
               borrowerRequests: true,
               conversations: true,
-              reviews: true,
             },
           },
         },

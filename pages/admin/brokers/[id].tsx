@@ -21,8 +21,6 @@ interface BrokerDetail {
   profilePhoto: string | null;
   verificationStatus: string;
   subscriptionTier: string;
-  rating: number | null;
-  completedMatches: number;
   responseCredits: number;
   createdAt: string;
   user: {
@@ -33,13 +31,6 @@ interface BrokerDetail {
     status: string;
     createdAt: string;
   };
-  reviews: Array<{
-    id: string;
-    rating: number;
-    comment: string | null;
-    createdAt: string;
-    borrower: { id: string; name: string | null };
-  }>;
   introductions: Array<{
     id: string;
     createdAt: string;
@@ -76,7 +67,6 @@ interface BrokerDetail {
   _count: {
     introductions: number;
     conversations: number;
-    reviews: number;
     creditPurchases: number;
   };
 }
@@ -333,12 +323,6 @@ export default function AdminBrokerDetail() {
             <p className="font-display text-2xl text-forest-800">{broker._count.conversations}</p>
             <p className="text-body-sm">{t("admin.totalConvos", "Conversations")}</p>
           </div>
-          <div className="card-elevated text-center">
-            <p className="font-display text-2xl text-amber-700">
-              {broker.rating != null ? broker.rating.toFixed(1) : "—"}
-            </p>
-            <p className="text-body-sm">{broker._count.reviews} {t("admin.reviewsLabel", "reviews")}</p>
-          </div>
         </div>
 
         {/* Verification Actions */}
@@ -483,37 +467,6 @@ export default function AdminBrokerDetail() {
                   >
                     {t("admin.viewMessages", "Messages")}
                   </Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Reviews */}
-        <div className="card-elevated mb-6 animate-fade-in-up stagger-6">
-          <h2 className="heading-sm mb-4">
-            {t("admin.reviewsTitle", "Reviews")} ({broker._count.reviews})
-          </h2>
-          {broker.reviews.length === 0 ? (
-            <p className="text-body-sm">{t("admin.noReviews", "No reviews yet.")}</p>
-          ) : (
-            <div className="space-y-3">
-              {broker.reviews.map((review) => (
-                <div key={review.id} className="rounded-lg bg-cream-50 px-4 py-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-body text-amber-500">
-                        {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
-                      </span>
-                      <span className="font-body text-sm font-semibold text-forest-800">
-                        {review.borrower.name || "Anonymous"}
-                      </span>
-                    </div>
-                    <span className="font-body text-xs text-forest-700/40">{formatDate(review.createdAt)}</span>
-                  </div>
-                  {review.comment && (
-                    <p className="font-body text-sm text-forest-700/80 italic">&ldquo;{review.comment}&rdquo;</p>
-                  )}
                 </div>
               ))}
             </div>

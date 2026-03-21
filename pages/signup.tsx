@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -21,6 +21,16 @@ export default function SignupPage() {
   const [role, setRole] = useState<"BORROWER" | "BROKER">("BORROWER");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Lock role from query param (e.g. /signup?role=borrower)
+  const queryRole = (router.query.role as string)?.toUpperCase();
+  const roleLocked = queryRole === "BORROWER" || queryRole === "BROKER";
+
+  useEffect(() => {
+    if (roleLocked) {
+      setRole(queryRole as "BORROWER" | "BROKER");
+    }
+  }, [queryRole, roleLocked]);
 
   const validateForm = (): string | null => {
     if (!name.trim()) return "Name is required";
@@ -102,9 +112,19 @@ export default function SignupPage() {
           {/* Card */}
           <div className="card-elevated opacity-0 animate-fade-in-up stagger-1">
             <div className="mb-8 text-center">
-              <h1 className="heading-lg mb-2">{t("auth.signupTitle")}</h1>
+              <h1 className="heading-lg mb-2">
+                {roleLocked && role === "BORROWER"
+                  ? t("auth.signupBorrowerTitle")
+                  : roleLocked && role === "BROKER"
+                    ? t("auth.signupBrokerTitle")
+                    : t("auth.signupTitle")}
+              </h1>
               <p className="text-body-sm">
-                {t("auth.signupSubtitle")}
+                {roleLocked && role === "BORROWER"
+                  ? t("auth.signupBorrowerSubtitle")
+                  : roleLocked && role === "BROKER"
+                    ? t("auth.signupBrokerSubtitle")
+                    : t("auth.signupSubtitle")}
               </p>
             </div>
 
@@ -175,33 +195,35 @@ export default function SignupPage() {
                 />
               </div>
 
-              <div className="opacity-0 animate-fade-in-up stagger-4">
-                <label className="label-text">{t("auth.role")}</label>
-                <div className="mt-2 grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole("BORROWER")}
-                    className={`rounded-xl border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
-                      role === "BORROWER"
-                        ? "border-forest-700 bg-forest-50 text-forest-800 shadow-sm"
-                        : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
-                    }`}
-                  >
-                    {t("auth.borrower")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRole("BROKER")}
-                    className={`rounded-xl border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
-                      role === "BROKER"
-                        ? "border-forest-700 bg-forest-50 text-forest-800 shadow-sm"
-                        : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
-                    }`}
-                  >
-                    {t("auth.broker")}
-                  </button>
+              {!roleLocked && (
+                <div className="opacity-0 animate-fade-in-up stagger-4">
+                  <label className="label-text">{t("auth.role")}</label>
+                  <div className="mt-2 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole("BORROWER")}
+                      className={`rounded-xl border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
+                        role === "BORROWER"
+                          ? "border-forest-700 bg-forest-50 text-forest-800 shadow-sm"
+                          : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
+                      }`}
+                    >
+                      {t("auth.borrower")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole("BROKER")}
+                      className={`rounded-xl border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
+                        role === "BROKER"
+                          ? "border-forest-700 bg-forest-50 text-forest-800 shadow-sm"
+                          : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
+                      }`}
+                    >
+                      {t("auth.broker")}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="opacity-0 animate-fade-in-up stagger-5 pt-1">
                 <button

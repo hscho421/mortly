@@ -154,9 +154,6 @@ export default async function handler(
       const conversationIds = conversations.map((c) => c.id);
 
       if (conversationIds.length > 0) {
-        await prisma.review.deleteMany({
-          where: { conversationId: { in: conversationIds } },
-        });
         await prisma.message.deleteMany({
           where: { conversationId: { in: conversationIds } },
         });

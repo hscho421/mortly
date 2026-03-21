@@ -28,11 +28,11 @@ export default function Footer() {
               <Link href="/how-it-works" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
                 {t("nav.howItWorks")}
               </Link>
+              <Link href="/for-borrowers" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
+                {t("nav.forBorrowers")}
+              </Link>
               <Link href="/for-brokers" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
                 {t("nav.forBrokers")}
-              </Link>
-              <Link href="/pricing" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                {t("nav.pricing")}
               </Link>
             </nav>
           </div>

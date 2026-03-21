@@ -25,7 +25,6 @@ model User {
   conversations    Conversation[]
   messages         Message[]
   reports          Report[]
-  reviews          Review[]
   adminActions     AdminAction[] @relation("adminActions")
   noticesSent      AdminNotice[] @relation("adminNoticesSent")
   noticesReceived  AdminNotice[] @relation("adminNoticesReceived")
@@ -81,8 +80,6 @@ model Broker {
   profilePhoto       String?
   verificationStatus VerificationStatus   @default(PENDING)
   subscriptionTier   SubscriptionTier     @default(FREE)
-  rating             Float?
-  completedMatches   Int                  @default(0)
   responseCredits    Int                  @default(0)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
@@ -90,7 +87,6 @@ model Broker {
   user               User                 @relation(fields: [userId], references: [id])
   conversations      Conversation[]
   subscription       Subscription?
-  reviews            Review[]
   creditPurchases    CreditPurchase[]
 
   @@map("brokers")
@@ -129,7 +125,6 @@ model Conversation {
   broker             Broker             @relation(fields: [brokerId], references: [id])
   request            BorrowerRequest    @relation(fields: [requestId], references: [id])
   messages           Message[]
-  review             Review?
 
   @@unique([requestId, brokerId])
   @@map("conversations")
@@ -145,22 +140,6 @@ model Message {
   sender         User         @relation(fields: [senderId], references: [id])
 
   @@map("messages")
-}
-
-model Review {
-  id             String       @id @default(cuid())
-  rating         Int
-  comment        String?
-  brokerId       String
-  borrowerId     String
-  conversationId String       @unique
-  createdAt      DateTime     @default(now())
-  broker         Broker       @relation(fields: [brokerId], references: [id])
-  borrower       User         @relation(fields: [borrowerId], references: [id])
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
-
-  @@unique([conversationId, borrowerId])
-  @@map("reviews")
 }
 
 model Subscription {

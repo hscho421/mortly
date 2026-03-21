@@ -105,11 +105,16 @@ export default function Navbar() {
   const messagesHref =
     session?.user?.role === "BROKER" ? "/broker/messages" : "/borrower/messages";
 
-  const publicLinks = [
+  const role = session?.user?.role;
+
+  const navLinks = [
     { href: "/how-it-works", label: t("nav.howItWorks") },
-    { href: "/brokers", label: t("nav.brokers") },
-    { href: "/for-brokers", label: t("nav.forBrokers") },
-    { href: "/pricing", label: t("nav.pricing") },
+    // For Borrowers: unauthenticated + borrowers (hidden from brokers)
+    ...(role !== "BROKER" ? [{ href: "/for-borrowers", label: t("nav.forBorrowers") }] : []),
+    // For Brokers: unauthenticated only
+    ...(!role ? [{ href: "/for-brokers", label: t("nav.forBrokers") }] : []),
+    // Pricing: broker-only
+    ...(role === "BROKER" ? [{ href: "/pricing", label: t("nav.pricing") }] : []),
   ];
 
   const isActive = (href: string) => router.pathname === href;
@@ -141,7 +146,7 @@ export default function Navbar() {
           {/* Desktop center links */}
           <div className="hidden items-center md:flex">
             <div className="flex items-center rounded-full bg-cream-300/50 px-1 py-1">
-              {publicLinks.map((link) => (
+              {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -326,15 +331,21 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="rounded-lg px-3.5 py-2 font-body text-[13px] font-medium text-forest-600 transition-all duration-200 hover:bg-cream-200 hover:text-forest-800"
+                  className="rounded-lg px-2.5 py-2 font-body text-[12px] font-medium text-forest-500/70 transition-all duration-200 hover:text-forest-700"
                 >
-                  {t("nav.login")}
+                  {t("nav.signIn")}
                 </Link>
                 <Link
-                  href="/signup"
-                  className="rounded-lg bg-forest-800 px-4 py-2 font-body text-[13px] font-semibold text-cream-100 transition-all duration-300 hover:bg-forest-700 hover:shadow-md hover:shadow-forest-800/20 active:scale-[0.97]"
+                  href="/signup?role=borrower"
+                  className="rounded-lg bg-amber-500 px-4 py-2 font-body text-[13px] font-semibold text-forest-900 transition-all duration-300 hover:bg-amber-400 hover:shadow-md hover:shadow-amber-500/20 active:scale-[0.97]"
                 >
-                  {t("nav.getStarted")}
+                  {t("nav.imBorrower")}
+                </Link>
+                <Link
+                  href="/signup?role=broker"
+                  className="rounded-lg border-2 border-forest-800 px-4 py-2 font-body text-[13px] font-semibold text-forest-800 transition-all duration-300 hover:bg-forest-800 hover:text-cream-100 active:scale-[0.97]"
+                >
+                  {t("nav.imBroker")}
                 </Link>
               </div>
             )}
@@ -365,7 +376,7 @@ export default function Navbar() {
       >
         <div className="border-t border-cream-200 bg-cream-50/80 backdrop-blur-xl px-4 pb-5 pt-3">
           <div className="space-y-0.5">
-            {publicLinks.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -499,18 +510,25 @@ export default function Navbar() {
           ) : (
             <div className="space-y-2 px-1">
               <Link
-                href="/login"
+                href="/signup?role=borrower"
                 onClick={() => setMobileOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-center font-body text-[13px] font-medium text-forest-600/70 transition-all hover:bg-white/60 hover:text-forest-800"
+                className="block rounded-lg bg-amber-500 px-4 py-2.5 text-center font-body text-[13px] font-semibold text-forest-900 transition-all hover:bg-amber-400"
               >
-                {t("nav.login")}
+                {t("nav.imBorrower")}
               </Link>
               <Link
-                href="/signup"
+                href="/signup?role=broker"
                 onClick={() => setMobileOpen(false)}
-                className="block rounded-lg bg-forest-800 px-4 py-2.5 text-center font-body text-[13px] font-semibold text-cream-100 transition-all hover:bg-forest-700"
+                className="block rounded-lg border-2 border-forest-800 px-4 py-2.5 text-center font-body text-[13px] font-semibold text-forest-800 transition-all hover:bg-forest-800 hover:text-cream-100"
               >
-                {t("nav.getStarted")}
+                {t("nav.imBroker")}
+              </Link>
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-lg px-3 py-2 text-center font-body text-[12px] font-medium text-forest-500/70 transition-all hover:text-forest-700"
+              >
+                {t("nav.signIn")}
               </Link>
             </div>
           )}

@@ -43,7 +43,6 @@ interface ConversationRow {
     createdAt: string;
     sender: { name: string | null };
   }>;
-  review: { id: string; rating: number } | null;
 }
 
 interface PaginationMeta {
@@ -316,11 +315,6 @@ export default function AdminConversations() {
                         <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ${STATUS_BADGE[convo.status]}`}>
                           {convo.status}
                         </span>
-                        {convo.review && (
-                          <p className="mt-1 font-body text-[10px] text-amber-600">
-                            {"★".repeat(convo.review.rating)}{"☆".repeat(5 - convo.review.rating)}
-                          </p>
-                        )}
                         {actionMessage?.id === convo.id && (
                           <p className={`mt-1 font-body text-[10px] ${actionMessage.ok ? "text-forest-600" : "text-rose-600"}`}>
                             {actionMessage.text}

@@ -48,7 +48,6 @@ export default async function handler(
           request: {
             select: { id: true, requestType: true, province: true, city: true, status: true },
           },
-          review: true,
         },
       });
 

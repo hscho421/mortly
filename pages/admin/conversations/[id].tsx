@@ -50,12 +50,6 @@ interface ConversationDetail {
     status: string;
   };
   messages: MessageItem[];
-  review: {
-    id: string;
-    rating: number;
-    comment: string | null;
-    createdAt: string;
-  } | null;
 }
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
@@ -250,23 +244,6 @@ export default function AdminConversationDetail() {
             </div>
           </div>
 
-          {/* Review if exists */}
-          {conversation.review && (
-            <div className="mt-6 border-t border-cream-200 pt-4">
-              <p className="label-text mb-1">{t("admin.reviewLabel", "Review")}</p>
-              <div className="flex items-center gap-2">
-                <span className="font-body text-amber-500">
-                  {"★".repeat(conversation.review.rating)}{"☆".repeat(5 - conversation.review.rating)}
-                </span>
-                <span className="font-body text-sm text-forest-700/70">
-                  ({conversation.review.rating}/5)
-                </span>
-              </div>
-              {conversation.review.comment && (
-                <p className="mt-1 font-body text-sm text-forest-700/80 italic">&ldquo;{conversation.review.comment}&rdquo;</p>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Chat Messages */}

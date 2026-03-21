@@ -63,9 +63,6 @@ export default async function handler(
               take: 1,
               select: { body: true, createdAt: true, sender: { select: { name: true } } },
             },
-            review: {
-              select: { id: true, rating: true },
-            },
           },
           orderBy: { updatedAt: "desc" },
           skip,

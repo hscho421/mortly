@@ -9,7 +9,7 @@ import Layout from "@/components/Layout";
 import ReportButton from "@/components/ReportButton";
 import type { IntroductionWithBroker } from "@/types";
 
-type SortOption = "fastest" | "highest_rated" | "most_experienced";
+type SortOption = "fastest" | "most_experienced";
 
 function sortIntroductions(
   items: IntroductionWithBroker[],
@@ -22,9 +22,6 @@ function sortIntroductions(
         (a, b) =>
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
-      break;
-    case "highest_rated":
-      sorted.sort((a, b) => (b.broker.rating ?? 0) - (a.broker.rating ?? 0));
       break;
     case "most_experienced":
       sorted.sort(
@@ -146,7 +143,6 @@ export default function BrokerComparison() {
           {(
             [
               ["fastest", t("brokerIntros.fastestResponse")],
-              ["highest_rated", t("brokerIntros.highestRated")],
               ["most_experienced", t("brokerIntros.mostExperienced")],
             ] as const
           ).map(([value, label]) => (
@@ -221,12 +217,6 @@ export default function BrokerComparison() {
                           {broker.yearsExperience != null && (
                             <span>
                               {broker.yearsExperience} years experience
-                            </span>
-                          )}
-                          {broker.rating != null && (
-                            <span className="flex items-center gap-1">
-                              <span className="text-amber-500">&#9733;</span>
-                              {broker.rating.toFixed(1)} rating
                             </span>
                           )}
                         </div>

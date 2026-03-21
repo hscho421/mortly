@@ -99,7 +99,6 @@ const REPORT_REASONS = [
 async function clearAll() {
   await prisma.adminNotice.deleteMany();
   await prisma.adminAction.deleteMany();
-  await prisma.review.deleteMany();
   await prisma.message.deleteMany();
   await prisma.conversation.deleteMany();
   await prisma.report.deleteMany();
@@ -221,8 +220,6 @@ async function seedMock() {
         specialties: specs,
         verificationStatus: verStatuses[i],
         subscriptionTier: tier,
-        rating: verStatuses[i] === "VERIFIED" ? parseFloat((3.5 + Math.random() * 1.5).toFixed(1)) : null,
-        completedMatches: verStatuses[i] === "VERIFIED" ? Math.floor(Math.random() * 100) : 0,
         responseCredits: credits,
         createdAt: randomDate(25),
       },
@@ -373,38 +370,6 @@ async function seedMock() {
     await prisma.message.createMany({ data: msgs });
   }
   console.log(`${conversations.length} conversations with messages created.`);
-
-  // ── Reviews (8) ────────────────────────────────────────────
-  let reviewCount = 0;
-  for (let i = 0; i < Math.min(8, conversations.length); i++) {
-    const { conv, borrowerId } = conversations[i];
-    const brokerIdx = i % brokerRecords.length;
-    try {
-      await prisma.review.create({
-        data: {
-          conversationId: conv.id,
-          borrowerId,
-          brokerId: brokerRecords[brokerIdx].id,
-          rating: 3 + Math.floor(Math.random() * 3),
-          comment: pick([
-            "Great experience, very responsive and professional.",
-            "Good service overall. Would recommend.",
-            "Helped me find a competitive rate. Happy with the outcome.",
-            "Very knowledgeable but communication could be faster.",
-            "Excellent broker, went above and beyond.",
-            "Average experience, nothing special but got the job done.",
-            "Outstanding service from start to finish!",
-            null,
-          ]),
-          createdAt: randomDate(25),
-        },
-      });
-      reviewCount++;
-    } catch {
-      // skip duplicates
-    }
-  }
-  console.log(`${reviewCount} reviews created.`);
 
   // ── Reports (10) ──────────────────────────────────────────
   const reportStatuses: ("OPEN" | "REVIEWED" | "RESOLVED" | "DISMISSED")[] = [

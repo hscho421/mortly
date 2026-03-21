@@ -29,13 +29,6 @@ export default async function handler(
           user: {
             select: { id: true, publicId: true, name: true, email: true, status: true, createdAt: true },
           },
-          reviews: {
-            include: {
-              borrower: { select: { id: true, name: true } },
-            },
-            orderBy: { createdAt: "desc" as const },
-            take: 20,
-          },
           introductions: {
             include: {
               request: {
@@ -60,7 +53,7 @@ export default async function handler(
             take: 10,
           },
           _count: {
-            select: { introductions: true, conversations: true, reviews: true, creditPurchases: true },
+            select: { introductions: true, conversations: true, creditPurchases: true },
           },
       };
 

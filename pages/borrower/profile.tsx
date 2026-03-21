@@ -163,10 +163,6 @@ export default function BorrowerProfilePage() {
               <p className="heading-md text-amber-600">{profile._count.conversations}</p>
               <p className="text-body-sm mt-1">{t("settings.conversations", "Conversations")}</p>
             </div>
-            <div className="card-elevated !p-3 sm:!p-5 text-center">
-              <p className="heading-md text-amber-600">{profile._count.reviews}</p>
-              <p className="text-body-sm mt-1">{t("settings.reviewsGiven", "Reviews Given")}</p>
-            </div>
           </div>
         )}
 

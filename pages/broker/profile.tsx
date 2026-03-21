@@ -7,14 +7,6 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 
-interface ReviewItem {
-  id: string;
-  rating: number;
-  comment: string | null;
-  createdAt: string;
-  borrower: { name: string | null };
-}
-
 interface BrokerUser {
   id: string;
   publicId: string;
@@ -40,8 +32,6 @@ interface BrokerProfile extends CreateBrokerProfileInput {
   verificationStatus: string;
   subscriptionTier: string;
   responseCredits: number;
-  rating: number | null;
-  completedMatches: number;
   user?: BrokerUser;
 }
 
@@ -62,8 +52,6 @@ export default function BrokerProfilePage() {
   });
   const [brokerUser, setBrokerUser] = useState<BrokerUser | null>(null);
   const [verificationStatus, setVerificationStatus] = useState("PENDING");
-  const [reviews, setReviews] = useState<ReviewItem[]>([]);
-  const [brokerRating, setBrokerRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -93,17 +81,7 @@ export default function BrokerProfilePage() {
           specialties: data.specialties || "",
         });
         setVerificationStatus(data.verificationStatus);
-        setBrokerRating(data.rating);
         if (data.user) setBrokerUser(data.user);
-
-        // Fetch reviews
-        if (data.id) {
-          const reviewRes = await fetch(`/api/reviews?brokerId=${data.id}`);
-          if (reviewRes.ok) {
-            const reviewData: ReviewItem[] = await reviewRes.json();
-            setReviews(reviewData);
-          }
-        }
       } catch {
         setError("Failed to load profile data.");
       } finally {
@@ -378,88 +356,6 @@ export default function BrokerProfilePage() {
           </button>
         </form>
 
-        {/* Reviews section */}
-        <div className="mt-10 animate-fade-in-up stagger-2">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="heading-md">{t("review.myReviews", "My Reviews")}</h2>
-            {brokerRating != null && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <svg
-                      key={star}
-                      className={`w-5 h-5 ${
-                        star <= Math.round(brokerRating) ? "text-amber-400" : "text-cream-300"
-                      }`}
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <span className="font-body text-sm font-semibold text-forest-800">
-                  {brokerRating.toFixed(1)}
-                </span>
-                <span className="text-body-sm">
-                  ({reviews.length} {reviews.length === 1 ? t("review.reviewSingular", "review") : t("review.reviewPlural", "reviews")})
-                </span>
-              </div>
-            )}
-          </div>
-
-          {reviews.length === 0 ? (
-            <div className="card-elevated text-center py-10">
-              <p className="heading-sm mb-2">{t("review.noReviews", "No Reviews Yet")}</p>
-              <p className="text-body-sm">
-                {t("review.noReviewsDesc", "Reviews from borrowers will appear here after conversations are closed.")}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <div key={review.id} className="card-elevated">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-cream-200 text-forest-700 flex items-center justify-center text-sm font-display font-bold">
-                        {(review.borrower.name || "B").charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-body text-sm font-semibold text-forest-800">
-                          {review.borrower.name || t("messages.borrowerLabel")}
-                        </p>
-                        <p className="text-xs font-body text-sage-400">
-                          {new Date(review.createdAt).toLocaleDateString("en-CA", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg
-                          key={star}
-                          className={`w-4 h-4 ${
-                            star <= review.rating ? "text-amber-400" : "text-cream-300"
-                          }`}
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
-                  </div>
-                  {review.comment && (
-                    <p className="text-body-sm">{review.comment}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </Layout>
   );

@@ -641,7 +641,7 @@ export default function AdminRequests() {
             </div>
 
             <p className="text-body-sm mb-2">
-              {t("admin.deleteRequestWarning", "This will permanently delete this request and all related data (introductions, conversations, messages, reviews).")}
+              {t("admin.deleteRequestWarning", "This will permanently delete this request and all related data (introductions, conversations, messages).")}
             </p>
             <p className="font-body text-sm font-semibold text-forest-800 mb-4">
               {deleteModal.type} · {deleteModal.province}

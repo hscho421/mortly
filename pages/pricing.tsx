@@ -1,5 +1,8 @@
+import { useEffect } from "react";
 import Link from "next/link";
 import Head from "next/head";
+import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
 import Layout from "@/components/Layout";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
@@ -21,6 +24,23 @@ function CellValue({ value }: { value: string | boolean }) {
 
 export default function Pricing() {
   const { t } = useTranslation("common");
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      router.replace("/signup?role=broker", undefined, { locale: router.locale });
+      return;
+    }
+    if (session.user.role === "BORROWER") {
+      router.replace("/borrower/dashboard", undefined, { locale: router.locale });
+    }
+  }, [session, status, router]);
+
+  if (status === "loading" || !session || session.user.role === "BORROWER") {
+    return null;
+  }
 
   const tiers = [
     {
