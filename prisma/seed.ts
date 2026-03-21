@@ -84,7 +84,7 @@ const REQUEST_NOTES = [
 
 const RESIDENTIAL_PRODUCTS = [
   "NEW_MORTGAGE", "PRE_APPROVAL", "REFINANCING", "RENEWAL",
-  "PERSONAL_LOC", "REVERSE_MORTGAGE", "AUTO_LOAN",
+  "PERSONAL_LOC", "REVERSE_MORTGAGE",
   "DEBT_CONSOLIDATION", "EQUITY_LOAN",
 ];
 const COMMERCIAL_PRODUCTS = ["SMALL_BUSINESS_LOAN", "COMMERCIAL_LOC"];
@@ -267,10 +267,10 @@ async function seedMock() {
           ownerNetIncome: `$${80 + Math.floor(Math.random() * 200)},000`,
         }
       : {
-          purposeOfUse: i % 3 === 0 ? "RENTAL" : "OWNER_OCCUPIED",
+          purposeOfUse: i % 3 === 0 ? ["RENTAL"] : i % 5 === 0 ? ["OWNER_OCCUPIED", "RENTAL"] : ["OWNER_OCCUPIED"],
           incomeTypes: [...INCOME_TYPES].sort(() => Math.random() - 0.5).slice(0, 1 + Math.floor(Math.random() * 3)),
           ...(i % 5 === 0 ? { incomeTypeOther: "Freelance consulting" } : {}),
-          annualIncome: `$${50 + Math.floor(Math.random() * 200)},000`,
+          annualIncome: { "2025": `${50 + Math.floor(Math.random() * 200)}000`, "2024": `${45 + Math.floor(Math.random() * 180)}000` },
         };
 
     const req = await prisma.borrowerRequest.create({

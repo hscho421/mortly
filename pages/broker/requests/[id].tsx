@@ -232,7 +232,9 @@ export default function BrokerRequestDetailPage() {
                           <div className="rounded-xl bg-cream-100 p-4">
                             <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.purposeOfUse")}</h3>
                             <p className="mt-1 font-body text-sm font-medium text-forest-800">
-                              {d.purposeOfUse === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")}
+                              {Array.isArray(d.purposeOfUse)
+                                ? d.purposeOfUse.map((v) => v === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")).join(", ")
+                                : d.purposeOfUse === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")}
                             </p>
                           </div>
                           <div className="rounded-xl bg-cream-100 p-4">
@@ -244,7 +246,17 @@ export default function BrokerRequestDetailPage() {
                           </div>
                           <div className="rounded-xl bg-cream-100 p-4">
                             <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.annualIncome")}</h3>
-                            <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.annualIncome || t("request.notSpecified")}</p>
+                            {typeof d.annualIncome === "object" && d.annualIncome ? (
+                              <div className="mt-1 space-y-1">
+                                {Object.entries(d.annualIncome).map(([year, amount]) => (
+                                  <p key={year} className="font-body text-sm font-medium text-forest-800">
+                                    {year}: ${amount || "—"}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="mt-1 font-body text-sm font-medium text-forest-800">{(d.annualIncome as unknown as string) || t("request.notSpecified")}</p>
+                            )}
                           </div>
                         </>
                       ) : null;

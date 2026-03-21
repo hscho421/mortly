@@ -225,6 +225,7 @@
     "incomeTypeOtherPlaceholder": "Please specify your income type",
     "annualIncome": "Annual income (last 2 years, based on tax filing)",
     "annualIncomePlaceholder": "e.g. $80,000",
+    "selectYear": "Select year",
     "businessType": "Business Type / Industry",
     "businessTypePlaceholder": "e.g. Restaurant, Real Estate, Retail",
     "corporateIncome": "Corporate annual income (last 2 years, based on tax filing)",
@@ -244,7 +245,7 @@
     "additionalDetailsLabel": "Additional details about your situation",
     "additionalDetailsHelper": "The more detail you provide, the better a broker can assist you.",
     "additionalDetailsRequired": "Required for commercial requests",
-    "newRequestTitle": "New Request",
+    "newRequestTitle": "Explore Mortgages",
     "newRequestSubtitle": "Tell us about your financing needs. Your identity stays anonymous.",
     "residentialRequest": "Residential Request",
     "commercialRequest": "Commercial Request"

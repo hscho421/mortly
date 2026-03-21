@@ -39,11 +39,15 @@ export type RequestWithIntroductions = BorrowerRequest & {
 
 // ── v2 Request Details ───────────────────────────────────────
 
+export interface AnnualIncomeByYear {
+  [year: string]: string;
+}
+
 export interface ResidentialDetails {
-  purposeOfUse: "OWNER_OCCUPIED" | "RENTAL";
+  purposeOfUse: string[];
   incomeTypes: string[];
   incomeTypeOther?: string;
-  annualIncome: string;
+  annualIncome: AnnualIncomeByYear;
 }
 
 export interface CommercialDetails {

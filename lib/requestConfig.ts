@@ -7,7 +7,6 @@ export const RESIDENTIAL_PRODUCTS = [
   "RENEWAL",
   "PERSONAL_LOC",
   "REVERSE_MORTGAGE",
-  "AUTO_LOAN",
   "DEBT_CONSOLIDATION",
   "EQUITY_LOAN",
 ] as const;
@@ -42,7 +41,7 @@ export const PRODUCT_LABEL_KEYS: Record<string, string> = {
   RENEWAL: "request.product.renewal",
   PERSONAL_LOC: "request.product.personalLoc",
   REVERSE_MORTGAGE: "request.product.reverseMortgage",
-  AUTO_LOAN: "request.product.autoLoan",
+
   DEBT_CONSOLIDATION: "request.product.debtConsolidation",
   EQUITY_LOAN: "request.product.equityLoan",
   SMALL_BUSINESS_LOAN: "request.product.smallBusinessLoan",

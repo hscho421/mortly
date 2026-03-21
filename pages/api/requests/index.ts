@@ -95,7 +95,8 @@ export default async function handler(
 
       // ── Category-specific validation ─────────────────────────
       if (mortgageCategory === "RESIDENTIAL") {
-        if (!details?.purposeOfUse || !["OWNER_OCCUPIED", "RENTAL"].includes(details.purposeOfUse)) {
+        if (!Array.isArray(details?.purposeOfUse) || details.purposeOfUse.length === 0 ||
+            !details.purposeOfUse.every((v: string) => ["OWNER_OCCUPIED", "RENTAL"].includes(v))) {
           return res.status(400).json({ error: "Purpose of use is required for residential requests" });
         }
         if (!Array.isArray(details?.incomeTypes) || details.incomeTypes.length === 0) {

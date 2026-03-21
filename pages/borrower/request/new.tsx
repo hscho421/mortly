@@ -57,21 +57,6 @@ export default function NewRequestPage() {
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           <h1 className="heading-lg">{t("request.newRequestTitle")}</h1>
-          <p className="text-body mt-2">{t("request.newRequestSubtitle")}</p>
-        </div>
-
-        {/* Privacy notice */}
-        <div className="mb-8 rounded-2xl border border-forest-200 bg-forest-50/50 p-5 animate-fade-in-up">
-          <div className="flex items-start gap-3">
-            <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-forest-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-            </svg>
-            <div>
-              <p className="font-body text-sm font-semibold text-forest-800">
-                {t("request.privacyNote", "Your personal information is never shared with brokers until you choose to connect.")}
-              </p>
-            </div>
-          </div>
         </div>
 
         <RequestForm onSubmit={handleSubmit} />

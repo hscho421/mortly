@@ -384,7 +384,9 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
           </h3>
           <DetailRow
             label={t("request.purposeOfUse")}
-            value={(details as ResidentialDetails).purposeOfUse === "RENTAL" ? t("request.rental") : t("request.ownerOccupied")}
+            value={
+              (details as ResidentialDetails).purposeOfUse.map((v: string) => v === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")).join(", ")
+            }
           />
           <div className="flex justify-between py-3 border-b border-cream-200">
             <span className="text-body-sm">{t("request.incomeType")}</span>
@@ -402,7 +404,16 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
           {(details as ResidentialDetails).incomeTypeOther && (
             <DetailRow label={t("request.incomeTypes.other")} value={(details as ResidentialDetails).incomeTypeOther || "--"} />
           )}
-          <DetailRow label={t("request.annualIncome")} value={(details as ResidentialDetails).annualIncome || "--"} />
+          <div className="flex justify-between py-3 border-b border-cream-200">
+            <span className="text-body-sm">{t("request.annualIncome")}</span>
+            <div className="text-right">
+              {Object.entries((details as ResidentialDetails).annualIncome || {}).map(([year, amount]) => (
+                <p key={year} className="font-body text-sm text-forest-800">
+                  {year}: ${amount || "—"}
+                </p>
+              ))}
+            </div>
+          </div>
         </>
       ) : (
         <>

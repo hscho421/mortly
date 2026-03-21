@@ -33,10 +33,15 @@ interface RequestFormProps {
   submittingLabel?: string;
 }
 
+function getYearOptions(): string[] {
+  const currentYear = new Date().getFullYear();
+  return [String(currentYear), String(currentYear - 1), String(currentYear - 2)];
+}
+
 const DEFAULT_RESIDENTIAL_DETAILS: ResidentialDetails = {
-  purposeOfUse: "OWNER_OCCUPIED",
+  purposeOfUse: [],
   incomeTypes: [],
-  annualIncome: "",
+  annualIncome: {},
 };
 
 const DEFAULT_COMMERCIAL_DETAILS: CommercialDetails = {
@@ -67,6 +72,14 @@ export default function RequestForm({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Income year selectors — derive initial from existing data or default to last 2 years
+  const currentYear = new Date().getFullYear();
+  const existingYears = Object.keys(
+    (initialValues?.details as ResidentialDetails)?.annualIncome || {}
+  );
+  const [incomeYear1, setIncomeYear1] = useState(existingYears[0] || "");
+  const [incomeYear2, setIncomeYear2] = useState(existingYears[1] || "");
 
   const isResidential = form.mortgageCategory === "RESIDENTIAL";
   const isCommercial = form.mortgageCategory === "COMMERCIAL";
@@ -103,6 +116,15 @@ export default function RequestForm({
     }));
   }
 
+  function togglePurposeOfUse(value: string) {
+    const d = details as ResidentialDetails;
+    const current = d.purposeOfUse || [];
+    const updated = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+    updateDetails("purposeOfUse", updated);
+  }
+
   function toggleIncomeType(value: string) {
     const d = details as ResidentialDetails;
     const current = d.incomeTypes || [];
@@ -110,6 +132,22 @@ export default function RequestForm({
       ? current.filter((t) => t !== value)
       : [...current, value];
     updateDetails("incomeTypes", updated);
+  }
+
+  function updateAnnualIncome(year: string, value: string) {
+    const d = details as ResidentialDetails;
+    const current = d.annualIncome || {};
+    updateDetails("annualIncome", { ...current, [year]: value });
+  }
+
+  function changeIncomeYear(oldYear: string, newYear: string, setYear: (y: string) => void) {
+    setYear(newYear);
+    const d = details as ResidentialDetails;
+    const current = { ...(d.annualIncome || {}) };
+    const amount = current[oldYear] || "";
+    delete current[oldYear];
+    current[newYear] = amount;
+    updateDetails("annualIncome", current);
   }
 
   // ── Submit ──────────────────────────────────────────────────
@@ -141,13 +179,6 @@ export default function RequestForm({
       checked
         ? "border-forest-600 bg-forest-50"
         : "border-cream-200 bg-white hover:border-forest-300"
-    }`;
-
-  const radioClass = (active: boolean) =>
-    `flex-1 cursor-pointer rounded-xl border-2 px-5 py-3 text-center transition-all duration-200 font-body text-sm font-medium ${
-      active
-        ? "border-forest-600 bg-forest-50 text-forest-800"
-        : "border-cream-200 bg-white text-sage-500 hover:border-forest-300"
     }`;
 
   return (
@@ -270,29 +301,23 @@ export default function RequestForm({
           {/* Purpose of use */}
           <div className="mb-6">
             <label className="label-text">{t("request.purposeOfUse")}</label>
-            <div className="flex gap-3 mt-1">
-              <label className={radioClass((details as ResidentialDetails).purposeOfUse === "OWNER_OCCUPIED")}>
-                <input
-                  type="radio"
-                  name="purposeOfUse"
-                  value="OWNER_OCCUPIED"
-                  checked={(details as ResidentialDetails).purposeOfUse === "OWNER_OCCUPIED"}
-                  onChange={() => updateDetails("purposeOfUse", "OWNER_OCCUPIED")}
-                  className="sr-only"
-                />
-                {t("request.ownerOccupied")}
-              </label>
-              <label className={radioClass((details as ResidentialDetails).purposeOfUse === "RENTAL")}>
-                <input
-                  type="radio"
-                  name="purposeOfUse"
-                  value="RENTAL"
-                  checked={(details as ResidentialDetails).purposeOfUse === "RENTAL"}
-                  onChange={() => updateDetails("purposeOfUse", "RENTAL")}
-                  className="sr-only"
-                />
-                {t("request.rental")}
-              </label>
+            <div className="flex gap-3 mt-2">
+              {(["OWNER_OCCUPIED", "RENTAL"] as const).map((value) => {
+                const checked = ((details as ResidentialDetails).purposeOfUse || []).includes(value);
+                return (
+                  <label key={value} className={checkboxClass(checked)}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => togglePurposeOfUse(value)}
+                      className="h-4 w-4 rounded border-cream-300 text-forest-600 focus:ring-forest-500"
+                    />
+                    <span className="font-body text-sm text-forest-800">
+                      {value === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           </div>
 
@@ -333,19 +358,43 @@ export default function RequestForm({
             )}
           </div>
 
-          {/* Annual income */}
+          {/* Annual income by year */}
           <div>
-            <label htmlFor="annualIncome" className="label-text">
+            <label className="label-text">
               {t("request.annualIncome")}
             </label>
-            <input
-              id="annualIncome"
-              type="text"
-              value={(details as ResidentialDetails).annualIncome || ""}
-              onChange={(e) => updateDetails("annualIncome", e.target.value)}
-              placeholder={t("request.annualIncomePlaceholder")}
-              className="input-field"
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+              {([
+                { year: incomeYear1, setYear: setIncomeYear1, otherYear: incomeYear2 },
+                { year: incomeYear2, setYear: setIncomeYear2, otherYear: incomeYear1 },
+              ] as const).map(({ year, setYear, otherYear }, idx) => (
+                <div key={idx}>
+                  <select
+                    value={year}
+                    onChange={(e) => changeIncomeYear(year, e.target.value, setYear)}
+                    className="font-body text-xs font-medium text-sage-500 mb-1 block bg-transparent border-none p-0 cursor-pointer focus:ring-0"
+                  >
+                    <option value="">{t("request.selectYear")}</option>
+                    {getYearOptions().map((y) => (
+                      <option key={y} value={y} disabled={y === otherYear}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-body text-sm text-sage-400">$</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={((details as ResidentialDetails).annualIncome || {})[year] || ""}
+                      onChange={(e) => updateAnnualIncome(year, e.target.value)}
+                      placeholder="0"
+                      className="input-field pl-7"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       ) : (
@@ -447,7 +496,7 @@ export default function RequestForm({
               </span>
             )}
           </label>
-          <p className="font-body text-xs text-sage-400 mb-2">
+          <p className="font-body text-sm font-medium text-forest-700 mb-2">
             {t("request.additionalDetailsHelper")}
           </p>
           <textarea
