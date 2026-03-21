@@ -13,10 +13,10 @@ export default function LiveActivityMarquee({ requests }: { requests: LiveReques
       <section className="section-padding bg-cream-200/40 border-y border-cream-300/60">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-3 block">
+            <h2 className="font-display text-2xl sm:text-3xl text-amber-500 mb-3">
               {t("home.live.title")}
-            </span>
-            <p className="font-body text-sm text-sage-500">
+            </h2>
+            <p className="font-body text-base text-sage-500">
               {t("home.live.subtitle")}
             </p>
           </div>
@@ -34,10 +34,10 @@ export default function LiveActivityMarquee({ requests }: { requests: LiveReques
     <section className="py-12 bg-cream-200/40 border-y border-cream-300/60 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-3 block">
+          <h2 className="font-display text-2xl sm:text-3xl text-amber-500 mb-3">
             {t("home.live.title")}
-          </span>
-          <p className="font-body text-sm text-sage-500">
+          </h2>
+          <p className="font-body text-base text-sage-500">
             {t("home.live.subtitle")}
           </p>
         </div>
@@ -51,7 +51,7 @@ export default function LiveActivityMarquee({ requests }: { requests: LiveReques
 
         {/* Scrolling track */}
         <div
-          className="flex gap-4 animate-marquee group-hover:[animation-play-state:paused] motion-reduce:animate-none motion-reduce:overflow-x-auto motion-reduce:scroll-smooth"
+          className="flex gap-4 animate-marquee motion-reduce:animate-none motion-reduce:overflow-x-auto motion-reduce:scroll-smooth"
           aria-label={t("home.live.title")}
           style={{ width: "max-content" }}
         >

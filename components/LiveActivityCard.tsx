@@ -2,23 +2,13 @@ import { useTranslation } from "next-i18next";
 import { PRODUCT_LABEL_KEYS } from "@/lib/requestConfig";
 import type { LiveRequest } from "@/types";
 
-function timeAgo(dateStr: string, t: (key: string, opts?: Record<string, string>) => string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return t("home.live.timeAgo", { time: `${Math.max(1, mins)}m` });
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return t("home.live.timeAgo", { time: `${hours}h` });
-  const days = Math.floor(hours / 24);
-  return t("home.live.timeAgo", { time: `${days}d` });
-}
-
 export default function LiveActivityCard({ request }: { request: LiveRequest }) {
   const { t } = useTranslation("common");
   const isCommercial = request.mortgageCategory === "COMMERCIAL";
   const isOpen = request.status === "OPEN";
 
   return (
-    <div className="flex-shrink-0 w-64 rounded-2xl border border-cream-300 bg-white/80 p-4 shadow-sm transition-transform hover:scale-[1.02]">
+    <div className="flex-shrink-0 w-72 rounded-2xl border border-cream-300 bg-white p-5 shadow-md transition-transform hover:scale-[1.03]">
       {/* Header: icon + category */}
       <div className="flex items-center gap-2.5 mb-3">
         <div
@@ -50,7 +40,7 @@ export default function LiveActivityCard({ request }: { request: LiveRequest }) 
         {request.productTypes.map((pt) => (
           <span
             key={pt}
-            className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-[10px] font-medium text-forest-700"
+            className="inline-flex items-center rounded-full bg-cream-200 px-2.5 py-1 font-body text-xs font-medium text-forest-700"
           >
             {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
           </span>
@@ -58,25 +48,20 @@ export default function LiveActivityCard({ request }: { request: LiveRequest }) 
       </div>
 
       {/* Location */}
-      <p className="font-body text-xs text-sage-500 mb-3">
+      <p className="font-body text-sm text-sage-600 mb-3">
         {request.city ? `${request.city}, ` : ""}
         {request.province}
       </p>
 
-      {/* Status + time */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              isOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-            }`}
-          />
-          <span className="font-body text-[10px] font-medium text-forest-700/70">
-            {isOpen ? t("home.live.seekingBroker") : t("home.live.brokerMatched")}
-          </span>
-        </div>
-        <span className="font-body text-[10px] text-sage-400">
-          {timeAgo(request.createdAt, t)}
+      {/* Status */}
+      <div className="flex items-center gap-1.5">
+        <span
+          className={`h-2 w-2 rounded-full ${
+            isOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+          }`}
+        />
+        <span className="font-body text-xs font-medium text-forest-700">
+          {isOpen ? t("home.live.seekingBroker") : t("home.live.brokerMatched")}
         </span>
       </div>
     </div>
