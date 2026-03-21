@@ -36,11 +36,11 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                 {t("home.subtitle")}
               </p>
               <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-start gap-4">
-                <Link href="/borrower/request/new" className="btn-amber px-8 py-4 text-base">
-                  {t("home.submitRequest")}
+                <Link href="/login" className="btn-amber px-8 py-4 text-base min-w-[180px] text-center">
+                  {t("home.getStartedNow")}
                 </Link>
-                <Link href="/for-brokers" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
-                  {t("home.imBroker")}
+                <Link href="/how-it-works" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-base font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98] min-w-[180px] text-center">
+                  {t("home.submitRequest")}
                 </Link>
               </div>
             </div>

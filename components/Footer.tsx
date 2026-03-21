@@ -1,4 +1,3 @@
-import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslation } from "next-i18next";
@@ -12,7 +11,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="inline-block">
-              <Image src="/logo/logo-footer.svg" alt="MortgageMatch" width={200} height={32} className="h-8 w-auto" />
+              <Image src="/logo/white_logo.svg" alt="Mortly" width={200} height={32} className="h-8 w-auto" />
             </Link>
             <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-cream-400/70">
               {t("footer.tagline")}

@@ -133,14 +133,9 @@ export default function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-md bg-forest-800 transition-all duration-300 group-hover:rounded-lg group-hover:shadow-md group-hover:shadow-forest-800/25">
-              <svg className="h-4 w-4 text-amber-400 transition-transform duration-300 group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+          <Link href="/" className="flex items-center group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo/logo-text.svg" alt="MortgageMatch" className="h-6" />
+            <img src="/logo/grey_logo.svg" alt="Mortly" className="h-8" />
           </Link>
 
           {/* Desktop center links */}
@@ -335,18 +330,6 @@ export default function Navbar() {
                 >
                   {t("nav.signIn")}
                 </Link>
-                <Link
-                  href="/signup?role=borrower"
-                  className="rounded-lg bg-amber-500 px-4 py-2 font-body text-[13px] font-semibold text-forest-900 transition-all duration-300 hover:bg-amber-400 hover:shadow-md hover:shadow-amber-500/20 active:scale-[0.97]"
-                >
-                  {t("nav.imBorrower")}
-                </Link>
-                <Link
-                  href="/signup?role=broker"
-                  className="rounded-lg border-2 border-forest-800 px-4 py-2 font-body text-[13px] font-semibold text-forest-800 transition-all duration-300 hover:bg-forest-800 hover:text-cream-100 active:scale-[0.97]"
-                >
-                  {t("nav.imBroker")}
-                </Link>
               </div>
             )}
           </div>
@@ -509,20 +492,6 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="space-y-2 px-1">
-              <Link
-                href="/signup?role=borrower"
-                onClick={() => setMobileOpen(false)}
-                className="block rounded-lg bg-amber-500 px-4 py-2.5 text-center font-body text-[13px] font-semibold text-forest-900 transition-all hover:bg-amber-400"
-              >
-                {t("nav.imBorrower")}
-              </Link>
-              <Link
-                href="/signup?role=broker"
-                onClick={() => setMobileOpen(false)}
-                className="block rounded-lg border-2 border-forest-800 px-4 py-2.5 text-center font-body text-[13px] font-semibold text-forest-800 transition-all hover:bg-forest-800 hover:text-cream-100"
-              >
-                {t("nav.imBroker")}
-              </Link>
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}
