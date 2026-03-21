@@ -168,10 +168,10 @@ export default function Pricing() {
   return (
     <Layout>
       <Head>
-        <title>Pricing — MortgageMatch</title>
+        <title>Pricing — mortly</title>
         <meta
           name="description"
-          content="Simple, transparent pricing for mortgage brokers. Choose the MortgageMatch plan that fits your business."
+          content="Simple, transparent pricing for mortgage brokers. Choose the mortly plan that fits your business."
         />
       </Head>
 

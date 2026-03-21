@@ -13,10 +13,10 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
   return (
     <Layout>
       <Head>
-        <title>MortgageMatch — Find Your Perfect Mortgage Broker Anonymously</title>
+        <title>mortly — Find Your Perfect Mortgage Broker Anonymously</title>
         <meta
           name="description"
-          content="MortgageMatch is a privacy-first marketplace where borrowers anonymously share their mortgage needs and verified brokers compete to connect with them."
+          content="mortly is a privacy-first marketplace where borrowers anonymously share their mortgage needs and verified brokers compete to connect with them."
         />
       </Head>
 

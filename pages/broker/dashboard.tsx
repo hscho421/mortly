@@ -305,7 +305,7 @@ export default function BrokerDashboardPage() {
               {t("broker.welcome")}, {session.user.name || "Broker"}
             </h1>
             <p className="text-body mt-2">
-              Here is an overview of your MortgageMatch activity.
+              Here is an overview of your mortly activity.
             </p>
           </div>
           <div className="flex items-center gap-3">

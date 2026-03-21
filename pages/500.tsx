@@ -10,7 +10,7 @@ export default function ServerError() {
   return (
     <Layout>
       <Head>
-        <title>{`${t("serverError.title")} — Mortly`}</title>
+        <title>{`${t("serverError.title")} — mortly`}</title>
       </Head>
 
       <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4">

@@ -10,7 +10,7 @@ export default function NotFound() {
   return (
     <Layout>
       <Head>
-        <title>{`${t("notFound.title")} — MortgageMatch`}</title>
+        <title>{`${t("notFound.title")} — mortly`}</title>
       </Head>
 
       <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4">

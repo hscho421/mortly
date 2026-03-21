@@ -61,7 +61,7 @@ export default function LoginPage() {
             <div className="flex items-center gap-3">
               <div className="h-px w-8 bg-amber-400" />
               <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">
-                MortgageMatch
+                mortly
               </span>
               <div className="h-px w-8 bg-amber-400" />
             </div>

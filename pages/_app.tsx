@@ -32,7 +32,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
           <div className="mb-4 text-4xl">🔧</div>
           <h1 className="heading-lg mb-3">Under Maintenance</h1>
           <p className="text-body mb-2">
-            MortgageMatch is temporarily undergoing scheduled maintenance.
+            mortly is temporarily undergoing scheduled maintenance.
           </p>
           <p className="text-body-sm text-sage-500">
             We&apos;ll be back shortly. Thank you for your patience.

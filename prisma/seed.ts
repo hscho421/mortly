@@ -450,7 +450,7 @@ async function seedMock() {
       data: {
         adminId: admins[0].id,
         userId: borrowers[i].id,
-        subject: pick(["Welcome to MortgageMatch", "Account Update", "Important Notice", "Profile Reminder", "Policy Update"]),
+        subject: pick(["Welcome to mortly", "Account Update", "Important Notice", "Profile Reminder", "Policy Update"]),
         body: pick([
           "Welcome! Your account is set up and ready to use.",
           "We've updated our terms of service. Please review them at your earliest convenience.",
@@ -483,7 +483,7 @@ async function seedMock() {
 
   // ── System settings ───────────────────────────────────────
   const defaults: [string, string][] = [
-    ["platform_name", "MortgageMatch"],
+    ["platform_name", "mortly"],
     ["support_email", "support@mortgagematch.ca"],
     ["free_tier_credits", "3"],
     ["basic_tier_credits", "15"],
@@ -563,7 +563,7 @@ async function seedEmpty() {
 
   // System settings
   for (const [key, value] of [
-    ["platform_name", "MortgageMatch"],
+    ["platform_name", "mortly"],
     ["support_email", "support@mortgagematch.ca"],
     ["free_tier_credits", "3"],
     ["basic_tier_credits", "15"],

@@ -129,10 +129,10 @@ export default function HowItWorks() {
   return (
     <Layout>
       <Head>
-        <title>How It Works — MortgageMatch</title>
+        <title>How It Works — mortly</title>
         <meta
           name="description"
-          content="Learn how MortgageMatch connects borrowers with mortgage brokers through our anonymous, privacy-first marketplace."
+          content="Learn how mortly connects borrowers with mortgage brokers through our anonymous, privacy-first marketplace."
         />
       </Head>
 

@@ -11,9 +11,9 @@ export default function Footer() {
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="inline-block">
-              <Image src="/logo/white_logo.svg" alt="Mortly" width={200} height={32} className="h-8 w-auto" />
+              <Image src="/logo/white_logo.svg" alt="mortly" width={200} height={32} className="h-8 w-auto" />
             </Link>
-            <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-cream-400/70">
+            <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-cream-400/70 whitespace-pre-line">
               {t("footer.tagline")}
             </p>
           </div>

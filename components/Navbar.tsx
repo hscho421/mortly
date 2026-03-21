@@ -135,7 +135,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo/grey_logo.svg" alt="Mortly" className="h-8" />
+            <img src="/logo/grey_logo.svg" alt="mortly" className="h-8" />
           </Link>
 
           {/* Desktop center links */}

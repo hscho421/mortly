@@ -151,7 +151,7 @@ export default function AdminManual() {
           </Link>
           <h1 className="heading-lg">{t("manual.title", "Admin Manual")}</h1>
           <p className="text-body mt-2">
-            {t("manual.subtitle", "Complete guide to managing the MortgageMatch platform.")}
+            {t("manual.subtitle", "Complete guide to managing the mortly platform.")}
           </p>
         </div>
 
@@ -185,7 +185,7 @@ export default function AdminManual() {
           <div className="flex-1 min-w-0">
             {/* Overview */}
             <Section id="overview" title={t("manual.overviewTitle", "Overview")}>
-              <P>{t("manual.overviewP1", "The admin portal gives you full control over the MortgageMatch platform. From here you can manage users, verify brokers, oversee requests and conversations, handle reports, and review a complete audit trail of all administrative actions.")}</P>
+              <P>{t("manual.overviewP1", "The admin portal gives you full control over the mortly platform. From here you can manage users, verify brokers, oversee requests and conversations, handle reports, and review a complete audit trail of all administrative actions.")}</P>
               <P>{t("manual.overviewP2v2", "All admin list pages use server-side pagination (20 items per page) with page navigation controls. Search and filter changes trigger a fresh data load. Every action you take (status changes, credit adjustments, verifications, deletions) is automatically logged to the activity log.")}</P>
               <Tip>{t("manual.overviewTip", "Tip: All admin pages are accessible from the dashboard quick links. You can also navigate directly via the URL bar (e.g., /admin/users, /admin/requests).")}</Tip>
             </Section>

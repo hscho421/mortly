@@ -67,7 +67,7 @@ export default function ForBorrowers() {
   return (
     <Layout>
       <Head>
-        <title>For Borrowers — Find the Right Mortgage Broker | MortgageMatch</title>
+        <title>For Borrowers — Find the Right Mortgage Broker | mortly</title>
         <meta
           name="description"
           content="Find the right mortgage broker for free. Submit an anonymous request, receive introductions from licensed brokers, and choose the best fit — no obligation."
