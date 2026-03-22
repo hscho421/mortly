@@ -205,8 +205,12 @@
       "autoLoan": "Auto Loan",
       "debtConsolidation": "Debt Consolidation",
       "equityLoan": "Equity Loan",
-      "smallBusinessLoan": "Small Business Loan",
-      "commercialLoc": "Commercial LOC"
+      "commNewLoan": "New Loan",
+      "commRefinancing": "Refinancing",
+      "commTransfer": "Mortgage Transfer",
+      "commGovtLoan": "Government-backed Loan",
+      "commLoc": "Line of Credit",
+      "commDebtConsolidation": "Debt Consolidation"
     },
     "applicantInfo": "Applicant Information",
     "businessInfo": "Business Information",

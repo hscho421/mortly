@@ -181,12 +181,9 @@ export default function HowItWorks() {
           <p className="animate-fade-in-up opacity-0 stagger-1 mt-6 text-lg text-cream-300/70 font-body">
             {t("howItWorks.readyDesc")}
           </p>
-          <div className="animate-fade-in-up opacity-0 stagger-2 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="animate-fade-in-up opacity-0 stagger-2 mt-10">
             <Link href="/borrower/request/new" className="btn-amber px-8 py-4 text-base">
               {t("howItWorks.submitRequest")}
-            </Link>
-            <Link href="/for-brokers" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
-              {t("howItWorks.joinBroker")}
             </Link>
           </div>
         </div>

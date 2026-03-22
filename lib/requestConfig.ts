@@ -12,8 +12,12 @@ export const RESIDENTIAL_PRODUCTS = [
 ] as const;
 
 export const COMMERCIAL_PRODUCTS = [
-  "SMALL_BUSINESS_LOAN",
-  "COMMERCIAL_LOC",
+  "COMM_NEW_LOAN",
+  "COMM_REFINANCING",
+  "COMM_TRANSFER",
+  "COMM_GOVT_LOAN",
+  "COMM_LOC",
+  "COMM_DEBT_CONSOLIDATION",
 ] as const;
 
 export type ResidentialProduct = (typeof RESIDENTIAL_PRODUCTS)[number];
@@ -44,8 +48,12 @@ export const PRODUCT_LABEL_KEYS: Record<string, string> = {
 
   DEBT_CONSOLIDATION: "request.product.debtConsolidation",
   EQUITY_LOAN: "request.product.equityLoan",
-  SMALL_BUSINESS_LOAN: "request.product.smallBusinessLoan",
-  COMMERCIAL_LOC: "request.product.commercialLoc",
+  COMM_NEW_LOAN: "request.product.commNewLoan",
+  COMM_REFINANCING: "request.product.commRefinancing",
+  COMM_TRANSFER: "request.product.commTransfer",
+  COMM_GOVT_LOAN: "request.product.commGovtLoan",
+  COMM_LOC: "request.product.commLoc",
+  COMM_DEBT_CONSOLIDATION: "request.product.commDebtConsolidation",
 };
 
 export const INCOME_TYPE_LABEL_KEYS: Record<string, string> = {
