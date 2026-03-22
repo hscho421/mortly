@@ -50,7 +50,6 @@ export default function Pricing() {
       description: t("pricing.freeDesc"),
       features: {
         introductions: t("pricing.val_none"),
-        profile: t("pricing.val_standardListing"),
         placement: false,
         badge: false,
         notifications: false,
@@ -70,7 +69,6 @@ export default function Pricing() {
       description: t("pricing.basicDesc"),
       features: {
         introductions: t("pricing.val_5perMonth"),
-        profile: t("pricing.val_standardListing"),
         placement: t("pricing.val_standard"),
         badge: false,
         notifications: true,
@@ -90,7 +88,6 @@ export default function Pricing() {
       description: t("pricing.proDesc"),
       features: {
         introductions: t("pricing.val_20perMonth"),
-        profile: t("pricing.val_enhancedListing"),
         placement: t("pricing.val_priority"),
         badge: false,
         notifications: true,
@@ -110,7 +107,6 @@ export default function Pricing() {
       description: t("pricing.premiumDesc"),
       features: {
         introductions: t("pricing.val_unlimited"),
-        profile: t("pricing.val_featuredListing"),
         placement: t("pricing.val_topOfResults"),
         badge: true,
         notifications: true,
@@ -187,8 +183,10 @@ export default function Pricing() {
             {t("pricing.title")}
           </h1>
           <p className="animate-fade-in-up opacity-0 stagger-3 mt-6 text-lg text-cream-300/70 leading-relaxed font-body">
-            {t("pricing.subtitle")}
+            {t("pricing.subtitle")} <br />
+            {t("pricing.subtitle2")}
           </p>
+          
         </div>
       </section>
 

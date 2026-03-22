@@ -7,7 +7,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import Pagination from "@/components/Pagination";
-import { isV2Request, getRequestTitle, PRODUCT_LABEL_KEYS } from "@/lib/requestConfig";
+import { isV2Request, getRequestTitle, PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 
 interface RequestRow {
   id: string;
@@ -23,6 +23,9 @@ interface RequestRow {
   createdAt: string;
   updatedAt: string;
   notes: string | null;
+  rejectionReason: string | null;
+  details: Record<string, unknown> | null;
+  desiredTimeline: string | null;
   priceRangeMin: number | null;
   priceRangeMax: number | null;
   mortgageAmountMin: number | null;
@@ -78,10 +81,13 @@ export default function AdminRequests() {
   const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
 
-  // Search & filter state
+  // Search & filter state — read initial status from URL query param
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState(() => {
+    const qs = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("status") : null;
+    return qs && ["PENDING_APPROVAL", "OPEN", "IN_PROGRESS", "CLOSED", "EXPIRED", "REJECTED"].includes(qs) ? qs : "ALL";
+  });
   const [filterType, setFilterType] = useState("ALL");
   const [page, setPage] = useState(1);
 
@@ -90,6 +96,8 @@ export default function AdminRequests() {
 
   // Detail modal
   const [detailRequest, setDetailRequest] = useState<RequestRow | null>(null);
+  const [detailData, setDetailData] = useState<any | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   // Status change modal
   const [statusModal, setStatusModal] = useState<{ id: string; currentStatus: string } | null>(null);
@@ -301,6 +309,16 @@ export default function AdminRequests() {
     }
   };
 
+  const fetchDetail = async (publicId: string) => {
+    setDetailLoading(true);
+    setDetailData(null);
+    try {
+      const res = await fetch(`/api/admin/requests/${publicId}`);
+      if (res.ok) setDetailData(await res.json());
+    } catch {}
+    finally { setDetailLoading(false); }
+  };
+
   if (status === "loading" || (loading && requests.length === 0)) {
     return (
       <Layout>
@@ -432,7 +450,7 @@ export default function AdminRequests() {
                     {/* Request ID */}
                     <td className="px-4 py-4">
                       <button
-                        onClick={() => setDetailRequest(req)}
+                        onClick={() => { setDetailRequest(req); fetchDetail(req.publicId); }}
                         className="font-mono text-xs text-forest-600 hover:text-forest-800 hover:underline"
                         title={req.publicId}
                       >
@@ -517,7 +535,7 @@ export default function AdminRequests() {
                           </>
                         )}
                         <button
-                          onClick={() => setDetailRequest(req)}
+                          onClick={() => { setDetailRequest(req); fetchDetail(req.publicId); }}
                           className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
                         >
                           {t("admin.viewDetails", "Details")}
@@ -570,10 +588,10 @@ export default function AdminRequests() {
       {/* Detail Modal */}
       {detailRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm" onClick={() => setDetailRequest(null)} />
-          <div className="relative w-full max-w-2xl max-h-[80vh] overflow-y-auto animate-fade-in-up rounded-2xl bg-white p-8 shadow-2xl">
+          <div className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm" onClick={() => { setDetailRequest(null); setDetailData(null); }} />
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in-up rounded-2xl bg-white p-8 shadow-2xl">
             <button
-              onClick={() => setDetailRequest(null)}
+              onClick={() => { setDetailRequest(null); setDetailData(null); }}
               className="absolute right-4 top-4 rounded-lg p-1 text-sage-400 transition-colors hover:text-forest-700"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -581,78 +599,367 @@ export default function AdminRequests() {
               </svg>
             </button>
 
-            <h3 className="heading-md mb-1">{t("admin.requestDetails", "Request Details")}</h3>
-            <p className="font-mono text-xs text-forest-700/50 mb-6">{detailRequest.publicId}</p>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <p className="label-text">{t("admin.borrowerLabel", "Borrower")}</p>
-                <p className="font-body text-sm font-semibold text-forest-800">{detailRequest.borrower.name || "—"}</p>
-                <p className="font-body text-xs text-forest-700/60">{detailRequest.borrower.email}</p>
-              </div>
-              <div>
-                <p className="label-text">{t("admin.statusLabel", "Status")}</p>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase ${STATUS_BADGE[detailRequest.status]}`}>
+            {/* Section 1: Header */}
+            <div className="mb-6">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="heading-md">{t("admin.requestDetails", "Request Details")}</h3>
+                <span className="font-mono text-xs text-forest-700/50">{detailRequest.publicId}</span>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ${STATUS_BADGE[detailRequest.status] || STATUS_BADGE.OPEN}`}>
                   {detailRequest.status}
                 </span>
               </div>
-              <div>
-                <p className="label-text">{t("admin.type", "Type")}</p>
-                <p className="font-body text-sm text-forest-800">{getRequestTitle(detailRequest)} · {detailRequest.mortgageCategory}</p>
-              </div>
-              {isV2Request(detailRequest) ? (
-                <div className="col-span-2">
-                  <p className="label-text">{t("request.selectProducts", "Products")}</p>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {(detailRequest.productTypes ?? []).map((pt) => (
-                      <span key={pt} className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-xs font-medium text-forest-700">
-                        {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="label-text">{t("admin.propertyType", "Property Type")}</p>
-                  <p className="font-body text-sm text-forest-800">{detailRequest.propertyType || "—"}</p>
+              <p className="font-body text-xs text-forest-700/60 mt-1">
+                {t("admin.created", "Created")}: {formatDate(detailRequest.createdAt)} · {t("admin.updated", "Updated")}: {formatDate(detailRequest.updatedAt)}
+              </p>
+              {detailRequest.status === "REJECTED" && detailRequest.rejectionReason && (
+                <div className="mt-3 rounded-lg bg-rose-50 border border-rose-200 p-3">
+                  <p className="font-body text-xs font-semibold text-rose-700">{t("admin.rejectionReason", "Rejection Reason")}</p>
+                  <p className="font-body text-sm text-rose-800">{detailRequest.rejectionReason}</p>
                 </div>
               )}
-              <div>
-                <p className="label-text">{t("admin.location", "Location")}</p>
-                <p className="font-body text-sm text-forest-800">{detailRequest.province}{detailRequest.city ? `, ${detailRequest.city}` : ""}</p>
-              </div>
-              <div>
-                <p className="label-text">{t("admin.priceRange", "Price Range")}</p>
-                <p className="font-body text-sm text-forest-800">
-                  {formatCurrency(detailRequest.priceRangeMin)} — {formatCurrency(detailRequest.priceRangeMax)}
-                </p>
-              </div>
-              <div>
-                <p className="label-text">{t("admin.mortgageAmount", "Mortgage Amount")}</p>
-                <p className="font-body text-sm text-forest-800">
-                  {formatCurrency(detailRequest.mortgageAmountMin)} — {formatCurrency(detailRequest.mortgageAmountMax)}
-                </p>
-              </div>
-              <div>
-                <p className="label-text">{t("admin.created", "Created")}</p>
-                <p className="font-body text-sm text-forest-800">{formatDate(detailRequest.createdAt)}</p>
+            </div>
+
+            {/* Section 2: Borrower Info */}
+            <div className="card-elevated mb-6">
+              <h4 className="heading-sm mb-3">{t("admin.borrowerInfo", "Borrower Info")}</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="label-text">{t("admin.nameLabel", "Name")}</p>
+                  <p className="font-body text-sm font-semibold text-forest-800">{detailRequest.borrower.name || "—"}</p>
+                </div>
+                <div>
+                  <p className="label-text">{t("admin.emailLabel", "Email")}</p>
+                  <p className="font-body text-sm text-forest-800">{detailRequest.borrower.email}</p>
+                </div>
+                <div>
+                  <p className="label-text">{t("admin.accountStatus", "Account Status")}</p>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase ${detailRequest.borrower.status === "ACTIVE" ? "bg-forest-100 text-forest-700" : "bg-sage-200 text-sage-700"}`}>
+                    {detailRequest.borrower.status}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {detailRequest.notes && (
-              <div className="mb-6">
-                <p className="label-text">{t("admin.borrowerNotes", "Borrower Notes")}</p>
-                <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-lg p-3">{detailRequest.notes}</p>
-              </div>
-            )}
+            {/* Section 3: Request Details */}
+            <div className="card-elevated mb-6">
+              <h4 className="heading-sm mb-3">{t("admin.requestDetails", "Request Details")}</h4>
 
-            <div className="flex items-center gap-4 border-t border-cream-200 pt-4">
-              <div className="flex-1">
-                <p className="font-body text-sm text-forest-700">
-                  <span className="font-semibold">{detailRequest._count.introductions}</span> {t("admin.introductionsLabel", "introduction(s)")} ·{" "}
-                  <span className="font-semibold">{detailRequest._count.conversations}</span> {t("admin.conversationsLabel", "conversation(s)")}
-                </p>
-              </div>
+              {detailLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <svg className="animate-spin h-6 w-6 text-forest-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
+              ) : isV2Request(detailData || detailRequest) ? (
+                /* V2 Request Details */
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="label-text">{t("request.mortgageCategory", "Mortgage Category")}</p>
+                      <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).mortgageCategory === "COMMERCIAL" ? t("request.commercial", "Commercial") : t("request.residential", "Residential")}</p>
+                    </div>
+                    <div>
+                      <p className="label-text">{t("admin.location", "Location")}</p>
+                      <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).province}{(detailData || detailRequest).city ? `, ${(detailData || detailRequest).city}` : ""}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="label-text">{t("request.selectProducts", "Products")}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {((detailData || detailRequest).productTypes ?? []).map((pt: string) => (
+                        <span key={pt} className="inline-flex items-center rounded-full bg-cream-200 px-2.5 py-0.5 font-body text-xs font-medium text-forest-700">
+                          {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Residential sub-details */}
+                  {(detailData || detailRequest).mortgageCategory === "RESIDENTIAL" && (detailData?.details || detailRequest.details) && (() => {
+                    const details = detailData?.details || detailRequest.details;
+                    return (
+                      <div className="rounded-lg bg-cream-50 p-4 space-y-3">
+                        <p className="font-body text-xs font-semibold uppercase tracking-wide text-forest-600">{t("request.residential", "Residential")} Details</p>
+                        {details.purposeOfUse && (
+                          <div>
+                            <p className="label-text">{t("request.purposeOfUse", "Purpose of Use")}</p>
+                            <p className="font-body text-sm text-forest-800">{details.purposeOfUse === "OWNER_OCCUPIED" ? t("request.ownerOccupied", "Owner Occupied") : t("request.rental", "Rental")}</p>
+                          </div>
+                        )}
+                        {details.incomeTypes && Array.isArray(details.incomeTypes) && details.incomeTypes.length > 0 && (
+                          <div>
+                            <p className="label-text">{t("request.incomeType", "Income Types")}</p>
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {(details.incomeTypes as string[]).map((it: string) => (
+                                <span key={it} className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 font-body text-xs font-medium text-amber-800">
+                                  {t(INCOME_TYPE_LABEL_KEYS[it] ?? it)}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {details.incomeTypeOther && (
+                          <div>
+                            <p className="label-text">{t("request.incomeTypeOther", "Income Type (Other)")}</p>
+                            <p className="font-body text-sm text-forest-800">{details.incomeTypeOther as string}</p>
+                          </div>
+                        )}
+                        {details.annualIncome && typeof details.annualIncome === "object" && (
+                          <div>
+                            <p className="label-text">{t("request.annualIncome", "Annual Income")}</p>
+                            <div className="grid grid-cols-3 gap-2 mt-1">
+                              {Object.entries(details.annualIncome as Record<string, number>).map(([year, amount]) => (
+                                <div key={year} className="rounded-lg bg-white p-2 text-center border border-cream-200">
+                                  <p className="font-body text-xs text-forest-700/60">{year}</p>
+                                  <p className="font-body text-sm font-semibold text-forest-800">{formatCurrency(amount)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Commercial sub-details */}
+                  {(detailData || detailRequest).mortgageCategory === "COMMERCIAL" && (detailData?.details || detailRequest.details) && (() => {
+                    const details = detailData?.details || detailRequest.details;
+                    return (
+                      <div className="rounded-lg bg-cream-50 p-4 space-y-3">
+                        <p className="font-body text-xs font-semibold uppercase tracking-wide text-forest-600">{t("request.commercial", "Commercial")} Details</p>
+                        {details.businessType && (
+                          <div>
+                            <p className="label-text">{t("request.businessType", "Business Type")}</p>
+                            <p className="font-body text-sm text-forest-800">{details.businessType as string}</p>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-3 gap-4">
+                          {details.corporateAnnualIncome != null && (
+                            <div>
+                              <p className="label-text">{t("request.corporateAnnualIncome", "Corporate Annual Income")}</p>
+                              <p className="font-body text-sm text-forest-800">{formatCurrency(details.corporateAnnualIncome as number)}</p>
+                            </div>
+                          )}
+                          {details.corporateAnnualExpenses != null && (
+                            <div>
+                              <p className="label-text">{t("request.corporateAnnualExpenses", "Corporate Annual Expenses")}</p>
+                              <p className="font-body text-sm text-forest-800">{formatCurrency(details.corporateAnnualExpenses as number)}</p>
+                            </div>
+                          )}
+                          {details.ownerNetIncome != null && (
+                            <div>
+                              <p className="label-text">{t("request.ownerNetIncome", "Owner Net Income")}</p>
+                              <p className="font-body text-sm text-forest-800">{formatCurrency(details.ownerNetIncome as number)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="label-text">{t("request.desiredTimeline", "Desired Timeline")}</p>
+                      <p className="font-body text-sm text-forest-800">
+                        {(detailData?.desiredTimeline || detailRequest.desiredTimeline)
+                          ? t(TIMELINE_LABEL_KEYS[detailData?.desiredTimeline || detailRequest.desiredTimeline!] ?? (detailData?.desiredTimeline || detailRequest.desiredTimeline))
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {(detailData?.notes || detailRequest.notes) && (
+                    <div>
+                      <p className="label-text">{t("admin.borrowerNotes", "Borrower Notes")}</p>
+                      <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-lg p-3">{detailData?.notes || detailRequest.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* V1 Legacy Request Details */
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="label-text">{t("admin.type", "Type")}</p>
+                      <p className="font-body text-sm text-forest-800">{getRequestTitle(detailData || detailRequest)}</p>
+                    </div>
+                    <div>
+                      <p className="label-text">{t("admin.propertyType", "Property Type")}</p>
+                      <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).propertyType || "—"}</p>
+                    </div>
+                    <div>
+                      <p className="label-text">{t("admin.location", "Location")}</p>
+                      <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).province}{(detailData || detailRequest).city ? `, ${(detailData || detailRequest).city}` : ""}</p>
+                    </div>
+                    <div>
+                      <p className="label-text">{t("admin.priceRange", "Price Range")}</p>
+                      <p className="font-body text-sm text-forest-800">{formatCurrency((detailData || detailRequest).priceRangeMin)} — {formatCurrency((detailData || detailRequest).priceRangeMax)}</p>
+                    </div>
+                    <div>
+                      <p className="label-text">{t("admin.mortgageAmount", "Mortgage Amount")}</p>
+                      <p className="font-body text-sm text-forest-800">{formatCurrency((detailData || detailRequest).mortgageAmountMin)} — {formatCurrency((detailData || detailRequest).mortgageAmountMax)}</p>
+                    </div>
+                    {(detailData || detailRequest).downPaymentPercent != null && (
+                      <div>
+                        <p className="label-text">{t("admin.downPayment", "Down Payment")}</p>
+                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).downPaymentPercent}%</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="label-text">{t("admin.incomeRange", "Income Range")}</p>
+                      <p className="font-body text-sm text-forest-800">{formatCurrency((detailData || detailRequest).incomeRangeMin)} — {formatCurrency((detailData || detailRequest).incomeRangeMax)}</p>
+                    </div>
+                    {(detailData || detailRequest).employmentType && (
+                      <div>
+                        <p className="label-text">{t("admin.employmentType", "Employment Type")}</p>
+                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).employmentType}</p>
+                      </div>
+                    )}
+                    {(detailData || detailRequest).creditScoreBand && (
+                      <div>
+                        <p className="label-text">{t("admin.creditScore", "Credit Score")}</p>
+                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).creditScoreBand}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="label-text">{t("admin.debtRange", "Debt Range")}</p>
+                      <p className="font-body text-sm text-forest-800">{formatCurrency((detailData || detailRequest).debtRangeMin)} — {formatCurrency((detailData || detailRequest).debtRangeMax)}</p>
+                    </div>
+                    {(detailData || detailRequest).preferredTerm && (
+                      <div>
+                        <p className="label-text">{t("admin.preferredTerm", "Preferred Term")}</p>
+                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).preferredTerm}</p>
+                      </div>
+                    )}
+                    {(detailData || detailRequest).preferredType && (
+                      <div>
+                        <p className="label-text">{t("admin.preferredType", "Preferred Type")}</p>
+                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).preferredType}</p>
+                      </div>
+                    )}
+                    {(detailData || detailRequest).closingTimeline && (
+                      <div>
+                        <p className="label-text">{t("admin.closingTimeline", "Closing Timeline")}</p>
+                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).closingTimeline}</p>
+                      </div>
+                    )}
+                  </div>
+                  {(detailData?.notes || detailRequest.notes) && (
+                    <div>
+                      <p className="label-text">{t("admin.borrowerNotes", "Borrower Notes")}</p>
+                      <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-lg p-3">{detailData?.notes || detailRequest.notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Section 4: Broker Introductions */}
+            <div className="card-elevated mb-6">
+              <h4 className="heading-sm mb-3">{t("admin.introductionDetails", "Broker Introductions")}</h4>
+              {detailLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <svg className="animate-spin h-5 w-5 text-forest-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
+              ) : detailData?.introductions && detailData.introductions.length > 0 ? (
+                <div className="space-y-3">
+                  {detailData.introductions.map((intro: any, idx: number) => (
+                    <div key={idx} className="rounded-lg border border-cream-200 p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-body text-sm font-semibold text-forest-800">
+                            {t("admin.brokerNameLabel", "Broker")}: {intro.broker?.user?.name || "—"}
+                          </p>
+                          <p className="font-body text-xs text-forest-700/60">
+                            {t("admin.brokerageLabel", "Brokerage")}: {intro.broker?.brokerageName || "—"} · {intro.broker?.user?.email || "—"}
+                          </p>
+                        </div>
+                        <p className="font-body text-xs text-forest-700/50">{formatDate(intro.createdAt)}</p>
+                      </div>
+                      <div>
+                        <p className="label-text">{t("admin.howCanHelp", "How Can Help")}</p>
+                        <p className="font-body text-sm text-forest-800 bg-cream-50 rounded-lg p-2">{intro.howCanHelp}</p>
+                      </div>
+                      <div>
+                        <p className="label-text">{t("admin.personalMessageLabel", "Personal Message")}</p>
+                        <p className="font-body text-sm text-forest-700/80">{intro.personalMessage}</p>
+                      </div>
+                      {intro.experience && (
+                        <div>
+                          <p className="label-text">{t("admin.experienceLabel", "Experience")}</p>
+                          <p className="font-body text-sm text-forest-700/80">{intro.experience}</p>
+                        </div>
+                      )}
+                      {intro.lenderNetwork && (
+                        <div>
+                          <p className="label-text">{t("admin.lenderNetworkLabel", "Lender Network")}</p>
+                          <p className="font-body text-sm text-forest-700/80">{intro.lenderNetwork}</p>
+                        </div>
+                      )}
+                      {intro.processNotes && (
+                        <div>
+                          <p className="label-text">{t("admin.processNotesLabel", "Process Notes")}</p>
+                          <p className="font-body text-sm text-forest-700/80">{intro.processNotes}</p>
+                        </div>
+                      )}
+                      {intro.estimatedTimeline && (
+                        <div>
+                          <p className="label-text">{t("admin.estimatedTimelineLabel", "Estimated Timeline")}</p>
+                          <p className="font-body text-sm text-forest-700/80">{intro.estimatedTimeline}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-body-sm text-forest-700/50">{t("admin.noIntroductionsShort", "No introductions yet.")}</p>
+              )}
+            </div>
+
+            {/* Section 5: Conversations Summary */}
+            <div className="card-elevated mb-4">
+              <h4 className="heading-sm mb-3">{t("admin.conversationSummary", "Conversations Summary")}</h4>
+              {detailLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <svg className="animate-spin h-5 w-5 text-forest-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
+              ) : detailData?.conversations && detailData.conversations.length > 0 ? (
+                <div className="space-y-2">
+                  {detailData.conversations.map((conv: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between rounded-lg border border-cream-200 p-3">
+                      <div>
+                        <p className="font-body text-sm font-semibold text-forest-800">
+                          {conv.broker?.user?.name || "—"}
+                        </p>
+                        <p className="font-body text-xs text-forest-700/60">
+                          {conv.broker?.brokerageName || "—"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-body text-[11px] font-semibold uppercase ${conv.status === "ACTIVE" ? "bg-forest-100 text-forest-700" : "bg-sage-200 text-sage-700"}`}>
+                          {conv.status}
+                        </span>
+                        <span className="font-body text-xs text-forest-700/70">
+                          {t("admin.messageCount", "Messages")}: {conv._count?.messages ?? 0}
+                        </span>
+                        <span className="font-body text-xs text-forest-700/50">
+                          {t("admin.lastActivityLabel", "Last activity")}: {formatDate(conv.updatedAt)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-body-sm text-forest-700/50">{t("admin.noConversationsShort", "No conversations yet.")}</p>
+              )}
             </div>
           </div>
         </div>
