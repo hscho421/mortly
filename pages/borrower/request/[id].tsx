@@ -385,7 +385,7 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
           <DetailRow
             label={t("request.purposeOfUse")}
             value={
-              (Array.isArray((details as ResidentialDetails).purposeOfUse) ? (details as ResidentialDetails).purposeOfUse : [(details as ResidentialDetails).purposeOfUse]).map((v: string) => v === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")).join(", ")
+              (([] as string[]).concat((details as ResidentialDetails).purposeOfUse)).map((v) => v === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")).join(", ")
             }
           />
           <div className="flex justify-between py-3 border-b border-cream-200">
