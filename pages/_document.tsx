@@ -31,6 +31,10 @@ export default class MyDocument extends Document<Props> {
         <Head>
           <link rel="icon" href="/logo/favicon.svg" type="image/svg+xml" />
           <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+          <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"
+          />
         </Head>
         <body className="antialiased">
           <div className="grain-overlay" aria-hidden="true" />
