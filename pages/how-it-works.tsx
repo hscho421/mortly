@@ -49,54 +49,6 @@ export default function HowItWorks() {
         </svg>
       ),
     },
-    {
-      number: "5",
-      title: t("howItWorks.bStep5Title"),
-      description: t("howItWorks.bStep5Desc"),
-      icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      ),
-    },
-    {
-      number: "6",
-      title: t("howItWorks.bStep6Title"),
-      description: t("howItWorks.bStep6Desc"),
-      icon: (
-        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-        </svg>
-      ),
-    },
-  ];
-
-  const brokerSteps = [
-    {
-      number: "1",
-      title: t("howItWorks.brStep1Title"),
-      description: t("howItWorks.brStep1Desc"),
-    },
-    {
-      number: "2",
-      title: t("howItWorks.brStep2Title"),
-      description: t("howItWorks.brStep2Desc"),
-    },
-    {
-      number: "3",
-      title: t("howItWorks.brStep3Title"),
-      description: t("howItWorks.brStep3Desc"),
-    },
-    {
-      number: "4",
-      title: t("howItWorks.brStep4Title"),
-      description: t("howItWorks.brStep4Desc"),
-    },
-    {
-      number: "5",
-      title: t("howItWorks.brStep5Title"),
-      description: t("howItWorks.brStep5Desc"),
-    },
   ];
 
   const faqs = [
@@ -119,10 +71,6 @@ export default function HowItWorks() {
     {
       q: t("howItWorks.faq5Q"),
       a: t("howItWorks.faq5A"),
-    },
-    {
-      q: t("howItWorks.faq6Q"),
-      a: t("howItWorks.faq6A"),
     },
   ];
 
@@ -185,42 +133,6 @@ export default function HowItWorks() {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Broker Flow */}
-      <section className="section-padding bg-cream-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-16 animate-fade-in-up opacity-0">
-            <span className="inline-block px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-amber-700 bg-amber-100 rounded-full mb-5 font-body">
-              {t("howItWorks.forBrokers")}
-            </span>
-            <h2 className="heading-lg">{t("howItWorks.brokerTitle")}</h2>
-          </div>
-
-          <div className="relative">
-            {/* Vertical timeline line */}
-            <div className="absolute left-6 top-6 bottom-6 w-px bg-amber-300/40 hidden md:block" />
-
-            <div className="space-y-8">
-              {brokerSteps.map((step, index) => (
-                <div
-                  key={step.number}
-                  className={`animate-slide-in-right opacity-0 stagger-${Math.min(index + 1, 6)} relative flex items-center gap-4 sm:gap-6 md:pl-0`}
-                >
-                  <div className="flex-shrink-0 relative z-10">
-                    <div className="w-12 h-12 rounded-full bg-amber-500 text-forest-900 flex items-center justify-center font-display text-lg">
-                      {step.number}
-                    </div>
-                  </div>
-                  <div className="card-elevated flex-1 flex flex-col justify-center">
-                    <h3 className="heading-sm mb-2">{step.title}</h3>
-                    <p className="text-body-sm">{step.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
