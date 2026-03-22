@@ -69,11 +69,11 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
       {/* How It Works */}
       <section className="section-padding bg-cream-100">
         <div className="max-w-7xl mx-auto">
-          <div className="max-w-2xl mb-16 animate-fade-in-up opacity-0">
+          <div className="max-w-3xl mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
               {t("home.theProcess")}
             </span>
-            <h2 className="heading-lg">
+            <h2 className="heading-lg sm:whitespace-nowrap">
               {t("home.threeSteps")}
             </h2>
           </div>
