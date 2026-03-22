@@ -7,66 +7,6 @@ import { useTranslation } from "next-i18next";
 export default function ForBrokers() {
   const { t } = useTranslation("common");
 
-  const tiers = [
-    {
-      name: t("pricing.freeName"),
-      price: "$0",
-      period: "",
-      description: t("pricing.freeDesc"),
-      features: [
-        t("pricing.val_standardListing"),
-        t("pricing.feat_introductions") + ": " + t("pricing.val_none"),
-      ],
-      cta: t("pricing.freeCta"),
-      featured: false,
-    },
-    {
-      name: t("pricing.basicName"),
-      price: "$49",
-      period: t("pricing.perMonth"),
-      description: t("pricing.basicDesc"),
-      features: [
-        t("pricing.val_5perMonth"),
-        t("pricing.val_standardListing"),
-        t("pricing.feat_notifications"),
-        t("pricing.val_emailSupport"),
-      ],
-      cta: t("pricing.basicCta"),
-      featured: false,
-    },
-    {
-      name: t("pricing.proName"),
-      price: "$149",
-      period: t("pricing.perMonth"),
-      description: t("pricing.proDesc"),
-      features: [
-        t("pricing.val_20perMonth"),
-        t("pricing.val_priority") + " " + t("pricing.feat_placement").toLowerCase(),
-        t("pricing.val_enhancedListing"),
-        t("pricing.feat_leadFilters"),
-        t("pricing.val_prioritySupport"),
-      ],
-      cta: t("pricing.proCta"),
-      featured: true,
-    },
-    {
-      name: t("pricing.premiumName"),
-      price: "$349",
-      period: t("pricing.perMonth"),
-      description: t("pricing.premiumDesc"),
-      features: [
-        t("pricing.val_unlimited"),
-        t("pricing.feat_badge"),
-        t("pricing.val_topOfResults"),
-        t("pricing.feat_accountManager"),
-        t("pricing.feat_analytics"),
-        t("pricing.feat_teamTools"),
-      ],
-      cta: t("pricing.premiumCta"),
-      featured: false,
-    },
-  ];
-
   const benefits = [
     {
       title: t("forBrokers.benefit1Title"),
@@ -134,8 +74,8 @@ export default function ForBrokers() {
             {t("forBrokers.subtitle")}
           </p>
           <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/pricing" className="btn-amber px-8 py-4 text-base">
-              {t("forBrokers.viewPricing")}
+            <Link href="/signup?role=broker" className="btn-amber px-8 py-4 text-base">
+              {t("forBrokers.signUpBroker")}
             </Link>
             <Link href="/how-it-works" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
               {t("forBrokers.seeHowItWorks")}
@@ -191,83 +131,6 @@ export default function ForBrokers() {
         </div>
       </section>
 
-      {/* Pricing Preview */}
-      <section className="section-padding bg-cream-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 animate-fade-in-up opacity-0">
-            <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              {t("forBrokers.investmentBadge")}
-            </span>
-            <h2 className="heading-lg">{t("forBrokers.pricingTitle")}</h2>
-            <p className="text-body mt-4">{t("forBrokers.pricingSubtitle")}</p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {tiers.map((tier, index) => (
-              <div
-                key={tier.name}
-                className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)} rounded-2xl p-8 flex flex-col transition-all duration-300 ${
-                  tier.featured
-                    ? "bg-forest-800 text-cream-100 ring-2 ring-amber-400 relative scale-[1.02]"
-                    : "card"
-                }`}
-              >
-                {tier.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-forest-900 text-xs font-bold rounded-full uppercase tracking-wider font-body">
-                    {t("forBrokers.mostPopular")}
-                  </div>
-                )}
-                <h3 className={`font-body text-sm font-semibold uppercase tracking-wider ${tier.featured ? "text-amber-400" : "text-sage-500"}`}>
-                  {tier.name}
-                </h3>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className={`font-display text-4xl ${tier.featured ? "text-cream-100" : "text-forest-800"}`}>
-                    {tier.price}
-                  </span>
-                  <span className={`font-body text-sm ${tier.featured ? "text-cream-300/60" : "text-sage-400"}`}>
-                    {tier.period}
-                  </span>
-                </div>
-                <p className={`mt-3 text-body-sm ${tier.featured ? "!text-cream-300/70" : ""}`}>
-                  {tier.description}
-                </p>
-                <ul className="mt-6 space-y-3 flex-1">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5 text-sm font-body">
-                      <svg
-                        className={`w-5 h-5 flex-shrink-0 ${tier.featured ? "text-amber-400" : "text-forest-500"}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className={tier.featured ? "text-cream-200" : "text-forest-700/80"}>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/pricing"
-                  className={`mt-8 block text-center w-full py-3 rounded-lg font-semibold text-sm transition-all duration-300 font-body ${
-                    tier.featured
-                      ? "bg-amber-400 text-forest-900 hover:bg-amber-300"
-                      : "btn-primary"
-                  }`}
-                >
-                  {tier.cta}
-                </Link>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-10">
-            <Link href="/pricing" className="text-forest-700 font-body font-medium hover:text-forest-900 transition-colors">
-              View full pricing details <span className="ml-1">&rarr;</span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* CTA */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-forest-800" />
@@ -280,7 +143,7 @@ export default function ForBrokers() {
             {t("forBrokers.ctaSubtitle")}
           </p>
           <Link
-            href="/pricing"
+            href="/signup?role=broker"
             className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
           >
             {t("forBrokers.signUpBroker")}
