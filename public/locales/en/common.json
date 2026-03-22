@@ -910,7 +910,8 @@
     "faq4Q": "How are brokers verified?",
     "faq4A": "Every broker on mortly must hold a valid mortgage broker license. We verify credentials, check references, and monitor ongoing performance and reviews.",
     "faq5Q": "Can I receive multiple broker responses?",
-    "faq5A": "Absolutely. In fact, that is the core value of mortly Multiple qualified brokers can express interest in your request, giving you the power to compare and choose the best fit."
+    "faq5A": "Absolutely. In fact, that is the core value of mortly Multiple qualified brokers can express interest in your request, giving you the power to compare and choose the best fit.",
+    "moreQuestions": "Have more questions? Email us and we'll do our best to help you —"
   },
   "forBrokers": {
     "badge": "For Mortgage Brokers",

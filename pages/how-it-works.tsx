@@ -158,6 +158,15 @@ export default function HowItWorks() {
               </div>
             ))}
           </div>
+
+          <div className="mt-12 text-center animate-fade-in-up opacity-0">
+            <p className="text-body text-sage-500">
+              {t("howItWorks.moreQuestions")}{" "}
+              <a href="mailto:support@mortly.ca" className="text-forest-700 font-medium hover:text-forest-900 underline underline-offset-2 transition-colors">
+                support@mortly.ca
+              </a>
+            </p>
+          </div>
         </div>
       </section>
 
