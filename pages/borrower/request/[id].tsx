@@ -54,7 +54,7 @@ type RequestData = any;
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   return {
     props: {
-      ...(await serverSideTranslations(ctx.locale ?? "en", ["common"], nextI18NextConfig)),
+      ...(await serverSideTranslations(ctx.locale ?? "ko", ["common"], nextI18NextConfig)),
     },
   };
 };

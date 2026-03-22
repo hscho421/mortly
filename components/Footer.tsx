@@ -24,14 +24,14 @@ export default function Footer() {
               {t("footer.platform")}
             </h4>
             <nav className="mt-4 flex flex-col gap-3">
+              <Link href="/about" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
+                {t("about.badge")}
+              </Link>
               <Link href="/how-it-works" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
                 {t("nav.howItWorks")}
               </Link>
               <Link href="/for-borrowers" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
                 {t("nav.forBorrowers")}
-              </Link>
-              <Link href="/about" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                {t("about.badge")}
               </Link>
               <Link href="/for-brokers" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
                 {t("nav.forBrokers")}

@@ -89,7 +89,10 @@ export default function ForBorrowers() {
           </h1>
           <p className="animate-fade-in-up opacity-0 stagger-3 mt-8 text-lg text-cream-300/70 leading-relaxed max-w-2xl mx-auto font-body">
             {t("forBorrowers.subtitle")}
+            <br />
+            {t("forBorrowers.subtitle2")}
           </p>
+          
           <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup?role=borrower" className="btn-amber px-8 py-4 text-base">
               {t("forBorrowers.submitRequest")}
@@ -137,7 +140,7 @@ export default function ForBorrowers() {
               { value: "100%", label: t("forBorrowers.statFree") },
               { value: t("forBorrowers.statAnonymousValue"), label: t("forBorrowers.statAnonymous") },
               { value: t("forBorrowers.statLicensedValue"), label: t("forBorrowers.statLicensed") },
-              { value: "$0", label: t("forBorrowers.statNoCost") },
+              { value: "0%", label: t("forBorrowers.statNoCost") },
             ].map((stat, index) => (
               <div key={stat.label} className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)}`}>
                 <div className="font-display text-3xl sm:text-4xl text-amber-400">{stat.value}</div>
@@ -207,6 +210,6 @@ export default function ForBorrowers() {
 
 export const getStaticProps = async ({ locale }: { locale: string }) => ({
   props: {
-    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
   },
 });

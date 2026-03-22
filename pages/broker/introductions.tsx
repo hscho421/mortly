@@ -214,6 +214,6 @@ export default function BrokerIntroductionsPage() {
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({
   props: {
-    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
   },
 });

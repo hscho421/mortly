@@ -16,7 +16,7 @@ export default class MyDocument extends Document<Props> {
     const initialProps = await Document.getInitialProps(ctx);
     return {
       ...initialProps,
-      locale: ctx.locale ?? "en",
+      locale: ctx.locale ?? "ko",
     };
   }
 

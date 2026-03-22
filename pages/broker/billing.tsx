@@ -414,6 +414,6 @@ export default function BrokerBillingPage() {
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({
   props: {
-    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
   },
 });

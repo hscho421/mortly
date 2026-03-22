@@ -395,6 +395,6 @@ export default function AdminConversationDetail() {
 
 export const getServerSideProps: GetServerSideProps = async ({ locale }) => ({
   props: {
-    ...(await serverSideTranslations(locale ?? "en", ["common"], nextI18NextConfig)),
+    ...(await serverSideTranslations(locale ?? "ko", ["common"], nextI18NextConfig)),
   },
 });

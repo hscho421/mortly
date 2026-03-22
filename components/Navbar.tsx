@@ -135,7 +135,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo/grey_logo.svg" alt="mortly" className="h-8" />
+            <img src="/logo/grey_logo.svg" alt="mortly" className="h-6" />
           </Link>
 
           {/* Desktop center links */}
@@ -162,16 +162,6 @@ export default function Navbar() {
             {/* Language switcher */}
             <div className="flex items-center rounded-full bg-cream-300/50 p-0.5 mr-2">
               <button
-                onClick={() => switchLocale("en")}
-                className={`rounded-full px-2 py-1 font-body text-[11px] font-semibold tracking-wide transition-all duration-200 ${
-                  router.locale === "en"
-                    ? "bg-forest-800 text-cream-100 shadow-sm"
-                    : "text-forest-500 hover:text-forest-700"
-                }`}
-              >
-                EN
-              </button>
-              <button
                 onClick={() => switchLocale("ko")}
                 className={`rounded-full px-2 py-1 font-body text-[11px] font-semibold tracking-wide transition-all duration-200 ${
                   router.locale === "ko"
@@ -180,6 +170,16 @@ export default function Navbar() {
                 }`}
               >
                 KO
+              </button>
+              <button
+                onClick={() => switchLocale("en")}
+                className={`rounded-full px-2 py-1 font-body text-[11px] font-semibold tracking-wide transition-all duration-200 ${
+                  router.locale === "en"
+                    ? "bg-forest-800 text-cream-100 shadow-sm"
+                    : "text-forest-500 hover:text-forest-700"
+                }`}
+              >
+                EN
               </button>
             </div>
 
@@ -382,20 +382,20 @@ export default function Navbar() {
             <span className="text-[11px] font-body text-forest-500/60 font-medium tracking-wide uppercase mr-2">Lang</span>
             <div className="flex items-center rounded-full bg-cream-200/80 p-0.5">
               <button
-                onClick={() => { switchLocale("en"); setMobileOpen(false); }}
-                className={`rounded-full px-2.5 py-1 font-body text-[11px] font-semibold transition-all duration-200 ${
-                  router.locale === "en" ? "bg-forest-800 text-cream-100 shadow-sm" : "text-forest-500"
-                }`}
-              >
-                EN
-              </button>
-              <button
                 onClick={() => { switchLocale("ko"); setMobileOpen(false); }}
                 className={`rounded-full px-2.5 py-1 font-body text-[11px] font-semibold transition-all duration-200 ${
                   router.locale === "ko" ? "bg-forest-800 text-cream-100 shadow-sm" : "text-forest-500"
                 }`}
               >
                 KO
+              </button>
+              <button
+                onClick={() => { switchLocale("en"); setMobileOpen(false); }}
+                className={`rounded-full px-2.5 py-1 font-body text-[11px] font-semibold transition-all duration-200 ${
+                  router.locale === "en" ? "bg-forest-800 text-cream-100 shadow-sm" : "text-forest-500"
+                }`}
+              >
+                EN
               </button>
             </div>
           </div>

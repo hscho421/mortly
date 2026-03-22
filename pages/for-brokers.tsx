@@ -72,13 +72,12 @@ export default function ForBrokers() {
           </h1>
           <p className="animate-fade-in-up opacity-0 stagger-3 mt-8 text-lg text-cream-300/70 leading-relaxed max-w-2xl mx-auto font-body">
             {t("forBrokers.subtitle")}
+            <br />
+            {t("forBrokers.subtitle2")}
           </p>
-          <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="animate-fade-in-up opacity-0 stagger-4 mt-10">
             <Link href="/signup?role=broker" className="btn-amber px-8 py-4 text-base">
               {t("forBrokers.signUpBroker")}
-            </Link>
-            <Link href="/how-it-works" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
-              {t("forBrokers.seeHowItWorks")}
             </Link>
           </div>
         </div>
@@ -112,24 +111,6 @@ export default function ForBrokers() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-16 bg-forest-800">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center">
-            {[
-              { value: "93%", label: t("forBrokers.satisfactionRate") },
-              { value: "4.8x", label: t("forBrokers.roiVsAds") },
-              { value: "72hr", label: t("forBrokers.avgResponseTime") },
-              { value: "100%", label: t("forBrokers.activeMarkets") },
-            ].map((stat, index) => (
-              <div key={stat.label} className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)}`}>
-                <div className="font-display text-3xl sm:text-4xl text-amber-400">{stat.value}</div>
-                <div className="mt-2 text-sm text-cream-300/60 font-body">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="relative overflow-hidden">
@@ -137,7 +118,7 @@ export default function ForBrokers() {
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_60%,_theme(colors.amber.400),_transparent_50%)]" />
         <div className="relative section-padding max-w-3xl mx-auto text-center">
           <h2 className="animate-fade-in-up opacity-0 font-display text-3xl sm:text-4xl lg:text-5xl tracking-tight text-cream-100">
-            {t("forBrokers.ctaTitle")}
+            {t("forBrokers.ctaTitle1")}<span className="text-amber-400">{t("forBrokers.ctaAccent")}</span>{t("forBrokers.ctaTitle2")}
           </h2>
           <p className="animate-fade-in-up opacity-0 stagger-1 mt-6 text-lg text-cream-300/70 font-body">
             {t("forBrokers.ctaSubtitle")}
@@ -156,6 +137,6 @@ export default function ForBrokers() {
 
 export const getStaticProps = async ({ locale }: { locale: string }) => ({
   props: {
-    ...(await serverSideTranslations(locale ?? "en", ["common"])),
+    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
   },
 });
