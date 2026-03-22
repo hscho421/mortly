@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { useState, useEffect } from "react";
 import type { AppProps } from "next/app";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { SessionProvider, useSession } from "next-auth/react";
 import { appWithTranslation } from "next-i18next";
@@ -51,6 +52,12 @@ function App({
 }: AppProps) {
   return (
     <SessionProvider session={session}>
+      <Head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"
+        />
+      </Head>
       <MaintenanceGate>
         <Component {...pageProps} />
       </MaintenanceGate>
