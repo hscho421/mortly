@@ -117,7 +117,7 @@ export default async function handler(
       const activeCount = await prisma.borrowerRequest.count({
         where: {
           borrowerId: session.user.id,
-          status: { in: ["OPEN", "IN_PROGRESS"] },
+          status: { in: ["PENDING_APPROVAL", "OPEN", "IN_PROGRESS"] },
         },
       });
       if (activeCount >= maxRequests) {

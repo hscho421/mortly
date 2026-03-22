@@ -8,6 +8,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
+import ConsultationStepper from "@/components/ConsultationStepper";
 import RequestForm from "@/components/RequestForm";
 import type { CreateRequestInput, ResidentialDetails, CommercialDetails } from "@/types";
 import { isV2Request, PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
@@ -156,7 +157,7 @@ export default function RequestDetail() {
     );
   }
 
-  const isOpen = request.status === "OPEN";
+  const isEditable = request.status === "OPEN" || request.status === "PENDING_APPROVAL";
   const v2 = isV2Request(request);
 
   // Build initial values for editing a v2 request
@@ -217,7 +218,7 @@ export default function RequestDetail() {
           </div>
 
           <div className="flex items-center gap-3">
-            {isOpen && !isEditing && (
+            {isEditable && !isEditing && (
               <>
                 <button
                   onClick={() => setIsEditing(true)}
@@ -241,6 +242,54 @@ export default function RequestDetail() {
             </Link>
           </div>
         </div>
+
+        {/* Rejection banner */}
+        {request.status === "REJECTED" && (
+          <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 p-6 animate-fade-in-up stagger-2">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-rose-100">
+                <svg className="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-body text-sm font-semibold text-rose-700">{t("request.rejectedTitle", "Request Not Approved")}</h3>
+                <p className="mt-1 font-body text-sm text-rose-600">
+                  {request.rejectionReason || t("request.rejectedNote", "This request was not approved.")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pending approval banner */}
+        {request.status === "PENDING_APPROVAL" && (
+          <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 animate-fade-in-up stagger-2">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
+                <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-body text-sm font-semibold text-amber-700">{t("status.pendingApproval", "Pending Approval")}</h3>
+                <p className="mt-1 font-body text-sm text-amber-600">
+                  {t("request.pendingApprovalNote", "Your request is under review. You'll be notified once approved.")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Consultation Progress Stepper */}
+        {request.status !== "REJECTED" && (
+          <ConsultationStepper
+            requestStatus={request.status}
+            hasIntroduction={introCount > 0}
+            hasActiveConversation={request.conversations?.some((c: { status: string }) => c.status === "ACTIVE") ?? false}
+            conversationClosed={request.conversations?.some((c: { status: string }) => c.status === "CLOSED") ?? false}
+          />
+        )}
 
         {/* Broker responses card */}
         <div className="card-elevated mb-8 animate-fade-in-up stagger-2">

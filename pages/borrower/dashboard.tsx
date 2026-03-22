@@ -141,13 +141,13 @@ export default function BorrowerDashboard() {
               const introCount =
                 req._count?.introductions ?? req.introductions?.length ?? 0;
 
-              const isExpired = req.status === "EXPIRED";
+              const isDimmed = req.status === "EXPIRED" || req.status === "REJECTED";
 
               return (
                 <Link
                   key={req.id}
                   href={`/borrower/request/${req.publicId}`}
-                  className={`card-elevated group block transition-all animate-fade-in-up ${staggerClass} ${isExpired ? "opacity-60" : "hover:shadow-lg hover:-translate-y-0.5"}`}
+                  className={`card-elevated group block transition-all animate-fade-in-up ${staggerClass} ${isDimmed ? "opacity-60" : "hover:shadow-lg hover:-translate-y-0.5"}`}
                 >
                   {/* Top row: type + status */}
                   <div className="flex items-center justify-between mb-3">
@@ -168,6 +168,18 @@ export default function BorrowerDashboard() {
                     )}
                     <StatusBadge status={req.status} />
                   </div>
+
+                  {/* Status notes */}
+                  {req.status === "PENDING_APPROVAL" && (
+                    <p className="font-body text-xs text-amber-600 mb-2">
+                      {t("request.pendingApprovalNote", "Your request is under review.")}
+                    </p>
+                  )}
+                  {req.status === "REJECTED" && (
+                    <p className="font-body text-xs text-rose-600 mb-2">
+                      {t("request.rejectedNote", "This request was not approved.")}
+                    </p>
+                  )}
 
                   {/* Location */}
                   <h3 className="heading-sm mb-1 group-hover:text-forest-900 transition-colors">

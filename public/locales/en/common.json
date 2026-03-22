@@ -179,6 +179,10 @@
     "notSpecified": "Not specified",
     "expired": "Expired",
     "expirationNote": "Requests expire after 30 days of inactivity.",
+    "pendingApprovalNote": "Your request is under review. You'll be notified once approved.",
+    "rejectedNote": "This request was not approved.",
+    "rejectedTitle": "Request Not Approved",
+    "rejectionReason": "Reason",
     "edit": "Edit",
     "delete": "Delete",
     "deleteConfirm": "Are you sure? This will permanently delete your request and all related conversations.",
@@ -416,6 +420,15 @@
     "banUser": "Ban",
     "reactivate": "Reactivate",
     "statusUpdated": "Status updated",
+    "approveRequest": "Approve",
+    "rejectRequest": "Reject",
+    "approveConfirm": "Approve this request? It will become visible to brokers.",
+    "rejectConfirm": "Reject this request? Please provide a reason.",
+    "rejectionReason": "Rejection Reason",
+    "rejectReasonPlaceholder": "e.g. Incomplete information, spam",
+    "confirmReject": "Reject Request",
+    "requestApproved": "Request approved",
+    "requestRejected": "Request rejected",
     "adjustCredits": "Credits",
     "adjustCreditsTitle": "Adjust Credits",
     "currentBalance": "Current balance:",
@@ -873,6 +886,7 @@
     "trend3": "Date labels show in Korean format when viewing in Korean language"
   },
   "status": {
+    "pendingApproval": "Pending Approval",
     "open": "Open",
     "active": "Active",
     "verified": "Verified",
@@ -884,6 +898,15 @@
     "reviewed": "Reviewed",
     "resolved": "Resolved",
     "dismissed": "Dismissed"
+  },
+  "consultation": {
+    "step1": "상담 대기중",
+    "step2": "상담 진행중",
+    "step3": "상담완료",
+    "step1Desc": "Waiting for consultation",
+    "step2Desc": "Consultation in progress",
+    "step3Desc": "Consultation complete",
+    "pendingApproval": "Your request is being reviewed before brokers can see it."
   },
   "howItWorks": {
     "badge": "The Process",

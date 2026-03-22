@@ -47,10 +47,12 @@ interface PaginationMeta {
 }
 
 const STATUS_BADGE: Record<string, string> = {
+  PENDING_APPROVAL: "bg-amber-100 text-amber-800",
   OPEN: "bg-forest-100 text-forest-700",
-  IN_PROGRESS: "bg-amber-100 text-amber-800",
+  IN_PROGRESS: "bg-sky-100 text-sky-800",
   CLOSED: "bg-sage-200 text-sage-700",
-  EXPIRED: "bg-rose-100 text-rose-700",
+  EXPIRED: "bg-sage-200 text-sage-600",
+  REJECTED: "bg-rose-100 text-rose-700",
 };
 
 function formatDate(dateStr: string): string {
@@ -97,6 +99,10 @@ export default function AdminRequests() {
   // Delete confirmation
   const [deleteModal, setDeleteModal] = useState<{ id: string; province: string; type: string } | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
+
+  // Reject modal
+  const [rejectModal, setRejectModal] = useState<{ id: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   // Debounce search input
   useEffect(() => {
@@ -195,6 +201,59 @@ export default function AdminRequests() {
       }
     } catch {
       setActionMessage({ id: deleteModal.id, text: "Failed to delete", ok: false });
+    } finally {
+      setActionLoading(null);
+      setTimeout(() => setActionMessage(null), 3000);
+    }
+  };
+
+  const handleQuickApprove = async (publicId: string) => {
+    setActionLoading(publicId);
+    try {
+      const res = await fetch(`/api/admin/requests/${publicId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "OPEN" }),
+      });
+      if (res.ok) {
+        setRequests((prev) =>
+          prev.map((r) => (r.publicId === publicId ? { ...r, status: "OPEN" } : r))
+        );
+        setActionMessage({ id: publicId, text: t("admin.requestApproved", "Request approved"), ok: true });
+      } else {
+        const data = await res.json();
+        setActionMessage({ id: publicId, text: data.error, ok: false });
+      }
+    } catch {
+      setActionMessage({ id: publicId, text: "Failed to approve", ok: false });
+    } finally {
+      setActionLoading(null);
+      setTimeout(() => setActionMessage(null), 3000);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectModal) return;
+    setActionLoading(rejectModal.id);
+    try {
+      const res = await fetch(`/api/admin/requests/${rejectModal.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "REJECTED", reason: rejectReason }),
+      });
+      if (res.ok) {
+        setRequests((prev) =>
+          prev.map((r) => (r.publicId === rejectModal.id ? { ...r, status: "REJECTED" } : r))
+        );
+        setActionMessage({ id: rejectModal.id, text: t("admin.requestRejected", "Request rejected"), ok: true });
+        setRejectModal(null);
+        setRejectReason("");
+      } else {
+        const data = await res.json();
+        setActionMessage({ id: rejectModal.id, text: data.error, ok: false });
+      }
+    } catch {
+      setActionMessage({ id: rejectModal.id, text: "Failed to reject", ok: false });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -316,10 +375,12 @@ export default function AdminRequests() {
                 className="input-field w-auto min-w-[140px]"
               >
                 <option value="ALL">{t("admin.allStatuses", "All Statuses")}</option>
+                <option value="PENDING_APPROVAL">{t("status.pendingApproval", "Pending Approval")}</option>
                 <option value="OPEN">{t("status.open")}</option>
                 <option value="IN_PROGRESS">{t("status.inProgress")}</option>
                 <option value="CLOSED">{t("status.closed")}</option>
                 <option value="EXPIRED">{t("status.expired")}</option>
+                <option value="REJECTED">{t("status.rejected", "Rejected")}</option>
               </select>
             </div>
             <div>
@@ -435,6 +496,26 @@ export default function AdminRequests() {
                     {/* Actions */}
                     <td className="whitespace-nowrap px-4 py-4">
                       <div className="flex items-center gap-2 flex-wrap">
+                        {req.status === "PENDING_APPROVAL" && (
+                          <>
+                            <button
+                              onClick={() => handleQuickApprove(req.publicId)}
+                              disabled={actionLoading === req.publicId}
+                              className="inline-flex items-center justify-center rounded-lg bg-forest-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-forest-700 active:scale-[0.98] disabled:opacity-50"
+                            >
+                              {actionLoading === req.publicId ? "..." : t("admin.approveRequest", "Approve")}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setRejectModal({ id: req.publicId });
+                                setRejectReason("");
+                              }}
+                              className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98]"
+                            >
+                              {t("admin.rejectRequest", "Reject")}
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => setDetailRequest(req)}
                           className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
@@ -606,7 +687,7 @@ export default function AdminRequests() {
                   className="input-field"
                 >
                   <option value="">{t("admin.selectStatus", "Select status...")}</option>
-                  {["OPEN", "IN_PROGRESS", "CLOSED", "EXPIRED"]
+                  {["PENDING_APPROVAL", "OPEN", "IN_PROGRESS", "CLOSED", "EXPIRED", "REJECTED"]
                     .filter((s) => s !== statusModal.currentStatus)
                     .map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -631,6 +712,65 @@ export default function AdminRequests() {
               >
                 {actionLoading === statusModal.id ? "..." : t("admin.confirmStatusChange", "Confirm Status Change")}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {rejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm" onClick={() => setRejectModal(null)} />
+          <div className="relative w-full max-w-md animate-fade-in-up rounded-2xl bg-white p-8 shadow-2xl">
+            <button
+              onClick={() => setRejectModal(null)}
+              className="absolute right-4 top-4 rounded-lg p-1 text-sage-400 transition-colors hover:text-forest-700"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100">
+                <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              </div>
+              <h3 className="heading-md">{t("admin.rejectRequest", "Reject Request")}</h3>
+            </div>
+
+            <p className="text-body-sm mb-4">
+              {t("admin.rejectConfirm", "Reject this request? Please provide a reason.")}
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="rejectReason" className="label-text">{t("admin.rejectionReason", "Rejection Reason")}</label>
+                <input
+                  id="rejectReason"
+                  type="text"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder={t("admin.rejectReasonPlaceholder", "e.g. Incomplete information, spam")}
+                  className="input-field"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setRejectModal(null)}
+                  className="btn-secondary flex-1"
+                >
+                  {t("common.cancel", "Cancel")}
+                </button>
+                <button
+                  onClick={handleReject}
+                  disabled={actionLoading === rejectModal.id}
+                  className="flex-1 inline-flex items-center justify-center rounded-xl bg-rose-600 px-6 py-3 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {actionLoading === rejectModal.id ? "..." : t("admin.confirmReject", "Reject Request")}
+                </button>
+              </div>
             </div>
           </div>
         </div>

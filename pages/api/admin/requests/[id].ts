@@ -77,7 +77,7 @@ export default async function handler(
         return res.status(400).json({ error: "status is required" });
       }
 
-      const validStatuses = ["OPEN", "IN_PROGRESS", "CLOSED", "EXPIRED"];
+      const validStatuses = ["PENDING_APPROVAL", "OPEN", "IN_PROGRESS", "CLOSED", "EXPIRED", "REJECTED"];
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ error: "Invalid status" });
       }
@@ -92,9 +92,18 @@ export default async function handler(
 
       const previousStatus = request.status;
 
+      // Build update data — handle rejectionReason for REJECTED status
+      const updateData: Record<string, unknown> = { status };
+      if (status === "REJECTED" && reason) {
+        updateData.rejectionReason = reason;
+      }
+      if (status === "OPEN" && previousStatus === "REJECTED") {
+        updateData.rejectionReason = null;
+      }
+
       const updated = await prisma.borrowerRequest.update({
         where: { id: request.id },
-        data: { status },
+        data: updateData,
       });
 
       // If closing, also close active conversations
@@ -119,11 +128,25 @@ export default async function handler(
         }
       }
 
+      // Determine the admin action type
+      let actionType = "UPDATE_REQUEST_STATUS";
+      if (status === "OPEN" && previousStatus === "PENDING_APPROVAL") {
+        actionType = "APPROVE_REQUEST";
+      } else if (status === "OPEN" && previousStatus === "REJECTED") {
+        actionType = "REOPEN_REQUEST";
+      } else if (status === "REJECTED") {
+        actionType = "REJECT_REQUEST";
+      } else if (status === "CLOSED") {
+        actionType = "CLOSE_REQUEST";
+      } else if (status === "OPEN") {
+        actionType = "REOPEN_REQUEST";
+      }
+
       // Log the admin action
       await prisma.adminAction.create({
         data: {
           adminId: session.user.id,
-          action: status === "CLOSED" ? "CLOSE_REQUEST" : status === "OPEN" ? "REOPEN_REQUEST" : "UPDATE_REQUEST_STATUS",
+          action: actionType,
           targetType: "REQUEST",
           targetId: request.publicId,
           details: JSON.stringify({ previousStatus, newStatus: status }),

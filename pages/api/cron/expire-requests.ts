@@ -22,7 +22,7 @@ export default async function handler(
 
     const result = await prisma.borrowerRequest.updateMany({
       where: {
-        status: "OPEN",
+        status: { in: ["OPEN", "PENDING_APPROVAL"] },
         createdAt: {
           lt: cutoff,
         },

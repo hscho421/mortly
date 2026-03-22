@@ -43,7 +43,8 @@ model BorrowerRequest {
   details            Json?
   desiredTimeline    String?
   notes              String?
-  status             RequestStatus        @default(OPEN)
+  status             RequestStatus        @default(PENDING_APPROVAL)
+  rejectionReason    String?
   schemaVersion      Int                  @default(1)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
@@ -231,10 +232,12 @@ enum MortgageType {
 }
 
 enum RequestStatus {
+  PENDING_APPROVAL
   OPEN
   IN_PROGRESS
   CLOSED
   EXPIRED
+  REJECTED
 }
 
 enum UserStatus {

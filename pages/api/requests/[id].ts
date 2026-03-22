@@ -36,6 +36,9 @@ export default async function handler(
               broker: { include: { user: true } },
             },
           },
+          conversations: {
+            select: { status: true },
+          },
         },
       });
 
@@ -124,8 +127,8 @@ export default async function handler(
         return res.status(403).json({ error: "Only the owning borrower can edit this request" });
       }
 
-      if (request.status !== "OPEN") {
-        return res.status(400).json({ error: "Can only edit requests with OPEN status" });
+      if (request.status !== "OPEN" && request.status !== "PENDING_APPROVAL") {
+        return res.status(400).json({ error: "Can only edit requests with OPEN or PENDING_APPROVAL status" });
       }
 
       // v2 request editing
@@ -230,8 +233,8 @@ export default async function handler(
         return res.status(403).json({ error: "Only the owning borrower can delete this request" });
       }
 
-      if (request.status !== "OPEN") {
-        return res.status(400).json({ error: "Can only delete requests with OPEN status" });
+      if (request.status !== "OPEN" && request.status !== "PENDING_APPROVAL") {
+        return res.status(400).json({ error: "Can only delete requests with OPEN or PENDING_APPROVAL status" });
       }
 
       // Delete related data in correct order (respecting foreign keys)
