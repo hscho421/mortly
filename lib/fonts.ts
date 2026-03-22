@@ -15,8 +15,10 @@ export const outfit = Outfit({
 
 export const notoSansKR = Noto_Sans_KR({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "600", "700"],
   variable: "--font-korean",
   display: "swap",
+  adjustFontFallback: false,
+  fallback: ["Noto Sans KR Fallback", "Apple SD Gothic Neo", "Malgun Gothic", "system-ui", "sans-serif"],
   preload: true,
 });
