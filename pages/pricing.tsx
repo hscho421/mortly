@@ -121,20 +121,12 @@ export default function Pricing() {
       a: t("pricing.faq2A"),
     },
     {
-      q: t("pricing.faq3Q"),
-      a: t("pricing.faq3A"),
-    },
-    {
       q: t("pricing.faq4Q"),
       a: t("pricing.faq4A"),
     },
     {
       q: t("pricing.faq5Q"),
       a: t("pricing.faq5A"),
-    },
-    {
-      q: t("pricing.faq6Q"),
-      a: t("pricing.faq6A"),
     },
   ];
 
