@@ -1081,7 +1081,8 @@
     "learnMore": "이용 방법 자세히 보기",
     "ctaTitle": "브로커를 찾을 준비가 되셨나요?",
     "ctaSubtitle": "mortly를 통해 마음에 꼭 드는 모기지 브로커를 찾은 수많은 캐네디언과 함께하세요.",
-    "ctaButton": "시작하기"
+    "ctaButton": "시작하기",
+    "newRequest": "새 요청 제출하기"
   },
   "pricing": {
     "badge": "요금제",

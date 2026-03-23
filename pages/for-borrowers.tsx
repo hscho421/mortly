@@ -3,9 +3,14 @@ import Head from "next/head";
 import Layout from "@/components/Layout";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
+import { useSession } from "next-auth/react";
 
 export default function ForBorrowers() {
   const { t } = useTranslation("common");
+  const { data: session } = useSession();
+  const isBorrower = session?.user?.role === "BORROWER";
+  const ctaHref = isBorrower ? "/borrower/request/new" : "/signup?role=borrower";
+  const ctaLabel = isBorrower ? t("forBorrowers.newRequest") : t("forBorrowers.submitRequest");
 
   const benefits = [
     {
@@ -94,8 +99,8 @@ export default function ForBorrowers() {
           </p>
           
           <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup?role=borrower" className="btn-amber px-8 py-4 text-base">
-              {t("forBorrowers.submitRequest")}
+            <Link href={ctaHref} className="btn-amber px-8 py-4 text-base">
+              {ctaLabel}
             </Link>
             <Link href="/how-it-works" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
               {t("forBorrowers.seeHowItWorks")}
@@ -197,10 +202,10 @@ export default function ForBorrowers() {
             {t("forBorrowers.ctaSubtitle")}
           </p>
           <Link
-            href="/signup?role=borrower"
+            href={ctaHref}
             className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
           >
-            {t("forBorrowers.ctaButton")}
+            {isBorrower ? ctaLabel : t("forBorrowers.ctaButton")}
           </Link>
         </div>
       </section>

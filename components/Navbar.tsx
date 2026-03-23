@@ -108,11 +108,12 @@ export default function Navbar() {
   const role = session?.user?.role;
 
   const navLinks = [
-    { href: "/how-it-works", label: t("nav.howItWorks") },
-    // For Borrowers: unauthenticated + borrowers (hidden from brokers)
+    // How It Works: everyone except logged-in brokers
+    ...(role !== "BROKER" ? [{ href: "/how-it-works", label: t("nav.howItWorks") }] : []),
+    // For Borrowers: unauthenticated + borrowers
     ...(role !== "BROKER" ? [{ href: "/for-borrowers", label: t("nav.forBorrowers") }] : []),
-    // For Brokers: unauthenticated only
-    ...(!role ? [{ href: "/for-brokers", label: t("nav.forBrokers") }] : []),
+    // For Brokers: unauthenticated + brokers
+    ...(role !== "BORROWER" && role !== "ADMIN" ? [{ href: "/for-brokers", label: t("nav.forBrokers") }] : []),
     // Pricing: broker-only
     ...(role === "BROKER" ? [{ href: "/pricing", label: t("nav.pricing") }] : []),
   ];

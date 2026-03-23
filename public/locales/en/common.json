@@ -1081,7 +1081,8 @@
     "learnMore": "Learn more about how it works",
     "ctaTitle": "Ready to Find Your Broker?",
     "ctaSubtitle": "Join thousands of Canadians who found their mortgage broker through mortly — for free.",
-    "ctaButton": "Get Started Free"
+    "ctaButton": "Get Started Free",
+    "newRequest": "Submit a New Request"
   },
   "pricing": {
     "badge": "Pricing",

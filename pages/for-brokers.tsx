@@ -3,9 +3,14 @@ import Head from "next/head";
 import Layout from "@/components/Layout";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
+import { useSession } from "next-auth/react";
 
 export default function ForBrokers() {
   const { t } = useTranslation("common");
+  const { data: session } = useSession();
+  const isBroker = session?.user?.role === "BROKER";
+  const ctaHref = isBroker ? "/broker/dashboard" : "/signup?role=broker";
+  const ctaLabel = isBroker ? t("nav.dashboard") : t("forBrokers.signUpBroker");
 
   const benefits = [
     {
@@ -76,8 +81,8 @@ export default function ForBrokers() {
             {t("forBrokers.subtitle2")}
           </p>
           <div className="animate-fade-in-up opacity-0 stagger-4 mt-10">
-            <Link href="/signup?role=broker" className="btn-amber px-8 py-4 text-base">
-              {t("forBrokers.signUpBroker")}
+            <Link href={ctaHref} className="btn-amber px-8 py-4 text-base">
+              {ctaLabel}
             </Link>
           </div>
         </div>
@@ -124,10 +129,10 @@ export default function ForBrokers() {
             {t("forBrokers.ctaSubtitle")}
           </p>
           <Link
-            href="/signup?role=broker"
+            href={ctaHref}
             className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
           >
-            {t("forBrokers.signUpBroker")}
+            {ctaLabel}
           </Link>
         </div>
       </section>

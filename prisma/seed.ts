@@ -111,6 +111,10 @@ const REPORT_REASONS = [
 
 // ─── Clear ────────────────────────────────────────────────────
 async function clearAll() {
+  // Clear Stripe references first (safety net in case deletes fail partway)
+  await prisma.$executeRawUnsafe(`UPDATE brokers SET stripe_customer_id = NULL`);
+  await prisma.$executeRawUnsafe(`DELETE FROM subscriptions`);
+
   await prisma.adminNotice.deleteMany();
   await prisma.adminAction.deleteMany();
   await prisma.message.deleteMany();
@@ -122,7 +126,7 @@ async function clearAll() {
   await prisma.broker.deleteMany();
   await prisma.user.deleteMany();
   await prisma.systemSetting.deleteMany();
-  console.log("All tables cleared.");
+  console.log("All tables cleared (including Stripe references).");
 }
 
 // ─── Mock seed ────────────────────────────────────────────────

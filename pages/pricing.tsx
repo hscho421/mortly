@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -38,38 +38,8 @@ export default function Pricing() {
     }
   }, [session, status, router]);
 
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  const handleSelectTier = async (tier: string) => {
-    if (actionLoading) return;
-
-    if (tier === "FREE") {
-      router.push("/broker/billing", undefined, { locale: router.locale });
-      return;
-    }
-
-    setActionLoading(tier);
-    try {
-      const res = await fetch("/api/stripe/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier }),
-      });
-      const data = await res.json();
-
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      if (data.updated) {
-        router.push("/broker/billing", undefined, { locale: router.locale });
-        return;
-      }
-    } catch {
-      router.push("/broker/billing", undefined, { locale: router.locale });
-    } finally {
-      setActionLoading(null);
-    }
+  const goToBilling = () => {
+    router.push("/broker/billing", undefined, { locale: router.locale });
   };
 
   if (status === "loading" || !session || session.user.role === "BORROWER") {
@@ -264,15 +234,14 @@ export default function Pricing() {
                 </ul>
 
                 <button
-                  onClick={() => handleSelectTier(tier.tier)}
-                  disabled={actionLoading !== null}
+                  onClick={goToBilling}
                   className={`mt-8 block text-center w-full py-3.5 rounded-lg font-semibold text-sm transition-all duration-300 font-body ${
                     tier.featured
                       ? "bg-amber-400 text-forest-900 hover:bg-amber-300"
                       : "bg-forest-800 text-cream-100 hover:bg-forest-700"
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  }`}
                 >
-                  {actionLoading === tier.tier ? t("broker.processing") : tier.cta}
+                  {tier.cta}
                 </button>
               </div>
             ))}

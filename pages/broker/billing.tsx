@@ -15,8 +15,11 @@ interface Plan {
   name: string;
   tier: string;
   price: string;
+  originalPrice: string | null;
+  discount: string | null;
   period: string;
   credits: string;
+  description: string;
   features: PlanFeature[];
   highlighted: boolean;
 }
@@ -45,66 +48,66 @@ const TIER_RANK: Record<string, number> = { FREE: 0, BASIC: 1, PRO: 2, PREMIUM: 
 function usePlans(t: (key: string) => string): Plan[] {
   return [
     {
-      name: t("billing.freeName"),
+      name: t("pricing.freeName"),
       tier: "FREE",
       price: "$0",
+      originalPrice: null,
+      discount: null,
       period: "",
-      credits: t("billing.freeCredits"),
+      credits: t("pricing.val_none"),
+      description: t("pricing.freeDesc"),
       features: [
-        { text: t("billing.feat_verified"), included: true },
-        { text: t("billing.feat_browseRequests"), included: true },
-        { text: t("billing.feat_basicListing"), included: true },
-        { text: t("billing.feat_sendIntros"), included: false },
-        { text: t("billing.feat_priority"), included: false },
-        { text: t("billing.feat_analytics"), included: false },
+        { text: t("pricing.feat_introductions") + ": " + t("pricing.val_none"), included: false },
+        { text: t("pricing.feat_notifications"), included: false },
+        { text: t("pricing.feat_realtimeAlerts"), included: false },
       ],
       highlighted: false,
     },
     {
-      name: t("billing.basicName"),
+      name: t("pricing.basicName"),
       tier: "BASIC",
       price: "$29",
-      period: t("billing.perMonth"),
-      credits: t("billing.basicCredits"),
+      originalPrice: "$49",
+      discount: "41%",
+      period: t("pricing.perMonth"),
+      credits: t("pricing.val_5perMonth"),
+      description: t("pricing.basicDesc"),
       features: [
-        { text: t("billing.feat_browseRequests"), included: true },
-        { text: t("billing.feat_5intros"), included: true },
-        { text: t("billing.feat_basicListing"), included: true },
-        { text: t("billing.feat_priority"), included: false },
-        { text: t("billing.feat_analytics"), included: false },
-        { text: t("billing.feat_badge"), included: false },
+        { text: t("pricing.feat_introductions") + ": " + t("pricing.val_5perMonth"), included: true },
+        { text: t("pricing.feat_notifications"), included: false },
+        { text: t("pricing.feat_realtimeAlerts"), included: false },
       ],
       highlighted: false,
     },
     {
-      name: t("billing.proName"),
+      name: t("pricing.proName"),
       tier: "PRO",
       price: "$69",
-      period: t("billing.perMonth"),
-      credits: t("billing.proCredits"),
+      originalPrice: "$99",
+      discount: "30%",
+      period: t("pricing.perMonth"),
+      credits: t("pricing.val_20perMonth"),
+      description: t("pricing.proDesc"),
       features: [
-        { text: t("billing.feat_browseRequests"), included: true },
-        { text: t("billing.feat_20intros"), included: true },
-        { text: t("billing.feat_enhancedListing"), included: true },
-        { text: t("billing.feat_priority"), included: true },
-        { text: t("billing.feat_analytics"), included: true },
-        { text: t("billing.feat_badge"), included: false },
+        { text: t("pricing.feat_introductions") + ": " + t("pricing.val_20perMonth"), included: true },
+        { text: t("pricing.feat_notifications"), included: true },
+        { text: t("pricing.feat_realtimeAlerts"), included: false },
       ],
       highlighted: true,
     },
     {
-      name: t("billing.premiumName"),
+      name: t("pricing.premiumName"),
       tier: "PREMIUM",
       price: "$129",
-      period: t("billing.perMonth"),
-      credits: t("billing.premiumCredits"),
+      originalPrice: "$199",
+      discount: "35%",
+      period: t("pricing.perMonth"),
+      credits: t("pricing.val_unlimited"),
+      description: t("pricing.premiumDesc"),
       features: [
-        { text: t("billing.feat_browseRequests"), included: true },
-        { text: t("billing.feat_unlimitedIntros"), included: true },
-        { text: t("billing.feat_premiumListing"), included: true },
-        { text: t("billing.feat_topPriority"), included: true },
-        { text: t("billing.feat_advancedAnalytics"), included: true },
-        { text: t("billing.feat_badge"), included: true },
+        { text: t("pricing.feat_introductions") + ": " + t("pricing.val_unlimited"), included: true },
+        { text: t("pricing.feat_notifications"), included: true },
+        { text: t("pricing.feat_realtimeAlerts"), included: true },
       ],
       highlighted: false,
     },
@@ -421,7 +424,7 @@ export default function BrokerBillingPage() {
           {plans.map((plan, i) => (
             <div
               key={plan.tier}
-              className={`relative card-elevated animate-fade-in-up stagger-${Math.min(i + 3, 6)} ${
+              className={`relative card-elevated flex flex-col animate-fade-in-up stagger-${Math.min(i + 3, 6)} ${
                 plan.highlighted
                   ? "border-amber-400 ring-2 ring-amber-400"
                   : ""
@@ -434,14 +437,25 @@ export default function BrokerBillingPage() {
               )}
               <h3 className="heading-sm">{plan.name}</h3>
               <div className="mt-3">
+                {plan.originalPrice && (
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-body text-lg line-through text-sage-400">
+                      {plan.originalPrice}
+                    </span>
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold font-body bg-rose-500 text-white">
+                      {plan.discount} OFF
+                    </span>
+                  </div>
+                )}
                 <span className="font-display text-4xl tracking-tight text-forest-800">{plan.price}</span>
                 <span className="text-body-sm">{plan.period}</span>
               </div>
               <p className="text-body-sm mt-1">{plan.credits}</p>
+              <p className="text-body-sm mt-2 text-forest-700/60">{plan.description}</p>
 
               <hr className="divider my-6" />
 
-              <ul className="space-y-3">
+              <ul className="space-y-3 flex-1">
                 {plan.features.map((feature) => (
                   <li key={feature.text} className="flex items-start gap-2.5">
                     {feature.included ? (
