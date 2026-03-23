@@ -60,17 +60,9 @@ interface BrokerDetail {
     startedAt: string;
     endedAt: string | null;
   } | null;
-  creditPurchases: Array<{
-    id: string;
-    packType: string;
-    credits: number;
-    amount: number;
-    createdAt: string;
-  }>;
   _count: {
     introductions: number;
     conversations: number;
-    creditPurchases: number;
   };
 }
 
@@ -476,29 +468,6 @@ export default function AdminBrokerDetail() {
           )}
         </div>
 
-        {/* Credit Purchases */}
-        {broker.creditPurchases.length > 0 && (
-          <div className="card-elevated animate-fade-in-up stagger-7">
-            <h2 className="heading-sm mb-4">
-              {t("admin.creditPurchases", "Credit Purchases")} ({broker._count.creditPurchases})
-            </h2>
-            <div className="space-y-2">
-              {broker.creditPurchases.map((purchase) => (
-                <div key={purchase.id} className="flex items-center justify-between rounded-lg bg-cream-50 px-4 py-3">
-                  <div>
-                    <p className="font-body text-sm text-forest-800">
-                      {purchase.packType} — {purchase.credits} credits
-                    </p>
-                    <p className="font-body text-xs text-forest-700/50">{formatDate(purchase.createdAt)}</p>
-                  </div>
-                  <span className="font-body text-sm font-semibold text-forest-800">
-                    ${(purchase.amount / 100).toFixed(2)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );

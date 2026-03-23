@@ -23,11 +23,6 @@ interface Plan {
 
 const TIER_RANK: Record<string, number> = { FREE: 0, BASIC: 1, PRO: 2, PREMIUM: 3 };
 
-const CREDIT_PACKS = [
-  { type: "SMALL", credits: 3, price: "$29", label: "smallPack" },
-  { type: "LARGE", credits: 10, price: "$79", label: "largePack", best: true },
-] as const;
-
 function usePlans(t: (key: string) => string): Plan[] {
   return [
     {
@@ -106,9 +101,6 @@ export default function BrokerBillingPage() {
   const [currentTier, setCurrentTier] = useState("");
   const [responseCredits, setResponseCredits] = useState<number | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  const [purchasing, setPurchasing] = useState<string | null>(null);
-  const [purchaseMessage, setPurchaseMessage] = useState("");
 
   useEffect(() => {
     if (status === "loading") return;
@@ -133,41 +125,6 @@ export default function BrokerBillingPage() {
 
     fetchProfile();
   }, [session, status]);
-
-  const canBuyCredits =
-    (currentTier === "BASIC" || currentTier === "PRO") &&
-    responseCredits === 0;
-
-  const handlePurchase = async (packType: string) => {
-    setPurchasing(packType);
-    setPurchaseMessage("");
-
-    try {
-      const res = await fetch("/api/credits/purchase", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packType }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setPurchaseMessage(data.error || t("credits.purchaseError"));
-        return;
-      }
-
-      setResponseCredits(data.credits);
-      setPurchaseMessage(t("credits.purchaseSuccess"));
-      setTimeout(() => {
-        setShowPurchaseModal(false);
-        setPurchaseMessage("");
-      }, 1500);
-    } catch {
-      setPurchaseMessage(t("credits.purchaseError"));
-    } finally {
-      setPurchasing(null);
-    }
-  };
 
   if (status === "loading" || isLoadingProfile) {
     return (
@@ -211,31 +168,6 @@ export default function BrokerBillingPage() {
             </div>
           </div>
         </div>
-
-        {/* Zero credits banner */}
-        {canBuyCredits && (
-          <div className="mb-10 animate-fade-in-up stagger-2 rounded-2xl border-2 border-amber-300 bg-amber-50 p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200">
-                  <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-body text-sm font-semibold text-forest-800">{t("credits.noCreditsTitle")}</h3>
-                  <p className="mt-1 font-body text-sm text-forest-700/70">{t("credits.noCreditsDesc")}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowPurchaseModal(true)}
-                className="btn-amber shrink-0"
-              >
-                {t("credits.buyCredits")}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Plan comparison */}
         <h2 className="heading-md mb-6 animate-fade-in stagger-2">{t("broker.choosePlan")}</h2>
@@ -333,81 +265,6 @@ export default function BrokerBillingPage() {
         </div>
       </div>
 
-      {/* Credit Purchase Modal */}
-      {showPurchaseModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm"
-            onClick={() => { if (!purchasing) setShowPurchaseModal(false); }}
-          />
-          <div className="relative w-full max-w-md animate-fade-in-up rounded-2xl bg-white p-8 shadow-2xl">
-            <button
-              onClick={() => { if (!purchasing) setShowPurchaseModal(false); }}
-              className="absolute right-4 top-4 rounded-lg p-1 text-sage-400 transition-colors hover:text-forest-700"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            <h3 className="heading-md mb-2">{t("credits.purchaseCredits")}</h3>
-            <p className="text-body-sm mb-6">{t("credits.noCreditsDesc")}</p>
-
-            <div className="space-y-4">
-              {CREDIT_PACKS.map((pack) => (
-                <div
-                  key={pack.type}
-                  className={`relative rounded-xl border-2 p-5 transition-all ${
-                    "best" in pack && pack.best
-                      ? "border-amber-400 bg-amber-50"
-                      : "border-cream-300 bg-cream-50"
-                  }`}
-                >
-                  {"best" in pack && pack.best && (
-                    <span className="absolute -top-2.5 right-4 rounded-full bg-amber-500 px-3 py-0.5 font-body text-xs font-semibold text-forest-900">
-                      {t("credits.bestValue")}
-                    </span>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-body text-sm font-semibold text-forest-800">
-                        {t(`credits.${pack.label}`)}
-                      </h4>
-                      <p className="mt-0.5 font-body text-sm text-forest-700/60">
-                        {pack.credits} {t("credits.credits")}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-display text-2xl tracking-tight text-forest-800">
-                        {pack.price}
-                      </span>
-                      <button
-                        onClick={() => handlePurchase(pack.type)}
-                        disabled={!!purchasing}
-                        className="btn-amber px-5 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {purchasing === pack.type
-                          ? t("credits.purchasing")
-                          : t("credits.buyCredits")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {purchaseMessage && (
-              <div className={`mt-4 rounded-lg p-3 text-center font-body text-sm ${
-                purchaseMessage === t("credits.purchaseSuccess")
-                  ? "bg-forest-50 text-forest-700"
-                  : "bg-red-50 text-red-700"
-              }`}>
-                {purchaseMessage}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }

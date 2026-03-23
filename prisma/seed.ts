@@ -117,7 +117,6 @@ async function clearAll() {
   await prisma.conversation.deleteMany();
   await prisma.report.deleteMany();
   await prisma.brokerIntroduction.deleteMany();
-  await prisma.creditPurchase.deleteMany();
   await prisma.subscription.deleteMany();
   await prisma.borrowerRequest.deleteMany();
   await prisma.broker.deleteMany();
@@ -467,22 +466,6 @@ async function seedMock() {
     });
   }
   console.log("5 admin notices created.");
-
-  // ── Credit purchases (8) ─────────────────────────────────
-  for (let i = 0; i < 8; i++) {
-    const broker = brokerRecords[i % brokerRecords.length];
-    const isSmall = i % 2 === 0;
-    await prisma.creditPurchase.create({
-      data: {
-        brokerId: broker.id,
-        packType: isSmall ? "SMALL" : "LARGE",
-        credits: isSmall ? 5 : 20,
-        amount: isSmall ? 2499 : 7999,
-        createdAt: randomDate(25),
-      },
-    });
-  }
-  console.log("8 credit purchases created.");
 
   // ── System settings ───────────────────────────────────────
   const defaults: [string, string][] = [

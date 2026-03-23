@@ -336,7 +336,7 @@ export default function BrokerRequestDetailPage() {
                   <p className="font-body text-sm font-medium text-forest-800">{t("credits.noCreditsIntro")}</p>
                 </div>
                 <Link href="/broker/billing" className="btn-amber shrink-0 text-center">
-                  {t("credits.buyCredits")}
+                  {t("credits.upgradePlan")}
                 </Link>
               </div>
             </div>

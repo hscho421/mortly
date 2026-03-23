@@ -301,7 +301,6 @@ export default function AdminManual() {
                   t("manual.brokerSection5", "Recent Introductions — last 20 introductions with request type, location, status, and date. Click 'View' to go to request management."),
                   t("manual.brokerSection6", "Recent Conversations — last 20 conversations with borrower name, status, message count, and last activity. Click 'Messages' to view the thread."),
                   t("manual.brokerSection7", "Reviews — all reviews with star ratings, borrower names, dates, and comments"),
-                  t("manual.brokerSection8", "Credit Purchases — purchase history showing pack type, credit count, amount paid, and date"),
                 ]} />
               </SubSection>
             </Section>

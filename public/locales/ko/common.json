@@ -616,7 +616,6 @@
     "noConversationsYet": "아직 대화가 없습니다.",
     "reviewsTitle": "리뷰",
     "noReviews": "아직 리뷰가 없습니다.",
-    "creditPurchases": "크레딧 구매 내역",
     "manual": "관리자 매뉴얼",
     "manualDesc": "포털 사용 가이드",
     "introductionDetails": "소개 상세",
@@ -1280,19 +1279,10 @@
   },
   "credits": {
     "noCreditsTitle": "상담 크레딧 소진",
-    "noCreditsDesc": "이번 달 상담 크레딧을 모두 사용하셨습니다. 크레딧 팩을 구매하여 모기지 신청인과 계속 연결하세요.",
-    "buyCredits": "크레딧 구매",
-    "purchaseCredits": "크레딧 구매하기",
-    "smallPack": "소형 팩",
-    "largePack": "대형 팩",
-    "credits": "크레딧",
-    "purchaseSuccess": "크레딧이 성공적으로 구매되었습니다!",
-    "purchaseError": "크레딧 구매에 실패했습니다. 다시 시도해 주세요.",
-    "purchasing": "구매 중...",
+    "noCreditsDesc": "이번 달 상담 크레딧을 모두 사용하셨습니다. 요금제를 업그레이드하여 더 많은 크레딧을 받으세요.",
     "noCreditsIntro": "소개를 보내려면 상담 크레딧이 필요합니다.",
     "goToBilling": "결제 페이지로 이동",
-    "bestValue": "최고 가치",
-    "packPrice": "{{price}}"
+    "upgradePlan": "요금제 업그레이드"
   },
   "billing": {
     "freeName": "무료",

@@ -99,8 +99,6 @@ model Broker {
   user               User                 @relation(fields: [userId], references: [id])
   conversations      Conversation[]
   subscription       Subscription?
-  creditPurchases    CreditPurchase[]
-
   @@map("brokers")
 }
 
@@ -263,22 +261,6 @@ enum SubscriptionTier {
   PREMIUM
 }
 
-enum CreditPackType {
-  SMALL
-  LARGE
-}
-
-model CreditPurchase {
-  id        String         @id @default(cuid())
-  brokerId  String
-  packType  CreditPackType
-  credits   Int
-  amount    Int            // price in cents
-  createdAt DateTime       @default(now())
-  broker    Broker         @relation(fields: [brokerId], references: [id])
-
-  @@map("credit_purchases")
-}
 
 model AdminNotice {
   id        String   @id @default(cuid())

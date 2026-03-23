@@ -48,12 +48,8 @@ export default async function handler(
             take: 20,
           },
           subscription: true,
-          creditPurchases: {
-            orderBy: { createdAt: "desc" as const },
-            take: 10,
-          },
           _count: {
-            select: { introductions: true, conversations: true, creditPurchases: true },
+            select: { introductions: true, conversations: true },
           },
       };
 
