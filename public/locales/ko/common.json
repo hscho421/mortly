@@ -112,7 +112,19 @@
     "passwordResetSuccess": "비밀번호가 성공적으로 재설정되었습니다. 새 비밀번호로 로그인할 수 있습니다.",
     "invalidLink": "잘못된 링크",
     "invalidLinkDesc": "이 비밀번호 재설정 링크는 유효하지 않거나 만료되었습니다.",
-    "requestNewLink": "새 링크 요청"
+    "requestNewLink": "새 링크 요청",
+    "verifyEmailTitle": "이메일 인증",
+    "verifyEmailSubtitle": "{{email}}로 6자리 인증 코드를 보냈습니다",
+    "verificationCode": "인증 코드",
+    "verifyBtn": "인증하기",
+    "verifying": "인증 중...",
+    "resendCode": "코드 재전송",
+    "resendCodeIn": "{{seconds}}초 후 재전송",
+    "codeSent": "새 코드가 전송되었습니다.",
+    "codeExpired": "코드가 만료되었습니다. 새 코드를 요청하세요.",
+    "invalidCode": "잘못된 코드입니다. 다시 시도하세요.",
+    "emailVerified": "이메일 인증 완료! 로그인하세요.",
+    "emailNotVerified": "먼저 이메일을 인증해주세요."
   },
   "borrowerDashboard": {
     "title": "내 모기지 요청",

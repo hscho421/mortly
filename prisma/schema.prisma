@@ -15,9 +15,13 @@ model User {
   passwordHash     String
   role             Role
   status           UserStatus        @default(ACTIVE)
-  name             String?
-  resetToken       String?           @unique
-  resetTokenExpiry DateTime?
+  name                   String?
+  emailVerified          Boolean           @default(false)
+  verificationCode       String?
+  verificationCodeExpiry DateTime?
+  verificationCodeSentAt DateTime?
+  resetToken             String?           @unique
+  resetTokenExpiry       DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   borrowerRequests BorrowerRequest[]

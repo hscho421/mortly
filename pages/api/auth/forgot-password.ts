@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { randomBytes } from "crypto";
 import prisma from "@/lib/prisma";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export default async function handler(
   req: NextApiRequest,
@@ -29,10 +30,13 @@ export default async function handler(
         data: { resetToken, resetTokenExpiry },
       });
 
-      // TODO: Send email with reset link
-      // For now, log the reset URL to the server console
       const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
-      console.log(`[Password Reset] ${email}: ${resetUrl}`);
+
+      try {
+        await sendPasswordResetEmail(email, resetUrl, "ko");
+      } catch (emailError) {
+        console.error("Failed to send password reset email:", emailError);
+      }
     }
 
     return res.status(200).json({

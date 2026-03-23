@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const verified = router.query.verified === "true";
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -33,6 +34,14 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
+        if (result.error === "EMAIL_NOT_VERIFIED") {
+          router.push(
+            `/verify-email?email=${encodeURIComponent(email)}`,
+            undefined,
+            { locale: router.locale }
+          );
+          return;
+        }
         setError(result.error);
         setIsLoading(false);
         return;
@@ -75,6 +84,12 @@ export default function LoginPage() {
                 {t("auth.loginSubtitle")}
               </p>
             </div>
+
+            {verified && (
+              <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 animate-fade-in">
+                <p className="font-body text-sm text-green-700">{t("auth.emailVerified")}</p>
+              </div>
+            )}
 
             {error && (
               <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">

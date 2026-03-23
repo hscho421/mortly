@@ -1,15 +1,9 @@
 import { useState, useEffect, FormEvent } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-
-const ROLE_REDIRECTS: Record<string, string> = {
-  BORROWER: "/borrower/request/new",
-  BROKER: "/broker/dashboard",
-};
 
 export default function SignupPage() {
   const { t } = useTranslation("common");
@@ -73,21 +67,12 @@ export default function SignupPage() {
         return;
       }
 
-      // Auto-login after successful signup
-      const signInResult = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        // Account created but login failed - redirect to login
-        router.push("/login", undefined, { locale: router.locale });
-        return;
-      }
-
-      const redirectUrl = ROLE_REDIRECTS[role] || "/";
-      router.push(redirectUrl, undefined, { locale: router.locale });
+      // Redirect to email verification page
+      router.push(
+        `/verify-email?email=${encodeURIComponent(email)}`,
+        undefined,
+        { locale: router.locale }
+      );
     } catch {
       setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);

@@ -112,7 +112,19 @@
     "passwordResetSuccess": "Your password has been reset successfully. You can now log in with your new password.",
     "invalidLink": "Invalid Link",
     "invalidLinkDesc": "This password reset link is invalid or has expired.",
-    "requestNewLink": "Request New Link"
+    "requestNewLink": "Request New Link",
+    "verifyEmailTitle": "Verify Your Email",
+    "verifyEmailSubtitle": "We sent a 6-digit code to {{email}}",
+    "verificationCode": "Verification Code",
+    "verifyBtn": "Verify",
+    "verifying": "Verifying...",
+    "resendCode": "Resend Code",
+    "resendCodeIn": "Resend in {{seconds}}s",
+    "codeSent": "New code sent.",
+    "codeExpired": "Code expired. Request a new one.",
+    "invalidCode": "Invalid code. Try again.",
+    "emailVerified": "Email verified! Please sign in.",
+    "emailNotVerified": "Please verify your email first."
   },
   "borrowerDashboard": {
     "title": "My Mortgage Requests",

@@ -37,6 +37,7 @@ export default async function handler(
         passwordHash,
         resetToken: null,
         resetTokenExpiry: null,
+        emailVerified: true,
       },
     });
 

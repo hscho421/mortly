@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { hash } from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { generatePublicId } from "@/lib/publicId";
+import { generateVerificationCode, sendVerificationCode } from "@/lib/email";
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,7 +13,7 @@ export default async function handler(
   }
 
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, locale } = req.body;
 
     // Validate required fields
     if (!name || !email || !password || !role) {
@@ -54,6 +55,10 @@ export default async function handler(
     // Generate unique 9-digit public ID
     const publicId = await generatePublicId();
 
+    // Generate verification code
+    const verificationCode = generateVerificationCode();
+    const verificationCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -62,6 +67,10 @@ export default async function handler(
         passwordHash,
         role,
         publicId,
+        emailVerified: false,
+        verificationCode,
+        verificationCodeExpiry,
+        verificationCodeSentAt: new Date(),
       },
       select: {
         id: true,
@@ -73,9 +82,16 @@ export default async function handler(
       },
     });
 
+    // Send verification email
+    try {
+      await sendVerificationCode(email, verificationCode, locale || "ko");
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
+    }
+
     // Note: If role is BROKER, the broker profile will be created during onboarding
 
-    return res.status(201).json({ user });
+    return res.status(201).json({ user, requiresVerification: true });
   } catch (error) {
     console.error("Signup error:", error);
     return res.status(500).json({ message: "Internal server error" });
