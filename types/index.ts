@@ -73,12 +73,7 @@ export interface CreateRequestInput {
 
 export interface CreateIntroductionInput {
   requestId: string;
-  howCanHelp: string;
-  experience?: string;
-  lenderNetwork?: string;
-  processNotes?: string;
-  personalMessage: string;
-  estimatedTimeline?: string;
+  message: string;
 }
 
 // ── Live Activity (Homepage) ────────────────────────────────

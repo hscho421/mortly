@@ -108,11 +108,12 @@ model BrokerIntroduction {
   id                String          @id @default(cuid())
   requestId         String
   brokerId          String
-  howCanHelp        String
+  message           String?
+  howCanHelp        String?
   experience        String?
   lenderNetwork     String?
   processNotes      String?
-  personalMessage   String
+  personalMessage   String?
   estimatedTimeline String?
   createdAt         DateTime        @default(now())
   broker            Broker          @relation(fields: [brokerId], references: [id])

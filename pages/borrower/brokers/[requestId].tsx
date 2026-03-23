@@ -228,60 +228,20 @@ export default function BrokerComparison() {
                   {/* Message preview / full */}
                   <div className="mt-5">
                     <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                      {t("brokerIntros.howTheyCanHelp")}
+                      {t("brokerIntros.message")}
                     </p>
-                    <p className="text-body">
-                      {isExpanded
-                        ? intro.howCanHelp
-                        : intro.howCanHelp.length > 200
-                          ? intro.howCanHelp.slice(0, 200) + "..."
-                          : intro.howCanHelp}
-                    </p>
-
-                    {isExpanded && (
-                      <div className="mt-5 space-y-4 border-t divider pt-5">
-                        {intro.personalMessage && (
-                          <div>
-                            <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                              {t("brokerIntros.personalMessage")}
-                            </p>
-                            <p className="text-body">
-                              {intro.personalMessage}
-                            </p>
-                          </div>
-                        )}
-                        {intro.experience && (
-                          <div>
-                            <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                              {t("brokerIntros.relevantExperience")}
-                            </p>
-                            <p className="text-body">
-                              {intro.experience}
-                            </p>
-                          </div>
-                        )}
-                        {intro.lenderNetwork && (
-                          <div>
-                            <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                              {t("brokerIntros.lenderNetwork")}
-                            </p>
-                            <p className="text-body">
-                              {intro.lenderNetwork}
-                            </p>
-                          </div>
-                        )}
-                        {intro.estimatedTimeline && (
-                          <div>
-                            <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                              {t("brokerIntros.estimatedTimeline")}
-                            </p>
-                            <p className="text-body">
-                              {intro.estimatedTimeline}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {(() => {
+                      const text = intro.message || intro.howCanHelp || "";
+                      return (
+                        <p className="text-body whitespace-pre-line">
+                          {isExpanded
+                            ? text
+                            : text.length > 200
+                              ? text.slice(0, 200) + "..."
+                              : text}
+                        </p>
+                      );
+                    })()}
                   </div>
 
                   {/* Actions */}

@@ -314,7 +314,7 @@ export default function Navbar() {
                 <div className="mx-1 h-5 w-px bg-cream-300" />
 
                 <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={async () => { await signOut({ redirect: false }); window.location.href = "/"; }}
                   className="rounded-lg p-2 text-forest-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
                   title={t("nav.signOut")}
                 >
@@ -479,9 +479,10 @@ export default function Navbar() {
               <div className="my-2 h-px bg-cream-200" />
 
               <button
-                onClick={() => {
+                onClick={async () => {
                   setMobileOpen(false);
-                  signOut({ callbackUrl: "/" });
+                  await signOut({ redirect: false });
+                  window.location.href = "/";
                 }}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-body text-[13px] font-medium text-red-500/80 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
               >

@@ -27,12 +27,7 @@ export default function NewIntroductionPage() {
   const [brokerTier, setBrokerTier] = useState("");
 
   const [form, setForm] = useState<Omit<CreateIntroductionInput, "requestId">>({
-    howCanHelp: "",
-    experience: "",
-    lenderNetwork: "",
-    processNotes: "",
-    personalMessage: "",
-    estimatedTimeline: "",
+    message: "",
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -251,96 +246,29 @@ export default function NewIntroductionPage() {
 
         <form onSubmit={handleSubmit} className="card-elevated space-y-6 animate-fade-in-up stagger-2">
           <div>
-            <label htmlFor="howCanHelp" className="label-text">
-              {t("broker.howYouCanHelp")} <span className="text-amber-600">*</span>
+            <label htmlFor="message" className="label-text">
+              {t("broker.introMessageLabel")} <span className="text-amber-600">*</span>
             </label>
+            <p className="font-body text-sm text-forest-700/60 mt-1 mb-3 whitespace-pre-line">
+              {t("broker.introMessageHint")}
+            </p>
+            <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 mb-3">
+              <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+              <p className="font-body text-sm font-semibold text-amber-800">
+                {t("broker.introMessageTip")}
+              </p>
+            </div>
             <textarea
-              id="howCanHelp"
-              name="howCanHelp"
-              rows={4}
+              id="message"
+              name="message"
+              rows={10}
               required
-              value={form.howCanHelp}
+              value={form.message}
               onChange={handleChange}
               className="input-field resize-none"
-              placeholder={t("broker.howYouCanHelpPlaceholder")}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="experience" className="label-text">
-              {t("broker.relevantExperience")}
-            </label>
-            <textarea
-              id="experience"
-              name="experience"
-              rows={3}
-              value={form.experience || ""}
-              onChange={handleChange}
-              className="input-field resize-none"
-              placeholder={t("broker.relevantExpPlaceholder")}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="lenderNetwork" className="label-text">
-              {t("broker.lenderNetwork")}
-            </label>
-            <textarea
-              id="lenderNetwork"
-              name="lenderNetwork"
-              rows={3}
-              value={form.lenderNetwork || ""}
-              onChange={handleChange}
-              className="input-field resize-none"
-              placeholder={t("broker.lenderNetworkPlaceholder")}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="processNotes" className="label-text">
-              {t("broker.processNotes")}
-            </label>
-            <textarea
-              id="processNotes"
-              name="processNotes"
-              rows={3}
-              value={form.processNotes || ""}
-              onChange={handleChange}
-              className="input-field resize-none"
-              placeholder={t("broker.processNotesPlaceholder")}
-            />
-          </div>
-
-          <hr className="divider" />
-
-          <div>
-            <label htmlFor="personalMessage" className="label-text">
-              {t("broker.personalMessage")} <span className="text-amber-600">*</span>
-            </label>
-            <textarea
-              id="personalMessage"
-              name="personalMessage"
-              rows={4}
-              required
-              value={form.personalMessage}
-              onChange={handleChange}
-              className="input-field resize-none"
-              placeholder={t("broker.personalMessagePlaceholder")}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="estimatedTimeline" className="label-text">
-              {t("broker.estimatedTimeline")}
-            </label>
-            <input
-              id="estimatedTimeline"
-              name="estimatedTimeline"
-              type="text"
-              value={form.estimatedTimeline || ""}
-              onChange={handleChange}
-              className="input-field"
-              placeholder={t("broker.estimatedTimelinePlaceholder")}
+              placeholder={t("broker.introMessagePlaceholder")}
             />
           </div>
 

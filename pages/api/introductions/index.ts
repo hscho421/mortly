@@ -133,11 +133,11 @@ export default async function handler(
         return res.status(403).json({ error: "No response credits remaining" });
       }
 
-      const { requestId, howCanHelp, personalMessage, ...rest } = req.body;
+      const { requestId, message } = req.body;
 
-      if (!requestId || !howCanHelp || !personalMessage) {
+      if (!requestId || !message) {
         return res.status(400).json({
-          error: "requestId, howCanHelp, and personalMessage are required",
+          error: "requestId and message are required",
         });
       }
 
@@ -175,9 +175,7 @@ export default async function handler(
           data: {
             requestId: internalReqId,
             brokerId: broker.id,
-            howCanHelp,
-            personalMessage,
-            ...rest,
+            message,
           },
         });
       } else {
@@ -196,9 +194,7 @@ export default async function handler(
             data: {
               requestId: internalReqId,
               brokerId: broker.id,
-              howCanHelp,
-              personalMessage,
-              ...rest,
+              message,
             },
           });
         });

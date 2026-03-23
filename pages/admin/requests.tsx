@@ -882,37 +882,9 @@ export default function AdminRequests() {
                         <p className="font-body text-xs text-forest-700/50">{formatDate(intro.createdAt)}</p>
                       </div>
                       <div>
-                        <p className="label-text">{t("admin.howCanHelp", "How Can Help")}</p>
-                        <p className="font-body text-sm text-forest-800 bg-cream-50 rounded-lg p-2">{intro.howCanHelp}</p>
+                        <p className="label-text">{t("admin.introMessage", "Message")}</p>
+                        <p className="font-body text-sm text-forest-800 bg-cream-50 rounded-lg p-2 whitespace-pre-line">{intro.message || intro.howCanHelp || "—"}</p>
                       </div>
-                      <div>
-                        <p className="label-text">{t("admin.personalMessageLabel", "Personal Message")}</p>
-                        <p className="font-body text-sm text-forest-700/80">{intro.personalMessage}</p>
-                      </div>
-                      {intro.experience && (
-                        <div>
-                          <p className="label-text">{t("admin.experienceLabel", "Experience")}</p>
-                          <p className="font-body text-sm text-forest-700/80">{intro.experience}</p>
-                        </div>
-                      )}
-                      {intro.lenderNetwork && (
-                        <div>
-                          <p className="label-text">{t("admin.lenderNetworkLabel", "Lender Network")}</p>
-                          <p className="font-body text-sm text-forest-700/80">{intro.lenderNetwork}</p>
-                        </div>
-                      )}
-                      {intro.processNotes && (
-                        <div>
-                          <p className="label-text">{t("admin.processNotesLabel", "Process Notes")}</p>
-                          <p className="font-body text-sm text-forest-700/80">{intro.processNotes}</p>
-                        </div>
-                      )}
-                      {intro.estimatedTimeline && (
-                        <div>
-                          <p className="label-text">{t("admin.estimatedTimelineLabel", "Estimated Timeline")}</p>
-                          <p className="font-body text-sm text-forest-700/80">{intro.estimatedTimeline}</p>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>

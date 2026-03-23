@@ -303,11 +303,11 @@ async function seedMock() {
 
   // ── Broker introductions (40) ──────────────────────────────
   const introMessages = [
-    "I'd love to help you with this. My experience is directly relevant.",
-    "I have access to lenders that can offer very competitive rates for your situation.",
-    "Let me know if you'd like to chat — I've handled many similar cases.",
-    "I specialize in exactly this type of mortgage. Happy to discuss!",
-    "With my lender network, I can likely find you a better rate than your bank.",
+    "안녕하세요! 저는 이 분야에서 10년 이상의 경험이 있습니다.\n\n귀하의 상황과 유사한 케이스를 다수 처리한 경험이 있으며, 대형 은행부터 모노라인 렌더까지 다양한 네트워크를 통해 경쟁력 있는 이율을 제공할 수 있습니다.\n\n필요 서류와 대출 가능 금액에 대해 자세히 안내해 드리겠습니다. 편하게 연락주세요!",
+    "반갑습니다! 귀하의 모기지 요청을 검토했습니다.\n\n저는 주로 첫 주택 구매자 분들을 도와드리고 있으며, 현재 시장 상황에서 최적의 조건을 찾아드릴 수 있습니다.\n\n대출 가능 금액과 예상 이율, 필요 서류 목록을 정리해서 안내해 드리겠습니다. 궁금한 점이 있으시면 편하게 물어보세요.",
+    "안녕하세요! 귀하의 요청을 흥미롭게 봤습니다.\n\n저는 다양한 렌더 네트워크를 보유하고 있어 귀하의 상황에 가장 적합한 옵션을 찾아드릴 수 있습니다. 특히 리파이낸싱 분야에서 많은 경험이 있습니다.\n\n구체적인 이율과 조건은 상담을 통해 안내드리겠습니다.",
+    "반갑습니다! 저는 상업용 모기지 전문 브로커입니다.\n\n귀하의 요청 내용을 보고 도움을 드릴 수 있을 것 같아 연락드립니다. 관련 거래 경험이 풍부하며, 렌더별 필요 서류와 대출 가능 금액을 자세히 안내해 드리겠습니다.\n\n궁금하신 점이 있으시면 언제든 물어보세요!",
+    "안녕하세요! 귀하의 모기지 상담 요청을 확인했습니다.\n\n저는 은행, 신용조합, 대안 렌더 등 폭넓은 네트워크를 갖추고 있어 최적의 조건을 비교해 드릴 수 있습니다.\n\n대략적인 이율 범위와 필요 서류에 대해 먼저 안내드리고, 추가로 궁금하신 사항에 답변드리겠습니다.",
   ];
   const introSet = new Set<string>();
   let introCount = 0;
@@ -323,11 +323,7 @@ async function seedMock() {
       data: {
         requestId: requests[reqIdx].id,
         brokerId: brokerRecords[brokerIdx].id,
-        howCanHelp: pick(introMessages),
-        experience: `${2 + Math.floor(Math.random() * 15)} years in this area.`,
-        lenderNetwork: pick(["Big 5 banks + monoline lenders", "Credit unions + alternative lenders", "Full spectrum — banks, monolines, private"]),
-        personalMessage: pick(introMessages),
-        estimatedTimeline: pick(["1-2 weeks", "2-4 weeks", "3-5 weeks"]),
+        message: pick(introMessages),
         createdAt: randomDate(25),
       },
     });

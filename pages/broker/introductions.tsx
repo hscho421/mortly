@@ -11,9 +11,8 @@ import { getRequestTitle } from "@/lib/requestConfig";
 interface IntroductionItem {
   id: string;
   requestId: string;
-  howCanHelp: string;
-  personalMessage: string;
-  estimatedTimeline: string | null;
+  message: string | null;
+  howCanHelp: string | null;
   createdAt: string;
   conversationId?: string | null;
   request?: {
@@ -171,23 +170,13 @@ export default function BrokerIntroductionsPage() {
                     {intro.request?.province || "--"}
                   </h3>
 
-                  {/* How can help preview */}
-                  <div className="mb-2">
-                    <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
-                      {t("broker.howYouCanHelp")}
-                    </span>
-                    <p className="font-body text-sm text-forest-800 mt-0.5">
-                      {truncate(intro.howCanHelp, 120)}
-                    </p>
-                  </div>
-
-                  {/* Personal message preview */}
+                  {/* Message preview */}
                   <div className="mb-3">
                     <span className="font-body text-[11px] font-medium uppercase tracking-wider text-forest-700/50">
-                      {t("broker.personalMessage")}
+                      {t("broker.introMessageLabel")}
                     </span>
-                    <p className="font-body text-sm text-forest-700 mt-0.5">
-                      {truncate(intro.personalMessage, 100)}
+                    <p className="font-body text-sm text-forest-800 mt-0.5 whitespace-pre-line">
+                      {truncate(intro.message || intro.howCanHelp || "", 200)}
                     </p>
                   </div>
 
@@ -196,11 +185,6 @@ export default function BrokerIntroductionsPage() {
                     <span className="text-body-sm">
                       {formatDate(intro.createdAt)}
                     </span>
-                    {intro.estimatedTimeline && (
-                      <span className="font-body text-xs font-medium text-sage-600">
-                        Timeline: {intro.estimatedTimeline}
-                      </span>
-                    )}
                   </div>
                 </Link>
               );
