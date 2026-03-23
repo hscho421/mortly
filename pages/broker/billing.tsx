@@ -518,6 +518,9 @@ export default function BrokerBillingPage() {
             </div>
           ))}
         </div>
+        <p className="mt-8 mb-16 text-sm text-forest-700/60 font-body text-center animate-fade-in-up">
+          {t("pricing.creditExplanation")}
+        </p>
 
         {/* Billing history */}
         <h2 className="heading-md mb-5 animate-fade-in">{t("broker.billingHistory")}</h2>

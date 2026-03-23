@@ -246,6 +246,9 @@ export default function Pricing() {
               </div>
             ))}
           </div>
+          <p className="mt-8 text-sm text-forest-700/60 font-body text-center animate-fade-in-up opacity-0 stagger-5">
+            {t("pricing.creditExplanation")}
+          </p>
         </div>
       </section>
 
