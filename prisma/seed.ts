@@ -145,6 +145,7 @@ async function seedMock() {
         role: "ADMIN",
         name,
         publicId: genPublicId(pubIdx++),
+        emailVerified: true,
         createdAt: randomDate(28),
       },
     });
@@ -167,6 +168,7 @@ async function seedMock() {
         role: "BORROWER",
         name,
         publicId: genPublicId(pubIdx++),
+        emailVerified: true,
         status,
         createdAt: randomDate(25),
       },
@@ -202,6 +204,7 @@ async function seedMock() {
         role: "BROKER",
         name,
         publicId: genPublicId(pubIdx++),
+        emailVerified: true,
         status: i === 12 ? "SUSPENDED" : "ACTIVE",
         createdAt: randomDate(25),
       },
@@ -523,15 +526,15 @@ async function seedEmpty() {
 
   // Admin
   await prisma.user.create({
-    data: { email: "admin@test.com", passwordHash: hash, role: "ADMIN", name: "Admin User", publicId: genPublicId(pubIdx++) },
+    data: { email: "admin@test.com", passwordHash: hash, role: "ADMIN", name: "Admin User", publicId: genPublicId(pubIdx++), emailVerified: true },
   });
 
   // Borrowers
   await prisma.user.create({
-    data: { email: "borrower1@test.com", passwordHash: hash, role: "BORROWER", name: "John Smith", publicId: genPublicId(pubIdx++) },
+    data: { email: "borrower1@test.com", passwordHash: hash, role: "BORROWER", name: "John Smith", publicId: genPublicId(pubIdx++), emailVerified: true },
   });
   await prisma.user.create({
-    data: { email: "borrower2@test.com", passwordHash: hash, role: "BORROWER", name: "Alice Johnson", publicId: genPublicId(pubIdx++) },
+    data: { email: "borrower2@test.com", passwordHash: hash, role: "BORROWER", name: "Alice Johnson", publicId: genPublicId(pubIdx++), emailVerified: true },
   });
 
   // Brokers — one per tier
@@ -542,7 +545,7 @@ async function seedEmpty() {
     ["broker-premium@test.com", "Jessica Wang", "PREMIUM", 999, "AB", "A20045678"],
   ] as const) {
     const u = await prisma.user.create({
-      data: { email, passwordHash: hash, role: "BROKER", name, publicId: genPublicId(pubIdx++) },
+      data: { email, passwordHash: hash, role: "BROKER", name, publicId: genPublicId(pubIdx++), emailVerified: true },
     });
     await prisma.broker.create({
       data: {

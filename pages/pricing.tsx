@@ -46,75 +46,59 @@ export default function Pricing() {
     {
       name: t("pricing.freeName"),
       price: "$0",
+      originalPrice: null,
+      discount: null,
       period: "",
       description: t("pricing.freeDesc"),
       features: {
         introductions: t("pricing.val_none"),
-        placement: false,
-        badge: false,
         notifications: false,
-        leadFilters: false,
-        analytics: false,
-        accountManager: false,
-        teamTools: false,
-        support: false,
+        realtimeAlerts: false,
       },
       cta: t("pricing.freeCta"),
       featured: false,
     },
     {
       name: t("pricing.basicName"),
-      price: "$49",
+      price: "$29",
+      originalPrice: "$49",
+      discount: "41%",
       period: t("pricing.perMonth"),
       description: t("pricing.basicDesc"),
       features: {
         introductions: t("pricing.val_5perMonth"),
-        placement: t("pricing.val_standard"),
-        badge: false,
-        notifications: true,
-        leadFilters: false,
-        analytics: false,
-        accountManager: false,
-        teamTools: false,
-        support: t("pricing.val_emailSupport"),
+        notifications: false,
+        realtimeAlerts: false,
       },
       cta: t("pricing.basicCta"),
       featured: false,
     },
     {
       name: t("pricing.proName"),
-      price: "$149",
+      price: "$69",
+      originalPrice: "$99",
+      discount: "30%",
       period: t("pricing.perMonth"),
       description: t("pricing.proDesc"),
       features: {
         introductions: t("pricing.val_20perMonth"),
-        placement: t("pricing.val_priority"),
-        badge: false,
         notifications: true,
-        leadFilters: true,
-        analytics: false,
-        accountManager: false,
-        teamTools: false,
-        support: t("pricing.val_prioritySupport"),
+        realtimeAlerts: false,
       },
       cta: t("pricing.proCta"),
       featured: true,
     },
     {
       name: t("pricing.premiumName"),
-      price: "$349",
+      price: "$129",
+      originalPrice: "$199",
+      discount: "35%",
       period: t("pricing.perMonth"),
       description: t("pricing.premiumDesc"),
       features: {
         introductions: t("pricing.val_unlimited"),
-        placement: t("pricing.val_topOfResults"),
-        badge: true,
         notifications: true,
-        leadFilters: true,
-        analytics: true,
-        accountManager: true,
-        teamTools: true,
-        support: t("pricing.val_dedicatedManager"),
+        realtimeAlerts: true,
       },
       cta: t("pricing.premiumCta"),
       featured: false,
@@ -123,15 +107,8 @@ export default function Pricing() {
 
   const comparisonRows = [
     { label: t("pricing.feat_introductions"), key: "introductions" },
-    { label: t("pricing.feat_profile"), key: "profile" },
-    { label: t("pricing.feat_placement"), key: "placement" },
-    { label: t("pricing.feat_badge"), key: "badge" },
     { label: t("pricing.feat_notifications"), key: "notifications" },
-    { label: t("pricing.feat_leadFilters"), key: "leadFilters" },
-    { label: t("pricing.feat_analytics"), key: "analytics" },
-    { label: t("pricing.feat_accountManager"), key: "accountManager" },
-    { label: t("pricing.feat_teamTools"), key: "teamTools" },
-    { label: t("pricing.feat_support"), key: "support" },
+    { label: t("pricing.feat_realtimeAlerts"), key: "realtimeAlerts" },
   ];
 
   const faqs = [
@@ -199,8 +176,8 @@ export default function Pricing() {
                 key={tier.name}
                 className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)} rounded-2xl p-8 flex flex-col transition-all duration-300 ${
                   tier.featured
-                    ? "bg-forest-800 text-cream-100 ring-2 ring-amber-400 relative scale-[1.02]"
-                    : "card-elevated"
+                    ? "bg-forest-800 text-cream-100 ring-2 ring-amber-400 relative scale-[1.02] min-h-[480px]"
+                    : "card-elevated min-h-[480px]"
                 }`}
               >
                 {tier.featured && (
@@ -211,13 +188,25 @@ export default function Pricing() {
                 <h3 className={`font-body text-sm font-semibold uppercase tracking-wider ${tier.featured ? "text-amber-400" : "text-sage-500"}`}>
                   {tier.name}
                 </h3>
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className={`font-display text-4xl sm:text-5xl ${tier.featured ? "text-cream-100" : "text-forest-800"}`}>
-                    {tier.price}
-                  </span>
-                  <span className={`font-body text-sm ${tier.featured ? "text-cream-300/60" : "text-sage-400"}`}>
-                    {tier.period}
-                  </span>
+                <div className="mt-4">
+                  {tier.originalPrice && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`font-body text-lg line-through ${tier.featured ? "text-cream-300/40" : "text-sage-400"}`}>
+                        {tier.originalPrice}
+                      </span>
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold font-body bg-rose-500 text-white">
+                        {tier.discount} OFF
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline gap-1">
+                    <span className={`font-display text-4xl sm:text-5xl ${tier.featured ? "text-cream-100" : "text-forest-800"}`}>
+                      {tier.price}
+                    </span>
+                    <span className={`font-body text-sm ${tier.featured ? "text-cream-300/60" : "text-sage-400"}`}>
+                      {tier.period}
+                    </span>
+                  </div>
                 </div>
                 <p className={`mt-3 text-sm font-body ${tier.featured ? "text-cream-300/70" : "text-forest-700/60"}`}>
                   {tier.description}
