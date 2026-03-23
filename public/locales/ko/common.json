@@ -62,8 +62,9 @@
     "live": {
       "title": "실시간 상담요청현황",
       "subtitle": "지금 이 순간에도 고객들이 상담을 요청하고 있습니다",
-      "seekingBroker": "상담 진행중",
-      "brokerMatched": "브로커 매칭 완료",
+      "seekingBroker": "상담 대기중",
+      "inProgress": "상담 진행중",
+      "completed": "상담완료",
       "timeAgo": "{{time}} 전"
     }
   },

@@ -64,7 +64,7 @@ const config: Config = {
         "fade-in-up": "fadeInUp 0.6s ease-out forwards",
         "slide-in-right": "slideInRight 0.5s ease-out forwards",
         "scale-in": "scaleIn 0.4s ease-out forwards",
-        marquee: "marqueeScroll 60s linear infinite",
+        marquee: "marqueeScroll 120s linear infinite",
       },
       keyframes: {
         fadeIn: {

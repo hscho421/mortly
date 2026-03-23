@@ -5,7 +5,6 @@ import type { LiveRequest } from "@/types";
 export default function LiveActivityCard({ request }: { request: LiveRequest }) {
   const { t } = useTranslation("common");
   const isCommercial = request.mortgageCategory === "COMMERCIAL";
-  const isOpen = request.status === "OPEN";
 
   return (
     <div className="flex-shrink-0 w-72 rounded-2xl border border-cream-300 bg-white p-5 shadow-md transition-transform hover:scale-[1.03]">
@@ -57,11 +56,19 @@ export default function LiveActivityCard({ request }: { request: LiveRequest }) 
       <div className="flex items-center gap-1.5">
         <span
           className={`h-2 w-2 rounded-full ${
-            isOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+            request.status === "OPEN"
+              ? "bg-emerald-500 animate-pulse"
+              : request.status === "IN_PROGRESS"
+                ? "bg-amber-500 animate-pulse"
+                : "bg-sage-400"
           }`}
         />
         <span className="font-body text-xs font-medium text-forest-700">
-          {isOpen ? t("home.live.seekingBroker") : t("home.live.brokerMatched")}
+          {request.status === "OPEN"
+            ? t("home.live.seekingBroker")
+            : request.status === "IN_PROGRESS"
+              ? t("home.live.inProgress")
+              : t("home.live.completed")}
         </span>
       </div>
     </div>
