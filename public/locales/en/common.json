@@ -737,7 +737,10 @@
     "portalUsageGuide": "Portal usage guide",
     "thirtyDayTrends": "30-Day Trends",
     "thirtyDayTrendsDesc": "Daily new users, requests, and conversations.",
-    "users": "Users"
+    "users": "Users",
+    "resetLayout": "Reset",
+    "editDone": "Done",
+    "editLayout": "Edit Layout"
   },
   "manual": {
     "loading": "Loading...",

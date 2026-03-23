@@ -737,7 +737,10 @@
     "portalUsageGuide": "포털 사용 가이드",
     "thirtyDayTrends": "30일 추이",
     "thirtyDayTrendsDesc": "일별 신규 사용자, 요청 및 대화 현황.",
-    "users": "사용자"
+    "users": "사용자",
+    "resetLayout": "초기화",
+    "editDone": "완료",
+    "editLayout": "레이아웃 편집"
   },
   "manual": {
     "loading": "로딩 중...",
