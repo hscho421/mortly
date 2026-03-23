@@ -78,7 +78,7 @@ export default function BrokerDashboardPage() {
         }
 
         if (!profileRes.ok) {
-          throw new Error("Failed to fetch broker profile");
+          throw new Error(t("broker.failedToFetchProfile"));
         }
 
         const brokerProfile: BrokerProfile = await profileRes.json();
@@ -129,7 +129,7 @@ export default function BrokerDashboardPage() {
           responseCredits: brokerProfile.responseCredits,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Something went wrong");
+        setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
       } finally {
         setLoading(false);
       }
@@ -144,7 +144,7 @@ export default function BrokerDashboardPage() {
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
             <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-forest-300 border-t-forest-700" />
-            <p className="text-body-sm">Loading your dashboard...</p>
+            <p className="text-body-sm">{t("broker.dashboardLoading")}</p>
           </div>
         </div>
       </Layout>
@@ -165,7 +165,7 @@ export default function BrokerDashboardPage() {
               onClick={() => window.location.reload()}
               className="btn-primary"
             >
-              Try Again
+              {t("common.tryAgain")}
             </button>
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function BrokerDashboardPage() {
     },
     {
       label: t("broker.responseCredits"),
-      value: subscriptionTier === "PREMIUM" ? t("broker.unlimited", "Unlimited") : stats.responseCredits,
+      value: subscriptionTier === "PREMIUM" ? t("common.unlimited") : stats.responseCredits,
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -305,14 +305,14 @@ export default function BrokerDashboardPage() {
               {t("broker.welcome")}, {session.user.name || "Broker"}
             </h1>
             <p className="text-body mt-2">
-              Here is an overview of your mortly activity.
+              {t("broker.dashboardSubtitle")}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 font-body text-xs font-semibold ${tierColors[subscriptionTier] || tierColors.BASIC}`}
             >
-              {subscriptionTier} Plan
+              {subscriptionTier} {t("common.plan")}
             </span>
             <span
               className={`inline-flex items-center rounded-full px-3 py-1 font-body text-xs font-semibold ${verificationColors[verificationStatus] || verificationColors.PENDING}`}
@@ -345,9 +345,9 @@ export default function BrokerDashboardPage() {
                 </svg>
               </div>
               <div>
-                <p className="font-body text-base font-semibold text-forest-800">{t("broker.verifiedCongrats", "Congratulations! You're Verified")}</p>
+                <p className="font-body text-base font-semibold text-forest-800">{t("broker.verifiedTitle")}</p>
                 <p className="font-body text-sm text-forest-700 mt-1">
-                  {t("broker.verifiedCongratsDesc", "Your broker profile has been verified. You can now browse borrower requests and start connecting with clients.")}
+                  {t("broker.verifiedDesc")}
                 </p>
               </div>
             </div>
@@ -362,9 +362,9 @@ export default function BrokerDashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.999L13.732 4.001c-.77-1.333-2.694-1.333-3.464 0L3.34 16.001C2.57 17.334 3.532 19 5.072 19z" />
               </svg>
               <div>
-                <p className="font-body text-sm font-semibold text-amber-800">{t("broker.verificationPending", "Verification Pending")}</p>
+                <p className="font-body text-sm font-semibold text-amber-800">{t("broker.pendingTitle")}</p>
                 <p className="font-body text-sm text-amber-700 mt-1">
-                  {t("broker.verificationPendingDesc", "Your license is under review. Once verified, you'll be able to browse borrower requests.")}
+                  {t("broker.pendingDesc")}
                 </p>
               </div>
             </div>
@@ -380,14 +380,14 @@ export default function BrokerDashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <p className="font-body text-sm font-semibold text-forest-800">{t("broker.freePlanNotice", "You're on the Free Plan")}</p>
+                  <p className="font-body text-sm font-semibold text-forest-800">{t("broker.freePlanTitle")}</p>
                   <p className="font-body text-sm text-forest-700 mt-1">
-                    {t("broker.freePlanDesc", "You can browse requests but cannot send introductions to borrowers. Upgrade to start connecting with clients.")}
+                    {t("broker.freePlanDesc")}
                   </p>
                 </div>
               </div>
               <Link href="/broker/billing" className="btn-amber shrink-0 !py-2 !px-4 !text-xs">
-                {t("broker.upgradePlan", "Upgrade Plan")}
+                {t("broker.upgradePlan")}
               </Link>
             </div>
           </div>
@@ -422,7 +422,7 @@ export default function BrokerDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <h2 className="heading-md mb-5 animate-fade-in stagger-5">Quick Actions</h2>
+        <h2 className="heading-md mb-5 animate-fade-in stagger-5">{t("broker.quickActions")}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 animate-fade-in-up stagger-6">
           {quickActions.map((action) => (
             <Link

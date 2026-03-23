@@ -125,7 +125,14 @@
     "codeExpired": "코드가 만료되었습니다. 새 코드를 요청하세요.",
     "invalidCode": "잘못된 코드입니다. 다시 시도하세요.",
     "emailVerified": "이메일 인증 완료! 로그인하세요.",
-    "emailNotVerified": "먼저 이메일을 인증해주세요."
+    "emailNotVerified": "먼저 이메일을 인증해주세요.",
+    "nameRequired": "이름을 입력해주세요",
+    "invalidEmail": "유효한 이메일 주소를 입력해주세요",
+    "unexpectedError": "예상치 못한 오류가 발생했습니다. 다시 시도해주세요.",
+    "placeholderName": "홍길동",
+    "placeholderEmail": "you@example.com",
+    "placeholderPassword": "8자 이상",
+    "placeholderConfirmPassword": "비밀번호 재입력"
   },
   "borrowerDashboard": {
     "title": "내 모기지 요청",
@@ -135,7 +142,10 @@
     "createFirst": "첫 요청 만들기",
     "introductions": "건 소개",
     "introductionsPlural": "건 소개",
-    "viewDetails": "상세 보기"
+    "viewDetails": "상세 보기",
+    "subtitle": "모기지 요청 및 브로커 소개를 확인하세요.",
+    "failedToLoad": "요청을 불러오지 못했습니다.",
+    "failedToFetch": "요청을 가져오지 못했습니다"
   },
   "request": {
     "backToRequests": "내 요청으로 돌아가기",
@@ -270,7 +280,9 @@
     "newRequestTitle": "모기지 알아보기",
     "newRequestSubtitle": "금융 서비스 필요 사항을 알려주세요. 귀하의 신원은 익명으로 유지됩니다.",
     "residentialRequest": "주거용 요청",
-    "commercialRequest": "상업용 요청"
+    "commercialRequest": "상업용 요청",
+    "legacyFormat": "이 요청은 이전 형식으로 제출되었습니다.",
+    "failedToLoad": "요청을 불러오지 못했습니다"
   },
   "messages": {
     "title": "메시지",
@@ -409,7 +421,21 @@
     "verifiedCongrats": "축하합니다! 인증이 완료되었습니다",
     "verifiedCongratsDesc": "브로커 프로필이 인증되었습니다. 이제 차용자 요청을 확인하고 클라이언트와 연결을 시작할 수 있습니다.",
     "verificationRequired": "인증 필요",
-    "verificationRequiredDesc": "차용자 요청을 확인하려면 브로커 프로필이 인증되어야 합니다. 관리자 승인을 기다려 주세요."
+    "verificationRequiredDesc": "차용자 요청을 확인하려면 브로커 프로필이 인증되어야 합니다. 관리자 승인을 기다려 주세요.",
+    "quickActions": "빠른 작업",
+    "failedToFetchProfile": "브로커 프로필을 가져오지 못했습니다",
+    "failedToLoadProfile": "프로필 데이터를 불러오지 못했습니다.",
+    "failedToUpdateProfile": "프로필 업데이트에 실패했습니다",
+    "profileUpdated": "프로필이 업데이트되었습니다.",
+    "dashboardSubtitle": "mortly 활동 현황을 확인하세요.",
+    "dashboardLoading": "대시보드 로딩 중...",
+    "verifiedTitle": "축하합니다! 인증이 완료되었습니다",
+    "verifiedDesc": "브로커 프로필이 인증되었습니다. 이제 차입자 요청을 탐색하고 고객과 연결할 수 있습니다.",
+    "pendingTitle": "인증 대기 중",
+    "pendingDesc": "라이선스 검토가 진행 중입니다. 인증이 완료되면 차입자 요청을 열람할 수 있습니다.",
+    "freePlanTitle": "무료 플랜을 이용 중입니다",
+    "failedToLoadRequests": "요청을 불러오지 못했습니다. 다시 시도해주세요.",
+    "failedToFetchRequests": "요청을 가져오지 못했습니다"
   },
   "admin": {
     "dashboard": "관리자 대시보드",
@@ -609,7 +635,6 @@
     "actionRequired": "조치 필요",
     "brokerVerificationQueue": "브로커 인증 대기열",
     "mortgageConsultationQueue": "상담 신청 대기열",
-    "requestId": "요청 ID",
     "borrower": "신청인",
     "submitted": "제출일",
     "approving": "승인 중...",
@@ -703,7 +728,16 @@
     "setting_request_expiry_days": "요청 만료 (일)",
     "setting_request_expiry_days_desc": "활성 요청이 자동 만료되는 일수입니다.",
     "setting_maintenance_mode": "유지보수 모드",
-    "setting_maintenance_mode_desc": "활성화하면 관리자가 아닌 사용자에게 유지보수 페이지가 표시됩니다."
+    "setting_maintenance_mode_desc": "활성화하면 관리자가 아닌 사용자에게 유지보수 페이지가 표시됩니다.",
+    "dashboardLoading": "대시보드 로딩 중...",
+    "total": "전체",
+    "conversations": "대화",
+    "platformConfig": "플랫폼 설정",
+    "adminManual": "관리자 매뉴얼",
+    "portalUsageGuide": "포털 사용 가이드",
+    "thirtyDayTrends": "30일 추이",
+    "thirtyDayTrendsDesc": "일별 신규 사용자, 요청 및 대화 현황.",
+    "users": "사용자"
   },
   "manual": {
     "loading": "로딩 중...",
@@ -1337,5 +1371,28 @@
     "feat_premiumListing": "프리미엄 프로필 등록",
     "feat_topPriority": "최우선 배치",
     "feat_advancedAnalytics": "고급 분석 대시보드"
+  },
+  "common": {
+    "loading": "로딩 중...",
+    "somethingWentWrong": "문제가 발생했습니다",
+    "unexpectedError": "예상치 못한 오류가 발생했습니다. 다시 시도해주세요.",
+    "maintenanceTitle": "시스템 점검 중",
+    "maintenanceDesc": "더 나은 서비스를 위해 시스템 점검을 진행하고 있습니다.",
+    "maintenanceNote": "잠시 후 다시 방문해주세요. 양해 부탁드립니다.",
+    "tryAgain": "다시 시도",
+    "na": "해당없음",
+    "plan": "플랜",
+    "unlimited": "무제한",
+    "failedToLoad": "데이터를 불러오지 못했습니다. 다시 시도해주세요."
+  },
+  "borrowerProfile": {
+    "failedToFetch": "프로필을 가져오지 못했습니다",
+    "failedToLoad": "프로필을 불러오지 못했습니다.",
+    "profileUpdated": "프로필이 업데이트되었습니다.",
+    "failedToUpdate": "프로필 업데이트에 실패했습니다"
+  },
+  "borrowerChat": {
+    "failedToLoad": "대화를 불러오지 못했습니다",
+    "somethingWentWrong": "문제가 발생했습니다"
   }
 }

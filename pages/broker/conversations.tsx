@@ -54,7 +54,7 @@ export default function BrokerConversationsPage() {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">Loading...</p>
+          <p className="text-body-sm">{t("common.loading")}</p>
         </div>
       </Layout>
     );

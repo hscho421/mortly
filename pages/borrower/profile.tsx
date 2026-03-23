@@ -49,12 +49,12 @@ export default function BorrowerProfilePage() {
       setIsLoading(true);
       try {
         const res = await fetch("/api/borrowers/profile");
-        if (!res.ok) throw new Error("Failed to fetch profile");
+        if (!res.ok) throw new Error(t("borrowerProfile.failedToFetch"));
         const data: BorrowerProfile = await res.json();
         setProfile(data);
         setName(data.name || "");
       } catch {
-        setError("Failed to load profile.");
+        setError(t("borrowerProfile.failedToLoad"));
       } finally {
         setIsLoading(false);
       }
@@ -78,12 +78,12 @@ export default function BorrowerProfilePage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Failed to update profile");
+        throw new Error(data.message || t("borrowerProfile.failedToUpdate"));
       }
 
-      setSuccess(t("settings.profileUpdated", "Profile updated successfully."));
+      setSuccess(t("borrowerProfile.profileUpdated"));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to update profile");
+      setError(err instanceof Error ? err.message : t("borrowerProfile.failedToUpdate"));
     } finally {
       setIsSaving(false);
     }
@@ -95,12 +95,12 @@ export default function BorrowerProfilePage() {
     setPasswordSuccess("");
 
     if (newPassword !== confirmPassword) {
-      setPasswordError(t("auth.passwordMismatch", "Passwords do not match"));
+      setPasswordError(t("auth.passwordMismatch"));
       return;
     }
 
     if (newPassword.length < 8) {
-      setPasswordError(t("auth.passwordTooShort", "Password must be at least 8 characters"));
+      setPasswordError(t("auth.passwordTooShort"));
       return;
     }
 
@@ -115,15 +115,15 @@ export default function BorrowerProfilePage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Failed to change password");
+        throw new Error(data.message || t("borrowerProfile.failedToUpdate"));
       }
 
-      setPasswordSuccess(t("settings.passwordChanged", "Password changed successfully."));
+      setPasswordSuccess(t("settings.passwordChanged"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
-      setPasswordError(err instanceof Error ? err.message : "Failed to change password");
+      setPasswordError(err instanceof Error ? err.message : t("borrowerProfile.failedToUpdate"));
     } finally {
       setIsChangingPassword(false);
     }
@@ -133,7 +133,7 @@ export default function BorrowerProfilePage() {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">Loading...</p>
+          <p className="text-body-sm">{t("common.loading")}</p>
         </div>
       </Layout>
     );

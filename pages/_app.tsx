@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import type { AppProps } from "next/app";
 import { useRouter } from "next/router";
 import { SessionProvider, useSession } from "next-auth/react";
-import { appWithTranslation } from "next-i18next";
+import { appWithTranslation, useTranslation } from "next-i18next";
 import { Analytics } from "@vercel/analytics/react";
 
 function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useTranslation("common");
   const [maintenance, setMaintenance] = useState(false);
   const [checked, setChecked] = useState(false);
 
@@ -30,12 +31,12 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen items-center justify-center bg-cream-50 px-4">
         <div className="card-elevated max-w-lg text-center">
           <div className="mb-4 text-4xl">🔧</div>
-          <h1 className="heading-lg mb-3">Under Maintenance</h1>
+          <h1 className="heading-lg mb-3">{t("common.maintenanceTitle")}</h1>
           <p className="text-body mb-2">
-            mortly is temporarily undergoing scheduled maintenance.
+            {t("common.maintenanceDesc")}
           </p>
           <p className="text-body-sm text-sage-500">
-            We&apos;ll be back shortly. Thank you for your patience.
+            {t("common.maintenanceNote")}
           </p>
         </div>
       </div>

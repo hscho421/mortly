@@ -7,7 +7,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 const ROLE_REDIRECTS: Record<string, string> = {
-  BORROWER: "/borrower/request/new",
+  BORROWER: "/borrower/dashboard",
   BROKER: "/broker/dashboard",
   ADMIN: "/admin/dashboard",
 };
@@ -56,7 +56,7 @@ export default function LoginPage() {
       const redirectUrl = callbackUrl || ROLE_REDIRECTS[role] || "/";
       router.push(redirectUrl, undefined, { locale: router.locale });
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError(t("common.unexpectedError"));
       setIsLoading(false);
     }
   };
@@ -109,7 +109,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field"
-                  placeholder="you@example.com"
+                  placeholder={t("auth.placeholderEmail")}
                 />
               </div>
 
@@ -124,7 +124,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field"
-                  placeholder="Enter your password"
+                  placeholder={t("auth.placeholderPassword")}
                 />
               </div>
 

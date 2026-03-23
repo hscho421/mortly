@@ -56,12 +56,12 @@ export default function ChatPage() {
     if (!conversationId) return;
     try {
       const res = await fetch(`/api/conversations/${conversationId}`);
-      if (!res.ok) throw new Error("Failed to load conversation");
+      if (!res.ok) throw new Error(t("borrowerChat.failedToLoad"));
       const data: ConversationWithParticipants = await res.json();
       setConversation(data);
       setMessages(data.messages);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("borrowerChat.somethingWentWrong"));
     } finally {
       setLoading(false);
     }

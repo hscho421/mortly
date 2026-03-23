@@ -85,13 +85,13 @@ export default function RequestDetail() {
           router.replace("/borrower/dashboard", undefined, { locale: router.locale });
           return;
         }
-        throw new Error("Failed to load request");
+        throw new Error(t("request.failedToLoad"));
       }
       const data = await res.json();
       setRequest(data);
       setIntroCount(data._count?.introductions ?? data.introductions?.length ?? 0);
     } catch {
-      setError("Failed to load request");
+      setError(t("request.failedToLoad"));
     } finally {
       setLoading(false);
     }
@@ -328,7 +328,7 @@ export default function RequestDetail() {
             ) : (
               /* v1 requests: show a message that editing is not supported in new format */
               <div className="card-elevated text-center py-12">
-                <p className="text-body-sm">This request uses a legacy format. Please create a new request instead.</p>
+                <p className="text-body-sm">{t("request.legacyFormat")}</p>
                 <Link href="/borrower/request/new" className="btn-primary mt-4 inline-block">
                   {t("request.newRequestTitle")}
                 </Link>

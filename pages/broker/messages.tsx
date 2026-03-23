@@ -245,7 +245,7 @@ export default function BrokerMessagesPage() {
       <>
         <Navbar />
         <div className="flex items-center justify-center" style={{ height: "calc(100vh - 80px)" }}>
-          <p className="text-body-sm">Loading...</p>
+          <p className="text-body-sm">{t("common.loading")}</p>
         </div>
       </>
     );

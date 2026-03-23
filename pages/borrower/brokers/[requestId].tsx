@@ -108,7 +108,7 @@ export default function BrokerComparison() {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-body-sm">Loading...</p>
+          <p className="text-body-sm">{t("common.loading")}</p>
         </div>
       </Layout>
     );

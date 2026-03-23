@@ -21,12 +21,12 @@ export default function ResetPasswordPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError(t("auth.passwordMismatch", "Passwords do not match"));
+      setError(t("auth.passwordMismatch"));
       return;
     }
 
     if (password.length < 8) {
-      setError(t("auth.passwordTooShort", "Password must be at least 8 characters"));
+      setError(t("auth.passwordTooShort"));
       return;
     }
 

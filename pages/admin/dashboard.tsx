@@ -81,7 +81,7 @@ export default function AdminDashboard() {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-body-sm">Loading dashboard...</p>
+          <p className="text-body-sm">{t("admin.dashboardLoading")}</p>
         </div>
       </Layout>
     );
@@ -171,9 +171,9 @@ export default function AdminDashboard() {
               </svg>
             </span>
             <div>
-              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.requestManagement", "Request Management")}</p>
+              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.requestManagement")}</p>
               <p className="text-body-sm">
-                {stats?.requestsByStatus.total ?? 0} {t("admin.totalUsersLabel", "total")}
+                {stats?.requestsByStatus.total ?? 0} {t("admin.total")}
               </p>
             </div>
           </Link>
@@ -187,9 +187,9 @@ export default function AdminDashboard() {
               </svg>
             </span>
             <div>
-              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.userManagement", "User Management")}</p>
+              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.userManagement")}</p>
               <p className="text-body-sm">
-                {stats?.users ?? 0} {t("admin.totalUsersLabel", "total")}
+                {stats?.users ?? 0} {t("admin.total")}
               </p>
             </div>
           </Link>
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
             </span>
             <div>
               <p className="font-body text-sm font-semibold text-forest-800">{t("admin.brokerManagement")}</p>
-              <p className="text-body-sm">{t("admin.manageBrokers", "Manage brokers")}</p>
+              <p className="text-body-sm">{t("admin.manageBrokers")}</p>
             </div>
           </Link>
           <Link
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
               </svg>
             </span>
             <div>
-              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.conversationOversight", "Conversations")}</p>
+              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.conversations")}</p>
               <p className="text-body-sm">
                 {stats?.activeConversations ?? 0} {t("status.active").toLowerCase()}
               </p>
@@ -235,8 +235,8 @@ export default function AdminDashboard() {
               </svg>
             </span>
             <div>
-              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.activityLog", "Activity Log")}</p>
-              <p className="text-body-sm">{t("admin.recentActions", "Recent actions")}</p>
+              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.activityLog")}</p>
+              <p className="text-body-sm">{t("admin.recentActions")}</p>
             </div>
           </Link>
           <Link
@@ -250,8 +250,8 @@ export default function AdminDashboard() {
               </svg>
             </span>
             <div>
-              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.systemSettings", "System Settings")}</p>
-              <p className="text-body-sm">{t("admin.systemSettingsShort", "Platform config")}</p>
+              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.systemSettings")}</p>
+              <p className="text-body-sm">{t("admin.platformConfig")}</p>
             </div>
           </Link>
           <Link
@@ -264,8 +264,8 @@ export default function AdminDashboard() {
               </svg>
             </span>
             <div>
-              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.manual", "Admin Manual")}</p>
-              <p className="text-body-sm">{t("admin.manualDesc", "Portal usage guide")}</p>
+              <p className="font-body text-sm font-semibold text-forest-800">{t("admin.adminManual")}</p>
+              <p className="text-body-sm">{t("admin.portalUsageGuide")}</p>
             </div>
           </Link>
         </div>
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
                   <dd className="font-display text-2xl text-rose-700">{stats.requestsByStatus.rejected}</dd>
                 </div>
                 <div className="p-2.5 border-l border-cream-200">
-                  <dt className="font-body text-[11px] text-forest-700/60 font-semibold">{t("admin.totalUsersLabel", "Total")}</dt>
+                  <dt className="font-body text-[11px] text-forest-700/60 font-semibold">{t("admin.total")}</dt>
                   <dd className="font-display text-2xl text-forest-800">{stats.requestsByStatus.total}</dd>
                 </div>
               </dl>
@@ -353,7 +353,7 @@ export default function AdminDashboard() {
               <h3 className="font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50 mb-3">{t("admin.activitySection")}</h3>
               <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <dt className="font-body text-[11px] text-forest-700/60">{t("admin.activeConversations", "Active Conversations")}</dt>
+                  <dt className="font-body text-[11px] text-forest-700/60">{t("admin.activeConversations")}</dt>
                   <dd className="font-display text-xl text-forest-800">{stats.activeConversations}</dd>
                 </div>
                 <div>
@@ -378,8 +378,8 @@ export default function AdminDashboard() {
         {/* ── Section 4: 30-Day Trends ── */}
         {trends.length > 0 && (
           <div className="card-elevated mb-8 animate-fade-in-up stagger-6">
-            <h2 className="heading-sm mb-1">{t("admin.trends", "30-Day Trends")}</h2>
-            <p className="text-body-sm mb-6">{t("admin.trendsDesc", "Daily new users, requests, and conversations.")}</p>
+            <h2 className="heading-sm mb-1">{t("admin.thirtyDayTrends")}</h2>
+            <p className="text-body-sm mb-6">{t("admin.thirtyDayTrendsDesc")}</p>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart
                 data={trends.map((d) => ({
@@ -433,20 +433,20 @@ export default function AdminDashboard() {
                 />
                 <Bar
                   dataKey="users"
-                  name={t("admin.trendUsers", "Users")}
+                  name={t("admin.users")}
                   fill="#3d6b4f"
                   radius={[0, 0, 0, 0]}
                   stackId="a"
                 />
                 <Bar
                   dataKey="requests"
-                  name={t("admin.trendRequests", "Requests")}
+                  name={t("admin.requests")}
                   fill="#8faa7e"
                   stackId="a"
                 />
                 <Bar
                   dataKey="conversations"
-                  name={t("admin.trendConversations", "Conversations")}
+                  name={t("admin.conversations")}
                   fill="#c8a86e"
                   radius={[3, 3, 0, 0]}
                   stackId="a"

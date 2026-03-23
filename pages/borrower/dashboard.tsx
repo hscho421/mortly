@@ -58,11 +58,11 @@ export default function BorrowerDashboard() {
       setIsLoading(true);
       try {
         const res = await fetch("/api/requests");
-        if (!res.ok) throw new Error("Failed to fetch requests");
+        if (!res.ok) throw new Error(t("borrowerDashboard.failedToFetch"));
         const data = await res.json();
         setRequests(data);
       } catch {
-        setError("Failed to load your requests.");
+        setError(t("borrowerDashboard.failedToLoad"));
       } finally {
         setIsLoading(false);
       }
@@ -75,7 +75,7 @@ export default function BorrowerDashboard() {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">Loading...</p>
+          <p className="text-body-sm">{t("common.loading")}</p>
         </div>
       </Layout>
     );
@@ -93,7 +93,7 @@ export default function BorrowerDashboard() {
           <div>
             <h1 className="heading-lg">{t("borrowerDashboard.title")}</h1>
             <p className="text-body mt-2">
-              Track and manage all your mortgage requests in one place.
+              {t("borrowerDashboard.subtitle")}
             </p>
           </div>
           <Link href="/borrower/request/new" className="btn-amber">

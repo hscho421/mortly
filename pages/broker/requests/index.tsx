@@ -25,7 +25,7 @@ const PROVINCES = [
 ];
 
 function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return "N/A";
+  if (value == null) return "--";
   return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(value);
 }
 
@@ -68,11 +68,11 @@ export default function BrokerRequestsPage() {
           setError("NOT_VERIFIED");
           return;
         }
-        if (!res.ok) throw new Error("Failed to fetch requests");
+        if (!res.ok) throw new Error(t("broker.failedToFetchRequests"));
         const data = await res.json();
         setRequests(data);
       } catch {
-        setError("Failed to load requests. Please try again.");
+        setError(t("broker.failedToLoadRequests"));
       } finally {
         setIsLoading(false);
       }
@@ -85,7 +85,7 @@ export default function BrokerRequestsPage() {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">Loading...</p>
+          <p className="text-body-sm">{t("common.loading")}</p>
         </div>
       </Layout>
     );

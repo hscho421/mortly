@@ -27,15 +27,15 @@ export default function SignupPage() {
   }, [queryRole, roleLocked]);
 
   const validateForm = (): string | null => {
-    if (!name.trim()) return "Name is required";
+    if (!name.trim()) return t("auth.nameRequired");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    if (!emailRegex.test(email)) return t("auth.invalidEmail");
 
     if (password.length < 8)
-      return "Password must be at least 8 characters long";
+      return t("auth.passwordTooShort");
 
-    if (password !== confirmPassword) return "Passwords do not match";
+    if (password !== confirmPassword) return t("auth.passwordMismatch");
 
     return null;
   };
@@ -62,7 +62,7 @@ export default function SignupPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Something went wrong");
+        setError(data.message || t("common.somethingWentWrong"));
         setIsLoading(false);
         return;
       }
@@ -74,7 +74,7 @@ export default function SignupPage() {
         { locale: router.locale }
       );
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError(t("common.unexpectedError"));
       setIsLoading(false);
     }
   };
@@ -131,7 +131,7 @@ export default function SignupPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="input-field"
-                  placeholder="John Doe"
+                  placeholder={t("auth.placeholderName")}
                 />
               </div>
 
@@ -146,7 +146,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field"
-                  placeholder="you@example.com"
+                  placeholder={t("auth.placeholderEmail")}
                 />
               </div>
 
@@ -161,7 +161,7 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field"
-                  placeholder="At least 8 characters"
+                  placeholder={t("auth.placeholderPassword")}
                 />
               </div>
 
@@ -176,7 +176,7 @@ export default function SignupPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="input-field"
-                  placeholder="Re-enter your password"
+                  placeholder={t("auth.placeholderConfirmPassword")}
                 />
               </div>
 

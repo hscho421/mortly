@@ -125,7 +125,14 @@
     "codeExpired": "Code expired. Request a new one.",
     "invalidCode": "Invalid code. Try again.",
     "emailVerified": "Email verified! Please sign in.",
-    "emailNotVerified": "Please verify your email first."
+    "emailNotVerified": "Please verify your email first.",
+    "nameRequired": "Name is required",
+    "invalidEmail": "Please enter a valid email address",
+    "unexpectedError": "An unexpected error occurred. Please try again.",
+    "placeholderName": "John Doe",
+    "placeholderEmail": "you@example.com",
+    "placeholderPassword": "At least 8 characters",
+    "placeholderConfirmPassword": "Re-enter your password"
   },
   "borrowerDashboard": {
     "title": "My Mortgage Requests",
@@ -135,7 +142,10 @@
     "createFirst": "Create Your First Request",
     "introductions": "introduction",
     "introductionsPlural": "introductions",
-    "viewDetails": "View Details"
+    "viewDetails": "View Details",
+    "subtitle": "Track your mortgage requests and broker introductions.",
+    "failedToLoad": "Failed to load your requests.",
+    "failedToFetch": "Failed to fetch requests"
   },
   "request": {
     "backToRequests": "Back to My Requests",
@@ -270,7 +280,9 @@
     "newRequestTitle": "Explore Mortgages",
     "newRequestSubtitle": "Tell us about your financing needs. Your identity stays anonymous.",
     "residentialRequest": "Residential Request",
-    "commercialRequest": "Commercial Request"
+    "commercialRequest": "Commercial Request",
+    "legacyFormat": "This request was submitted in the previous format.",
+    "failedToLoad": "Failed to load request"
   },
   "messages": {
     "title": "Messages",
@@ -409,7 +421,21 @@
     "verifiedCongrats": "Congratulations! You're Verified",
     "verifiedCongratsDesc": "Your broker profile has been verified. You can now browse borrower requests and start connecting with clients.",
     "verificationRequired": "Verification Required",
-    "verificationRequiredDesc": "Your broker profile must be verified before you can browse borrower requests. Please wait for admin approval."
+    "verificationRequiredDesc": "Your broker profile must be verified before you can browse borrower requests. Please wait for admin approval.",
+    "quickActions": "Quick Actions",
+    "failedToFetchProfile": "Failed to fetch broker profile",
+    "failedToLoadProfile": "Failed to load profile data.",
+    "failedToUpdateProfile": "Failed to update profile",
+    "profileUpdated": "Profile updated successfully.",
+    "dashboardSubtitle": "Here is an overview of your mortly activity.",
+    "dashboardLoading": "Loading your dashboard...",
+    "verifiedTitle": "Congratulations! You're Verified",
+    "verifiedDesc": "Your broker profile has been verified. You can now browse borrower requests and start connecting with clients.",
+    "pendingTitle": "Verification Pending",
+    "pendingDesc": "Your license is under review. Once verified, you'll be able to browse borrower requests.",
+    "freePlanTitle": "You're on the Free Plan",
+    "failedToLoadRequests": "Failed to load requests. Please try again.",
+    "failedToFetchRequests": "Failed to fetch requests"
   },
   "admin": {
     "dashboard": "Admin Dashboard",
@@ -609,7 +635,6 @@
     "actionRequired": "Action Required",
     "brokerVerificationQueue": "Broker Verification Queue",
     "mortgageConsultationQueue": "Mortgage Consultation Queue",
-    "requestId": "Request ID",
     "borrower": "Borrower",
     "submitted": "Submitted",
     "approving": "Approving...",
@@ -703,7 +728,16 @@
     "setting_request_expiry_days": "Request Expiry (Days)",
     "setting_request_expiry_days_desc": "Days before an open request auto-expires.",
     "setting_maintenance_mode": "Maintenance Mode",
-    "setting_maintenance_mode_desc": "When enabled, non-admin users see a maintenance page."
+    "setting_maintenance_mode_desc": "When enabled, non-admin users see a maintenance page.",
+    "dashboardLoading": "Loading dashboard...",
+    "total": "total",
+    "conversations": "Conversations",
+    "platformConfig": "Platform config",
+    "adminManual": "Admin Manual",
+    "portalUsageGuide": "Portal usage guide",
+    "thirtyDayTrends": "30-Day Trends",
+    "thirtyDayTrendsDesc": "Daily new users, requests, and conversations.",
+    "users": "Users"
   },
   "manual": {
     "loading": "Loading...",
@@ -1336,5 +1370,28 @@
     "feat_premiumListing": "Premium profile listing",
     "feat_topPriority": "Top priority placement",
     "feat_advancedAnalytics": "Advanced analytics dashboard"
+  },
+  "common": {
+    "loading": "Loading...",
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred. Please try again.",
+    "maintenanceTitle": "Under Maintenance",
+    "maintenanceDesc": "We're currently performing scheduled maintenance to improve your experience.",
+    "maintenanceNote": "Please check back shortly. We appreciate your patience.",
+    "tryAgain": "Try Again",
+    "na": "N/A",
+    "plan": "Plan",
+    "unlimited": "Unlimited",
+    "failedToLoad": "Failed to load data. Please try again."
+  },
+  "borrowerProfile": {
+    "failedToFetch": "Failed to fetch profile",
+    "failedToLoad": "Failed to load profile.",
+    "profileUpdated": "Profile updated successfully.",
+    "failedToUpdate": "Failed to update profile"
+  },
+  "borrowerChat": {
+    "failedToLoad": "Failed to load conversation",
+    "somethingWentWrong": "Something went wrong"
   }
 }

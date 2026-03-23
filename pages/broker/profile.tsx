@@ -76,7 +76,7 @@ export default function BrokerProfilePage() {
       setIsLoading(true);
       try {
         const res = await fetch("/api/brokers/profile");
-        if (!res.ok) throw new Error("Failed to fetch profile");
+        if (!res.ok) throw new Error(t("borrowerProfile.failedToFetch"));
         const data: BrokerProfile = await res.json();
         const rawPhone = (data.phone || "").replace(/^\+1/, "");
         setForm({
@@ -93,7 +93,7 @@ export default function BrokerProfilePage() {
         setVerificationStatus(data.verificationStatus);
         if (data.user) setBrokerUser(data.user);
       } catch {
-        setError("Failed to load profile data.");
+        setError(t("broker.failedToLoadProfile"));
       } finally {
         setIsLoading(false);
       }
@@ -106,7 +106,7 @@ export default function BrokerProfilePage() {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">Loading...</p>
+          <p className="text-body-sm">{t("common.loading")}</p>
         </div>
       </Layout>
     );
