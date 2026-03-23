@@ -21,6 +21,25 @@ interface Plan {
   highlighted: boolean;
 }
 
+interface SubscriptionData {
+  stripeSubscriptionId: string | null;
+  status: string;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: string | null;
+  pendingTier: string | null;
+}
+
+interface Invoice {
+  id: string;
+  number: string | null;
+  amountPaid: number;
+  currency: string;
+  status: string | null;
+  created: number;
+  invoicePdf: string | null;
+  hostedInvoiceUrl: string | null;
+}
+
 const TIER_RANK: Record<string, number> = { FREE: 0, BASIC: 1, PRO: 2, PREMIUM: 3 };
 
 function usePlans(t: (key: string) => string): Plan[] {
@@ -44,7 +63,7 @@ function usePlans(t: (key: string) => string): Plan[] {
     {
       name: t("billing.basicName"),
       tier: "BASIC",
-      price: "$49",
+      price: "$29",
       period: t("billing.perMonth"),
       credits: t("billing.basicCredits"),
       features: [
@@ -60,7 +79,7 @@ function usePlans(t: (key: string) => string): Plan[] {
     {
       name: t("billing.proName"),
       tier: "PRO",
-      price: "$149",
+      price: "$69",
       period: t("billing.perMonth"),
       credits: t("billing.proCredits"),
       features: [
@@ -76,7 +95,7 @@ function usePlans(t: (key: string) => string): Plan[] {
     {
       name: t("billing.premiumName"),
       tier: "PREMIUM",
-      price: "$349",
+      price: "$129",
       period: t("billing.perMonth"),
       credits: t("billing.premiumCredits"),
       features: [
@@ -92,6 +111,21 @@ function usePlans(t: (key: string) => string): Plan[] {
   ];
 }
 
+function formatInvoiceDate(timestamp: number, locale: string): string {
+  return new Date(timestamp * 1000).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatCurrency(amount: number, currency: string): string {
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(amount / 100);
+}
+
 export default function BrokerBillingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -100,7 +134,20 @@ export default function BrokerBillingPage() {
   const plans = usePlans(t);
   const [currentTier, setCurrentTier] = useState("");
   const [responseCredits, setResponseCredits] = useState<number | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
+
+  // Show success banner from checkout redirect
+  useEffect(() => {
+    if (router.query.checkout === "success") {
+      setSuccessMessage(t("broker.subscriptionActivated"));
+      router.replace("/broker/billing", undefined, { shallow: true, locale: router.locale });
+    }
+  }, [router.query.checkout, router, t]);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -113,9 +160,17 @@ export default function BrokerBillingPage() {
           const data = await res.json();
           setCurrentTier(data.subscriptionTier || "FREE");
           setResponseCredits(data.responseCredits ?? 0);
+          if (data.subscription) {
+            setSubscription({
+              stripeSubscriptionId: data.subscription.stripeSubscriptionId,
+              status: data.subscription.status,
+              cancelAtPeriodEnd: data.subscription.cancelAtPeriodEnd,
+              currentPeriodEnd: data.subscription.currentPeriodEnd,
+              pendingTier: data.subscription.pendingTier,
+            });
+          }
         }
       } catch {
-        // Fall back to defaults
         setCurrentTier("FREE");
         setResponseCredits(0);
       } finally {
@@ -123,8 +178,115 @@ export default function BrokerBillingPage() {
       }
     };
 
+    const fetchInvoices = async () => {
+      try {
+        const res = await fetch("/api/stripe/invoices");
+        if (res.ok) {
+          setInvoices(await res.json());
+        }
+      } catch {
+        // Invoices are non-critical
+      }
+    };
+
     fetchProfile();
+    fetchInvoices();
   }, [session, status]);
+
+  const hasStripeSubscription = !!subscription?.stripeSubscriptionId;
+
+  const handleSelectPlan = async (tier: string) => {
+    if (tier === currentTier || actionLoading) return;
+
+    // Downgrade to FREE → open portal to cancel
+    if (tier === "FREE" && hasStripeSubscription) {
+      handleManageSubscription();
+      return;
+    }
+
+    // Confirm downgrade via modal
+    const isDowngrade = (TIER_RANK[tier] ?? 0) < (TIER_RANK[currentTier] ?? 0);
+    if (isDowngrade) {
+      setDowngradeTarget(tier);
+      return;
+    }
+
+    await executePlanChange(tier);
+  };
+
+  const executePlanChange = async (tier: string) => {
+    setDowngradeTarget(null);
+    setActionLoading(tier);
+    try {
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Checkout error:", data.error);
+        return;
+      }
+
+      if (data.updated) {
+        if (data.scheduled) {
+          // Downgrade scheduled for next cycle — no DB change yet
+          setSuccessMessage(t("broker.planScheduled", { tier }));
+        } else {
+          // Upgrade applied immediately — wait for webhook, then refresh
+          await new Promise((r) => setTimeout(r, 2000));
+          setSuccessMessage(t("broker.planUpgraded", { tier }));
+          try {
+            const profileRes = await fetch("/api/brokers/profile");
+            if (profileRes.ok) {
+              const profile = await profileRes.json();
+              setCurrentTier(profile.subscriptionTier || "FREE");
+              setResponseCredits(profile.responseCredits ?? 0);
+              if (profile.subscription) {
+                setSubscription({
+                  stripeSubscriptionId: profile.subscription.stripeSubscriptionId,
+                  status: profile.subscription.status,
+                  cancelAtPeriodEnd: profile.subscription.cancelAtPeriodEnd,
+                  currentPeriodEnd: profile.subscription.currentPeriodEnd,
+                  pendingTier: profile.subscription.pendingTier,
+                });
+              }
+            }
+          } catch {
+            window.location.reload();
+          }
+        }
+        return;
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("Failed to initiate checkout:", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setActionLoading("portal");
+    try {
+      const res = await fetch("/api/stripe/create-portal", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("Failed to open portal:", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   if (status === "loading" || isLoadingProfile) {
     return (
@@ -151,6 +313,79 @@ export default function BrokerBillingPage() {
           <p className="text-body mt-2">{t("broker.billingSubtitle")}</p>
         </div>
 
+        {/* Success banner */}
+        {successMessage && (
+          <div className="mb-6 animate-fade-in rounded-2xl border-2 border-forest-300 bg-forest-50 p-4">
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-forest-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <p className="font-body text-sm font-medium text-forest-700">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Payment failed banner */}
+        {subscription?.status === "PAST_DUE" && (
+          <div className="mb-6 animate-fade-in rounded-2xl border-2 border-rose-300 bg-rose-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                </svg>
+                <p className="font-body text-sm font-medium text-rose-700">{t("broker.paymentFailed")}</p>
+              </div>
+              <button
+                onClick={handleManageSubscription}
+                disabled={actionLoading === "portal"}
+                className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 disabled:opacity-50"
+              >
+                {t("broker.updatePayment")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Cancelling banner */}
+        {subscription?.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
+          <div className="mb-6 animate-fade-in rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <p className="font-body text-sm font-medium text-amber-700">
+                {t("broker.cancellingAt", {
+                  date: new Date(subscription.currentPeriodEnd).toLocaleDateString("en-CA", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }),
+                })}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Pending downgrade banner */}
+        {subscription?.pendingTier && subscription.currentPeriodEnd && (
+          <div className="mb-6 animate-fade-in rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <p className="font-body text-sm font-medium text-amber-700">
+                {t("broker.pendingDowngrade", {
+                  tier: subscription.pendingTier,
+                  date: new Date(subscription.currentPeriodEnd).toLocaleDateString(
+                    router.locale === "ko" ? "ko-KR" : "en-CA",
+                    { year: "numeric", month: "long", day: "numeric" }
+                  ),
+                })}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Current plan summary */}
         <div className="card-elevated mb-10 animate-fade-in-up stagger-1">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -160,11 +395,22 @@ export default function BrokerBillingPage() {
                 {t("broker.currentPlanDesc", { tier: currentTier })}
               </p>
             </div>
-            <div className="text-right">
-              <p className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("broker.responseCredits")}</p>
-              <p className={`font-display text-3xl tracking-tight ${responseCredits === 0 ? "text-red-600" : "text-amber-700"}`}>
-                {currentTier === "PREMIUM" ? t("broker.unlimited", "Unlimited") : responseCredits}
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("broker.responseCredits")}</p>
+                <p className={`font-display text-3xl tracking-tight ${responseCredits === 0 ? "text-red-600" : "text-amber-700"}`}>
+                  {currentTier === "PREMIUM" ? t("broker.unlimited", "Unlimited") : responseCredits}
+                </p>
+              </div>
+              {hasStripeSubscription && (
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={actionLoading === "portal"}
+                  className="btn-secondary disabled:opacity-50"
+                >
+                  {actionLoading === "portal" ? t("broker.processing") : t("broker.manageSubscription")}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -231,20 +477,29 @@ export default function BrokerBillingPage() {
               </ul>
 
               <button
-                className={`mt-8 w-full ${
+                onClick={() => handleSelectPlan(plan.tier)}
+                className={`mt-8 w-full flex items-center justify-center gap-2 ${
                   currentTier === plan.tier
                     ? "btn-secondary cursor-default opacity-60"
                     : plan.highlighted
                       ? "btn-amber"
                       : "btn-secondary"
                 }`}
-                disabled={currentTier === plan.tier}
+                disabled={currentTier === plan.tier || !!actionLoading}
               >
-                {currentTier === plan.tier
-                  ? t("broker.currentPlanBtn")
-                  : (TIER_RANK[plan.tier] ?? 0) > (TIER_RANK[currentTier] ?? 0)
-                    ? t("broker.upgrade")
-                    : t("broker.downgrade", "Downgrade")}
+                {actionLoading === plan.tier && (
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                {actionLoading === plan.tier
+                  ? t("broker.processing")
+                  : currentTier === plan.tier
+                    ? t("broker.currentPlanBtn")
+                    : (TIER_RANK[plan.tier] ?? 0) > (TIER_RANK[currentTier] ?? 0)
+                      ? t("broker.upgrade")
+                      : t("broker.downgrade", "Downgrade")}
               </button>
             </div>
           ))}
@@ -252,19 +507,105 @@ export default function BrokerBillingPage() {
 
         {/* Billing history */}
         <h2 className="heading-md mb-5 animate-fade-in">{t("broker.billingHistory")}</h2>
-        <div className="card-elevated py-16 text-center animate-fade-in-up">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cream-200">
-            <svg className="h-6 w-6 text-sage-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-            </svg>
+        {invoices.length > 0 ? (
+          <div className="card-elevated !p-0 animate-fade-in-up overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b-2 border-cream-300">
+                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceDate")}</th>
+                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceNumber")}</th>
+                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceAmount")}</th>
+                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceStatus")}</th>
+                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceDownload")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((inv, index) => (
+                  <tr key={inv.id} className={`border-b border-cream-200 ${index % 2 === 0 ? "bg-cream-50/50" : ""}`}>
+                    <td className="px-6 py-3 font-body text-sm text-forest-700">{formatInvoiceDate(inv.created, router.locale || "ko")}</td>
+                    <td className="px-6 py-3 font-body text-sm text-forest-700">{inv.number || "—"}</td>
+                    <td className="px-6 py-3 font-body text-sm font-medium text-forest-800">{formatCurrency(inv.amountPaid, inv.currency)}</td>
+                    <td className="px-6 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
+                        inv.status === "paid" ? "bg-forest-100 text-forest-700" : "bg-amber-100 text-amber-800"
+                      }`}>
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3">
+                      {inv.invoicePdf && (
+                        <a
+                          href={inv.invoicePdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
+                        >
+                          {t("broker.invoiceDownload")}
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <p className="font-body text-sm font-medium text-forest-700">{t("broker.noBillingHistory")}</p>
-          <p className="text-body-sm mt-1">
-            {t("broker.noBillingHistoryDesc")}
-          </p>
-        </div>
+        ) : (
+          <div className="card-elevated py-16 text-center animate-fade-in-up">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cream-200">
+              <svg className="h-6 w-6 text-sage-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+              </svg>
+            </div>
+            <p className="font-body text-sm font-medium text-forest-700">{t("broker.noBillingHistory")}</p>
+            <p className="text-body-sm mt-1">
+              {t("broker.noBillingHistoryDesc")}
+            </p>
+          </div>
+        )}
       </div>
 
+      {/* Downgrade confirmation modal */}
+      {downgradeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm"
+            onClick={() => !actionLoading && setDowngradeTarget(null)}
+          />
+          <div className="relative mx-4 w-full max-w-md animate-fade-in-up rounded-2xl bg-white p-8 shadow-xl">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+              <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+              </svg>
+            </div>
+            <h3 className="heading-sm">{t("broker.downgradeTitle")}</h3>
+            <p className="text-body mt-2">
+              {t("broker.confirmDowngrade", { tier: downgradeTarget })}
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setDowngradeTarget(null)}
+                disabled={!!actionLoading}
+                className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t("broker.cancel")}
+              </button>
+              <button
+                onClick={() => executePlanChange(downgradeTarget)}
+                disabled={!!actionLoading}
+                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionLoading === downgradeTarget && (
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                {actionLoading === downgradeTarget ? t("broker.processing") : t("broker.confirmDowngradeBtn")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

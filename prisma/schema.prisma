@@ -90,6 +90,7 @@ model Broker {
   areasServed        String?
   specialties        String?
   profilePhoto       String?
+  stripeCustomerId   String?              @unique @map("stripe_customer_id")
   verificationStatus VerificationStatus   @default(PENDING)
   subscriptionTier   SubscriptionTier     @default(FREE)
   responseCredits    Int                  @default(0)
@@ -153,13 +154,19 @@ model Message {
 }
 
 model Subscription {
-  id        String             @id @default(cuid())
-  brokerId  String             @unique
-  tier      SubscriptionTier
-  status    SubscriptionStatus @default(ACTIVE)
-  startedAt DateTime           @default(now())
-  endedAt   DateTime?
-  broker    Broker             @relation(fields: [brokerId], references: [id])
+  id                   String             @id @default(cuid())
+  brokerId             String             @unique
+  tier                 SubscriptionTier
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeSubscriptionId String?            @unique @map("stripe_subscription_id")
+  stripePriceId        String?            @map("stripe_price_id")
+  currentPeriodStart   DateTime?          @map("current_period_start")
+  currentPeriodEnd     DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  pendingTier          SubscriptionTier?  @map("pending_tier")
+  startedAt            DateTime           @default(now())
+  endedAt              DateTime?
+  broker               Broker             @relation(fields: [brokerId], references: [id])
 
   @@map("subscriptions")
 }
@@ -302,6 +309,7 @@ enum SubscriptionStatus {
   ACTIVE
   CANCELLED
   EXPIRED
+  PAST_DUE
 }
 
 enum ConversationStatus {

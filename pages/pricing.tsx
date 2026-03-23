@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Head from "next/head";
 import { useRouter } from "next/router";
@@ -38,12 +38,47 @@ export default function Pricing() {
     }
   }, [session, status, router]);
 
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const handleSelectTier = async (tier: string) => {
+    if (actionLoading) return;
+
+    if (tier === "FREE") {
+      router.push("/broker/billing", undefined, { locale: router.locale });
+      return;
+    }
+
+    setActionLoading(tier);
+    try {
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      if (data.updated) {
+        router.push("/broker/billing", undefined, { locale: router.locale });
+        return;
+      }
+    } catch {
+      router.push("/broker/billing", undefined, { locale: router.locale });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (status === "loading" || !session || session.user.role === "BORROWER") {
     return null;
   }
 
   const tiers = [
     {
+      tier: "FREE",
       name: t("pricing.freeName"),
       price: "$0",
       originalPrice: null,
@@ -59,6 +94,7 @@ export default function Pricing() {
       featured: false,
     },
     {
+      tier: "BASIC",
       name: t("pricing.basicName"),
       price: "$29",
       originalPrice: "$49",
@@ -74,6 +110,7 @@ export default function Pricing() {
       featured: false,
     },
     {
+      tier: "PRO",
       name: t("pricing.proName"),
       price: "$69",
       originalPrice: "$99",
@@ -89,6 +126,7 @@ export default function Pricing() {
       featured: true,
     },
     {
+      tier: "PREMIUM",
       name: t("pricing.premiumName"),
       price: "$129",
       originalPrice: "$199",
@@ -225,16 +263,17 @@ export default function Pricing() {
                   })}
                 </ul>
 
-                <Link
-                  href="/for-brokers"
+                <button
+                  onClick={() => handleSelectTier(tier.tier)}
+                  disabled={actionLoading !== null}
                   className={`mt-8 block text-center w-full py-3.5 rounded-lg font-semibold text-sm transition-all duration-300 font-body ${
                     tier.featured
                       ? "bg-amber-400 text-forest-900 hover:bg-amber-300"
                       : "bg-forest-800 text-cream-100 hover:bg-forest-700"
-                  }`}
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {tier.cta}
-                </Link>
+                  {actionLoading === tier.tier ? t("broker.processing") : tier.cta}
+                </button>
               </div>
             ))}
           </div>
