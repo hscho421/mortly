@@ -44,6 +44,7 @@ export default function BrokerProfilePage() {
     brokerageName: "",
     province: "",
     licenseNumber: "",
+    phone: "",
     mortgageCategory: "BOTH",
     bio: "",
     yearsExperience: undefined,
@@ -56,6 +57,13 @@ export default function BrokerProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const formatPhone = (raw: string): string => {
+    const digits = raw.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
 
   useEffect(() => {
     if (status === "loading") return;
@@ -70,10 +78,12 @@ export default function BrokerProfilePage() {
         const res = await fetch("/api/brokers/profile");
         if (!res.ok) throw new Error("Failed to fetch profile");
         const data: BrokerProfile = await res.json();
+        const rawPhone = (data.phone || "").replace(/^\+1/, "");
         setForm({
           brokerageName: data.brokerageName,
           province: data.province,
           licenseNumber: data.licenseNumber,
+          phone: formatPhone(rawPhone),
           mortgageCategory: data.mortgageCategory || "BOTH",
           bio: data.bio || "",
           yearsExperience: data.yearsExperience ?? undefined,
@@ -110,6 +120,10 @@ export default function BrokerProfilePage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    if (name === "phone") {
+      setForm((prev) => ({ ...prev, phone: formatPhone(value) }));
+      return;
+    }
     setForm((prev) => ({
       ...prev,
       [name]: name === "yearsExperience" ? (value ? parseInt(value, 10) : undefined) : value,
@@ -126,7 +140,7 @@ export default function BrokerProfilePage() {
       const res = await fetch("/api/brokers/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone: form.phone ? `+1${form.phone.replace(/\D/g, "")}` : undefined }),
       });
 
       if (!res.ok) {
@@ -252,6 +266,39 @@ export default function BrokerProfilePage() {
               onChange={handleChange}
               className="input-field"
             />
+          </div>
+
+          {brokerUser && (
+            <div>
+              <label className="label-text">{t("broker.email")}</label>
+              <input
+                type="email"
+                disabled
+                value={brokerUser.email}
+                className="input-field bg-cream-50 text-sage-500 cursor-not-allowed"
+              />
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="phone" className="label-text">
+              {t("broker.phone")} <span className="text-amber-600">*</span>
+            </label>
+            <div className="flex">
+              <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-cream-300 bg-cream-50 font-body text-sm text-forest-700/70">
+                +1
+              </span>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                value={form.phone}
+                onChange={handleChange}
+                className="input-field !rounded-l-none"
+                placeholder="(416) 555-1234"
+              />
+            </div>
           </div>
 
           <div>

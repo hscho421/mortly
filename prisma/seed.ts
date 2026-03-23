@@ -121,6 +121,7 @@ async function clearAll() {
   await prisma.conversation.deleteMany();
   await prisma.report.deleteMany();
   await prisma.brokerIntroduction.deleteMany();
+  await prisma.$executeRawUnsafe(`DELETE FROM credit_purchases`);
   await prisma.subscription.deleteMany();
   await prisma.borrowerRequest.deleteMany();
   await prisma.broker.deleteMany();
@@ -233,6 +234,7 @@ async function seedMock() {
         brokerageName: BROKERAGE_NAMES[i % BROKERAGE_NAMES.length],
         province,
         licenseNumber: `${province.charAt(0)}${String(8000000 + i * 1111).slice(0, 7)}`,
+        phone: `+1416555${String(1000 + i).slice(0, 4)}`,
         mortgageCategory: i < 10 ? "BOTH" : i < 13 ? "RESIDENTIAL" : "COMMERCIAL",
         bio: `${yrs} years of experience helping clients with ${specs.toLowerCase()}.`,
         yearsExperience: yrs,
@@ -540,6 +542,7 @@ async function seedEmpty() {
         brokerageName: `${name.split(" ")[1]} Mortgage Services`,
         province,
         licenseNumber: license,
+        phone: `+1647555${String(2000 + pubIdx).slice(0, 4)}`,
         bio: `Experienced mortgage broker.`,
         yearsExperience: 5,
         areasServed: (CITIES[province] || ["City"]).slice(0, 2).join(", "),

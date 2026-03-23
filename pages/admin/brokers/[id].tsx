@@ -14,6 +14,7 @@ interface BrokerDetail {
   brokerageName: string;
   province: string;
   licenseNumber: string;
+  phone: string | null;
   mortgageCategory: string;
   bio: string | null;
   yearsExperience: number | null;
@@ -267,6 +268,10 @@ export default function AdminBrokerDetail() {
             <div>
               <p className="label-text">{t("admin.licenseNumber", "License Number")}</p>
               <p className="font-mono text-sm text-forest-800">{broker.licenseNumber}</p>
+            </div>
+            <div>
+              <p className="label-text">{t("broker.phone", "Phone")}</p>
+              <p className="font-body text-sm text-forest-800">{broker.phone || "—"}</p>
             </div>
             <div>
               <p className="label-text">{t("admin.province", "Province")}</p>

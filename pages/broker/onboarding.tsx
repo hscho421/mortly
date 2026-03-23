@@ -29,6 +29,7 @@ export default function BrokerOnboardingPage() {
     brokerageName: "",
     province: "",
     licenseNumber: "",
+    phone: "",
     mortgageCategory: "BOTH",
     bio: "",
     yearsExperience: undefined,
@@ -55,10 +56,21 @@ export default function BrokerOnboardingPage() {
     return null;
   }
 
+  const formatPhone = (raw: string): string => {
+    const digits = raw.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    if (name === "phone") {
+      setForm((prev) => ({ ...prev, phone: formatPhone(value) }));
+      return;
+    }
     setForm((prev) => ({
       ...prev,
       [name]: name === "yearsExperience" ? (value ? parseInt(value, 10) : undefined) : value,
@@ -74,7 +86,7 @@ export default function BrokerOnboardingPage() {
       const res = await fetch("/api/brokers/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, phone: `+1${form.phone.replace(/\D/g, "")}` }),
       });
 
       if (!res.ok) {
@@ -165,6 +177,27 @@ export default function BrokerOnboardingPage() {
               className="input-field"
               placeholder="e.g. M12345678"
             />
+          </div>
+
+          <div>
+            <label htmlFor="phone" className="label-text">
+              {t("broker.phone")} <span className="text-amber-600">*</span>
+            </label>
+            <div className="flex">
+              <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-cream-300 bg-cream-50 font-body text-sm text-forest-700/70">
+                +1
+              </span>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                value={form.phone}
+                onChange={handleChange}
+                className="input-field !rounded-l-none"
+                placeholder="(416) 555-1234"
+              />
+            </div>
           </div>
 
           <div>

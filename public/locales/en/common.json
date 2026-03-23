@@ -311,6 +311,8 @@
     "onboardingSubtitle": "Complete your profile to start connecting with borrowers.",
     "brokerageName": "Brokerage Name",
     "licenseNumber": "License Number",
+    "phone": "Phone Number",
+    "email": "Email",
     "bio": "Bio",
     "yearsExperience": "Years of Experience",
     "areasServed": "Areas Served",

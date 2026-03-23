@@ -44,11 +44,11 @@ export default async function handler(
         return res.status(409).json({ error: "Broker profile already exists" });
       }
 
-      const { brokerageName, province, licenseNumber, ...rest } = req.body;
+      const { brokerageName, province, licenseNumber, phone, ...rest } = req.body;
 
-      if (!brokerageName || !province || !licenseNumber) {
+      if (!brokerageName || !province || !licenseNumber || !phone) {
         return res.status(400).json({
-          error: "brokerageName, province, and licenseNumber are required",
+          error: "brokerageName, province, licenseNumber, and phone are required",
         });
       }
 
@@ -58,6 +58,7 @@ export default async function handler(
           brokerageName,
           province,
           licenseNumber,
+          phone,
           ...rest,
         },
       });
@@ -78,6 +79,7 @@ export default async function handler(
         brokerageName,
         province,
         licenseNumber,
+        phone,
         bio,
         yearsExperience,
         areasServed,
@@ -90,6 +92,7 @@ export default async function handler(
       if (brokerageName !== undefined) safeData.brokerageName = brokerageName;
       if (province !== undefined) safeData.province = province;
       if (licenseNumber !== undefined) safeData.licenseNumber = licenseNumber;
+      if (phone !== undefined) safeData.phone = phone;
       if (bio !== undefined) safeData.bio = bio;
       if (yearsExperience !== undefined) safeData.yearsExperience = yearsExperience;
       if (areasServed !== undefined) safeData.areasServed = areasServed;

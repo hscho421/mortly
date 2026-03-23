@@ -311,6 +311,8 @@
     "onboardingSubtitle": "프로필을 완성하여 모기지 신청인과 연결을 시작하세요.",
     "brokerageName": "중개 회사명",
     "licenseNumber": "면허 번호",
+    "phone": "전화번호",
+    "email": "이메일",
     "bio": "자기소개",
     "yearsExperience": "경력 연수",
     "areasServed": "서비스 지역",

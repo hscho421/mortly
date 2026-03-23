@@ -84,6 +84,7 @@ model Broker {
   brokerageName      String
   province           String
   licenseNumber      String
+  phone              String?
   mortgageCategory   BrokerMortgageCategory @default(BOTH)
   bio                String?
   yearsExperience    Int?

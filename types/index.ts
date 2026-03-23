@@ -97,6 +97,7 @@ export interface CreateBrokerProfileInput {
   brokerageName: string;
   province: string;
   licenseNumber: string;
+  phone: string;
   mortgageCategory?: string;
   bio?: string;
   yearsExperience?: number;
