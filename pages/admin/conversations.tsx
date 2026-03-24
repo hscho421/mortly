@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 import Pagination from "@/components/Pagination";
 import { getRequestTitle } from "@/lib/requestConfig";
 
@@ -33,13 +33,11 @@ interface ConversationRow {
   };
   request: {
     id: string;
-    requestType?: string | null;
     province: string;
     city: string | null;
     status: string;
     mortgageCategory?: string | null;
     productTypes?: string[] | null;
-    schemaVersion?: number | null;
   };
   _count: { messages: number };
   messages: Array<{
@@ -132,10 +130,7 @@ export default function AdminConversations() {
 
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "ADMIN") return;
     fetchConversations();
   }, [session, status, router, fetchConversations]);
 
@@ -169,30 +164,21 @@ export default function AdminConversations() {
 
   if (status === "loading" || loading) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("admin.loadingConversations", "Loading conversations...")}</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
   if (!session || session.user.role !== "ADMIN") return null;
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <Link
-            href="/admin/dashboard"
-            className="mb-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            {t("admin.backToDashboard")}
-          </Link>
           <h1 className="heading-lg">{t("admin.conversationOversight", "Conversation Oversight")}</h1>
           <p className="text-body mt-2">
             {t("admin.conversationOversightDesc", "Monitor all conversations between borrowers and brokers. View messages and close abusive threads.")}
@@ -452,7 +438,7 @@ export default function AdminConversations() {
           </div>
         </div>
       )}
-    </Layout>
+    </AdminLayout>
   );
 }
 

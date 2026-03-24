@@ -229,7 +229,7 @@ export const getStaticProps = async ({ locale }: { locale: string }) => {
   let liveRequests: LiveRequest[] = [];
   try {
     const rows = await prisma.borrowerRequest.findMany({
-      where: { status: { in: ["OPEN", "IN_PROGRESS"] }, schemaVersion: 2 },
+      where: { status: { in: ["OPEN", "IN_PROGRESS"] } },
       select: {
         id: true,
         mortgageCategory: true,

@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 import StatusBadge from "@/components/StatusBadge";
 import Pagination from "@/components/Pagination";
 
@@ -42,9 +42,10 @@ export default function AdminBrokers() {
   const [brokers, setBrokers] = useState<BrokerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const initialStatus = (router.query.status as string) || "ALL";
   const [filterStatus, setFilterStatus] = useState<
     VerificationStatus | "ALL"
-  >("ALL");
+  >(["PENDING", "VERIFIED", "REJECTED"].includes(initialStatus) ? initialStatus as VerificationStatus : "ALL");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationMeta>({
     page: 1,
@@ -83,15 +84,21 @@ export default function AdminBrokers() {
     }
   }, []);
 
+  // Sync filter from query param changes (e.g. navigating from dashboard links)
+  useEffect(() => {
+    const qs = router.query.status as string | undefined;
+    if (qs && ["PENDING", "VERIFIED", "REJECTED"].includes(qs)) {
+      setFilterStatus(qs as VerificationStatus);
+      setPage(1);
+    }
+  }, [router.query.status]);
+
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "ADMIN") return;
 
     fetchBrokers(page, filterStatus);
-  }, [session, status, router, page, filterStatus, fetchBrokers]);
+  }, [session, status, page, filterStatus, fetchBrokers]);
 
   const handleFilterChange = (newStatus: VerificationStatus | "ALL") => {
     setFilterStatus(newStatus);
@@ -126,11 +133,11 @@ export default function AdminBrokers() {
 
   if (status === "loading" || loading) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">Loading brokers...</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
@@ -139,7 +146,7 @@ export default function AdminBrokers() {
   }
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 animate-fade-in">
@@ -294,7 +301,7 @@ export default function AdminBrokers() {
           onPageChange={handlePageChange}
         />
       </div>
-    </Layout>
+    </AdminLayout>
   );
 }
 

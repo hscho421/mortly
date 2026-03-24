@@ -32,12 +32,7 @@ export default async function handler(
       }
 
       if (type && type !== "ALL") {
-        // Support filtering by mortgageCategory (RESIDENTIAL/COMMERCIAL) or legacy requestType
-        if (type === "RESIDENTIAL" || type === "COMMERCIAL") {
-          where.mortgageCategory = type;
-        } else {
-          where.requestType = type;
-        }
+        where.mortgageCategory = type;
       }
 
       if (search && typeof search === "string" && search.trim()) {

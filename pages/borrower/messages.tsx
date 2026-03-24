@@ -33,7 +33,7 @@ interface ConversationListItem {
     user: { id: string; name: string | null; email: string };
   };
   borrower: { id: string; name: string | null; email: string };
-  request: { id: string; requestType?: string | null; province: string; mortgageCategory?: string | null; schemaVersion?: number | null };
+  request: { id: string; province: string; mortgageCategory?: string | null };
 }
 
 /* ────────────────────────────────────────────── */

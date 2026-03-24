@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 import Pagination from "@/components/Pagination";
 import { downloadCSV } from "@/lib/csvExport";
 
@@ -46,6 +46,8 @@ const TARGET_BADGE: Record<string, string> = {
   BROKER: "bg-forest-100 text-forest-700 ring-1 ring-inset ring-forest-600/20",
   REQUEST: "bg-sage-100 text-sage-700 ring-1 ring-inset ring-sage-600/20",
   CONVERSATION: "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-600/20",
+  USER: "bg-cream-200 text-forest-800 ring-1 ring-inset ring-forest-600/20",
+  BORROWER: "bg-cream-200 text-forest-800 ring-1 ring-inset ring-forest-600/20",
 };
 
 function formatDate(dateStr: string): string {
@@ -61,9 +63,12 @@ function getTargetLink(targetType: string, targetId: string): string | null {
     case "BROKER":
       return `/admin/brokers/${targetId}`;
     case "REQUEST":
-      return `/admin/requests`;
+      return `/admin/requests?highlight=${targetId}`;
     case "CONVERSATION":
       return `/admin/conversations/${targetId}`;
+    case "USER":
+    case "BORROWER":
+      return `/admin/users?highlight=${targetId}`;
     default:
       return null;
   }
@@ -79,8 +84,22 @@ export default function AdminReports() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<ReportStatus | "ALL">("ALL");
+  const initialStatus = (router.query.status as string) || "ALL";
+  const [filterStatus, setFilterStatus] = useState<ReportStatus | "ALL">(
+    (["OPEN", "REVIEWED", "RESOLVED", "DISMISSED"] as string[]).includes(initialStatus)
+      ? (initialStatus as ReportStatus)
+      : "ALL"
+  );
   const [filterTarget, setFilterTarget] = useState("ALL");
+
+  // Sync filter from query param changes (e.g. navigating from dashboard links)
+  useEffect(() => {
+    const qs = router.query.status as string | undefined;
+    if (qs && (["OPEN", "REVIEWED", "RESOLVED", "DISMISSED"] as string[]).includes(qs)) {
+      setFilterStatus(qs as ReportStatus);
+      setPage(1);
+    }
+  }, [router.query.status]);
 
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -125,9 +144,7 @@ export default function AdminReports() {
   // Auth guard
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login", undefined, { locale: router.locale });
-    }
+    if (!session || session.user.role !== "ADMIN") return;
   }, [session, status, router]);
 
   // Fetch on page/filter changes
@@ -196,30 +213,21 @@ export default function AdminReports() {
 
   if (status === "loading" || loading) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("admin.loadingReports", "Loading reports...")}</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
   if (!session || session.user.role !== "ADMIN") return null;
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <Link
-            href="/admin/dashboard"
-            className="mb-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            {t("admin.backToDashboard")}
-          </Link>
           <div className="flex items-center justify-between">
             <h1 className="heading-lg">{t("admin.reports")}</h1>
             <button
@@ -580,7 +588,7 @@ export default function AdminReports() {
           </div>
         </div>
       )}
-    </Layout>
+    </AdminLayout>
   );
 }
 

@@ -6,7 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 import { getRequestTitle } from "@/lib/requestConfig";
 
 interface MessageItem {
@@ -45,12 +45,10 @@ interface ConversationDetail {
   };
   request: {
     id: string;
-    requestType?: string | null;
     province: string;
     city: string | null;
     status: string;
     mortgageCategory?: string | null;
-    schemaVersion?: number | null;
   };
   messages: MessageItem[];
 }
@@ -95,10 +93,7 @@ export default function AdminConversationDetail() {
 
   useEffect(() => {
     if (status === "loading" || !id) return;
-    if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "ADMIN") return;
 
     const fetchConversation = async () => {
       try {
@@ -147,31 +142,31 @@ export default function AdminConversationDetail() {
 
   if (status === "loading" || loading) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("admin.loadingConversation", "Loading conversation...")}</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
   if (error || !conversation) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="max-w-3xl mx-auto px-4 py-10 text-center">
           <p className="text-body-sm text-rose-600">{error || "Conversation not found"}</p>
           <Link href="/admin/conversations" className="btn-secondary mt-4 inline-block">
             {t("admin.backToConversations", "Back to Conversations")}
           </Link>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
   if (!session || session.user.role !== "ADMIN") return null;
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
@@ -389,7 +384,7 @@ export default function AdminConversationDetail() {
           </div>
         </div>
       )}
-    </Layout>
+    </AdminLayout>
   );
 }
 

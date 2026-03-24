@@ -7,7 +7,7 @@ import type { RequestWithIntroductions } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import { isV2Request, PRODUCT_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
+import { PRODUCT_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 import StatusBadge from "@/components/StatusBadge";
 
 const PROVINCES = [
@@ -23,11 +23,6 @@ const PROVINCES = [
   "Quebec",
   "Saskatchewan",
 ];
-
-function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return "--";
-  return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 }).format(value);
-}
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-CA", {
@@ -206,7 +201,6 @@ export default function BrokerRequestsPage() {
         {!isLoading && filteredRequests.length > 0 && (
           <div className="space-y-4">
             {filteredRequests.map((req, i) => {
-              const v2 = isV2Request(req);
               return (
                 <div
                   key={req.id}
@@ -215,26 +209,15 @@ export default function BrokerRequestsPage() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
                       <div className="mb-3 flex flex-wrap items-center gap-2">
-                        {v2 ? (
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
-                            req.mortgageCategory === "COMMERCIAL"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-forest-100 text-forest-700"
-                          }`}>
-                            {req.mortgageCategory === "COMMERCIAL"
-                              ? t("request.commercial")
-                              : t("request.residential")}
-                          </span>
-                        ) : (
-                          <>
-                            <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
-                              {req.requestType}
-                            </span>
-                            <span className="inline-flex items-center rounded-full bg-sage-100 px-2.5 py-0.5 font-body text-xs font-semibold text-sage-700">
-                              {req.propertyType}
-                            </span>
-                          </>
-                        )}
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
+                          req.mortgageCategory === "COMMERCIAL"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-forest-100 text-forest-700"
+                        }`}>
+                          {req.mortgageCategory === "COMMERCIAL"
+                            ? t("request.commercial")
+                            : t("request.residential")}
+                        </span>
                         <StatusBadge status={req.status} />
                         <span className="font-body text-xs text-forest-700/50">
                           {t("broker.posted")} {formatDate(req.createdAt as unknown as string)}
@@ -242,64 +225,32 @@ export default function BrokerRequestsPage() {
                       </div>
 
                       <h3 className="heading-sm">
-                        {v2
-                          ? `${req.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} — ${req.city ? `${req.city}, ` : ""}${req.province}`
-                          : `${req.requestType} in ${req.city ? `${req.city}, ` : ""}${req.province}`
-                        }
+                        {`${req.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} — ${req.city ? `${req.city}, ` : ""}${req.province}`}
                       </h3>
 
-                      {v2 ? (
-                        <>
-                          {/* Product pills */}
-                          <div className="mt-3 flex flex-wrap gap-1.5">
-                            {(req.productTypes ?? []).map((pt) => (
-                              <span
-                                key={pt}
-                                className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-xs font-medium text-forest-700"
-                              >
-                                {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
-                              </span>
-                            ))}
-                          </div>
-                          <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
-                            {req.desiredTimeline && (
-                              <div>
-                                <span className="font-body text-xs font-medium text-forest-700/50">{t("request.desiredTimeline")}</span>
-                                <p className="font-body text-sm text-forest-800">{t(TIMELINE_LABEL_KEYS[req.desiredTimeline!] || req.desiredTimeline!)}</p>
-                              </div>
-                            )}
-                            <div>
-                              <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
-                              <p className="font-body text-sm text-forest-800">{req._count?.introductions ?? 0}</p>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+                      {/* Product pills */}
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {(req.productTypes ?? []).map((pt) => (
+                          <span
+                            key={pt}
+                            className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-xs font-medium text-forest-700"
+                          >
+                            {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+                        {req.desiredTimeline && (
                           <div>
-                            <span className="font-body text-xs font-medium text-forest-700/50">{t("request.priceRange")}</span>
-                            <p className="font-body text-sm text-forest-800">
-                              {formatCurrency(req.priceRangeMin)} - {formatCurrency(req.priceRangeMax)}
-                            </p>
+                            <span className="font-body text-xs font-medium text-forest-700/50">{t("request.desiredTimeline")}</span>
+                            <p className="font-body text-sm text-forest-800">{t(TIMELINE_LABEL_KEYS[req.desiredTimeline!] || req.desiredTimeline!)}</p>
                           </div>
-                          <div>
-                            <span className="font-body text-xs font-medium text-forest-700/50">{t("request.mortgageAmount")}</span>
-                            <p className="font-body text-sm text-forest-800">
-                              {formatCurrency(req.mortgageAmountMin)} - {formatCurrency(req.mortgageAmountMax)}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-body text-xs font-medium text-forest-700/50">{t("request.closingTimeline")}</span>
-                            <p className="font-body text-sm text-forest-800">
-                              {req.closingTimeline || t("request.notSpecified")}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
-                            <p className="font-body text-sm text-forest-800">{req._count?.introductions ?? 0}</p>
-                          </div>
+                        )}
+                        <div>
+                          <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
+                          <p className="font-body text-sm text-forest-800">{req._count?.introductions ?? 0}</p>
                         </div>
-                      )}
+                      </div>
                     </div>
                     <div className="flex shrink-0 flex-col gap-2">
                       <Link

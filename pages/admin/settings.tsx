@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 
 interface SettingField {
   key: string;
@@ -37,10 +36,7 @@ export default function AdminSettings() {
 
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "ADMIN") return;
 
     const fetchSettings = async () => {
       try {
@@ -99,11 +95,11 @@ export default function AdminSettings() {
 
   if (status === "loading" || loading) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("admin.loadingSettings", "Loading settings...")}</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
@@ -112,19 +108,10 @@ export default function AdminSettings() {
   }
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <Link
-            href="/admin/dashboard"
-            className="mb-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            {t("admin.backToDashboard", "Back to Dashboard")}
-          </Link>
           <h1 className="heading-lg">{t("admin.systemSettings", "System Settings")}</h1>
           <p className="text-body mt-2">
             {t("admin.systemSettingsDesc", "Configure platform-wide values. Changes take effect immediately.")}
@@ -197,7 +184,7 @@ export default function AdminSettings() {
           </button>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   );
 }
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 import Pagination from "@/components/Pagination";
 import { downloadCSV } from "@/lib/csvExport";
 
@@ -146,10 +146,10 @@ function ActionDetails({ action, details }: { action: string; details: string | 
         </span>
       );
     }
-    if (parsed.requestType) {
+    if (parsed.mortgageCategory) {
       return (
         <span className="font-body text-xs text-forest-700/70">
-          {String(parsed.requestType)} · {String(parsed.province)}
+          {String(parsed.mortgageCategory)} · {String(parsed.province)}
         </span>
       );
     }
@@ -213,10 +213,7 @@ export default function AdminActivity() {
   // Auth guard + initial fetch
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "ADMIN") return;
     fetchActions(page, filterAction);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status, router]);
@@ -231,11 +228,11 @@ export default function AdminActivity() {
 
   if (status === "loading" || loading) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("admin.loadingActivity", "Loading activity...")}</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
@@ -244,19 +241,10 @@ export default function AdminActivity() {
   }
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <Link
-            href="/admin/dashboard"
-            className="mb-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            {t("admin.backToDashboard", "Back to Dashboard")}
-          </Link>
           <div className="flex items-center justify-between">
             <h1 className="heading-lg">{t("admin.activityLog", "Activity Log")}</h1>
             <button
@@ -369,9 +357,20 @@ export default function AdminActivity() {
                       <span className="font-body text-xs text-forest-700/50">
                         {t("admin.by", "By")} {entry.admin.name || entry.admin.email}
                       </span>
-                      <span className="font-body text-xs text-forest-700/50">
+                      <Link
+                        href={
+                          entry.targetType === "USER"
+                            ? `/admin/users?highlight=${entry.targetId}`
+                            : entry.targetType === "BROKER"
+                            ? `/admin/brokers/${entry.targetId}`
+                            : entry.targetType === "REQUEST"
+                            ? `/admin/requests?highlight=${entry.targetId}`
+                            : "#"
+                        }
+                        className="font-body text-xs text-forest-600 hover:text-forest-800 underline decoration-amber-400 decoration-1 underline-offset-2 transition-colors"
+                      >
                         {t("admin.target", "Target")}: {entry.targetType.toLowerCase()} {entry.targetId.slice(0, 12)}...
-                      </span>
+                      </Link>
                       <span className="font-body text-xs text-forest-700/40">
                         {formatDateTime(entry.createdAt)}
                       </span>
@@ -395,7 +394,7 @@ export default function AdminActivity() {
           }}
         />
       </div>
-    </Layout>
+    </AdminLayout>
   );
 }
 

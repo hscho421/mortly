@@ -23,7 +23,7 @@ interface ConversationListItem {
     user: { id: string; name: string | null; email: string };
   };
   borrower: { id: string; name: string | null; email: string };
-  request: { id: string; requestType?: string | null; province: string; mortgageCategory?: string | null; schemaVersion?: number | null };
+  request: { id: string; province: string; mortgageCategory?: string | null };
 }
 
 interface FullMessage {
@@ -66,12 +66,6 @@ function formatRelativeTime(date: string) {
   if (diffHours < 24) return `${diffHours}h`;
   if (diffDays < 7) return `${diffDays}d`;
   return formatDate(date);
-}
-
-function formatRequestType(type: string) {
-  return type
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default function BrokerMessagesPage() {

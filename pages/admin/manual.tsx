@@ -1,11 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 
 const SECTION_IDS = [
   "overview",
@@ -122,33 +121,21 @@ export default function AdminManual() {
 
   if (status === "loading") {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("manual.loading", "Loading...")}</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
-  if (!session || session.user.role !== "ADMIN") {
-    router.replace("/login", undefined, { locale: router.locale });
-    return null;
-  }
+  if (!session || session.user.role !== "ADMIN") return null;
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <Link
-            href="/admin/dashboard"
-            className="mb-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            {t("admin.backToDashboard")}
-          </Link>
           <h1 className="heading-lg">{t("manual.title", "Admin Manual")}</h1>
           <p className="text-body mt-2">
             {t("manual.subtitle", "Complete guide to managing the mortly platform.")}
@@ -583,7 +570,7 @@ export default function AdminManual() {
           </div>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   );
 }
 

@@ -11,16 +11,7 @@ import StatusBadge from "@/components/StatusBadge";
 import ConsultationStepper from "@/components/ConsultationStepper";
 import RequestForm from "@/components/RequestForm";
 import type { CreateRequestInput, ResidentialDetails, CommercialDetails } from "@/types";
-import { isV2Request, PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
-
-function formatCurrency(val: number | null | undefined) {
-  if (val == null) return "--";
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: "CAD",
-    maximumFractionDigits: 0,
-  }).format(val);
-}
+import { PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString("en-CA", {
@@ -28,11 +19,6 @@ function formatDate(date: string) {
     month: "long",
     day: "numeric",
   });
-}
-
-function displayLabel(val: string | null | undefined) {
-  if (!val) return "--";
-  return val.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 interface DetailRowProps {
@@ -158,25 +144,21 @@ export default function RequestDetail() {
   }
 
   const isEditable = request.status === "OPEN" || request.status === "PENDING_APPROVAL";
-  const v2 = isV2Request(request);
 
-  // Build initial values for editing a v2 request
-  const editInitialValues: CreateRequestInput | undefined = v2
-    ? {
-        mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
-        productTypes: request.productTypes || [],
-        province: request.province,
-        city: request.city || "",
-        details: request.details || {},
-        desiredTimeline: request.desiredTimeline || "",
-        notes: request.notes || "",
-      }
-    : undefined;
+  // Build initial values for editing
+  const editInitialValues: CreateRequestInput = {
+    mortgageCategory: request.mortgageCategory || "RESIDENTIAL",
+    productTypes: request.productTypes || [],
+    province: request.province,
+    city: request.city || "",
+    details: request.details || {},
+    desiredTimeline: request.desiredTimeline || "",
+    notes: request.notes || "",
+  };
 
-  // Get the page title
-  const pageTitle = v2
-    ? (request.mortgageCategory === "COMMERCIAL" ? t("request.commercialRequest") : t("request.residentialRequest"))
-    : `${displayLabel(request.requestType)} ${t("request.requestLabel")}`;
+  const pageTitle = request.mortgageCategory === "COMMERCIAL"
+    ? t("request.commercialRequest")
+    : t("request.residentialRequest");
 
   return (
     <Layout>
@@ -318,31 +300,19 @@ export default function RequestDetail() {
         {/* Request details - edit mode or read-only */}
         {isEditing ? (
           <div className="animate-fade-in-up stagger-3">
-            {v2 && editInitialValues ? (
-              <RequestForm
-                initialValues={editInitialValues}
-                onSubmit={handleEdit}
-                submitLabel={t("request.saveChanges")}
-                submittingLabel={t("request.saving")}
-              />
-            ) : (
-              /* v1 requests: show a message that editing is not supported in new format */
-              <div className="card-elevated text-center py-12">
-                <p className="text-body-sm">{t("request.legacyFormat")}</p>
-                <Link href="/borrower/request/new" className="btn-primary mt-4 inline-block">
-                  {t("request.newRequestTitle")}
-                </Link>
-              </div>
-            )}
-            {v2 && (
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="btn-secondary mt-4 px-8 py-3"
-              >
-                {t("request.cancel")}
-              </button>
-            )}
+            <RequestForm
+              initialValues={editInitialValues}
+              onSubmit={handleEdit}
+              submitLabel={t("request.saveChanges")}
+              submittingLabel={t("request.saving")}
+            />
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="btn-secondary mt-4 px-8 py-3"
+            >
+              {t("request.cancel")}
+            </button>
           </div>
         ) : (
           /* Read-only details */
@@ -350,12 +320,7 @@ export default function RequestDetail() {
             <div className="pb-4 mb-2 border-b divider">
               <h2 className="heading-md">{t("request.requestDetails")}</h2>
             </div>
-
-            {v2 ? (
-              <V2ReadOnlyView request={request} />
-            ) : (
-              <V1ReadOnlyView request={request} />
-            )}
+            <V2ReadOnlyView request={request} />
           </div>
         )}
 
@@ -495,60 +460,3 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
   );
 }
 
-// ── v1 Legacy Read-Only View ──────────────────────────────────
-
-function V1ReadOnlyView({ request }: { request: RequestData }) {
-  const { t } = useTranslation("common");
-  return (
-    <div>
-      <DetailRow label={t("request.mortgageCategory")} value={request.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} />
-
-      <h3 className="text-xs font-semibold font-body text-sage-500 mt-6 mb-2 uppercase tracking-widest">
-        {t("request.property")}
-      </h3>
-      <DetailRow label={t("request.requestType")} value={displayLabel(request.requestType)} />
-      <DetailRow label={t("request.province")} value={request.province || "--"} />
-      <DetailRow label={t("request.city")} value={request.city || "--"} />
-      <DetailRow label={t("request.propertyType")} value={displayLabel(request.propertyType)} />
-      <DetailRow
-        label={t("request.priceRange")}
-        value={`${formatCurrency(request.priceRangeMin)} - ${formatCurrency(request.priceRangeMax)}`}
-      />
-      <DetailRow label={t("request.downPayment")} value={request.downPaymentPercent || "--"} />
-
-      <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
-        {t("request.financial")}
-      </h3>
-      <DetailRow
-        label={t("request.income")}
-        value={`${formatCurrency(request.incomeRangeMin)} - ${formatCurrency(request.incomeRangeMax)}`}
-      />
-      <DetailRow label={t("request.employmentType")} value={displayLabel(request.employmentType)} />
-      <DetailRow label={t("request.creditScore")} value={displayLabel(request.creditScoreBand)} />
-      <DetailRow
-        label={t("request.existingDebts")}
-        value={`${formatCurrency(request.debtRangeMin)} - ${formatCurrency(request.debtRangeMax)}`}
-      />
-
-      <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
-        {t("request.mortgagePreferences")}
-      </h3>
-      <DetailRow
-        label={t("request.mortgageAmount")}
-        value={`${formatCurrency(request.mortgageAmountMin)} - ${formatCurrency(request.mortgageAmountMax)}`}
-      />
-      <DetailRow label={t("request.preferredTerm")} value={request.preferredTerm || "--"} />
-      <DetailRow label={t("request.preferredType")} value={displayLabel(request.preferredType)} />
-      <DetailRow label={t("request.closingTimeline")} value={request.closingTimeline || "--"} />
-
-      {request.notes && (
-        <>
-          <h3 className="text-xs font-semibold font-body text-sage-500 mt-8 mb-2 uppercase tracking-widest">
-            {t("request.additionalNotes")}
-          </h3>
-          <p className="text-body py-3">{request.notes}</p>
-        </>
-      )}
-    </div>
-  );
-}

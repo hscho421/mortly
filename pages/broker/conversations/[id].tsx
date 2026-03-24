@@ -20,12 +20,10 @@ interface ConversationData {
   };
   request: {
     id: string;
-    requestType?: string | null;
     province: string;
     city: string | null;
     mortgageCategory?: string | null;
     productTypes?: string[] | null;
-    schemaVersion?: number | null;
   };
   messages: (Message & {
     sender: { id: string; name: string | null; email: string; role: string };

@@ -29,7 +29,7 @@ export type IntroductionWithBroker = BrokerIntroduction & {
 export type ConversationWithParticipants = Conversation & {
   broker: BrokerWithUser;
   messages: Message[];
-  request: Pick<BorrowerRequest, "id" | "province" | "city" | "mortgageCategory" | "productTypes" | "schemaVersion" | "requestType">;
+  request: Pick<BorrowerRequest, "id" | "province" | "city" | "mortgageCategory" | "productTypes" | "schemaVersion">;
 };
 
 export type RequestWithIntroductions = BorrowerRequest & {

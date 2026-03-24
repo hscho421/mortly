@@ -740,7 +740,38 @@
     "users": "사용자",
     "resetLayout": "초기화",
     "editDone": "완료",
-    "editLayout": "레이아웃 편집"
+    "editLayout": "레이아웃 편집",
+    "sidebar": {
+      "overview": "개요",
+      "management": "관리",
+      "moderation": "모더레이션",
+      "system": "시스템",
+      "dashboard": "대시보드",
+      "users": "사용자",
+      "brokers": "브로커",
+      "requests": "신청",
+      "conversations": "대화",
+      "reports": "신고",
+      "activityLog": "활동 로그",
+      "settings": "설정",
+      "manual": "매뉴얼",
+      "collapse": "사이드바 접기",
+      "expand": "사이드바 펼치기",
+      "actionRequired": "조치 필요",
+      "verification": "브로커 인증",
+      "requestApprovals": "신청 승인"
+    },
+    "queue": {
+      "pendingVerifications": "인증 대기",
+      "pendingApprovals": "승인 대기",
+      "openReports": "미처리 신고",
+      "recentActivity": "최근 활동",
+      "viewAll": "전체 보기",
+      "noPendingBrokers": "대기 중인 인증이 없습니다",
+      "noPendingRequests": "대기 중인 신청이 없습니다",
+      "noOpenReports": "미처리 신고가 없습니다",
+      "noRecentActivity": "최근 활동이 없습니다"
+    }
   },
   "manual": {
     "loading": "로딩 중...",

@@ -121,7 +121,6 @@ async function clearAll() {
   await prisma.conversation.deleteMany();
   await prisma.report.deleteMany();
   await prisma.brokerIntroduction.deleteMany();
-  await prisma.$executeRawUnsafe(`DELETE FROM credit_purchases`);
   await prisma.subscription.deleteMany();
   await prisma.borrowerRequest.deleteMany();
   await prisma.broker.deleteMany();
@@ -251,7 +250,12 @@ async function seedMock() {
   console.log(`${brokerUsers.length} brokers created.`);
 
   // ── Borrower requests (25) — v2 schema ─────────────────────
-  const reqStatuses: ("OPEN" | "IN_PROGRESS" | "CLOSED" | "EXPIRED")[] = ["OPEN", "OPEN", "OPEN", "IN_PROGRESS", "IN_PROGRESS", "CLOSED", "EXPIRED"];
+  const reqStatuses: ("PENDING_APPROVAL" | "OPEN" | "IN_PROGRESS" | "CLOSED" | "EXPIRED")[] = [
+    "PENDING_APPROVAL", "PENDING_APPROVAL", "PENDING_APPROVAL",
+    "OPEN", "OPEN", "OPEN",
+    "IN_PROGRESS", "IN_PROGRESS",
+    "CLOSED", "EXPIRED",
+  ];
 
   const requests = [];
   for (let i = 0; i < 25; i++) {

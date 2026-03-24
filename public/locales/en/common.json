@@ -740,7 +740,38 @@
     "users": "Users",
     "resetLayout": "Reset",
     "editDone": "Done",
-    "editLayout": "Edit Layout"
+    "editLayout": "Edit Layout",
+    "sidebar": {
+      "overview": "Overview",
+      "management": "Management",
+      "moderation": "Moderation",
+      "system": "System",
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "brokers": "Brokers",
+      "requests": "Requests",
+      "conversations": "Conversations",
+      "reports": "Reports",
+      "activityLog": "Activity Log",
+      "settings": "Settings",
+      "manual": "Manual",
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar",
+      "actionRequired": "Action Required",
+      "verification": "Verification",
+      "requestApprovals": "Request Approvals"
+    },
+    "queue": {
+      "pendingVerifications": "Pending Verifications",
+      "pendingApprovals": "Pending Approvals",
+      "openReports": "Open Reports",
+      "recentActivity": "Recent Activity",
+      "viewAll": "View All",
+      "noPendingBrokers": "No pending verifications",
+      "noPendingRequests": "No pending requests",
+      "noOpenReports": "No open reports",
+      "noRecentActivity": "No recent activity"
+    }
   },
   "manual": {
     "loading": "Loading...",

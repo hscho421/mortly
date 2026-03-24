@@ -17,11 +17,9 @@ interface IntroductionItem {
   conversationId?: string | null;
   request?: {
     id: string;
-    requestType?: string | null;
     province: string;
     city?: string | null;
     mortgageCategory?: string | null;
-    schemaVersion?: number | null;
   };
 }
 

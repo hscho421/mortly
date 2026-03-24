@@ -101,24 +101,11 @@ export function validateProductTypes(category: string, products: string[]): bool
 
 /**
  * Get a display-friendly request title.
- * v2: "Residential Request" or "Commercial Request"
- * v1: requestType as title-case (e.g. "Purchase")
  */
 export function getRequestTitle(request: {
-  schemaVersion?: number | null;
   mortgageCategory?: string | null;
-  requestType?: string | null;
 }): string {
-  if (request.schemaVersion === 2) {
-    return request.mortgageCategory === "COMMERCIAL"
-      ? "Commercial Request"
-      : "Residential Request";
-  }
-  // v1 fallback
-  const rt = request.requestType || "REQUEST";
-  return rt.charAt(0) + rt.slice(1).toLowerCase();
-}
-
-export function isV2Request(request: { schemaVersion?: number | null; productTypes?: string[] | null }): boolean {
-  return request.schemaVersion === 2 || (request.productTypes != null && request.productTypes.length > 0);
+  return request.mortgageCategory === "COMMERCIAL"
+    ? "Commercial Request"
+    : "Residential Request";
 }

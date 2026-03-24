@@ -1,24 +1,20 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 import Pagination from "@/components/Pagination";
-import { isV2Request, getRequestTitle, PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
+import { getRequestTitle, PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 
 interface RequestRow {
   id: string;
   publicId: string;
-  requestType?: string | null;
   mortgageCategory: string;
   province: string;
   city: string | null;
-  propertyType?: string | null;
   productTypes?: string[] | null;
-  schemaVersion?: number | null;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -26,10 +22,6 @@ interface RequestRow {
   rejectionReason: string | null;
   details: Record<string, unknown> | null;
   desiredTimeline: string | null;
-  priceRangeMin: number | null;
-  priceRangeMax: number | null;
-  mortgageAmountMin: number | null;
-  mortgageAmountMax: number | null;
   borrower: {
     id: string;
     name: string | null;
@@ -112,6 +104,38 @@ export default function AdminRequests() {
   const [rejectModal, setRejectModal] = useState<{ id: string } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  // Track highlight row
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync filterStatus when ?status= query param changes (e.g. navigating from another page)
+  useEffect(() => {
+    const qs = router.query.status;
+    if (typeof qs === "string" && ["PENDING_APPROVAL", "OPEN", "IN_PROGRESS", "CLOSED", "EXPIRED", "REJECTED"].includes(qs)) {
+      setFilterStatus(qs);
+    }
+  }, [router.query.status]);
+
+  // Highlight row when ?highlight= query param is present
+  useEffect(() => {
+    const highlightId = router.query.highlight;
+    if (typeof highlightId !== "string" || loading || requests.length === 0) return;
+
+    const row = document.querySelector(`tr[data-request-id="${highlightId}"]`) as HTMLElement | null;
+    if (!row) return;
+
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+    row.classList.add("ring-2", "ring-amber-400", "bg-amber-50");
+
+    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    highlightTimeoutRef.current = setTimeout(() => {
+      row.classList.remove("ring-2", "ring-amber-400", "bg-amber-50");
+    }, 3000);
+
+    return () => {
+      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    };
+  }, [router.query.highlight, loading, requests]);
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
@@ -149,10 +173,7 @@ export default function AdminRequests() {
 
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "ADMIN") return;
     fetchRequests();
   }, [session, status, router, fetchRequests]);
 
@@ -276,7 +297,7 @@ export default function AdminRequests() {
       const json = await res.json();
       const rows: RequestRow[] = json.data;
 
-      const headers = ["ID", "Borrower Name", "Borrower Email", "Type", "Category", "Property Type", "Province", "City", "Status", "Introductions", "Conversations", "Created"];
+      const headers = ["ID", "Borrower Name", "Borrower Email", "Type", "Category", "Province", "City", "Status", "Introductions", "Conversations", "Created"];
       const csvRows = [
         headers.join(","),
         ...rows.map((r) =>
@@ -286,7 +307,6 @@ export default function AdminRequests() {
             r.borrower.email,
             getRequestTitle(r),
             r.mortgageCategory,
-            r.propertyType || "",
             r.province,
             r.city || "",
             r.status,
@@ -321,30 +341,21 @@ export default function AdminRequests() {
 
   if (status === "loading" || (loading && requests.length === 0)) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("admin.loadingRequests", "Loading requests...")}</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
   if (!session || session.user.role !== "ADMIN") return null;
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <Link
-            href="/admin/dashboard"
-            className="mb-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            {t("admin.backToDashboard")}
-          </Link>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="heading-lg">{t("admin.requestManagement", "Request Management")}</h1>
@@ -403,7 +414,7 @@ export default function AdminRequests() {
             </div>
             <div>
               <label htmlFor="typeFilter" className="label-text">
-                {t("admin.filterByType", "Filter by type")}
+                {t("admin.filterByType", "Filter by category")}
               </label>
               <select
                 id="typeFilter"
@@ -412,9 +423,8 @@ export default function AdminRequests() {
                 className="input-field w-auto min-w-[140px]"
               >
                 <option value="ALL">{t("admin.allTypes", "All Types")}</option>
-                <option value="PURCHASE">Purchase</option>
-                <option value="REFINANCE">Refinance</option>
-                <option value="RENEWAL">Renewal</option>
+                <option value="RESIDENTIAL">{t("request.residential", "Residential")}</option>
+                <option value="COMMERCIAL">{t("request.commercial", "Commercial")}</option>
               </select>
             </div>
           </div>
@@ -446,7 +456,7 @@ export default function AdminRequests() {
                     </td>
                   </tr>
                 ) : requests.map((req) => (
-                  <tr key={req.id} className="hover:bg-cream-50 transition-colors">
+                  <tr key={req.id} data-request-id={req.publicId} className="hover:bg-cream-50 transition-colors">
                     {/* Request ID */}
                     <td className="px-4 py-4">
                       <button
@@ -472,7 +482,6 @@ export default function AdminRequests() {
                         <span className="font-body text-sm text-forest-800">{getRequestTitle(req)}</span>
                         <p className="font-body text-[10px] text-forest-700/50">
                           {req.mortgageCategory}
-                          {!isV2Request(req) && req.propertyType ? ` · ${req.propertyType}` : ""}
                         </p>
                       </div>
                     </td>
@@ -651,8 +660,7 @@ export default function AdminRequests() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 </div>
-              ) : isV2Request(detailData || detailRequest) ? (
-                /* V2 Request Details */
+              ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -770,82 +778,6 @@ export default function AdminRequests() {
                     </div>
                   </div>
 
-                  {(detailData?.notes || detailRequest.notes) && (
-                    <div>
-                      <p className="label-text">{t("admin.borrowerNotes", "Borrower Notes")}</p>
-                      <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-lg p-3">{detailData?.notes || detailRequest.notes}</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* V1 Legacy Request Details */
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="label-text">{t("admin.type", "Type")}</p>
-                      <p className="font-body text-sm text-forest-800">{getRequestTitle(detailData || detailRequest)}</p>
-                    </div>
-                    <div>
-                      <p className="label-text">{t("admin.propertyType", "Property Type")}</p>
-                      <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).propertyType || "—"}</p>
-                    </div>
-                    <div>
-                      <p className="label-text">{t("admin.location", "Location")}</p>
-                      <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).province}{(detailData || detailRequest).city ? `, ${(detailData || detailRequest).city}` : ""}</p>
-                    </div>
-                    <div>
-                      <p className="label-text">{t("admin.priceRange", "Price Range")}</p>
-                      <p className="font-body text-sm text-forest-800">{formatCurrency((detailData || detailRequest).priceRangeMin)} — {formatCurrency((detailData || detailRequest).priceRangeMax)}</p>
-                    </div>
-                    <div>
-                      <p className="label-text">{t("admin.mortgageAmount", "Mortgage Amount")}</p>
-                      <p className="font-body text-sm text-forest-800">{formatCurrency((detailData || detailRequest).mortgageAmountMin)} — {formatCurrency((detailData || detailRequest).mortgageAmountMax)}</p>
-                    </div>
-                    {(detailData || detailRequest).downPaymentPercent != null && (
-                      <div>
-                        <p className="label-text">{t("admin.downPayment", "Down Payment")}</p>
-                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).downPaymentPercent}%</p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="label-text">{t("admin.incomeRange", "Income Range")}</p>
-                      <p className="font-body text-sm text-forest-800">{formatCurrency((detailData || detailRequest).incomeRangeMin)} — {formatCurrency((detailData || detailRequest).incomeRangeMax)}</p>
-                    </div>
-                    {(detailData || detailRequest).employmentType && (
-                      <div>
-                        <p className="label-text">{t("admin.employmentType", "Employment Type")}</p>
-                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).employmentType}</p>
-                      </div>
-                    )}
-                    {(detailData || detailRequest).creditScoreBand && (
-                      <div>
-                        <p className="label-text">{t("admin.creditScore", "Credit Score")}</p>
-                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).creditScoreBand}</p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="label-text">{t("admin.debtRange", "Debt Range")}</p>
-                      <p className="font-body text-sm text-forest-800">{formatCurrency((detailData || detailRequest).debtRangeMin)} — {formatCurrency((detailData || detailRequest).debtRangeMax)}</p>
-                    </div>
-                    {(detailData || detailRequest).preferredTerm && (
-                      <div>
-                        <p className="label-text">{t("admin.preferredTerm", "Preferred Term")}</p>
-                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).preferredTerm}</p>
-                      </div>
-                    )}
-                    {(detailData || detailRequest).preferredType && (
-                      <div>
-                        <p className="label-text">{t("admin.preferredType", "Preferred Type")}</p>
-                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).preferredType}</p>
-                      </div>
-                    )}
-                    {(detailData || detailRequest).closingTimeline && (
-                      <div>
-                        <p className="label-text">{t("admin.closingTimeline", "Closing Timeline")}</p>
-                        <p className="font-body text-sm text-forest-800">{(detailData || detailRequest).closingTimeline}</p>
-                      </div>
-                    )}
-                  </div>
                   {(detailData?.notes || detailRequest.notes) && (
                     <div>
                       <p className="label-text">{t("admin.borrowerNotes", "Borrower Notes")}</p>
@@ -1116,7 +1048,7 @@ export default function AdminRequests() {
           </div>
         </div>
       )}
-    </Layout>
+    </AdminLayout>
   );
 }
 

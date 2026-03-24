@@ -50,27 +50,9 @@ model BorrowerRequest {
   notes              String?
   status             RequestStatus        @default(PENDING_APPROVAL)
   rejectionReason    String?
-  schemaVersion      Int                  @default(1)
+  schemaVersion      Int                  @default(2)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
-
-  // Legacy columns (kept for v1 backward compatibility)
-  requestType        RequestType?
-  propertyType       PropertyType?
-  priceRangeMin      Int?
-  priceRangeMax      Int?
-  downPaymentPercent String?
-  incomeRangeMin     Int?
-  incomeRangeMax     Int?
-  employmentType     EmploymentType?
-  creditScoreBand    CreditScoreBand?
-  debtRangeMin       Int?
-  debtRangeMax       Int?
-  mortgageAmountMin  Int?
-  mortgageAmountMax  Int?
-  preferredTerm      String?
-  preferredType      MortgageType?
-  closingTimeline    String?
 
   borrower           User                 @relation(fields: [borrowerId], references: [id])
   introductions      BrokerIntroduction[]
@@ -207,41 +189,6 @@ enum BrokerMortgageCategory {
   BOTH
 }
 
-enum RequestType {
-  PURCHASE
-  REFINANCE
-  RENEWAL
-}
-
-enum PropertyType {
-  CONDO
-  TOWNHOUSE
-  DETACHED
-  OTHER
-}
-
-enum EmploymentType {
-  FULL_TIME
-  PART_TIME
-  SELF_EMPLOYED
-  CONTRACT
-  RETIRED
-  OTHER
-}
-
-enum CreditScoreBand {
-  EXCELLENT
-  GOOD
-  FAIR
-  POOR
-  NOT_SURE
-}
-
-enum MortgageType {
-  FIXED
-  VARIABLE
-  NOT_SURE
-}
 
 enum RequestStatus {
   PENDING_APPROVAL

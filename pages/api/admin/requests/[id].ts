@@ -201,7 +201,6 @@ export default async function handler(
           targetType: "REQUEST",
           targetId: request.publicId,
           details: JSON.stringify({
-            requestType: request.requestType,
             mortgageCategory: request.mortgageCategory,
             productTypes: request.productTypes,
             province: request.province,

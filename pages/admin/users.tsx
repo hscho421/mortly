@@ -1,11 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import AdminLayout from "@/components/AdminLayout";
 import Pagination from "@/components/Pagination";
 import { downloadCSV } from "@/lib/csvExport";
 
@@ -117,6 +117,30 @@ export default function AdminUsers() {
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
+  // Track highlight row
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Highlight row when ?highlight= query param is present
+  useEffect(() => {
+    const highlightId = router.query.highlight;
+    if (typeof highlightId !== "string" || loading || users.length === 0) return;
+
+    const row = document.querySelector(`tr[data-user-id="${highlightId}"]`) as HTMLElement | null;
+    if (!row) return;
+
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+    row.classList.add("ring-2", "ring-amber-400", "bg-amber-50");
+
+    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    highlightTimeoutRef.current = setTimeout(() => {
+      row.classList.remove("ring-2", "ring-amber-400", "bg-amber-50");
+    }, 3000);
+
+    return () => {
+      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    };
+  }, [router.query.highlight, loading, users]);
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
@@ -157,10 +181,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user.role !== "ADMIN") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "ADMIN") return;
     fetchUsers();
   }, [fetchUsers, session, status, router]);
 
@@ -392,11 +413,11 @@ export default function AdminUsers() {
 
   if (status === "loading" || loading) {
     return (
-      <Layout>
+      <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("admin.loadingUsers", "Loading users...")}</p>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
@@ -405,19 +426,10 @@ export default function AdminUsers() {
   }
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <Link
-            href="/admin/dashboard"
-            className="mb-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            {t("admin.backToDashboard", "Back to Dashboard")}
-          </Link>
           <div className="flex items-center justify-between">
             <h1 className="heading-lg">{t("admin.userManagement", "User Management")}</h1>
             <div className="flex items-center gap-3">
@@ -560,7 +572,7 @@ export default function AdminUsers() {
               </thead>
               <tbody className="divide-y divide-cream-200 bg-white">
                 {users.map((user) => (
-                  <tr key={user.id} className={`transition-colors ${user.status !== "ACTIVE" ? "bg-rose-50/30" : "hover:bg-cream-50"}`}>
+                  <tr key={user.id} data-user-id={user.publicId} className={`transition-colors ${user.status !== "ACTIVE" ? "bg-rose-50/30" : "hover:bg-cream-50"}`}>
                     {/* Checkbox */}
                     <td className="px-3 py-4">
                       {user.role !== "ADMIN" ? (
@@ -962,7 +974,7 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
-    </Layout>
+    </AdminLayout>
   );
 }
 
