@@ -121,31 +121,23 @@ function SortableCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="relative"
+      {...(isEditMode ? { ...attributes, ...listeners } : {})}
+      className={`relative ${isEditMode ? "cursor-grab active:cursor-grabbing" : ""}`}
     >
-      {isEditMode && (
-        <button
-          {...attributes}
-          {...listeners}
-          className="absolute -top-2 -left-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-forest-700 text-white shadow-md cursor-grab active:cursor-grabbing hover:bg-forest-800 transition-colors"
-          aria-label="Drag to reorder"
+      {isEditMode ? (
+        <div
+          className="card group flex items-center gap-4 transition-all ring-1 ring-dashed ring-forest-300 hover:ring-amber-400 select-none"
         >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
-        </button>
+          {inner}
+        </div>
+      ) : (
+        <Link
+          href={card.href}
+          className="card group flex items-center gap-4 transition-all"
+        >
+          {inner}
+        </Link>
       )}
-      <Link
-        href={card.href}
-        onClick={(e) => { if (isEditMode) e.preventDefault(); }}
-        className={`card group flex items-center gap-4 transition-all ${
-          isEditMode
-            ? "ring-1 ring-dashed ring-forest-300 hover:ring-amber-400"
-            : ""
-        }`}
-      >
-        {inner}
-      </Link>
     </div>
   );
 }
