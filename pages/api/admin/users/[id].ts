@@ -23,6 +23,83 @@ export default async function handler(
   }
 
   try {
+    if (req.method === "GET") {
+      const user = await prisma.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          publicId: true,
+          email: true,
+          name: true,
+          role: true,
+          status: true,
+          emailVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          broker: {
+            select: {
+              id: true,
+              brokerageName: true,
+              province: true,
+              licenseNumber: true,
+              phone: true,
+              mortgageCategory: true,
+              bio: true,
+              yearsExperience: true,
+              verificationStatus: true,
+              subscriptionTier: true,
+              responseCredits: true,
+            },
+          },
+          borrowerRequests: {
+            take: 10,
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              publicId: true,
+              province: true,
+              city: true,
+              status: true,
+              mortgageCategory: true,
+              productTypes: true,
+              details: true,
+              desiredTimeline: true,
+              notes: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+          conversations: {
+            take: 10,
+            orderBy: { updatedAt: "desc" },
+            select: {
+              id: true,
+              publicId: true,
+              status: true,
+              updatedAt: true,
+              _count: { select: { messages: true } },
+              broker: { select: { id: true, user: { select: { name: true, email: true } } } },
+              borrower: { select: { id: true, name: true, email: true } },
+              request: { select: { id: true, province: true, mortgageCategory: true } },
+            },
+          },
+          _count: {
+            select: {
+              borrowerRequests: true,
+              conversations: true,
+              reports: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      return res.status(200).json(user);
+    }
+
     if (req.method === "PUT") {
       const { status } = req.body;
 

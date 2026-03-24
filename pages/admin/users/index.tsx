@@ -588,12 +588,12 @@ export default function AdminUsers() {
                     </td>
                     {/* Name & Email */}
                     <td className="px-5 py-4">
-                      <div>
-                        <p className={`font-body text-sm font-semibold ${user.status !== "ACTIVE" ? "text-forest-800/50 line-through" : "text-forest-800"}`}>
+                      <Link href={`/admin/users/${user.id}`} className="block group">
+                        <p className={`font-body text-sm font-semibold group-hover:text-forest-600 transition-colors ${user.status !== "ACTIVE" ? "text-forest-800/50 line-through" : "text-forest-800"}`}>
                           {user.name || "—"}
                         </p>
-                        <p className="font-body text-xs text-forest-700/60">{user.email}</p>
-                      </div>
+                        <p className="font-body text-xs text-forest-700/60 group-hover:text-forest-600 transition-colors">{user.email}</p>
+                      </Link>
                     </td>
 
                     {/* User ID */}
