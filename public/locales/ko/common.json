@@ -132,7 +132,13 @@
     "placeholderName": "홍길동",
     "placeholderEmail": "you@example.com",
     "placeholderPassword": "8자 이상",
-    "placeholderConfirmPassword": "비밀번호 재입력"
+    "placeholderConfirmPassword": "비밀번호 재입력",
+    "orContinueWith": "또는 다음으로 계속",
+    "continueWithGoogle": "Google로 계속",
+    "useGoogleSignIn": "이 계정은 Google 로그인을 사용합니다. 아래 'Google로 계속'을 클릭해 주세요.",
+    "selectRoleTitle": "역할을 선택하세요",
+    "selectRoleSubtitle": "mortly를 어떻게 사용하시겠습니까?",
+    "selectRoleBtn": "계속"
   },
   "borrowerDashboard": {
     "title": "내 모기지 요청",

@@ -75,8 +75,8 @@ export default async function handler(
           select: { passwordHash: true },
         });
 
-        if (!user) {
-          return res.status(404).json({ message: "User not found" });
+        if (!user || !user.passwordHash) {
+          return res.status(400).json({ message: "Password change not available for this account" });
         }
 
         const isValid = await compare(currentPassword, user.passwordHash);

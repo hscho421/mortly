@@ -1,10 +1,16 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { compare } from "bcryptjs";
 import prisma from "./prisma";
+import { generatePublicId } from "./publicId";
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -22,6 +28,10 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) {
           throw new Error("Invalid email or password");
+        }
+
+        if (!user.passwordHash) {
+          throw new Error("GOOGLE_ACCOUNT");
         }
 
         const isValid = await compare(credentials.password, user.passwordHash);
@@ -52,16 +62,82 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        token.role = (user as any).role;
-        token.id = user.id!;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        token.publicId = (user as any).publicId;
+    async signIn({ user, account }) {
+      if (account?.provider !== "google") return true;
+
+      const email = user.email;
+      if (!email) return false;
+
+      const googleId = account.providerAccountId;
+
+      // Check if user already exists with this googleId
+      const existingByGoogle = await prisma.user.findUnique({
+        where: { googleId },
+      });
+
+      if (existingByGoogle) {
+        if (existingByGoogle.status === "SUSPENDED" || existingByGoogle.status === "BANNED") {
+          return false;
+        }
+        return true;
+      }
+
+      // Check if user exists with this email (credentials account)
+      const existingByEmail = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingByEmail) {
+        if (existingByEmail.status === "SUSPENDED" || existingByEmail.status === "BANNED") {
+          return false;
+        }
+        // Link Google to existing account
+        await prisma.user.update({
+          where: { id: existingByEmail.id },
+          data: {
+            googleId,
+            emailVerified: true,
+            name: existingByEmail.name || user.name,
+          },
+        });
+        return true;
+      }
+
+      // New user — create account
+      const publicId = await generatePublicId();
+      await prisma.user.create({
+        data: {
+          email,
+          googleId,
+          name: user.name || null,
+          publicId,
+          role: "BORROWER",
+          emailVerified: true,
+          preferences: { needsRoleSelection: true },
+        },
+      });
+
+      return true;
+    },
+
+    async jwt({ token, account }) {
+      // On initial sign-in (credentials or Google), load user from DB
+      if (account) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email! },
+          select: { id: true, publicId: true, role: true, preferences: true },
+        });
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.publicId = dbUser.publicId;
+          token.role = dbUser.role;
+          const prefs = dbUser.preferences as Record<string, unknown> | null;
+          token.needsRoleSelection = prefs?.needsRoleSelection === true;
+        }
       }
       return token;
     },
+
     async session({ session, token }) {
       if (session.user) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,6 +146,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).publicId = token.publicId;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (session.user as any).needsRoleSelection = token.needsRoleSelection;
       }
       return session;
     },

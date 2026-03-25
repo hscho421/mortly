@@ -132,7 +132,13 @@
     "placeholderName": "John Doe",
     "placeholderEmail": "you@example.com",
     "placeholderPassword": "At least 8 characters",
-    "placeholderConfirmPassword": "Re-enter your password"
+    "placeholderConfirmPassword": "Re-enter your password",
+    "orContinueWith": "or continue with",
+    "continueWithGoogle": "Continue with Google",
+    "useGoogleSignIn": "This account uses Google sign-in. Please click 'Continue with Google' below.",
+    "selectRoleTitle": "Choose Your Role",
+    "selectRoleSubtitle": "How would you like to use mortly?",
+    "selectRoleBtn": "Continue"
   },
   "borrowerDashboard": {
     "title": "My Mortgage Requests",
