@@ -758,8 +758,8 @@
       "collapse": "사이드바 접기",
       "expand": "사이드바 펼치기",
       "actionRequired": "조치 필요",
-      "verification": "브로커 인증",
-      "requestApprovals": "신청 승인"
+      "verification": "브로커 승인대기",
+      "requestApprovals": "상담신청 승인대기"
     },
     "userDetail": {
       "loading": "사용자 로딩 중...",
