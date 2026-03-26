@@ -134,10 +134,12 @@ export default function RequestForm({
     updateDetails("incomeTypes", updated);
   }
 
-  function updateAnnualIncome(year: string, value: string) {
+  function updateAnnualIncome(year: string, raw: string) {
+    const digits = raw.replace(/[^0-9]/g, "");
+    const formatted = digits ? Number(digits).toLocaleString() : "";
     const d = details as ResidentialDetails;
     const current = d.annualIncome || {};
-    updateDetails("annualIncome", { ...current, [year]: value });
+    updateDetails("annualIncome", { ...current, [year]: formatted });
   }
 
   function changeIncomeYear(oldYear: string, newYear: string, setYear: (y: string) => void) {
@@ -164,6 +166,10 @@ export default function RequestForm({
       setSubmitting(false);
     }
   }
+
+  // ── Required marker ────────────────────────────────────────
+
+  const required = <span className="text-rose-500 ml-0.5">*</span>;
 
   // ── Styling helpers ─────────────────────────────────────────
 
@@ -232,7 +238,7 @@ export default function RequestForm({
       {/* ── Section 2: Product Types ────────────────────────── */}
       <div className="card-elevated animate-fade-in-up stagger-2">
         <h2 className="heading-sm mb-1">
-          {isResidential ? t("request.residential") : t("request.commercial")}
+          {isResidential ? t("request.residential") : t("request.commercial")}{required}
         </h2>
         <p className="text-body-sm mb-4">{t("request.selectProducts")}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -261,7 +267,7 @@ export default function RequestForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label htmlFor="province" className="label-text">
-              {t("request.province")}
+              {t("request.province")}{required}
             </label>
             <select
               id="province"
@@ -300,7 +306,7 @@ export default function RequestForm({
 
           {/* Purpose of use */}
           <div className="mb-6">
-            <label className="label-text">{t("request.purposeOfUse")}</label>
+            <label className="label-text">{t("request.purposeOfUse")}{required}</label>
             <div className="flex gap-3 mt-2">
               {(["OWNER_OCCUPIED", "RENTAL"] as const).map((value) => {
                 const checked = ((details as ResidentialDetails).purposeOfUse || []).includes(value);
@@ -323,7 +329,7 @@ export default function RequestForm({
 
           {/* Income types */}
           <div className="mb-6">
-            <label className="label-text">{t("request.incomeType")}</label>
+            <label className="label-text">{t("request.incomeType")}{required}</label>
             <p className="font-body text-xs text-sage-400 mb-2">{t("request.incomeTypeHelper")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {INCOME_TYPES.map((value) => {
@@ -361,18 +367,18 @@ export default function RequestForm({
           {/* Annual income by year */}
           <div>
             <label className="label-text">
-              {t("request.annualIncome")}
+              {t("request.annualIncome")}{required}
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
               {([
                 { year: incomeYear1, setYear: setIncomeYear1, otherYear: incomeYear2 },
                 { year: incomeYear2, setYear: setIncomeYear2, otherYear: incomeYear1 },
               ] as const).map(({ year, setYear, otherYear }, idx) => (
-                <div key={idx}>
+                <div key={idx} className="rounded-xl border border-cream-200 bg-white p-4">
                   <select
                     value={year}
                     onChange={(e) => changeIncomeYear(year, e.target.value, setYear)}
-                    className="font-body text-xs font-medium text-sage-500 mb-1 block bg-transparent border-none p-0 cursor-pointer focus:ring-0"
+                    className="input-field mb-3 text-sm"
                   >
                     <option value="">{t("request.selectYear")}</option>
                     {getYearOptions().map((y) => (
@@ -404,7 +410,7 @@ export default function RequestForm({
           {/* Business type */}
           <div className="mb-5">
             <label htmlFor="businessType" className="label-text">
-              {t("request.businessType")}
+              {t("request.businessType")}{required}
             </label>
             <input
               id="businessType"
@@ -469,7 +475,7 @@ export default function RequestForm({
         {/* Desired timeline */}
         <div className="mb-5">
           <label htmlFor="desiredTimeline" className="label-text">
-            {t("request.desiredTimeline")}
+            {t("request.desiredTimeline")}{required}
           </label>
           <select
             id="desiredTimeline"
@@ -489,12 +495,7 @@ export default function RequestForm({
         {/* Additional notes */}
         <div>
           <label htmlFor="notes" className="label-text">
-            {t("request.additionalDetailsLabel")}
-            {isCommercial && (
-              <span className="ml-2 text-xs text-amber-600 font-normal">
-                ({t("request.additionalDetailsRequired")})
-              </span>
-            )}
+            {t("request.additionalDetailsLabel")}{required}
           </label>
           <p className="font-body text-sm font-medium text-forest-700 mb-2">
             {t("request.additionalDetailsHelper")}
@@ -502,7 +503,7 @@ export default function RequestForm({
           <textarea
             id="notes"
             rows={4}
-            required={isCommercial}
+            required
             value={form.notes || ""}
             onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
             className="input-field"
@@ -514,7 +515,22 @@ export default function RequestForm({
       <div className="animate-fade-in-up stagger-6">
         <button
           type="submit"
-          disabled={submitting || form.productTypes.length === 0 || !form.province}
+          disabled={
+            submitting ||
+            form.productTypes.length === 0 ||
+            !form.province ||
+            !form.desiredTimeline ||
+            !form.notes?.trim() ||
+            (isResidential && (
+              ((details as ResidentialDetails).purposeOfUse || []).length === 0 ||
+              ((details as ResidentialDetails).incomeTypes || []).length === 0 ||
+              !incomeYear1 ||
+              !((details as ResidentialDetails).annualIncome || {})[incomeYear1]
+            )) ||
+            (isCommercial && (
+              !(details as CommercialDetails).businessType
+            ))
+          }
           className="btn-primary w-full py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting
