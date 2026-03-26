@@ -34,13 +34,15 @@ export default async function handler(
         return res.status(400).json({ error: "Request body must be a key-value object" });
       }
 
-      for (const [key, value] of Object.entries(updates)) {
-        await prisma.systemSetting.upsert({
-          where: { key },
-          update: { value: String(value) },
-          create: { key, value: String(value) },
-        });
-      }
+      await prisma.$transaction([
+        ...Object.entries(updates).map(([key, value]) =>
+          prisma.systemSetting.upsert({
+            where: { key },
+            update: { value: String(value) },
+            create: { key, value: String(value) },
+          })
+        ),
+      ]);
 
       await prisma.adminAction.create({
         data: {

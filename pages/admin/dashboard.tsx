@@ -6,9 +6,12 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import AdminLayout from "@/components/AdminLayout";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const TrendChart = dynamic(() => import("@/components/TrendChart"), {
+  ssr: false,
+  loading: () => <div style={{ height: 240 }} />,
+});
 
 interface DashboardStats {
   users: number;
@@ -487,34 +490,12 @@ export default function AdminDashboard() {
           <div className="card-elevated mb-8 animate-fade-in-up opacity-0 stagger-6">
             <h2 className="heading-sm mb-1">{t("admin.thirtyDayTrends")}</h2>
             <p className="text-body-sm mb-6">{t("admin.thirtyDayTrendsDesc")}</p>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart
-                data={trends.map((d) => ({ ...d, label: d.date.slice(5) }))}
-                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0ece4" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval={4} />
-                <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} allowDecimals={false} width={30} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#1f3528", border: "none", borderRadius: 10, fontSize: 12, fontFamily: "Outfit, sans-serif", color: "#f5f0e8", padding: "10px 16px", boxShadow: "0 8px 24px rgba(31,53,40,0.25)" }}
-                  itemStyle={{ color: "#e8e4dc", padding: "3px 0" }}
-                  labelStyle={{ color: "#b8c4ae", fontWeight: 600, marginBottom: 6, fontSize: 11 }}
-                  labelFormatter={(label) => {
-                    const match = trends.find((d) => d.date.slice(5) === label);
-                    if (!match) return label;
-                    return new Date(match.date + "T12:00:00").toLocaleDateString(
-                      router.locale === "ko" ? "ko-KR" : "en-CA",
-                      { weekday: "short", month: "short", day: "numeric" }
-                    );
-                  }}
-                  cursor={{ fill: "rgba(0,0,0,0.04)", radius: 4 }}
-                />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, fontFamily: "Outfit, sans-serif", paddingTop: 12, color: "#64748b" }} />
-                <Bar dataKey="users" name={t("admin.users")} fill="#3d6b4f" radius={[0, 0, 0, 0]} stackId="a" />
-                <Bar dataKey="requests" name={t("admin.requests")} fill="#8faa7e" stackId="a" />
-                <Bar dataKey="conversations" name={t("admin.conversations")} fill="#c8a86e" radius={[3, 3, 0, 0]} stackId="a" />
-              </BarChart>
-            </ResponsiveContainer>
+            <TrendChart
+              data={trends.map((d) => ({ ...d, label: d.date.slice(5) }))}
+              locale={router.locale || "ko"}
+              trends={trends}
+              t={t}
+            />
           </div>
         )}
       </div>

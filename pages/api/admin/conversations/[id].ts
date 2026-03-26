@@ -77,35 +77,34 @@ export default async function handler(
         return res.status(400).json({ error: "Conversation is already closed" });
       }
 
-      // Send admin closure message
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
-          senderId: session.user.id,
-          body: "[Admin] This conversation has been closed by an administrator." + (reason ? ` Reason: ${reason}` : ""),
-        },
-      });
-
-      const updated = await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: { status: "CLOSED" },
-      });
-
-      // Log the admin action
-      await prisma.adminAction.create({
-        data: {
-          adminId: session.user.id,
-          action: "CLOSE_CONVERSATION",
-          targetType: "CONVERSATION",
-          targetId: conversation.publicId,
-          details: JSON.stringify({
-            borrowerId: conversation.borrowerId,
-            brokerId: conversation.brokerId,
-            requestId: conversation.requestId,
-          }),
-          reason: reason || null,
-        },
-      });
+      // Wrap closure in transaction for atomicity
+      const [, updated] = await prisma.$transaction([
+        prisma.message.create({
+          data: {
+            conversationId: conversation.id,
+            senderId: session.user.id,
+            body: "[Admin] This conversation has been closed by an administrator." + (reason ? ` Reason: ${reason}` : ""),
+          },
+        }),
+        prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { status: "CLOSED" },
+        }),
+        prisma.adminAction.create({
+          data: {
+            adminId: session.user.id,
+            action: "CLOSE_CONVERSATION",
+            targetType: "CONVERSATION",
+            targetId: conversation.publicId,
+            details: JSON.stringify({
+              borrowerId: conversation.borrowerId,
+              brokerId: conversation.brokerId,
+              requestId: conversation.requestId,
+            }),
+            reason: reason || null,
+          },
+        }),
+      ]);
 
       return res.status(200).json(updated);
     }

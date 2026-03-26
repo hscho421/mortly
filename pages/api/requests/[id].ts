@@ -33,7 +33,11 @@ export default async function handler(
           },
           introductions: {
             include: {
-              broker: { include: { user: true } },
+              broker: {
+                include: {
+                  user: { select: { id: true, name: true, email: true, publicId: true } },
+                },
+              },
             },
           },
           conversations: {
@@ -93,21 +97,25 @@ export default async function handler(
       if (status === "CLOSED") {
         const activeConversations = await prisma.conversation.findMany({
           where: { requestId: request.id, status: "ACTIVE" },
+          select: { id: true },
         });
 
-        for (const convo of activeConversations) {
-          await prisma.message.create({
-            data: {
-              conversationId: convo.id,
-              senderId: session.user.id,
-              body: "This request has been closed by the borrower. Thank you for your interest.",
-            },
-          });
-
-          await prisma.conversation.update({
-            where: { id: convo.id },
-            data: { status: "CLOSED" },
-          });
+        if (activeConversations.length > 0) {
+          await prisma.$transaction([
+            ...activeConversations.map((convo) =>
+              prisma.message.create({
+                data: {
+                  conversationId: convo.id,
+                  senderId: session.user.id,
+                  body: "This request has been closed by the borrower. Thank you for your interest.",
+                },
+              })
+            ),
+            prisma.conversation.updateMany({
+              where: { requestId: request.id, status: "ACTIVE" },
+              data: { status: "CLOSED" },
+            }),
+          ]);
         }
       }
 
@@ -190,26 +198,21 @@ export default async function handler(
 
       const conversationIds = conversations.map((c) => c.id);
 
-      if (conversationIds.length > 0) {
-        // Delete messages in conversations
-        await prisma.message.deleteMany({
-          where: { conversationId: { in: conversationIds } },
-        });
-
-        // Delete conversations
-        await prisma.conversation.deleteMany({
+      await prisma.$transaction(async (tx) => {
+        if (conversationIds.length > 0) {
+          await tx.message.deleteMany({
+            where: { conversationId: { in: conversationIds } },
+          });
+          await tx.conversation.deleteMany({
+            where: { requestId: request.id },
+          });
+        }
+        await tx.brokerIntroduction.deleteMany({
           where: { requestId: request.id },
         });
-      }
-
-      // Delete introductions
-      await prisma.brokerIntroduction.deleteMany({
-        where: { requestId: request.id },
-      });
-
-      // Delete the request itself
-      await prisma.borrowerRequest.delete({
-        where: { id: request.id },
+        await tx.borrowerRequest.delete({
+          where: { id: request.id },
+        });
       });
 
       return res.status(200).json({ success: true });

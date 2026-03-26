@@ -64,8 +64,8 @@ export default function BrokerRequestsPage() {
           return;
         }
         if (!res.ok) throw new Error(t("broker.failedToFetchRequests"));
-        const data = await res.json();
-        setRequests(data);
+        const json = await res.json();
+        setRequests(json.data ?? json);
       } catch {
         setError(t("broker.failedToLoadRequests"));
       } finally {

@@ -100,9 +100,8 @@ export default function BrokerDashboardPage() {
         ]);
 
         // Unverified brokers get 403 on requests — handle gracefully
-        const requests: BorrowerRequest[] = requestsRes.ok
-          ? await requestsRes.json()
-          : [];
+        const requestsJson = requestsRes.ok ? await requestsRes.json() : [];
+        const requests: BorrowerRequest[] = requestsJson.data ?? requestsJson;
         const conversations: Conversation[] = conversationsRes.ok
           ? await conversationsRes.json()
           : [];

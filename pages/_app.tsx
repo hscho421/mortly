@@ -1,10 +1,48 @@
 import "@/styles/globals.css";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import type { AppProps } from "next/app";
 import { useRouter } from "next/router";
 import { SessionProvider, useSession } from "next-auth/react";
 import { appWithTranslation, useTranslation } from "next-i18next";
 import { Analytics } from "@vercel/analytics/react";
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("ErrorBoundary caught:", error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-cream-50 px-4">
+          <div className="card-elevated max-w-lg text-center">
+            <h1 className="heading-lg mb-3">Something went wrong</h1>
+            <p className="text-body mb-4">An unexpected error occurred. Please try refreshing the page.</p>
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="btn-primary"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -52,9 +90,11 @@ function App({
 }: AppProps) {
   return (
     <SessionProvider session={session}>
-      <MaintenanceGate>
-        <Component {...pageProps} />
-      </MaintenanceGate>
+      <ErrorBoundary>
+        <MaintenanceGate>
+          <Component {...pageProps} />
+        </MaintenanceGate>
+      </ErrorBoundary>
       <Analytics />
     </SessionProvider>
   );

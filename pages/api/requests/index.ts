@@ -42,23 +42,36 @@ export default async function handler(
         where.mortgageCategory = mortgageCategory;
       }
 
-      const requests = await prisma.borrowerRequest.findMany({
-        where,
-        include: {
-          _count: {
-            select: { introductions: true },
-          },
-          introductions: {
-            select: {
-              brokerId: true,
-              broker: { select: { userId: true } },
+      // Pagination for broker marketplace view
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+      const skip = (page - 1) * limit;
+
+      const [requests, total] = await Promise.all([
+        prisma.borrowerRequest.findMany({
+          where,
+          include: {
+            _count: {
+              select: { introductions: true },
+            },
+            introductions: {
+              select: {
+                brokerId: true,
+                broker: { select: { userId: true } },
+              },
             },
           },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.borrowerRequest.count({ where }),
+      ]);
 
-      return res.status(200).json(requests);
+      return res.status(200).json({
+        data: requests,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      });
     }
 
     if (req.method === "POST") {

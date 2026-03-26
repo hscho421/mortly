@@ -21,22 +21,20 @@ export default async function handler(
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    const [users, requests, conversations] = await Promise.all([
-      prisma.user.findMany({
-        where: { createdAt: { gte: since } },
-        select: { createdAt: true },
-        orderBy: { createdAt: "asc" },
-      }),
-      prisma.borrowerRequest.findMany({
-        where: { createdAt: { gte: since } },
-        select: { createdAt: true },
-        orderBy: { createdAt: "asc" },
-      }),
-      prisma.conversation.findMany({
-        where: { createdAt: { gte: since } },
-        select: { createdAt: true },
-        orderBy: { createdAt: "asc" },
-      }),
+    // Use SQL aggregation instead of fetching all rows into memory
+    const [userCounts, requestCounts, conversationCounts] = await Promise.all([
+      prisma.$queryRaw<{ d: string; count: bigint }[]>`
+        SELECT DATE("createdAt") as d, COUNT(*) as count
+        FROM users WHERE "createdAt" >= ${since}
+        GROUP BY d ORDER BY d`,
+      prisma.$queryRaw<{ d: string; count: bigint }[]>`
+        SELECT DATE("createdAt") as d, COUNT(*) as count
+        FROM borrower_requests WHERE "createdAt" >= ${since}
+        GROUP BY d ORDER BY d`,
+      prisma.$queryRaw<{ d: string; count: bigint }[]>`
+        SELECT DATE("createdAt") as d, COUNT(*) as count
+        FROM conversations WHERE "createdAt" >= ${since}
+        GROUP BY d ORDER BY d`,
     ]);
 
     // Build daily buckets
@@ -48,17 +46,17 @@ export default async function handler(
       buckets[key] = { users: 0, requests: 0, conversations: 0 };
     }
 
-    for (const u of users) {
-      const key = u.createdAt.toISOString().slice(0, 10);
-      if (buckets[key]) buckets[key].users++;
+    for (const row of userCounts) {
+      const key = typeof row.d === "string" ? row.d : new Date(row.d).toISOString().slice(0, 10);
+      if (buckets[key]) buckets[key].users = Number(row.count);
     }
-    for (const r of requests) {
-      const key = r.createdAt.toISOString().slice(0, 10);
-      if (buckets[key]) buckets[key].requests++;
+    for (const row of requestCounts) {
+      const key = typeof row.d === "string" ? row.d : new Date(row.d).toISOString().slice(0, 10);
+      if (buckets[key]) buckets[key].requests = Number(row.count);
     }
-    for (const c of conversations) {
-      const key = c.createdAt.toISOString().slice(0, 10);
-      if (buckets[key]) buckets[key].conversations++;
+    for (const row of conversationCounts) {
+      const key = typeof row.d === "string" ? row.d : new Date(row.d).toISOString().slice(0, 10);
+      if (buckets[key]) buckets[key].conversations = Number(row.count);
     }
 
     const trend = Object.entries(buckets).map(([date, counts]) => ({
@@ -66,6 +64,7 @@ export default async function handler(
       ...counts,
     }));
 
+    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
     return res.status(200).json(trend);
   } catch (error) {
     console.error("Error in /api/admin/trends:", error);

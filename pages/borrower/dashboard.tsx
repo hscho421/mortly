@@ -45,8 +45,8 @@ export default function BorrowerDashboard() {
       try {
         const res = await fetch("/api/requests");
         if (!res.ok) throw new Error(t("borrowerDashboard.failedToFetch"));
-        const data = await res.json();
-        setRequests(data);
+        const json = await res.json();
+        setRequests(json.data ?? json);
       } catch {
         setError(t("borrowerDashboard.failedToLoad"));
       } finally {

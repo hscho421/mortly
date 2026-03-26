@@ -13,6 +13,18 @@ export default async function handler(
   }
 
   try {
+    // Resolve broker profile once for all BROKER paths (GET and POST)
+    let broker: { id: string; userId: string; verificationStatus: string; subscriptionTier: string; responseCredits: number } | null = null;
+    if (session.user.role === "BROKER") {
+      broker = await prisma.broker.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true, userId: true, verificationStatus: true, subscriptionTier: true, responseCredits: true },
+      });
+      if (!broker) {
+        return res.status(404).json({ error: "Broker profile not found" });
+      }
+    }
+
     if (req.method === "GET") {
       const { requestId } = req.query;
 
@@ -22,37 +34,42 @@ export default async function handler(
 
       // Broker requesting all their introductions
       if (requestId === "all" && session.user.role === "BROKER") {
-        const broker = await prisma.broker.findUnique({
-          where: { userId: session.user.id },
-        });
-        if (!broker) {
-          return res.status(404).json({ error: "Broker profile not found" });
-        }
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+        const skip = (page - 1) * limit;
 
-        const introductions = await prisma.brokerIntroduction.findMany({
-          where: { brokerId: broker.id },
-          include: {
-            broker: {
-              include: {
-                user: {
-                  select: { id: true, publicId: true, name: true, email: true },
+        const [introductions, total] = await Promise.all([
+          prisma.brokerIntroduction.findMany({
+            where: { brokerId: broker!.id },
+            include: {
+              broker: {
+                include: {
+                  user: {
+                    select: { id: true, publicId: true, name: true, email: true },
+                  },
+                },
+              },
+              request: {
+                select: {
+                  id: true,
+                  province: true,
+                  city: true,
+                  mortgageCategory: true,
+                  productTypes: true,
                 },
               },
             },
-            request: {
-              select: {
-                id: true,
-                province: true,
-                city: true,
-                mortgageCategory: true,
-                productTypes: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-        });
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+          }),
+          prisma.brokerIntroduction.count({ where: { brokerId: broker!.id } }),
+        ]);
 
-        return res.status(200).json(introductions);
+        return res.status(200).json({
+          data: introductions,
+          pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
       }
 
       // Resolve publicId to internal id
@@ -76,13 +93,7 @@ export default async function handler(
           return res.status(403).json({ error: "Forbidden" });
         }
       } else if (session.user.role === "BROKER") {
-        const broker = await prisma.broker.findUnique({
-          where: { userId: session.user.id },
-        });
-        if (!broker) {
-          return res.status(404).json({ error: "Broker profile not found" });
-        }
-        where.brokerId = broker.id;
+        where.brokerId = broker!.id;
       } else {
         return res.status(403).json({ error: "Forbidden" });
       }
@@ -108,10 +119,6 @@ export default async function handler(
       if (session.user.role !== "BROKER") {
         return res.status(403).json({ error: "Only brokers can create introductions" });
       }
-
-      const broker = await prisma.broker.findUnique({
-        where: { userId: session.user.id },
-      });
 
       if (!broker) {
         return res.status(404).json({ error: "Broker profile not found" });

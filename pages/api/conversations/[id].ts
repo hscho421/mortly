@@ -40,7 +40,9 @@ export default async function handler(
           borrower: {
             select: { id: true, name: true, email: true },
           },
-          request: true,
+          request: {
+            select: { id: true, publicId: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
+          },
         },
       });
 

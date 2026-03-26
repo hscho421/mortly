@@ -110,21 +110,25 @@ export default async function handler(
       if (status === "CLOSED") {
         const activeConversations = await prisma.conversation.findMany({
           where: { requestId: request.id, status: "ACTIVE" },
+          select: { id: true },
         });
 
-        for (const convo of activeConversations) {
-          await prisma.message.create({
-            data: {
-              conversationId: convo.id,
-              senderId: session.user.id,
-              body: "[Admin] This request has been closed by an administrator.",
-            },
-          });
-
-          await prisma.conversation.update({
-            where: { id: convo.id },
-            data: { status: "CLOSED" },
-          });
+        if (activeConversations.length > 0) {
+          await prisma.$transaction([
+            ...activeConversations.map((convo) =>
+              prisma.message.create({
+                data: {
+                  conversationId: convo.id,
+                  senderId: session.user.id,
+                  body: "[Admin] This request has been closed by an administrator.",
+                },
+              })
+            ),
+            prisma.conversation.updateMany({
+              where: { requestId: request.id, status: "ACTIVE" },
+              data: { status: "CLOSED" },
+            }),
+          ]);
         }
       }
 
@@ -176,21 +180,21 @@ export default async function handler(
 
       const conversationIds = conversations.map((c) => c.id);
 
-      if (conversationIds.length > 0) {
-        await prisma.message.deleteMany({
-          where: { conversationId: { in: conversationIds } },
-        });
-        await prisma.conversation.deleteMany({
+      await prisma.$transaction(async (tx) => {
+        if (conversationIds.length > 0) {
+          await tx.message.deleteMany({
+            where: { conversationId: { in: conversationIds } },
+          });
+          await tx.conversation.deleteMany({
+            where: { requestId: request.id },
+          });
+        }
+        await tx.brokerIntroduction.deleteMany({
           where: { requestId: request.id },
         });
-      }
-
-      await prisma.brokerIntroduction.deleteMany({
-        where: { requestId: request.id },
-      });
-
-      await prisma.borrowerRequest.delete({
-        where: { id: request.id },
+        await tx.borrowerRequest.delete({
+          where: { id: request.id },
+        });
       });
 
       // Log the admin action

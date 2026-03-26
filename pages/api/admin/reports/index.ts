@@ -59,50 +59,62 @@ export default async function handler(
         prisma.report.count({ where }),
       ]);
 
-      // Resolve CUID targetIds to publicIds for display
-      const reports = await Promise.all(
-        rawReports.map(async (report) => {
-          // Already a publicId (9-digit number)
-          if (/^\d{9}$/.test(report.targetId)) return report;
+      // Batch-resolve CUID targetIds to publicIds (avoids N+1)
+      const cuidReports = rawReports.filter((r) => !/^\d{9}$/.test(r.targetId));
+      const idsByType: Record<string, string[]> = {};
+      for (const r of cuidReports) {
+        (idsByType[r.targetType] ??= []).push(r.targetId);
+      }
 
-          let publicId: string | null = null;
-          try {
-            if (report.targetType === "BROKER") {
-              // Old reports stored broker.id (CUID), try broker lookup first
-              const broker = await prisma.broker.findUnique({
-                where: { id: report.targetId },
-                include: { user: { select: { publicId: true } } },
-              });
-              if (broker) {
-                publicId = broker.user.publicId;
-              } else {
-                // Might be a userId
-                const user = await prisma.user.findUnique({
-                  where: { id: report.targetId },
-                  select: { publicId: true },
-                });
-                publicId = user?.publicId ?? null;
-              }
-            } else if (report.targetType === "REQUEST") {
-              const request = await prisma.borrowerRequest.findUnique({
-                where: { id: report.targetId },
-                select: { publicId: true },
-              });
-              publicId = request?.publicId ?? null;
-            } else if (report.targetType === "CONVERSATION") {
-              const convo = await prisma.conversation.findUnique({
-                where: { id: report.targetId },
-                select: { publicId: true },
-              });
-              publicId = convo?.publicId ?? null;
+      const publicIdMap = new Map<string, string>();
+
+      const batchQueries: Promise<void>[] = [];
+      if (idsByType["BROKER"]?.length) {
+        batchQueries.push(
+          prisma.broker.findMany({
+            where: { id: { in: idsByType["BROKER"] } },
+            include: { user: { select: { publicId: true } } },
+          }).then((brokers) => {
+            for (const b of brokers) publicIdMap.set(b.id, b.user.publicId);
+          }),
+          prisma.user.findMany({
+            where: { id: { in: idsByType["BROKER"] } },
+            select: { id: true, publicId: true },
+          }).then((users) => {
+            for (const u of users) {
+              if (!publicIdMap.has(u.id)) publicIdMap.set(u.id, u.publicId);
             }
-          } catch {
-            // Target may have been deleted
-          }
+          })
+        );
+      }
+      if (idsByType["REQUEST"]?.length) {
+        batchQueries.push(
+          prisma.borrowerRequest.findMany({
+            where: { id: { in: idsByType["REQUEST"] } },
+            select: { id: true, publicId: true },
+          }).then((reqs) => {
+            for (const r of reqs) publicIdMap.set(r.id, r.publicId);
+          })
+        );
+      }
+      if (idsByType["CONVERSATION"]?.length) {
+        batchQueries.push(
+          prisma.conversation.findMany({
+            where: { id: { in: idsByType["CONVERSATION"] } },
+            select: { id: true, publicId: true },
+          }).then((convos) => {
+            for (const c of convos) publicIdMap.set(c.id, c.publicId);
+          })
+        );
+      }
 
-          return { ...report, targetId: publicId || report.targetId };
-        })
-      );
+      await Promise.all(batchQueries);
+
+      const reports = rawReports.map((report) => {
+        if (/^\d{9}$/.test(report.targetId)) return report;
+        const resolved = publicIdMap.get(report.targetId);
+        return resolved ? { ...report, targetId: resolved } : report;
+      });
 
       return res.status(200).json({
         data: reports,

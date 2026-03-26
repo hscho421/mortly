@@ -74,6 +74,7 @@ export default async function handler(
         total: totalRequests,
       };
 
+      res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120");
       return res.status(200).json({
         // Users
         users,

@@ -6,5 +6,6 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const enabled = await getSettingBool("maintenance_mode");
+  res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60");
   return res.status(200).json({ maintenance: enabled });
 }

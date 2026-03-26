@@ -59,6 +59,9 @@ model BorrowerRequest {
   introductions      BrokerIntroduction[]
   conversations      Conversation[]
 
+  @@index([borrowerId])
+  @@index([borrowerId, status])
+  @@index([status, createdAt])
   @@map("borrower_requests")
 }
 
@@ -85,6 +88,7 @@ model Broker {
   user               User                 @relation(fields: [userId], references: [id])
   conversations      Conversation[]
   subscription       Subscription?
+  @@index([verificationStatus])
   @@map("brokers")
 }
 
@@ -104,6 +108,8 @@ model BrokerIntroduction {
   request           BorrowerRequest @relation(fields: [requestId], references: [id])
 
   @@unique([requestId, brokerId])
+  @@index([brokerId])
+  @@index([requestId])
   @@map("broker_introductions")
 }
 
@@ -124,6 +130,11 @@ model Conversation {
   messages           Message[]
 
   @@unique([requestId, brokerId])
+  @@index([borrowerId])
+  @@index([brokerId])
+  @@index([requestId])
+  @@index([status, updatedAt])
+  @@index([status, createdAt])
   @@map("conversations")
 }
 
@@ -136,6 +147,8 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   sender         User         @relation(fields: [senderId], references: [id])
 
+  @@index([conversationId, createdAt])
+  @@index([conversationId, senderId, createdAt])
   @@map("messages")
 }
 
@@ -170,6 +183,8 @@ model Report {
   updatedAt  DateTime     @updatedAt
   reporter   User         @relation(fields: [reporterId], references: [id])
 
+  @@index([status, createdAt])
+  @@index([reporterId, targetType, targetId])
   @@map("reports")
 }
 
@@ -231,6 +246,7 @@ model AdminNotice {
   admin     User     @relation("adminNoticesSent", fields: [adminId], references: [id])
   user      User     @relation("adminNoticesReceived", fields: [userId], references: [id])
 
+  @@index([userId, createdAt])
   @@map("admin_notices")
 }
 
@@ -245,6 +261,8 @@ model AdminAction {
   createdAt  DateTime @default(now())
   admin      User     @relation("adminActions", fields: [adminId], references: [id])
 
+  @@index([action, createdAt])
+  @@index([createdAt])
   @@map("admin_actions")
 }
 

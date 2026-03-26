@@ -33,24 +33,23 @@ export default async function handler(
       },
     });
 
-    for (const convo of inactiveConversations) {
-      // Find a valid senderId — use the borrower who owns the request
-      const senderId = convo.request.borrowerId;
-
-      await prisma.message.create({
-        data: {
-          conversationId: convo.id,
-          senderId,
-          body: "[System] This conversation was automatically closed due to inactivity.",
-        },
-      });
-
-      await prisma.conversation.update({
-        where: { id: convo.id },
-        data: { status: "CLOSED" },
-      });
-
-      closedCount++;
+    if (inactiveConversations.length > 0) {
+      await prisma.$transaction([
+        ...inactiveConversations.map((convo) =>
+          prisma.message.create({
+            data: {
+              conversationId: convo.id,
+              senderId: convo.request.borrowerId,
+              body: "[System] This conversation was automatically closed due to inactivity.",
+            },
+          })
+        ),
+        prisma.conversation.updateMany({
+          where: { id: { in: inactiveConversations.map((c) => c.id) } },
+          data: { status: "CLOSED" },
+        }),
+      ]);
+      closedCount += inactiveConversations.length;
     }
 
     // 2. Close conversations where borrower never engaged within 7 days of broker intro
@@ -73,30 +72,27 @@ export default async function handler(
       },
     });
 
-    for (const convo of unstartedConversations) {
-      // Check if the borrower has sent any messages in this conversation
-      const borrowerSentMessage = convo.messages.some(
-        (msg) => msg.senderId === convo.request.borrowerId
-      );
+    const toClose = unstartedConversations.filter(
+      (convo) => !convo.messages.some((msg) => msg.senderId === convo.request.borrowerId)
+    );
 
-      if (!borrowerSentMessage) {
-        const senderId = convo.request.borrowerId;
-
-        await prisma.message.create({
-          data: {
-            conversationId: convo.id,
-            senderId,
-            body: "[System] This conversation was automatically closed because the borrower did not respond within 7 days.",
-          },
-        });
-
-        await prisma.conversation.update({
-          where: { id: convo.id },
+    if (toClose.length > 0) {
+      await prisma.$transaction([
+        ...toClose.map((convo) =>
+          prisma.message.create({
+            data: {
+              conversationId: convo.id,
+              senderId: convo.request.borrowerId,
+              body: "[System] This conversation was automatically closed because the borrower did not respond within 7 days.",
+            },
+          })
+        ),
+        prisma.conversation.updateMany({
+          where: { id: { in: toClose.map((c) => c.id) } },
           data: { status: "CLOSED" },
-        });
-
-        closedCount++;
-      }
+        }),
+      ]);
+      closedCount += toClose.length;
     }
 
     // 3. For requests where ALL conversations are now CLOSED, update request status to CLOSED
@@ -107,25 +103,26 @@ export default async function handler(
         affectedRequestIds.add(convo.request.id);
       }
 
-      for (const requestId of affectedRequestIds) {
-        const activeConvoCount = await prisma.conversation.count({
-          where: { requestId, status: "ACTIVE" },
+      // Batch check: find requests with zero active conversations
+      const requestIdList = Array.from(affectedRequestIds);
+      const activeCounts = await prisma.conversation.groupBy({
+        by: ["requestId"],
+        where: { requestId: { in: requestIdList }, status: "ACTIVE" },
+        _count: { _all: true },
+      });
+      const activeCountMap = new Map(activeCounts.map((r) => [r.requestId, r._count._all]));
+
+      const requestsToClose = requestIdList.filter((rid) => !activeCountMap.has(rid) || activeCountMap.get(rid) === 0);
+
+      if (requestsToClose.length > 0) {
+        // Only close IN_PROGRESS requests that have conversations
+        await prisma.borrowerRequest.updateMany({
+          where: {
+            id: { in: requestsToClose },
+            status: "IN_PROGRESS",
+          },
+          data: { status: "CLOSED" },
         });
-
-        if (activeConvoCount === 0) {
-          // Check if the request has any conversations at all and is IN_PROGRESS
-          const request = await prisma.borrowerRequest.findUnique({
-            where: { id: requestId },
-            select: { status: true, _count: { select: { conversations: true } } },
-          });
-
-          if (request && request.status === "IN_PROGRESS" && request._count.conversations > 0) {
-            await prisma.borrowerRequest.update({
-              where: { id: requestId },
-              data: { status: "CLOSED" },
-            });
-          }
-        }
       }
     }
 

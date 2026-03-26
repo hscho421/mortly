@@ -62,8 +62,8 @@ export default function BrokerIntroductionsPage() {
       try {
         const res = await fetch("/api/introductions?requestId=all");
         if (!res.ok) throw new Error("Failed to fetch introductions");
-        const data = await res.json();
-        setIntroductions(data);
+        const json = await res.json();
+        setIntroductions(json.data ?? json);
       } catch {
         setError("Failed to load your introductions.");
       } finally {
