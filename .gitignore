@@ -40,3 +40,9 @@ next-env.d.ts
 
 # project docs
 PROJECT.md
+
+# claude code - machine-specific settings
+.claude/settings.local.json
+
+# OS files
+Thumbs.db
