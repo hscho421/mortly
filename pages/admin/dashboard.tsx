@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -88,9 +88,13 @@ export default function AdminDashboard() {
   const [recentActions, setRecentActions] = useState<RecentAction[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const hasFetched = useRef(false);
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "ADMIN") return;
+    if (hasFetched.current) return;
+    hasFetched.current = true;
 
     const fetchData = async () => {
       try {
