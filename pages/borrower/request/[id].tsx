@@ -81,7 +81,7 @@ export default function RequestDetail() {
     } finally {
       setLoading(false);
     }
-  }, [id, router]);
+  }, [id, router, t]);
 
   useEffect(() => {
     if (authStatus === "loading") return;
