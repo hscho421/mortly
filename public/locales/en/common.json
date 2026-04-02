@@ -66,6 +66,48 @@
       "inProgress": "In Consultation",
       "completed": "Consultation Complete",
       "timeAgo": "{{time}} ago"
+    },
+    "social": {
+      "overline": "Trusted by Canadians",
+      "title": "Numbers That Speak for Themselves",
+      "stat1Value": "500+",
+      "stat1Label": "Requests Submitted",
+      "stat2Value": "50+",
+      "stat2Label": "Verified Brokers",
+      "stat3Value": "95%",
+      "stat3Label": "Satisfaction Rate",
+      "stat4Value": "0",
+      "stat4Label": "Fees for Borrowers"
+    },
+    "valueProp": {
+      "overline": "For Everyone",
+      "title": "Whether You're Borrowing or Brokering",
+      "borrowerTitle": "For Borrowers",
+      "borrowerBullet1": "Post your mortgage needs anonymously — no cold calls",
+      "borrowerBullet2": "Compare multiple broker proposals side by side",
+      "borrowerBullet3": "Connect only when you're ready, on your terms",
+      "borrowerBullet4": "Always free — no fees, no obligations",
+      "borrowerCta": "Submit a Request",
+      "brokerTitle": "For Brokers",
+      "brokerBullet1": "Access qualified leads without spending on ads",
+      "brokerBullet2": "Showcase your expertise and reviews to borrowers",
+      "brokerBullet3": "Build your reputation on a trusted platform",
+      "brokerBullet4": "Flexible subscription plans that fit your business",
+      "brokerCta": "Join as a Broker"
+    },
+    "faq": {
+      "overline": "Common Questions",
+      "title": "Frequently Asked Questions",
+      "q1": "Is my personal information really private?",
+      "a1": "Yes. Your identity, contact details, and financial information are never shared with brokers until you explicitly choose to connect. You browse and compare completely anonymously.",
+      "q2": "How are brokers verified?",
+      "a2": "Every broker on mortly holds a valid provincial mortgage license. We verify credentials before they can access the platform, and we monitor reviews and activity for quality assurance.",
+      "q3": "Does it cost anything for borrowers?",
+      "a3": "No. mortly is completely free for borrowers. There are no fees, no hidden charges, and no obligations. You can explore offers and compare brokers at no cost.",
+      "q4": "How do brokers contact me?",
+      "a4": "Brokers express interest through the platform's secure messaging system. You can chat anonymously and only share your contact information when you decide to move forward.",
+      "q5": "What types of mortgages can I find?",
+      "a5": "Our brokers cover a wide range — purchases, refinancing, renewals, HELOCs, commercial mortgages, and more. Simply describe your needs and receive tailored proposals."
     }
   },
   "auth": {
@@ -151,7 +193,11 @@
     "viewDetails": "View Details",
     "subtitle": "Track your mortgage requests and broker introductions.",
     "failedToLoad": "Failed to load your requests.",
-    "failedToFetch": "Failed to fetch requests"
+    "failedToFetch": "Failed to fetch requests",
+    "statTotal": "Total Requests",
+    "statActive": "Active",
+    "statOffers": "Offers Received",
+    "statCompleted": "Completed"
   },
   "request": {
     "backToRequests": "Back to My Requests",
@@ -197,6 +243,14 @@
     "additionalNotes": "Additional Notes",
     "submit": "Submit Request",
     "submitting": "Submitting...",
+    "stepBasics": "Basics",
+    "stepDetails": "Details",
+    "stepReview": "Review & Submit",
+    "next": "Next",
+    "back": "Back",
+    "edit": "Edit",
+    "reviewTitle": "Review Your Request",
+    "privacyReminder": "Your information stays anonymous until you choose to connect with a broker.",
     "requestLabel": "Request",
     "brokerResponses": "Broker Responses",
     "viewBrokerIntros": "View Broker Introductions",

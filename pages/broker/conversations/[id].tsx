@@ -224,11 +224,11 @@ export default function BrokerChatPage() {
         </div>
 
         {error && (
-          <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 p-3 text-sm font-body text-red-700 shrink-0">
+          <div className="mb-4 rounded-2xl bg-error-50 border border-error-500/20 p-3 text-sm font-body text-error-700 shrink-0" role="alert">
             {error}
             <button
               onClick={() => setError("")}
-              className="ml-2 underline text-red-600 font-medium"
+              className="ml-2 underline text-error-600 font-medium"
             >
               Dismiss
             </button>

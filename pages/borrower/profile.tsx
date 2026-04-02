@@ -171,8 +171,8 @@ export default function BorrowerProfilePage() {
           <h2 className="heading-sm mb-5">{t("settings.profileInfo", "Profile Information")}</h2>
 
           {error && (
-            <div className="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 animate-fade-in">
-              <p className="font-body text-sm text-red-700">{error}</p>
+            <div className="mb-5 rounded-xl bg-error-50 border border-error-500/20 px-4 py-3 animate-fade-in" role="alert">
+              <p className="font-body text-sm text-error-700">{error}</p>
             </div>
           )}
 
@@ -257,8 +257,8 @@ export default function BorrowerProfilePage() {
           <h2 className="heading-sm mb-5">{t("settings.changePassword", "Change Password")}</h2>
 
           {passwordError && (
-            <div className="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 animate-fade-in">
-              <p className="font-body text-sm text-red-700">{passwordError}</p>
+            <div className="mb-5 rounded-xl bg-error-50 border border-error-500/20 px-4 py-3 animate-fade-in" role="alert">
+              <p className="font-body text-sm text-error-700">{passwordError}</p>
             </div>
           )}
 

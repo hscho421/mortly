@@ -12,6 +12,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { getRequestTitle } from "@/lib/requestConfig";
 import Navbar from "@/components/Navbar";
+import { SkeletonChat } from "@/components/Skeleton";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
 import { supabase } from "@/lib/supabase";
 import type { ConversationWithParticipants } from "@/types";
@@ -291,12 +292,7 @@ export default function BorrowerMessagesPage() {
     return (
       <>
         <Navbar />
-        <div
-          className="flex items-center justify-center"
-          style={{ height: "calc(100vh - 80px)" }}
-        >
-          <p className="text-body-sm">{t("chat.loadingMessages")}</p>
-        </div>
+        <SkeletonChat />
       </>
     );
   }
@@ -359,12 +355,12 @@ export default function BorrowerMessagesPage() {
 
       {/* Error toast */}
       {error && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-red-50 border border-red-200 px-5 py-3 shadow-lg animate-fade-in">
-          <p className="font-body text-sm text-red-700">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-error-50 border border-error-500/20 px-5 py-3 shadow-lg animate-fade-in" role="alert">
+          <p className="font-body text-sm text-error-700">
             {error}
             <button
               onClick={() => setError("")}
-              className="ml-3 underline text-red-600 font-medium"
+              className="ml-3 underline text-error-600 font-medium"
             >
               {t("misc.dismiss")}
             </button>

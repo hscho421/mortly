@@ -7,6 +7,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
+import { SkeletonDashboard } from "@/components/Skeleton";
 import type { RequestWithIntroductions } from "@/types";
 import { PRODUCT_LABEL_KEYS } from "@/lib/requestConfig";
 
@@ -60,9 +61,7 @@ export default function BorrowerDashboard() {
   if (status === "loading" || isLoading) {
     return (
       <Layout>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonDashboard />
       </Layout>
     );
   }
@@ -88,10 +87,31 @@ export default function BorrowerDashboard() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 animate-fade-in">
-            <p className="font-body text-sm text-red-700">{error}</p>
+          <div className="mb-6 rounded-xl bg-error-50 border border-error-500/20 p-4 animate-fade-in" role="alert">
+            <p className="font-body text-sm text-error-700">{error}</p>
           </div>
         )}
+
+        {/* Stats row */}
+        {requests.length > 0 && (() => {
+          const activeCount = requests.filter((r) => r.status === "OPEN" || r.status === "IN_PROGRESS").length;
+          const totalIntros = requests.reduce((sum, r) => sum + (r._count?.introductions ?? r.introductions?.length ?? 0), 0);
+          return (
+            <div className="mb-10 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[
+                { value: requests.length, label: t("borrowerDashboard.statTotal", "Total Requests") },
+                { value: activeCount, label: t("borrowerDashboard.statActive", "Active") },
+                { value: totalIntros, label: t("borrowerDashboard.statOffers", "Offers Received") },
+                { value: requests.filter((r) => r.status === "CLOSED").length, label: t("borrowerDashboard.statCompleted", "Completed") },
+              ].map((stat, i) => (
+                <div key={i} className={`card-stat text-center animate-fade-in-up stagger-${i + 1}`}>
+                  <p className="font-display text-3xl text-forest-800 mb-1">{stat.value}</p>
+                  <p className="text-body-sm">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Request list */}
         {requests.length === 0 ? (

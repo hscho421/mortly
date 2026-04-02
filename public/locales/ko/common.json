@@ -66,6 +66,48 @@
       "inProgress": "상담 진행중",
       "completed": "상담완료",
       "timeAgo": "{{time}} 전"
+    },
+    "social": {
+      "overline": "캐나다인이 신뢰하는",
+      "title": "숫자가 말해줍니다",
+      "stat1Value": "500+",
+      "stat1Label": "상담 요청 건수",
+      "stat2Value": "50+",
+      "stat2Label": "검증된 브로커",
+      "stat3Value": "95%",
+      "stat3Label": "만족도",
+      "stat4Value": "0",
+      "stat4Label": "신청인 이용 수수료"
+    },
+    "valueProp": {
+      "overline": "모두를 위한",
+      "title": "모기지 신청인이든, 브로커이든",
+      "borrowerTitle": "모기지 신청인",
+      "borrowerBullet1": "익명으로 모기지 요구사항을 등록하세요 — 원치 않는 연락 없음",
+      "borrowerBullet2": "여러 브로커의 제안을 나란히 비교하세요",
+      "borrowerBullet3": "준비가 되었을 때만, 내 조건에 맞춰 연결하세요",
+      "borrowerBullet4": "항상 무료 — 수수료 없음, 의무 없음",
+      "borrowerCta": "상담 요청하기",
+      "brokerTitle": "모기지 브로커",
+      "brokerBullet1": "광고비 없이 검증된 고객에게 접근하세요",
+      "brokerBullet2": "전문성과 리뷰를 고객에게 보여주세요",
+      "brokerBullet3": "신뢰할 수 있는 플랫폼에서 평판을 쌓으세요",
+      "brokerBullet4": "비즈니스에 맞는 유연한 구독 플랜",
+      "brokerCta": "브로커로 가입하기"
+    },
+    "faq": {
+      "overline": "자주 묻는 질문",
+      "title": "궁금한 점이 있으신가요?",
+      "q1": "개인정보가 정말 보호되나요?",
+      "a1": "네. 귀하의 신원, 연락처, 금융 정보는 귀하가 명시적으로 연결을 선택할 때까지 브로커에게 절대 공유되지 않습니다. 완전히 익명으로 브로커를 검색하고 비교할 수 있습니다.",
+      "q2": "브로커는 어떻게 검증되나요?",
+      "a2": "mortly의 모든 브로커는 유효한 주정부 모기지 면허를 보유하고 있습니다. 플랫폼 접근 전 자격을 확인하며, 리뷰와 활동을 모니터링하여 품질을 보장합니다.",
+      "q3": "신청인에게 비용이 발생하나요?",
+      "a3": "아니요. mortly는 모기지 신청인에게 완전 무료입니다. 수수료, 숨겨진 비용, 의무가 없습니다. 무료로 제안을 살펴보고 브로커를 비교할 수 있습니다.",
+      "q4": "브로커가 어떻게 연락하나요?",
+      "a4": "브로커는 플랫폼의 안전한 메시징 시스템을 통해 관심을 표시합니다. 익명으로 채팅할 수 있으며, 진행하기로 결정할 때만 연락처 정보를 공유합니다.",
+      "q5": "어떤 종류의 모기지를 찾을 수 있나요?",
+      "a5": "구매, 리파이낸싱, 갱신, HELOC, 상업용 모기지 등 다양한 범위를 다룹니다. 필요한 사항을 설명하시면 맞춤형 제안을 받으실 수 있습니다."
     }
   },
   "auth": {
@@ -151,7 +193,11 @@
     "viewDetails": "상세 보기",
     "subtitle": "모기지 요청 및 브로커 소개를 확인하세요.",
     "failedToLoad": "요청을 불러오지 못했습니다.",
-    "failedToFetch": "요청을 가져오지 못했습니다"
+    "failedToFetch": "요청을 가져오지 못했습니다",
+    "statTotal": "전체 요청",
+    "statActive": "진행 중",
+    "statOffers": "받은 제안",
+    "statCompleted": "완료"
   },
   "request": {
     "backToRequests": "내 요청으로 돌아가기",
@@ -197,6 +243,14 @@
     "additionalNotes": "추가 사항",
     "submit": "요청 제출",
     "submitting": "제출 중...",
+    "stepBasics": "기본 정보",
+    "stepDetails": "상세 정보",
+    "stepReview": "검토 및 제출",
+    "next": "다음",
+    "back": "이전",
+    "edit": "수정",
+    "reviewTitle": "요청 내용 확인",
+    "privacyReminder": "브로커와 연결을 선택하기 전까지 귀하의 정보는 익명으로 유지됩니다.",
     "requestLabel": "요청",
     "brokerResponses": "브로커 응답",
     "viewBrokerIntros": "브로커 소개 보기",

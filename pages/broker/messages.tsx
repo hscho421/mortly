@@ -558,11 +558,11 @@ export default function BrokerMessagesPage() {
 
               {/* Error */}
               {error && (
-                <div className="shrink-0 mx-5 mb-3 rounded-xl bg-red-50 border border-red-200 p-3 text-sm font-body text-red-700">
+                <div className="shrink-0 mx-5 mb-3 rounded-xl bg-error-50 border border-error-500/20 p-3 text-sm font-body text-error-700" role="alert">
                   {error}
                   <button
                     onClick={() => setError("")}
-                    className="ml-2 underline text-red-600 font-medium"
+                    className="ml-2 underline text-error-600 font-medium"
                   >
                     Dismiss
                   </button>

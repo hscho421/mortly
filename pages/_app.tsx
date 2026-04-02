@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { SessionProvider, useSession } from "next-auth/react";
 import { appWithTranslation, useTranslation } from "next-i18next";
 import { Analytics } from "@vercel/analytics/react";
+import { ToastProvider } from "@/components/Toast";
 
 function ErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation("common");
@@ -94,11 +95,13 @@ function App({
 }: AppProps) {
   return (
     <SessionProvider session={session} refetchInterval={60} refetchOnWindowFocus={true}>
-      <ErrorBoundary>
-        <MaintenanceGate>
-          <Component {...pageProps} />
-        </MaintenanceGate>
-      </ErrorBoundary>
+      <ToastProvider>
+        <ErrorBoundary>
+          <MaintenanceGate>
+            <Component {...pageProps} />
+          </MaintenanceGate>
+        </ErrorBoundary>
+      </ToastProvider>
       <Analytics />
     </SessionProvider>
   );

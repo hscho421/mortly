@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { SkeletonDashboard } from "@/components/Skeleton";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
@@ -140,12 +141,7 @@ export default function BrokerDashboardPage() {
   if (status === "loading" || loading) {
     return (
       <Layout>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-forest-300 border-t-forest-700" />
-            <p className="text-body-sm">{t("broker.dashboardLoading")}</p>
-          </div>
-        </div>
+        <SkeletonDashboard />
       </Layout>
     );
   }
@@ -397,8 +393,8 @@ export default function BrokerDashboardPage() {
           {statCards.map((stat, i) => (
             <div
               key={stat.label}
-              className={`card-elevated animate-fade-in-up stagger-${i + 1} ${
-                stat.accent ? "border-amber-300 bg-amber-50/50" : ""
+              className={`card-stat animate-fade-in-up stagger-${i + 1} ${
+                stat.accent ? "!border-amber-300 !bg-amber-50/50" : ""
               }`}
             >
               <div className="flex items-start justify-between">

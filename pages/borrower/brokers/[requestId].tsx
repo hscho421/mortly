@@ -132,7 +132,7 @@ export default function BrokerComparison() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-2xl bg-red-50 border border-red-200 p-4 text-sm font-body text-red-700">
+          <div className="mb-6 rounded-2xl bg-error-50 border border-error-500/20 p-4 text-sm font-body text-error-700" role="alert">
             {error}
           </div>
         )}

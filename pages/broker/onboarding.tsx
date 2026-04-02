@@ -120,8 +120,8 @@ export default function BrokerOnboardingPage() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 animate-fade-in">
-            <p className="font-body text-sm text-red-700">{error}</p>
+          <div className="mb-6 rounded-xl bg-error-50 border border-error-500/20 p-4 animate-fade-in" role="alert">
+            <p className="font-body text-sm text-error-700">{error}</p>
           </div>
         )}
 

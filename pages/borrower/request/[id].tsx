@@ -182,7 +182,7 @@ export default function RequestDetail() {
 
         {/* Error message */}
         {error && (
-          <div className="mb-6 rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-700 font-body animate-fade-in">
+          <div className="mb-6 rounded-2xl bg-error-50 border border-error-500/20 p-4 text-sm text-error-700 font-body animate-fade-in" role="alert">
             {error}
           </div>
         )}
@@ -210,7 +210,7 @@ export default function RequestDetail() {
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-body font-medium text-red-600 hover:bg-red-50 hover:border-red-400 transition-all duration-200"
+                  className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-body font-medium text-error-600 hover:bg-red-50 hover:border-red-400 transition-all duration-200"
                 >
                   {t("request.delete")}
                 </button>

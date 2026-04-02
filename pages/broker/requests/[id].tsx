@@ -87,8 +87,8 @@ export default function BrokerRequestDetailPage() {
     return (
       <Layout>
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="rounded-xl bg-red-50 border border-red-200 p-4">
-            <p className="font-body text-sm text-red-700">{error || t("misc.requestNotFound")}</p>
+          <div className="rounded-xl bg-error-50 border border-error-500/20 p-4" role="alert">
+            <p className="font-body text-sm text-error-700">{error || t("misc.requestNotFound")}</p>
           </div>
           <Link
             href="/broker/requests"
