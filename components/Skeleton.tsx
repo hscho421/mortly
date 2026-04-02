@@ -69,6 +69,89 @@ export function SkeletonDashboard() {
   );
 }
 
+export function SkeletonAdminDashboard() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="mb-6">
+        <Skeleton className="h-8 w-48 mb-2" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="rounded-2xl border border-cream-200 bg-white p-6">
+            <Skeleton className="h-3 w-24 mb-4" />
+            <div className="grid grid-cols-3 gap-3">
+              {[...Array(3)].map((_, j) => (
+                <div key={j}>
+                  <Skeleton className="h-3 w-16 mb-2" />
+                  <Skeleton className="h-7 w-12" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        {/* Wide pipeline card */}
+        <div className="rounded-2xl border border-cream-200 bg-white p-6 lg:col-span-2">
+          <Skeleton className="h-3 w-28 mb-4" />
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
+            {[...Array(7)].map((_, i) => (
+              <div key={i}>
+                <Skeleton className="h-3 w-14 mb-2" />
+                <Skeleton className="h-8 w-10" />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Wide activity card */}
+        <div className="rounded-2xl border border-cream-200 bg-white p-6 lg:col-span-2">
+          <Skeleton className="h-3 w-20 mb-4" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i}>
+                <Skeleton className="h-3 w-20 mb-2" />
+                <Skeleton className="h-7 w-10" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Queue cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="rounded-2xl border border-cream-200 bg-white p-6">
+            <div className="flex items-center justify-between mb-4">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <div className="space-y-3">
+              {[...Array(3)].map((_, j) => (
+                <div key={j} className="flex items-center justify-between py-2">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-6 w-16 rounded-md" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Trend chart */}
+      <div className="rounded-2xl border border-cream-200 bg-white p-6">
+        <Skeleton className="h-5 w-36 mb-2" />
+        <Skeleton className="h-4 w-56 mb-6" />
+        <Skeleton className="h-60 w-full" />
+      </div>
+    </div>
+  );
+}
+
 export function SkeletonChat() {
   return (
     <div className="flex" style={{ height: "calc(100vh - 80px)" }}>

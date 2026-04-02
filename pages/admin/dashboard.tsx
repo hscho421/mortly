@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import AdminLayout from "@/components/AdminLayout";
+import { SkeletonAdminDashboard } from "@/components/Skeleton";
 import dynamic from "next/dynamic";
 
 const TrendChart = dynamic(() => import("@/components/TrendChart"), {
@@ -219,9 +220,7 @@ export default function AdminDashboard() {
   if (status === "loading" || loading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-body-sm">{t("admin.dashboardLoading")}</p>
-        </div>
+        <SkeletonAdminDashboard />
       </AdminLayout>
     );
   }
