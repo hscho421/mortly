@@ -1,4 +1,3 @@
-import { useState } from "react";
 import Link from "next/link";
 import Head from "next/head";
 import Layout from "@/components/Layout";
@@ -11,7 +10,6 @@ import { createHash } from "crypto";
 
 export default function Home({ liveRequests }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { t } = useTranslation("common");
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
   return (
     <Layout>
       <Head>
@@ -192,144 +190,6 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
         </div>
       </section>
 
-      {/* Social Proof — Stats */}
-      <section className="section-padding bg-cream-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mb-16 animate-fade-in-up opacity-0">
-            <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              {t("home.social.overline")}
-            </span>
-            <h2 className="heading-lg">{t("home.social.title")}</h2>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {([
-              { value: t("home.social.stat1Value"), label: t("home.social.stat1Label") },
-              { value: t("home.social.stat2Value"), label: t("home.social.stat2Label") },
-              { value: t("home.social.stat3Value"), label: t("home.social.stat3Label") },
-              { value: t("home.social.stat4Value"), label: t("home.social.stat4Label") },
-            ] as const).map((stat, i) => (
-              <div
-                key={i}
-                className={`card-stat text-center animate-fade-in-up opacity-0 stagger-${i + 1}`}
-              >
-                <p className="font-display text-3xl sm:text-4xl text-forest-800 mb-2">
-                  {stat.value === "0" ? (
-                    <><span className="text-amber-500">$</span>0</>
-                  ) : (
-                    stat.value
-                  )}
-                </p>
-                <p className="text-body-sm">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Value Prop — Borrowers & Brokers */}
-      <section className="section-padding bg-cream-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mb-16 animate-fade-in-up opacity-0">
-            <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              {t("home.valueProp.overline")}
-            </span>
-            <h2 className="heading-lg">{t("home.valueProp.title")}</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6 lg:gap-10">
-            {/* Borrowers */}
-            <div className="card-elevated animate-fade-in-up opacity-0 stagger-1">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-forest-50 text-forest-600 flex items-center justify-center">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
-                </div>
-                <h3 className="heading-md">{t("home.valueProp.borrowerTitle")}</h3>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {[1, 2, 3, 4].map((n) => (
-                  <li key={n} className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-success-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    <span className="text-body-sm">{t(`home.valueProp.borrowerBullet${n}`)}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/login" className="btn-amber w-full text-center">
-                {t("home.valueProp.borrowerCta")}
-              </Link>
-            </div>
-
-            {/* Brokers */}
-            <div className="card-elevated animate-fade-in-up opacity-0 stagger-2">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0M12 12.75h.008v.008H12v-.008z" />
-                  </svg>
-                </div>
-                <h3 className="heading-md">{t("home.valueProp.brokerTitle")}</h3>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {[1, 2, 3, 4].map((n) => (
-                  <li key={n} className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-success-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    <span className="text-body-sm">{t(`home.valueProp.brokerBullet${n}`)}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/signup" className="btn-primary w-full text-center">
-                {t("home.valueProp.brokerCta")}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="section-padding bg-cream-100">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-16 animate-fade-in-up opacity-0">
-            <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              {t("home.faq.overline")}
-            </span>
-            <h2 className="heading-lg">{t("home.faq.title")}</h2>
-          </div>
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <div key={n} className="border border-cream-300 rounded-xl bg-white overflow-hidden">
-                <button
-                  onClick={() => setOpenFaq(openFaq === n ? null : n)}
-                  className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer"
-                  aria-expanded={openFaq === n}
-                >
-                  <span className="heading-sm !text-base pr-4">{t(`home.faq.q${n}`)}</span>
-                  <svg
-                    className={`w-5 h-5 text-sage-500 flex-shrink-0 transition-transform duration-200 ${openFaq === n ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </button>
-                <div
-                  className={`grid transition-all duration-300 ${openFaq === n ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
-                >
-                  <div className="overflow-hidden">
-                    <p className="px-6 pb-5 text-body-sm">{t(`home.faq.a${n}`)}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-forest-800" />
@@ -351,20 +211,13 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
       </section>
 
       {/* Disclaimer */}
-      <section className="pb-24 sm:pb-8 py-8 bg-cream-200/50 border-t border-cream-300">
+      <section className="py-8 bg-cream-200/50 border-t border-cream-300">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-xs text-forest-700/75 text-center leading-relaxed font-body">
             <strong>Disclaimer:</strong> {t("home.disclaimerFull")}
           </p>
         </div>
       </section>
-
-      {/* Sticky Mobile CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-cream-50/95 backdrop-blur-md border-t border-cream-300 px-4 py-3">
-        <Link href="/login" className="btn-amber w-full text-center py-3.5">
-          {t("home.getStartedNow")}
-        </Link>
-      </div>
     </Layout>
   );
 }
