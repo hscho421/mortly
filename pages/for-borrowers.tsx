@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Head from "next/head";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { useSession } from "next-auth/react";
@@ -71,13 +71,7 @@ export default function ForBorrowers() {
 
   return (
     <Layout>
-      <Head>
-        <title>{t("meta.forBorrowersTitle")}</title>
-        <meta
-          name="description"
-          content={t("meta.forBorrowersDesc")}
-        />
-      </Head>
+      <SEO title={t("meta.forBorrowersTitle")} description={t("meta.forBorrowersDesc")} />
 
       {/* Hero */}
       <section className="relative overflow-hidden">

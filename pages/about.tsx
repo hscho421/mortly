@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Head from "next/head";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 
@@ -39,13 +39,7 @@ export default function About() {
 
   return (
     <Layout>
-      <Head>
-        <title>{`${t("about.title")} — mortly`}</title>
-        <meta
-          name="description"
-          content={t("meta.aboutDesc")}
-        />
-      </Head>
+      <SEO title={t("meta.aboutTitle")} description={t("meta.aboutDesc")} />
 
       {/* Hero */}
       <section className="relative overflow-hidden">

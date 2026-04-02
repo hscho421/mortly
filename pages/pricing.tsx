@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
-import Head from "next/head";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 
@@ -140,13 +140,7 @@ export default function Pricing() {
 
   return (
     <Layout>
-      <Head>
-        <title>{t("meta.pricingTitle")}</title>
-        <meta
-          name="description"
-          content={t("meta.pricingDesc")}
-        />
-      </Head>
+      <SEO title={t("meta.pricingTitle")} description={t("meta.pricingDesc")} />
 
       {/* Hero */}
       <section className="relative overflow-hidden">

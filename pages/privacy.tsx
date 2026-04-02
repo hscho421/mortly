@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Head from "next/head";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 
@@ -90,13 +90,7 @@ export default function Privacy() {
 
   return (
     <Layout>
-      <Head>
-        <title>{t("privacy.headTitle")}</title>
-        <meta
-          name="description"
-          content={t("privacy.metaDesc")}
-        />
-      </Head>
+      <SEO title={t("privacy.headTitle")} description={t("privacy.metaDesc")} />
 
       {/* Hero */}
       <section className="relative overflow-hidden">

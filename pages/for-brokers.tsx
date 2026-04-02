@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Head from "next/head";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { useSession } from "next-auth/react";
@@ -54,13 +54,7 @@ export default function ForBrokers() {
 
   return (
     <Layout>
-      <Head>
-        <title>{t("meta.forBrokersTitle")}</title>
-        <meta
-          name="description"
-          content={t("meta.forBrokersDesc")}
-        />
-      </Head>
+      <SEO title={t("meta.forBrokersTitle")} description={t("meta.forBrokersDesc")} />
 
       {/* Hero */}
       <section className="relative overflow-hidden">

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Head from "next/head";
 import Layout from "@/components/Layout";
+import SEO from "@/components/SEO";
 import LiveActivityMarquee from "@/components/LiveActivityMarquee";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -12,13 +12,32 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
   const { t } = useTranslation("common");
   return (
     <Layout>
-      <Head>
-        <title>mortly — Find Your Perfect Mortgage Broker Anonymously</title>
-        <meta
-          name="description"
-          content="mortly is a privacy-first marketplace where borrowers anonymously share their mortgage needs and verified brokers compete to connect with them."
-        />
-      </Head>
+      <SEO
+        title={t("meta.homeTitle")}
+        description={t("meta.homeDesc")}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              name: "mortly",
+              url: "https://mortly.ca",
+              logo: "https://mortly.ca/logo/favicon.svg",
+              description: t("meta.homeDesc"),
+            },
+            {
+              "@type": "WebSite",
+              name: "mortly",
+              url: "https://mortly.ca",
+              inLanguage: ["ko", "en"],
+              potentialAction: {
+                "@type": "SearchAction",
+                target: "https://mortly.ca/how-it-works",
+              },
+            },
+          ],
+        }}
+      />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">

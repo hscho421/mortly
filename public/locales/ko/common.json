@@ -1524,6 +1524,9 @@
     "somethingWentWrong": "문제가 발생했습니다"
   },
   "meta": {
+    "homeTitle": "mortly — 익명으로 모기지 브로커 비교하기",
+    "homeDesc": "캐나다 모기지 신청인이 익명으로 요청을 등록하고, 면허를 보유한 브로커가 경쟁하여 연결되는 프라이버시 중심 마켓플레이스. 신청인 무료, 의무 없음.",
+    "aboutTitle": "소개 — mortly",
     "aboutDesc": "mortly는 캐나다 모기지 신청인과 면허를 보유한 모기지 브로커를 연결하는 프라이버시 중심 마켓플레이스입니다.",
     "howItWorksTitle": "이용 방법 — mortly",
     "howItWorksDesc": "mortly가 어떻게 익명으로 안전하게 모기지 신청인과 브로커를 연결하는지 알아보세요.",
