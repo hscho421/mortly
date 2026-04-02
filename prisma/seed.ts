@@ -274,9 +274,9 @@ async function seedMock() {
     const details = isCommercial
       ? {
           businessType: pick(BUSINESS_TYPES),
-          corporateAnnualIncome: `$${200 + Math.floor(Math.random() * 800)},000`,
-          corporateAnnualExpenses: `$${100 + Math.floor(Math.random() * 500)},000`,
-          ownerNetIncome: `$${80 + Math.floor(Math.random() * 200)},000`,
+          corporateAnnualIncome: { "2025": `${200 + Math.floor(Math.random() * 800)},000`, "2024": `${200 + Math.floor(Math.random() * 800)},000` },
+          corporateAnnualExpenses: { "2025": `${100 + Math.floor(Math.random() * 500)},000`, "2024": `${100 + Math.floor(Math.random() * 500)},000` },
+          ownerNetIncome: `${80 + Math.floor(Math.random() * 200)},000`,
         }
       : {
           purposeOfUse: i % 3 === 0 ? ["RENTAL"] : i % 5 === 0 ? ["OWNER_OCCUPIED", "RENTAL"] : ["OWNER_OCCUPIED"],
