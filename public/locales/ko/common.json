@@ -321,6 +321,8 @@
     "businessType": "업종",
     "businessTypePlaceholder": "예: 음식점, 부동산, 소매업",
     "corporateFinancials": "법인소득신고기준 최근 2년간 연소득/지출금액",
+    "corporateIncome": "법인 연소득금액",
+    "corporateExpenses": "법인 연지출금액",
     "corpIncome": "연소득금액",
     "corpExpenses": "연지출금액",
     "ownerNetIncome": "오너의 연간 순소득 추정금액",

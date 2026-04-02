@@ -321,6 +321,8 @@
     "businessType": "Business Type / Industry",
     "businessTypePlaceholder": "e.g. Restaurant, Real Estate, Retail",
     "corporateFinancials": "Corporate annual income & expenses (last 2 years, based on tax filing)",
+    "corporateIncome": "Corporate Annual Income",
+    "corporateExpenses": "Corporate Annual Expenses",
     "corpIncome": "Income",
     "corpExpenses": "Expenses",
     "ownerNetIncome": "Owner's estimated annual net income",
