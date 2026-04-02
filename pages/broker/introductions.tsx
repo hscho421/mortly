@@ -61,11 +61,11 @@ export default function BrokerIntroductionsPage() {
       setIsLoading(true);
       try {
         const res = await fetch("/api/introductions?requestId=all");
-        if (!res.ok) throw new Error("Failed to fetch introductions");
+        if (!res.ok) throw new Error(t("errors.failedToFetchIntroductions"));
         const json = await res.json();
         setIntroductions(json.data ?? json);
       } catch {
-        setError("Failed to load your introductions.");
+        setError(t("errors.failedToFetchIntroductions"));
       } finally {
         setIsLoading(false);
       }

@@ -42,12 +42,12 @@ export default function ResetPasswordPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Something went wrong");
+        throw new Error(data.message || t("common.somethingWentWrong"));
       }
 
       setSuccess(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -122,7 +122,7 @@ export default function ResetPasswordPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="input-field"
-                      placeholder="At least 8 characters"
+                      placeholder={t("misc.placeholderMinChars")}
                     />
                   </div>
 
@@ -137,7 +137,7 @@ export default function ResetPasswordPage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="input-field"
-                      placeholder="Re-enter your password"
+                      placeholder={t("misc.placeholderReenterPassword")}
                     />
                   </div>
 

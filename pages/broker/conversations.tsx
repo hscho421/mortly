@@ -37,11 +37,11 @@ export default function BrokerConversationsPage() {
       setIsLoading(true);
       try {
         const res = await fetch("/api/conversations");
-        if (!res.ok) throw new Error("Failed to fetch conversations");
+        if (!res.ok) throw new Error(t("errors.failedToLoadConversations"));
         const data = await res.json();
         setConversations(data);
       } catch {
-        setError("Failed to load conversations.");
+        setError(t("errors.failedToLoadConversations"));
       } finally {
         setIsLoading(false);
       }

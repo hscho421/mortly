@@ -123,13 +123,13 @@ export default function ChatPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to send message");
+        throw new Error(data.message || t("errors.failedToSendMessage"));
       }
 
       const sent: Message = await res.json();
       setMessages((prev) => [...prev, sent]);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send");
+      setError(err instanceof Error ? err.message : t("errors.failedToSend"));
       setNewMessage(body); // Restore the message on failure
     } finally {
       setSending(false);
@@ -182,7 +182,7 @@ export default function ChatPage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-semibold font-body text-forest-800 truncate">
-                {broker.user.name || "Broker"}
+                {broker.user.name || t("misc.broker")}
               </h2>
               <p className="text-body-sm truncate">
                 {broker.brokerageName}
@@ -191,7 +191,7 @@ export default function ChatPage() {
                     {" "}
                     &middot;{" "}
                     {getRequestTitle(conversation.request)}{" "}
-                    in {conversation.request.province}
+                    {t("misc.in")} {conversation.request.province}
                   </span>
                 )}
               </p>

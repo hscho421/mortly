@@ -77,10 +77,10 @@ export default function HowItWorks() {
   return (
     <Layout>
       <Head>
-        <title>How It Works — mortly</title>
+        <title>{t("meta.howItWorksTitle")}</title>
         <meta
           name="description"
-          content="Learn how mortly connects borrowers with mortgage brokers through our anonymous, privacy-first marketplace."
+          content={t("meta.howItWorksDesc")}
         />
       </Head>
 

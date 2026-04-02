@@ -113,7 +113,7 @@ export default function VerifyEmailPage() {
       setCode(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t("common.somethingWentWrong"));
     }
   };
 

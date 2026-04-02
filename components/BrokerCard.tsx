@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "next-i18next";
 
 interface BrokerCardProps {
   introduction: {
@@ -56,6 +57,7 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) {
+  const { t } = useTranslation("common");
   const { broker } = introduction;
   const specialties = broker.specialties
     ? broker.specialties.split(",").map((s) => s.trim())
@@ -69,7 +71,7 @@ export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) 
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={broker.profilePhoto}
-            alt={broker.user.name || "Broker"}
+            alt={broker.user.name || t("misc.broker")}
             className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl object-cover ring-2 ring-cream-200"
           />
         ) : (
@@ -83,7 +85,7 @@ export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) 
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h3 className="font-display text-lg text-forest-800">
-              {broker.user.name || "Broker"}
+              {broker.user.name || t("misc.broker")}
             </h3>
             {broker.verificationStatus === "VERIFIED" && (
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100">
@@ -96,16 +98,16 @@ export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) 
           <p className="font-body text-sm text-sage-500">{broker.brokerageName}</p>
           {broker.yearsExperience != null && (
             <p className="font-body text-xs text-sage-400">
-              {broker.yearsExperience} {broker.yearsExperience === 1 ? "year" : "years"} experience
+              {t("brokerCard.yearsExperience_other", { count: broker.yearsExperience })}
             </p>
           )}
           {broker.mortgageCategory && (
             <span className="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 font-body text-[11px] font-medium text-amber-700">
               {broker.mortgageCategory === "RESIDENTIAL"
-                ? "Residential"
+                ? t("brokerCard.residential")
                 : broker.mortgageCategory === "COMMERCIAL"
-                  ? "Commercial"
-                  : "Residential & Commercial"}
+                  ? t("brokerCard.commercial")
+                  : t("brokerCard.residentialCommercial")}
             </span>
           )}
         </div>
@@ -134,13 +136,13 @@ export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) 
 
       {/* How they can help */}
       <div className="mt-5 rounded-xl bg-cream-50 p-4">
-        <h4 className="font-body text-xs font-semibold uppercase tracking-wider text-sage-500">How I Can Help</h4>
+        <h4 className="font-body text-xs font-semibold uppercase tracking-wider text-sage-500">{t("brokerCard.howICanHelp")}</h4>
         <p className="mt-2 font-body text-sm leading-relaxed text-forest-700">{introduction.howCanHelp}</p>
       </div>
 
       {/* Personal message */}
       <div className="mt-4">
-        <h4 className="font-body text-xs font-semibold uppercase tracking-wider text-sage-500">Personal Message</h4>
+        <h4 className="font-body text-xs font-semibold uppercase tracking-wider text-sage-500">{t("brokerCard.personalMessage")}</h4>
         <p className="mt-2 font-body text-sm italic leading-relaxed text-forest-700/80">
           &ldquo;{introduction.personalMessage}&rdquo;
         </p>
@@ -152,7 +154,7 @@ export default function BrokerCard({ introduction, onSelect }: BrokerCardProps) 
         onClick={() => onSelect(introduction.id)}
         className="btn-primary mt-6 w-full"
       >
-        Select This Broker
+        {t("brokerCard.selectThisBroker")}
       </button>
     </div>
   );

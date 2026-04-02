@@ -25,12 +25,12 @@ export default function ForgotPasswordPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Something went wrong");
+        throw new Error(data.message || t("common.somethingWentWrong"));
       }
 
       setSubmitted(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="input-field"
-                      placeholder="you@example.com"
+                      placeholder={t("misc.placeholderEmail")}
                     />
                   </div>
 

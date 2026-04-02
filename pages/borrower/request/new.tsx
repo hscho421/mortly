@@ -44,7 +44,7 @@ export default function NewRequestPage() {
 
     if (!res.ok) {
       const json = await res.json();
-      throw new Error(json.error || "Failed to submit request");
+      throw new Error(json.error || t("errors.failedToSubmitRequest"));
     }
 
     const created = await res.json();

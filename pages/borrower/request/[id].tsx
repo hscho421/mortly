@@ -101,7 +101,7 @@ export default function RequestDetail() {
 
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      throw new Error(json.error || "Failed to update request");
+      throw new Error(json.error || t("errors.failedToUpdateRequest"));
     }
 
     const updated = await res.json();
@@ -122,12 +122,12 @@ export default function RequestDetail() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to delete request");
+        throw new Error(data.error || t("errors.failedToDeleteRequest"));
       }
 
       router.push("/borrower/dashboard", undefined, { locale: router.locale });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
       setShowDeleteModal(false);
       setDeleting(false);
     }
@@ -195,7 +195,7 @@ export default function RequestDetail() {
               <StatusBadge status={request.status} />
             </div>
             <p className="text-body-sm">
-              Created {formatDate(request.createdAt)}
+              {t("misc.created", { date: formatDate(request.createdAt) })}
             </p>
           </div>
 

@@ -335,7 +335,7 @@ export default function Navbar() {
             className="inline-flex items-center justify-center rounded-lg p-2 text-forest-600 transition-colors hover:bg-cream-200 md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-expanded={mobileOpen}
-            aria-label="Toggle navigation menu"
+            aria-label={t("misc.toggleNav")}
           >
             <div className="relative w-5 h-4 flex flex-col justify-between">
               <span className={`block h-[1.5px] w-full bg-current rounded-full transition-all duration-300 origin-center ${mobileOpen ? "rotate-45 translate-y-[7.25px]" : ""}`} />
@@ -374,7 +374,7 @@ export default function Navbar() {
 
           {/* Mobile language switcher */}
           <div className="flex items-center gap-1 px-3 py-1.5">
-            <span className="text-[11px] font-body text-forest-500/60 font-medium tracking-wide uppercase mr-2">Lang</span>
+            <span className="text-[11px] font-body text-forest-500/60 font-medium tracking-wide uppercase mr-2">{t("misc.language")}</span>
             <div className="flex items-center rounded-full bg-cream-200/80 p-0.5">
               <button
                 onClick={() => { switchLocale("ko"); setMobileOpen(false); }}

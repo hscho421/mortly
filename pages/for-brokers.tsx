@@ -55,10 +55,10 @@ export default function ForBrokers() {
   return (
     <Layout>
       <Head>
-        <title>For Brokers — Grow Your Mortgage Business | mortly</title>
+        <title>{t("meta.forBrokersTitle")}</title>
         <meta
           name="description"
-          content="Join mortly to connect with qualified borrowers actively seeking mortgage brokers. Merit-based, transparent, and cost-effective."
+          content={t("meta.forBrokersDesc")}
         />
       </Head>
 

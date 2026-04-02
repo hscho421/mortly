@@ -60,11 +60,11 @@ export default function BrokerComparison() {
       const res = await fetch(
         `/api/introductions?requestId=${requestId}`
       );
-      if (!res.ok) throw new Error("Failed to fetch introductions");
+      if (!res.ok) throw new Error(t("errors.failedToFetchIntroductions"));
       const data = await res.json();
       setIntroductions(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -91,13 +91,13 @@ export default function BrokerComparison() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to create conversation");
+        throw new Error(data.message || t("errors.failedToCreateConversation"));
       }
 
       const data = await res.json();
       router.push(`/borrower/messages?id=${data.id}`, undefined, { locale: router.locale });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
       setSelectingId(null);
     }
   }
@@ -191,7 +191,7 @@ export default function BrokerComparison() {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="text-base font-semibold font-body text-forest-800">
-                            {broker.user.name || "Broker"}
+                            {broker.user.name || t("misc.broker")}
                           </h3>
                           {broker.verificationStatus === "VERIFIED" && (
                             <span className="inline-flex items-center gap-1 text-xs text-forest-700 bg-forest-100 px-2 py-0.5 rounded-full font-medium font-body">
@@ -216,7 +216,7 @@ export default function BrokerComparison() {
                         <div className="flex items-center gap-4 mt-1 text-xs font-body text-sage-400">
                           {broker.yearsExperience != null && (
                             <span>
-                              {broker.yearsExperience} years experience
+                              {t("brokerCard.yearsExperience_other", { count: broker.yearsExperience })}
                             </span>
                           )}
                         </div>

@@ -76,12 +76,12 @@ export default function BrokerChatPage() {
     if (!id) return;
     try {
       const res = await fetch(`/api/conversations/${id}`);
-      if (!res.ok) throw new Error("Failed to load conversation");
+      if (!res.ok) throw new Error(t("errors.failedToLoadConversation"));
       const data: ConversationData = await res.json();
       setConversation(data);
       setMessages(data.messages);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
@@ -144,7 +144,8 @@ export default function BrokerChatPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || data.message || "Failed to send message");
+        throw new Error(data.error || data.message || t("errors.failedToSendMessage"));
+
       }
 
       const sent = await res.json();
@@ -153,7 +154,7 @@ export default function BrokerChatPage() {
         { ...sent, sender: { id: session!.user.id, name: session!.user.name, email: session!.user.email, role: "BROKER" } },
       ]);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send");
+      setError(err instanceof Error ? err.message : t("errors.failedToSend"));
       setNewMessage(body);
     } finally {
       setSending(false);

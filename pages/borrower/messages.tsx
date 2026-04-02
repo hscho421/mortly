@@ -55,12 +55,12 @@ function formatDate(date: string) {
   });
 }
 
-function relativeTime(date: string) {
+function relativeTime(date: string, justNowLabel = "Just now") {
   const now = new Date();
   const then = new Date(date);
   const diffMs = now.getTime() - then.getTime();
   const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "Just now";
+  if (diffMin < 1) return justNowLabel;
   if (diffMin < 60) return `${diffMin}m`;
   const diffHr = Math.floor(diffMin / 60);
   if (diffHr < 24) return `${diffHr}h`;
@@ -122,11 +122,11 @@ export default function BorrowerMessagesPage() {
   const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch("/api/conversations");
-      if (!res.ok) throw new Error("Failed to load conversations");
+      if (!res.ok) throw new Error(t("errors.failedToLoadConversations"));
       const data: ConversationListItem[] = await res.json();
       setConversations(data);
     } catch {
-      setError("Failed to load conversations.");
+      setError(t("errors.failedToLoadConversations"));
     } finally {
       setListLoading(false);
     }
@@ -143,12 +143,12 @@ export default function BorrowerMessagesPage() {
     setChatLoading(true);
     try {
       const res = await fetch(`/api/conversations/${id}`);
-      if (!res.ok) throw new Error("Failed to load conversation");
+      if (!res.ok) throw new Error(t("errors.failedToLoadConversation"));
       const data: ConversationWithParticipants = await res.json();
       setConversation(data);
       setMessages(data.messages);
     } catch {
-      setError("Failed to load conversation.");
+      setError(t("errors.failedToLoadConversation"));
     } finally {
       setChatLoading(false);
     }
@@ -250,13 +250,13 @@ export default function BorrowerMessagesPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to send message");
+        throw new Error(data.message || t("errors.failedToSendMessage"));
       }
 
       // Message will be added via Supabase Realtime — no need to add here
       await res.json();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send");
+      setError(err instanceof Error ? err.message : t("errors.failedToSend"));
       setNewMessage(body);
     } finally {
       setSending(false);
@@ -272,13 +272,13 @@ export default function BorrowerMessagesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "CLOSED" }),
       });
-      if (!res.ok) throw new Error("Failed to close conversation");
+      if (!res.ok) throw new Error(t("errors.failedToCloseConversation"));
       setShowCloseConfirm(false);
       // refresh both
       fetchActiveConversation(activeId);
       fetchConversations();
     } catch {
-      setError("Failed to close conversation.");
+      setError(t("errors.failedToCloseConversation"));
       setShowCloseConfirm(false);
     }
   }
@@ -292,7 +292,7 @@ export default function BorrowerMessagesPage() {
           className="flex items-center justify-center"
           style={{ height: "calc(100vh - 80px)" }}
         >
-          <p className="text-body-sm">Loading messages...</p>
+          <p className="text-body-sm">{t("chat.loadingMessages")}</p>
         </div>
       </>
     );
@@ -358,7 +358,7 @@ export default function BorrowerMessagesPage() {
               onClick={() => setError("")}
               className="ml-3 underline text-red-600 font-medium"
             >
-              Dismiss
+              {t("misc.dismiss")}
             </button>
           </p>
         </div>
@@ -447,7 +447,7 @@ export default function BorrowerMessagesPage() {
                           </span>
                           {lastMsg && (
                             <span className={`text-[11px] font-body shrink-0 ${hasUnread ? "text-amber-600 font-semibold" : "text-sage-400"}`}>
-                              {relativeTime(lastMsg.createdAt)}
+                              {relativeTime(lastMsg.createdAt, t("chat.justNow"))}
                             </span>
                           )}
                         </div>
@@ -471,7 +471,7 @@ export default function BorrowerMessagesPage() {
                         {/* Last message preview */}
                         {lastMsg && (
                           <p className={`text-body-sm truncate ${hasUnread ? "text-forest-700 font-medium" : "text-sage-500"}`}>
-                            {lastMsg.senderId === userId ? "You: " : ""}
+                            {lastMsg.senderId === userId ? t("chat.youPrefix") : ""}
                             {lastMsg.body}
                           </p>
                         )}
@@ -515,7 +515,7 @@ export default function BorrowerMessagesPage() {
             </div>
           ) : chatLoading ? (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-body-sm">Loading conversation...</p>
+              <p className="text-body-sm">{t("chat.loadingConversation")}</p>
             </div>
           ) : conversation ? (
             <>
@@ -526,7 +526,7 @@ export default function BorrowerMessagesPage() {
                   <button
                     onClick={() => setMobileShowChat(false)}
                     className="md:hidden shrink-0 rounded-lg p-1.5 text-forest-600 hover:bg-cream-200 transition-colors"
-                    aria-label="Back to conversations"
+                    aria-label={t("chat.backToConversations")}
                   >
                     <svg
                       className="h-5 w-5"
@@ -554,7 +554,7 @@ export default function BorrowerMessagesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h2 className="font-body text-sm font-semibold text-forest-800 truncate">
-                        {conversation.broker.user.name || "Broker"}
+                        {conversation.broker.user.name || t("misc.broker")}
                       </h2>
                       {conversation.broker.verificationStatus === "VERIFIED" && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] text-forest-700 bg-forest-100 px-2 py-0.5 rounded-full font-medium font-body shrink-0">

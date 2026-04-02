@@ -141,10 +141,10 @@ export default function Pricing() {
   return (
     <Layout>
       <Head>
-        <title>Pricing — mortly</title>
+        <title>{t("meta.pricingTitle")}</title>
         <meta
           name="description"
-          content="Simple, transparent pricing for mortgage brokers. Choose the mortly plan that fits your business."
+          content={t("meta.pricingDesc")}
         />
       </Head>
 
@@ -195,7 +195,7 @@ export default function Pricing() {
                         {tier.originalPrice}
                       </span>
                       <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold font-body bg-rose-500 text-white">
-                        {tier.discount} OFF
+                        {tier.discount} {t("misc.off")}
                       </span>
                     </div>
                   )}

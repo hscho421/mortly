@@ -1464,5 +1464,86 @@
   "borrowerChat": {
     "failedToLoad": "대화를 불러오지 못했습니다",
     "somethingWentWrong": "문제가 발생했습니다"
+  },
+  "meta": {
+    "aboutDesc": "mortly는 캐나다 모기지 신청인과 면허를 보유한 모기지 브로커를 연결하는 프라이버시 중심 마켓플레이스입니다.",
+    "howItWorksTitle": "이용 방법 — mortly",
+    "howItWorksDesc": "mortly가 어떻게 익명으로 안전하게 모기지 신청인과 브로커를 연결하는지 알아보세요.",
+    "forBrokersTitle": "브로커 안내 — mortly로 모기지 비즈니스 성장",
+    "forBrokersDesc": "mortly에 가입하여 모기지 브로커를 찾고 있는 고객과 연결하세요. 실력 기반, 투명하고 합리적인 비용.",
+    "forBorrowersTitle": "모기지 신청인 안내 — 나에게 맞는 브로커 찾기 | mortly",
+    "forBorrowersDesc": "무료로 나에게 맞는 모기지 브로커를 찾으세요. 익명으로 요청을 제출하고, 면허 브로커의 소개를 받고, 가장 적합한 브로커를 선택하세요.",
+    "pricingTitle": "요금제 — mortly",
+    "pricingDesc": "모기지 브로커를 위한 간단하고 투명한 요금제. 비즈니스에 맞는 mortly 플랜을 선택하세요."
+  },
+  "errors": {
+    "failedToLoadConversations": "대화 목록을 불러오지 못했습니다.",
+    "failedToLoadConversation": "대화를 불러오지 못했습니다.",
+    "failedToSendMessage": "메시지 전송에 실패했습니다",
+    "failedToSend": "전송 실패",
+    "failedToCloseConversation": "대화 종료에 실패했습니다.",
+    "failedToSubmitRequest": "요청 제출에 실패했습니다",
+    "failedToUpdateRequest": "요청 수정에 실패했습니다",
+    "failedToDeleteRequest": "요청 삭제에 실패했습니다",
+    "failedToFetchIntroductions": "소개를 불러오지 못했습니다",
+    "failedToCreateConversation": "대화 생성에 실패했습니다"
+  },
+  "chat": {
+    "justNow": "방금",
+    "youPrefix": "나: ",
+    "loadingMessages": "메시지 로딩 중...",
+    "loadingConversation": "대화 로딩 중...",
+    "backToConversations": "대화 목록으로"
+  },
+  "brokerCard": {
+    "yearsExperience_one": "경력 {{count}}년",
+    "yearsExperience_other": "경력 {{count}}년",
+    "residential": "주거용",
+    "commercial": "상업용",
+    "residentialCommercial": "주거용 & 상업용",
+    "howICanHelp": "제가 도와드릴 수 있는 점",
+    "personalMessage": "개인 메시지",
+    "selectThisBroker": "이 브로커 선택"
+  },
+  "statusLabel": {
+    "OPEN": "진행중",
+    "ACTIVE": "활성",
+    "VERIFIED": "인증됨",
+    "RESOLVED": "해결됨",
+    "IN_PROGRESS": "진행중",
+    "PENDING": "대기중",
+    "PENDING_APPROVAL": "승인 대기",
+    "NOT_SURE": "잘 모름",
+    "CLOSED": "종료",
+    "EXPIRED": "만료",
+    "CANCELLED": "취소됨",
+    "DISMISSED": "기각됨",
+    "REJECTED": "거절됨",
+    "REVIEWED": "검토됨"
+  },
+  "misc": {
+    "off": "할인",
+    "dismiss": "닫기",
+    "broker": "브로커",
+    "in": "",
+    "created": "작성일: {{date}}",
+    "backToTop": "맨 위로",
+    "toggleNav": "메뉴 열기/닫기",
+    "language": "언어",
+    "placeholderEmail": "you@example.com",
+    "placeholderMinChars": "8자 이상 입력하세요",
+    "placeholderReenterPassword": "비밀번호를 다시 입력하세요",
+    "posted": "등록일: {{date}}",
+    "brokerResponses": "브로커 응답 {{count}}건",
+    "requestNotFound": "요청을 찾을 수 없습니다."
+  },
+  "onboarding": {
+    "placeholderBrokerage": "예: 메이플 모기지 그룹",
+    "placeholderLicense": "예: M12345678",
+    "placeholderPhone": "(416) 555-1234",
+    "placeholderBio": "본인 소개와 경력에 대해 작성해주세요...",
+    "placeholderYears": "예: 10",
+    "placeholderAreas": "예: 토론토, 해밀턴, 나이아가라",
+    "placeholderSpecialties": "예: 첫 주택 구매자, 자영업자, 재융자"
   }
 }

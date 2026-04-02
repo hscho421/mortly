@@ -43,7 +43,7 @@ export default function About() {
         <title>{`${t("about.title")} — mortly`}</title>
         <meta
           name="description"
-          content="mortly is a privacy-first mortgage marketplace connecting Canadian borrowers with licensed mortgage brokers."
+          content={t("meta.aboutDesc")}
         />
       </Head>
 

@@ -42,11 +42,11 @@ export default function BrokerRequestDetailPage() {
       setIsLoading(true);
       try {
         const res = await fetch(`/api/requests/${id}`);
-        if (!res.ok) throw new Error("Failed to fetch request");
+        if (!res.ok) throw new Error(t("common.failedToLoad"));
         const data = await res.json();
         setRequest(data);
       } catch {
-        setError("Failed to load request details.");
+        setError(t("common.failedToLoad"));
       } finally {
         setIsLoading(false);
       }
@@ -88,7 +88,7 @@ export default function BrokerRequestDetailPage() {
       <Layout>
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="rounded-xl bg-red-50 border border-red-200 p-4">
-            <p className="font-body text-sm text-red-700">{error || "Request not found."}</p>
+            <p className="font-body text-sm text-red-700">{error || t("misc.requestNotFound")}</p>
           </div>
           <Link
             href="/broker/requests"
@@ -140,7 +140,7 @@ export default function BrokerRequestDetailPage() {
                 : t("request.residential")}
             </span>
             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${statusColors[request.status] || "bg-sage-100 text-sage-700"}`}>
-              {request.status}
+              {t(`statusLabel.${request.status}`, request.status)}
             </span>
           </div>
 
@@ -151,8 +151,8 @@ export default function BrokerRequestDetailPage() {
             <ReportButton targetType="REQUEST" targetId={request.publicId} />
           </div>
           <p className="text-body-sm mb-8">
-            Posted {formatDate(request.createdAt as unknown as string)} &middot;{" "}
-            {request._count?.introductions ?? 0} broker response(s)
+            {t("misc.posted", { date: formatDate(request.createdAt as unknown as string) })} &middot;{" "}
+            {t("misc.brokerResponses", { count: request._count?.introductions ?? 0 })}
           </p>
 
           <hr className="divider mb-8" />

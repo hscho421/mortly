@@ -38,11 +38,11 @@ export default function NewIntroductionPage() {
       setIsLoadingRequest(true);
       try {
         const res = await fetch(`/api/requests/${requestId}`);
-        if (!res.ok) throw new Error("Failed to fetch request");
+        if (!res.ok) throw new Error(t("common.failedToLoad"));
         const data = await res.json();
         setRequest(data);
       } catch {
-        setError("Failed to load request details.");
+        setError(t("common.failedToLoad"));
       } finally {
         setIsLoadingRequest(false);
       }
@@ -108,14 +108,14 @@ export default function NewIntroductionPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || data.message || "Failed to submit introduction.");
+        setError(data.error || data.message || t("common.somethingWentWrong"));
         setIsSubmitting(false);
         return;
       }
 
       router.push("/broker/requests", undefined, { locale: router.locale });
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError(t("common.unexpectedError"));
       setIsSubmitting(false);
     }
   };

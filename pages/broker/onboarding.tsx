@@ -91,14 +91,14 @@ export default function BrokerOnboardingPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.message || "Failed to create profile. Please try again.");
+        setError(data.message || t("common.somethingWentWrong"));
         setIsSubmitting(false);
         return;
       }
 
       router.push("/broker/dashboard", undefined, { locale: router.locale });
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError(t("common.unexpectedError"));
       setIsSubmitting(false);
     }
   };
@@ -138,7 +138,7 @@ export default function BrokerOnboardingPage() {
               value={form.brokerageName}
               onChange={handleChange}
               className="input-field"
-              placeholder="e.g. Maple Mortgage Group"
+              placeholder={t("onboarding.placeholderBrokerage")}
             />
           </div>
 
@@ -175,7 +175,7 @@ export default function BrokerOnboardingPage() {
               value={form.licenseNumber}
               onChange={handleChange}
               className="input-field"
-              placeholder="e.g. M12345678"
+              placeholder={t("onboarding.placeholderLicense")}
             />
           </div>
 
@@ -195,7 +195,7 @@ export default function BrokerOnboardingPage() {
                 value={form.phone}
                 onChange={handleChange}
                 className="input-field !rounded-l-none"
-                placeholder="(416) 555-1234"
+                placeholder={t("onboarding.placeholderPhone")}
               />
             </div>
           </div>
@@ -246,7 +246,7 @@ export default function BrokerOnboardingPage() {
               value={form.bio || ""}
               onChange={handleChange}
               className="input-field resize-none"
-              placeholder="Tell borrowers about yourself and your experience..."
+              placeholder={t("onboarding.placeholderBio")}
             />
           </div>
 
@@ -263,7 +263,7 @@ export default function BrokerOnboardingPage() {
               value={form.yearsExperience ?? ""}
               onChange={handleChange}
               className="input-field"
-              placeholder="e.g. 10"
+              placeholder={t("onboarding.placeholderYears")}
             />
           </div>
 
@@ -278,7 +278,7 @@ export default function BrokerOnboardingPage() {
               value={form.areasServed || ""}
               onChange={handleChange}
               className="input-field"
-              placeholder="e.g. Greater Toronto Area, Hamilton, Niagara"
+              placeholder={t("onboarding.placeholderAreas")}
             />
           </div>
 
@@ -293,7 +293,7 @@ export default function BrokerOnboardingPage() {
               value={form.specialties || ""}
               onChange={handleChange}
               className="input-field"
-              placeholder="e.g. First-time buyers, Self-employed, Refinancing"
+              placeholder={t("onboarding.placeholderSpecialties")}
             />
           </div>
 

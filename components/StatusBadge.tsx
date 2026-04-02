@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "next-i18next";
 
 interface StatusBadgeProps {
   status: string;
@@ -30,13 +31,31 @@ const VARIANT_COLORS: Record<string, string> = {
   neutral: "bg-cream-300/50 text-forest-600 ring-cream-400/30",
 };
 
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  OPEN: "statusLabel.OPEN",
+  ACTIVE: "statusLabel.ACTIVE",
+  VERIFIED: "statusLabel.VERIFIED",
+  RESOLVED: "statusLabel.RESOLVED",
+  IN_PROGRESS: "statusLabel.IN_PROGRESS",
+  PENDING: "statusLabel.PENDING",
+  PENDING_APPROVAL: "statusLabel.PENDING_APPROVAL",
+  NOT_SURE: "statusLabel.NOT_SURE",
+  CLOSED: "statusLabel.CLOSED",
+  EXPIRED: "statusLabel.EXPIRED",
+  CANCELLED: "statusLabel.CANCELLED",
+  DISMISSED: "statusLabel.DISMISSED",
+  REJECTED: "statusLabel.REJECTED",
+  REVIEWED: "statusLabel.REVIEWED",
+};
+
 export default function StatusBadge({ status, variant }: StatusBadgeProps) {
+  const { t } = useTranslation("common");
   const colorClass =
     (variant && VARIANT_COLORS[variant]) ||
     STATUS_COLORS[status] ||
     "bg-cream-300/50 text-forest-600 ring-cream-400/30";
 
-  const label = status.replace(/_/g, " ");
+  const label = STATUS_LABEL_KEYS[status] ? t(STATUS_LABEL_KEYS[status]) : status.replace(/_/g, " ");
 
   return (
     <span

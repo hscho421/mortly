@@ -102,11 +102,11 @@ export default function BrokerMessagesPage() {
   const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch("/api/conversations");
-      if (!res.ok) throw new Error("Failed to fetch conversations");
+      if (!res.ok) throw new Error(t("errors.failedToLoadConversations"));
       const data: ConversationListItem[] = await res.json();
       setConversations(data);
     } catch {
-      setError("Failed to load conversations.");
+      setError(t("errors.failedToLoadConversations"));
     } finally {
       setLoadingList(false);
     }
@@ -122,12 +122,12 @@ export default function BrokerMessagesPage() {
   const fetchActiveConversation = useCallback(async (convId: string) => {
     try {
       const res = await fetch(`/api/conversations/${convId}`);
-      if (!res.ok) throw new Error("Failed to load conversation");
+      if (!res.ok) throw new Error(t("errors.failedToLoadConversation"));
       const data: FullConversation = await res.json();
       setActiveConversation(data);
       setMessages(data.messages);
     } catch {
-      setError("Failed to load conversation.");
+      setError(t("errors.failedToLoadConversation"));
     } finally {
       setLoadingChat(false);
     }
@@ -221,13 +221,13 @@ export default function BrokerMessagesPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to send message");
+        throw new Error(data.message || t("errors.failedToSendMessage"));
       }
 
       // Message will be added via Supabase Realtime — no need to add here
       await res.json();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to send");
+      setError(err instanceof Error ? err.message : t("errors.failedToSend"));
       setNewMessage(body);
     } finally {
       setSending(false);
@@ -439,7 +439,7 @@ export default function BrokerMessagesPage() {
                       setMessages([]);
                     }}
                     className="md:hidden shrink-0 rounded-lg p-1.5 text-forest-600 transition-colors hover:bg-cream-200"
-                    aria-label="Back to conversations"
+                    aria-label={t("chat.backToConversations")}
                   >
                     <svg
                       className="h-5 w-5"

@@ -1199,6 +1199,7 @@
     "badge": "Pricing",
     "title": "Simple, Transparent Pricing",
     "subtitle": "No hidden fees. No long-term contracts. Choose the plan that matches your business goals and scale as you grow.",
+    "subtitle2": "Choose a plan that fits your business goals and scale up as you grow.",
     "mostPopular": "Most Popular",
     "perMonth": "/mo",
     "freeName": "Free",
@@ -1463,5 +1464,86 @@
   "borrowerChat": {
     "failedToLoad": "Failed to load conversation",
     "somethingWentWrong": "Something went wrong"
+  },
+  "meta": {
+    "aboutDesc": "mortly is a privacy-first mortgage marketplace connecting Canadian borrowers with licensed mortgage brokers.",
+    "howItWorksTitle": "How It Works — mortly",
+    "howItWorksDesc": "Learn how mortly connects borrowers with mortgage brokers through our anonymous, privacy-first marketplace.",
+    "forBrokersTitle": "For Brokers — Grow Your Mortgage Business | mortly",
+    "forBrokersDesc": "Join mortly to connect with qualified borrowers actively seeking mortgage brokers. Merit-based, transparent, and cost-effective.",
+    "forBorrowersTitle": "For Borrowers — Find the Right Mortgage Broker | mortly",
+    "forBorrowersDesc": "Find the right mortgage broker for free. Submit an anonymous request, receive introductions from licensed brokers, and choose the best fit — no obligation.",
+    "pricingTitle": "Pricing — mortly",
+    "pricingDesc": "Simple, transparent pricing for mortgage brokers. Choose the mortly plan that fits your business."
+  },
+  "errors": {
+    "failedToLoadConversations": "Failed to load conversations.",
+    "failedToLoadConversation": "Failed to load conversation.",
+    "failedToSendMessage": "Failed to send message",
+    "failedToSend": "Failed to send",
+    "failedToCloseConversation": "Failed to close conversation.",
+    "failedToSubmitRequest": "Failed to submit request",
+    "failedToUpdateRequest": "Failed to update request",
+    "failedToDeleteRequest": "Failed to delete request",
+    "failedToFetchIntroductions": "Failed to fetch introductions",
+    "failedToCreateConversation": "Failed to create conversation"
+  },
+  "chat": {
+    "justNow": "Just now",
+    "youPrefix": "You: ",
+    "loadingMessages": "Loading messages...",
+    "loadingConversation": "Loading conversation...",
+    "backToConversations": "Back to conversations"
+  },
+  "brokerCard": {
+    "yearsExperience_one": "{{count}} year experience",
+    "yearsExperience_other": "{{count}} years experience",
+    "residential": "Residential",
+    "commercial": "Commercial",
+    "residentialCommercial": "Residential & Commercial",
+    "howICanHelp": "How I Can Help",
+    "personalMessage": "Personal Message",
+    "selectThisBroker": "Select This Broker"
+  },
+  "statusLabel": {
+    "OPEN": "Open",
+    "ACTIVE": "Active",
+    "VERIFIED": "Verified",
+    "RESOLVED": "Resolved",
+    "IN_PROGRESS": "In Progress",
+    "PENDING": "Pending",
+    "PENDING_APPROVAL": "Pending Approval",
+    "NOT_SURE": "Not Sure",
+    "CLOSED": "Closed",
+    "EXPIRED": "Expired",
+    "CANCELLED": "Cancelled",
+    "DISMISSED": "Dismissed",
+    "REJECTED": "Rejected",
+    "REVIEWED": "Reviewed"
+  },
+  "misc": {
+    "off": "OFF",
+    "dismiss": "Dismiss",
+    "broker": "Broker",
+    "in": "in",
+    "created": "Created {{date}}",
+    "backToTop": "Back to top",
+    "toggleNav": "Toggle navigation menu",
+    "language": "Lang",
+    "placeholderEmail": "you@example.com",
+    "placeholderMinChars": "At least 8 characters",
+    "placeholderReenterPassword": "Re-enter your password",
+    "posted": "Posted {{date}}",
+    "brokerResponses": "{{count}} broker response(s)",
+    "requestNotFound": "Request not found."
+  },
+  "onboarding": {
+    "placeholderBrokerage": "e.g. Maple Mortgage Group",
+    "placeholderLicense": "e.g. M12345678",
+    "placeholderPhone": "(416) 555-1234",
+    "placeholderBio": "Tell borrowers about yourself and your experience...",
+    "placeholderYears": "e.g. 10",
+    "placeholderAreas": "e.g. Greater Toronto Area, Hamilton, Niagara",
+    "placeholderSpecialties": "e.g. First-time buyers, Self-employed, Refinancing"
   }
 }

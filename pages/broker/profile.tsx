@@ -145,15 +145,15 @@ export default function BrokerProfilePage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.message || "Failed to update profile.");
+        setError(data.message || t("broker.failedToUpdateProfile"));
         setIsSaving(false);
         return;
       }
 
-      setSuccess("Profile updated successfully.");
+      setSuccess(t("broker.profileUpdated"));
       setIsSaving(false);
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setError(t("common.unexpectedError"));
       setIsSaving(false);
     }
   };
