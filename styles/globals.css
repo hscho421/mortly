@@ -8,7 +8,7 @@
   }
 
   body {
-    @apply bg-cream-100 text-forest-800 antialiased font-body;
+    @apply bg-cream-100 text-forest-800 antialiased font-body break-keep;
   }
 
   ::selection {
