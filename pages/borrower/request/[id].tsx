@@ -418,15 +418,24 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
           {(details as ResidentialDetails).incomeTypeOther && (
             <DetailRow label={t("request.incomeTypes.other")} value={(details as ResidentialDetails).incomeTypeOther || "--"} />
           )}
-          <div className="flex justify-between py-3 border-b border-cream-200">
-            <span className="text-body-sm">{t("request.annualIncome")}</span>
-            <div className="text-right">
-              {Object.entries((details as ResidentialDetails).annualIncome || {}).map(([year, amount]) => (
-                <p key={year} className="font-body text-sm text-forest-800">
-                  {year}: ${amount || "—"}
-                </p>
-              ))}
-            </div>
+          <div className="py-3 border-b border-cream-200">
+            <p className="text-body-sm mb-2">{t("request.annualIncome")}</p>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-cream-200">
+                  <th className="font-body font-medium text-sage-500 text-left py-1 pr-4">{t("request.selectYear")}</th>
+                  <th className="font-body font-medium text-sage-500 text-right py-1">{t("request.annualIncome")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries((details as ResidentialDetails).annualIncome || {}).sort(([a], [b]) => b.localeCompare(a)).map(([year, amount]) => (
+                  <tr key={year} className="border-b border-cream-100 last:border-0">
+                    <td className="font-body text-forest-800 py-1.5 pr-4">{year}</td>
+                    <td className="font-body font-medium text-forest-800 text-right py-1.5">${amount || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       ) : (
@@ -435,9 +444,35 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
             {t("request.businessInfo")}
           </h3>
           <DetailRow label={t("request.businessType")} value={(details as CommercialDetails).businessType || "--"} />
-          <DetailRow label={t("request.corporateIncome")} value={Object.entries((details as CommercialDetails).corporateAnnualIncome || {}).map(([y, v]) => `${y}: $${v}`).join(", ") || "--"} />
-          <DetailRow label={t("request.corporateExpenses")} value={Object.entries((details as CommercialDetails).corporateAnnualExpenses || {}).map(([y, v]) => `${y}: $${v}`).join(", ") || "--"} />
-          <DetailRow label={t("request.ownerNetIncome")} value={(details as CommercialDetails).ownerNetIncome || "--"} />
+          {typeof (details as CommercialDetails).corporateAnnualIncome === "object" ? (
+            <div className="py-3 border-b border-cream-200">
+              <p className="text-body-sm mb-2">{t("request.corporateFinancials")}</p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-cream-200">
+                    <th className="font-body font-medium text-sage-500 text-left py-1 pr-4">{t("request.selectYear")}</th>
+                    <th className="font-body font-medium text-sage-500 text-right py-1 px-4">{t("request.corpIncome")}</th>
+                    <th className="font-body font-medium text-sage-500 text-right py-1 pl-4">{t("request.corpExpenses")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys((details as CommercialDetails).corporateAnnualIncome || {}).sort().reverse().map((year) => (
+                    <tr key={year} className="border-b border-cream-100 last:border-0">
+                      <td className="font-body text-forest-800 py-1.5 pr-4">{year}</td>
+                      <td className="font-body font-medium text-forest-800 text-right py-1.5 px-4">${((details as CommercialDetails).corporateAnnualIncome as Record<string, string>)[year] || "—"}</td>
+                      <td className="font-body font-medium text-forest-800 text-right py-1.5 pl-4">${((details as CommercialDetails).corporateAnnualExpenses as Record<string, string> || {})[year] || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <>
+              <DetailRow label={t("request.corporateIncome")} value={`$${(details as CommercialDetails).corporateAnnualIncome}` || "--"} />
+              <DetailRow label={t("request.corporateExpenses")} value={`$${(details as CommercialDetails).corporateAnnualExpenses}` || "--"} />
+            </>
+          )}
+          <DetailRow label={t("request.ownerNetIncome")} value={(details as CommercialDetails).ownerNetIncome ? `$${(details as CommercialDetails).ownerNetIncome}` : "--"} />
         </>
       )}
 

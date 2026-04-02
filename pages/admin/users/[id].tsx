@@ -705,16 +705,24 @@ export default function AdminUserDetail() {
                       </div>
                     )}
                     {details.annualIncome && typeof details.annualIncome === "object" && (
-                      <div>
-                        <p className="label-text">{t("request.annualIncome")}</p>
-                        <div className="grid grid-cols-3 gap-2 mt-1">
-                          {Object.entries(details.annualIncome as Record<string, number>).map(([year, amount]) => (
-                            <div key={year} className="rounded-lg bg-white p-2 text-center border border-cream-200">
-                              <p className="font-body text-xs text-forest-700/60">{year}</p>
-                              <p className="font-body text-sm font-semibold text-forest-800">{formatCurrency(amount)}</p>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="col-span-3">
+                        <p className="label-text mb-2">{t("request.annualIncome")}</p>
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-cream-200">
+                              <th className="font-body font-medium text-sage-500 text-left py-1.5 pr-4">{t("request.selectYear")}</th>
+                              <th className="font-body font-medium text-sage-500 text-right py-1.5">{t("request.annualIncome")}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(details.annualIncome as Record<string, string>).sort(([a], [b]) => b.localeCompare(a)).map(([year, amount]) => (
+                              <tr key={year} className="border-b border-cream-100">
+                                <td className="font-body text-forest-800 py-1.5 pr-4">{year}</td>
+                                <td className="font-body font-medium text-forest-800 text-right py-1.5">${amount}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
@@ -736,16 +744,40 @@ export default function AdminUserDetail() {
                       </div>
                     )}
                     <div className="grid grid-cols-3 gap-4">
-                      {details.corporateAnnualIncome != null && (
-                        <div>
-                          <p className="label-text">{t("request.corporateAnnualIncome")}</p>
-                          <p className="font-body text-sm text-forest-800">{formatCurrency(details.corporateAnnualIncome as number)}</p>
-                        </div>
-                      )}
-                      {details.corporateAnnualExpenses != null && (
-                        <div>
-                          <p className="label-text">{t("request.corporateAnnualExpenses")}</p>
-                          <p className="font-body text-sm text-forest-800">{formatCurrency(details.corporateAnnualExpenses as number)}</p>
+                      {(details.corporateAnnualIncome != null || details.corporateAnnualExpenses != null) && (
+                        <div className="col-span-3">
+                          <p className="label-text mb-2">{t("request.corporateFinancials")}</p>
+                          {typeof details.corporateAnnualIncome === "object" ? (
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-cream-200">
+                                  <th className="font-body font-medium text-sage-500 text-left py-1.5 pr-4">{t("request.selectYear")}</th>
+                                  <th className="font-body font-medium text-sage-500 text-right py-1.5 px-4">{t("request.corpIncome")}</th>
+                                  <th className="font-body font-medium text-sage-500 text-right py-1.5 pl-4">{t("request.corpExpenses")}</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.keys(details.corporateAnnualIncome).sort().reverse().map((year) => (
+                                  <tr key={year} className="border-b border-cream-100">
+                                    <td className="font-body text-forest-800 py-1.5 pr-4">{year}</td>
+                                    <td className="font-body text-forest-800 text-right py-1.5 px-4">${(details.corporateAnnualIncome as Record<string, string>)[year] || "—"}</td>
+                                    <td className="font-body text-forest-800 text-right py-1.5 pl-4">${((details.corporateAnnualExpenses as Record<string, string>) || {})[year] || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="font-body text-xs text-sage-500">{t("request.corpIncome")}</p>
+                                <p className="font-body text-sm text-forest-800">${String(details.corporateAnnualIncome)}</p>
+                              </div>
+                              <div>
+                                <p className="font-body text-xs text-sage-500">{t("request.corpExpenses")}</p>
+                                <p className="font-body text-sm text-forest-800">${String(details.corporateAnnualExpenses)}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       {details.ownerNetIncome != null && (

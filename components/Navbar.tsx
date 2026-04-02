@@ -134,23 +134,25 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop center links */}
-          <div className="hidden items-center md:flex">
-            <div className="flex items-center rounded-full bg-cream-300/50 px-1 py-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`relative rounded-full px-3.5 py-1.5 font-body text-[13px] font-medium transition-all duration-200 ${
-                    isActive(link.href)
-                      ? "bg-white text-forest-800 shadow-sm"
-                      : "text-forest-600/70 hover:text-forest-800"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+          {navLinks.length > 0 && (
+            <div className="hidden items-center md:flex">
+              <div className="flex items-center rounded-full bg-cream-300/50 px-1 py-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`relative rounded-full px-3.5 py-1.5 font-body text-[13px] font-medium transition-all duration-200 ${
+                      isActive(link.href)
+                        ? "bg-white text-forest-800 shadow-sm"
+                        : "text-forest-600/70 hover:text-forest-800"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Desktop right section */}
           <div className="hidden items-center gap-1 md:flex">

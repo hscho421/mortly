@@ -186,17 +186,34 @@ export default function BrokerRequestDetailPage() {
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.businessType")}</h3>
                         <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.businessType || t("request.notSpecified")}</p>
                       </div>
-                      <div className="rounded-xl bg-cream-100 p-4">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.corporateIncome")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{Object.entries(d.corporateAnnualIncome || {}).map(([y, v]) => `${y}: $${v}`).join(", ") || t("request.notSpecified")}</p>
-                      </div>
-                      <div className="rounded-xl bg-cream-100 p-4">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.corporateExpenses")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{Object.entries(d.corporateAnnualExpenses || {}).map(([y, v]) => `${y}: $${v}`).join(", ") || t("request.notSpecified")}</p>
+                      <div className="rounded-xl bg-cream-100 p-4 col-span-full">
+                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50 mb-2">{t("request.corporateFinancials")}</h3>
+                        {typeof d.corporateAnnualIncome === "object" ? (
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-cream-200">
+                                <th className="font-body font-medium text-sage-500 text-left py-1 pr-4">{t("request.selectYear")}</th>
+                                <th className="font-body font-medium text-sage-500 text-right py-1 px-4">{t("request.corpIncome")}</th>
+                                <th className="font-body font-medium text-sage-500 text-right py-1 pl-4">{t("request.corpExpenses")}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.keys(d.corporateAnnualIncome || {}).sort().reverse().map((year) => (
+                                <tr key={year} className="border-b border-cream-100 last:border-0">
+                                  <td className="font-body text-forest-800 py-1.5 pr-4">{year}</td>
+                                  <td className="font-body font-medium text-forest-800 text-right py-1.5 px-4">${(d.corporateAnnualIncome as Record<string, string>)[year] || "—"}</td>
+                                  <td className="font-body font-medium text-forest-800 text-right py-1.5 pl-4">${((d.corporateAnnualExpenses as Record<string, string>) || {})[year] || "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        ) : (
+                          <p className="font-body text-sm text-forest-800">{t("request.notSpecified")}</p>
+                        )}
                       </div>
                       <div className="rounded-xl bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.ownerNetIncome")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.ownerNetIncome || t("request.notSpecified")}</p>
+                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.ownerNetIncome ? `$${d.ownerNetIncome}` : t("request.notSpecified")}</p>
                       </div>
                     </>
                   ) : null;
@@ -224,15 +241,24 @@ export default function BrokerRequestDetailPage() {
                         </p>
                       </div>
                       <div className="rounded-xl bg-cream-100 p-4">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.annualIncome")}</h3>
+                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50 mb-2">{t("request.annualIncome")}</h3>
                         {typeof d.annualIncome === "object" && d.annualIncome ? (
-                          <div className="mt-1 space-y-1">
-                            {Object.entries(d.annualIncome).map(([year, amount]) => (
-                              <p key={year} className="font-body text-sm font-medium text-forest-800">
-                                {year}: ${amount || "—"}
-                              </p>
-                            ))}
-                          </div>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-cream-200">
+                                <th className="font-body font-medium text-sage-500 text-left py-1 pr-4">{t("request.selectYear")}</th>
+                                <th className="font-body font-medium text-sage-500 text-right py-1">{t("request.annualIncome")}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(d.annualIncome).sort(([a], [b]) => b.localeCompare(a)).map(([year, amount]) => (
+                                <tr key={year} className="border-b border-cream-100 last:border-0">
+                                  <td className="font-body text-forest-800 py-1.5 pr-4">{year}</td>
+                                  <td className="font-body font-medium text-forest-800 text-right py-1.5">${amount || "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         ) : (
                           <p className="mt-1 font-body text-sm font-medium text-forest-800">{(d.annualIncome as unknown as string) || t("request.notSpecified")}</p>
                         )}
