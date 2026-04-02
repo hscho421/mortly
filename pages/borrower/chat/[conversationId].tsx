@@ -6,6 +6,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
+import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
 import type { ConversationWithParticipants } from "@/types";
 import type { Message } from "@/types";
 import { getRequestTitle } from "@/lib/requestConfig";
@@ -44,6 +45,9 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+
+  const convId = typeof conversationId === "string" ? conversationId : null;
+  const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(convId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -173,6 +177,11 @@ export default function ChatPage() {
 
   return (
     <Layout>
+      {/* Chat disclaimer */}
+      {disclaimerNeeded && convId && (
+        <ChatDisclaimer conversationId={convId} onAccept={acceptDisclaimer} />
+      )}
+
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col animate-fade-in" style={{ height: "calc(100vh - 80px)" }}>
         {/* Broker info header */}
         <div className="card-elevated !p-5 mb-4 shrink-0 animate-fade-in-up stagger-1">

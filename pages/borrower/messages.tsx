@@ -12,6 +12,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { getRequestTitle } from "@/lib/requestConfig";
 import Navbar from "@/components/Navbar";
+import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
 import { supabase } from "@/lib/supabase";
 import type { ConversationWithParticipants } from "@/types";
 import type { Message } from "@/types";
@@ -103,6 +104,8 @@ export default function BorrowerMessagesPage() {
   const [error, setError] = useState("");
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+
+  const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(activeId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -322,6 +325,11 @@ export default function BorrowerMessagesPage() {
   return (
     <>
       <Navbar />
+
+      {/* Chat disclaimer */}
+      {disclaimerNeeded && activeId && (
+        <ChatDisclaimer conversationId={activeId} onAccept={acceptDisclaimer} />
+      )}
 
       {/* Confirmation dialog */}
       {showCloseConfirm && (

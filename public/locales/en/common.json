@@ -313,7 +313,10 @@
     "loading": "Loading conversation...",
     "notFound": "Conversation not found.",
     "privacyReminder": "You can share your contact information when you're ready. Your identity remains private until you choose to share it.",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "disclaimerTitle": "Before You Begin",
+    "disclaimerBody": "Mortly is a marketplace platform that connects those exploring mortgage options with mortgage professionals.\nConsultations provided here are offered independently by each mortgage professional.\nAs Mortly is not a party to the consultation, we do not assume responsibility for the content or outcomes of individual consultations.",
+    "disclaimerAccept": "I Understand"
   },
   "broker": {
     "dashboard": "Dashboard",

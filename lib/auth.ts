@@ -120,9 +120,9 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
-    async jwt({ token, account }) {
-      // On initial sign-in (credentials or Google), load user from DB
-      if (account) {
+    async jwt({ token, account, trigger }) {
+      // On initial sign-in or session update (e.g. after role selection), load user from DB
+      if (account || trigger === "update") {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email! },
           select: { id: true, publicId: true, role: true, preferences: true },
