@@ -46,8 +46,8 @@ const DEFAULT_RESIDENTIAL_DETAILS: ResidentialDetails = {
 
 const DEFAULT_COMMERCIAL_DETAILS: CommercialDetails = {
   businessType: "",
-  corporateAnnualIncome: "",
-  corporateAnnualExpenses: "",
+  corporateAnnualIncome: {},
+  corporateAnnualExpenses: {},
   ownerNetIncome: "",
 };
 
@@ -82,6 +82,13 @@ export default function RequestForm({
   );
   const [incomeYear1, setIncomeYear1] = useState(existingYears[0] || "");
   const [incomeYear2, setIncomeYear2] = useState(existingYears[1] || "");
+
+  // Commercial year selectors (shared across income & expenses)
+  const existingCorpYears = Object.keys(
+    (initialValues?.details as CommercialDetails)?.corporateAnnualIncome || {}
+  );
+  const [corpYear1, setCorpYear1] = useState(existingCorpYears[0] || "");
+  const [corpYear2, setCorpYear2] = useState(existingCorpYears[1] || "");
 
   const isResidential = form.mortgageCategory === "RESIDENTIAL";
   const isCommercial = form.mortgageCategory === "COMMERCIAL";
@@ -152,6 +159,27 @@ export default function RequestForm({
     delete current[oldYear];
     current[newYear] = amount;
     updateDetails("annualIncome", current);
+  }
+
+  function updateCommercialYearField(field: "corporateAnnualIncome" | "corporateAnnualExpenses", year: string, raw: string) {
+    const digits = raw.replace(/[^0-9]/g, "");
+    const formatted = digits ? Number(digits).toLocaleString() : "";
+    const d = details as CommercialDetails;
+    const current = d[field] || {};
+    updateDetails(field, { ...current, [year]: formatted });
+  }
+
+  function changeCommercialYear(oldYear: string, newYear: string, setYear: (y: string) => void) {
+    setYear(newYear);
+    const d = details as CommercialDetails;
+    // Move both income and expense values to the new year key
+    for (const field of ["corporateAnnualIncome", "corporateAnnualExpenses"] as const) {
+      const current = { ...(d[field] || {}) };
+      const amount = current[oldYear] || "";
+      delete current[oldYear];
+      current[newYear] = amount;
+      updateDetails(field, current);
+    }
   }
 
   // ── Step validation ────────────────────────────────────────
@@ -518,7 +546,7 @@ export default function RequestForm({
             <div className="card-elevated">
               <h2 className="heading-sm mb-4">{t("request.businessInfo")}</h2>
 
-              <div className="mb-5">
+              <div className="mb-6">
                 <label htmlFor="businessType" className="label-text">
                   {t("request.businessType")}{required}
                 </label>
@@ -532,46 +560,82 @@ export default function RequestForm({
                 />
               </div>
 
-              <div className="mb-5">
-                <label htmlFor="corporateIncome" className="label-text">
-                  {t("request.corporateIncome")}
+              <div className="mb-6">
+                <label className="label-text">
+                  {t("request.corporateFinancials")}{required}
                 </label>
-                <input
-                  id="corporateIncome"
-                  type="text"
-                  value={(details as CommercialDetails).corporateAnnualIncome || ""}
-                  onChange={(e) => updateDetails("corporateAnnualIncome", e.target.value)}
-                  placeholder={t("request.corporateIncomePlaceholder")}
-                  className="input-field"
-                />
-              </div>
-
-              <div className="mb-5">
-                <label htmlFor="corporateExpenses" className="label-text">
-                  {t("request.corporateExpenses")}
-                </label>
-                <input
-                  id="corporateExpenses"
-                  type="text"
-                  value={(details as CommercialDetails).corporateAnnualExpenses || ""}
-                  onChange={(e) => updateDetails("corporateAnnualExpenses", e.target.value)}
-                  placeholder={t("request.corporateExpensesPlaceholder")}
-                  className="input-field"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                  {([
+                    { year: corpYear1, setYear: setCorpYear1, otherYear: corpYear2 },
+                    { year: corpYear2, setYear: setCorpYear2, otherYear: corpYear1 },
+                  ] as const).map(({ year, setYear, otherYear }, idx) => (
+                    <div key={idx} className="rounded-xl border border-cream-200 bg-white p-4">
+                      <select
+                        value={year}
+                        onChange={(e) => changeCommercialYear(year, e.target.value, setYear)}
+                        className="input-field mb-3 text-sm"
+                      >
+                        <option value="">{t("request.selectYear")}</option>
+                        {getYearOptions().map((y) => (
+                          <option key={y} value={y} disabled={y === otherYear}>
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="space-y-2">
+                        <div>
+                          <label className="font-body text-xs text-sage-500">{t("request.corpIncome")}</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-body text-sm text-sage-400">$</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={((details as CommercialDetails).corporateAnnualIncome || {})[year] || ""}
+                              onChange={(e) => updateCommercialYearField("corporateAnnualIncome", year, e.target.value)}
+                              placeholder="0"
+                              className="input-field pl-7"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="font-body text-xs text-sage-500">{t("request.corpExpenses")}</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-body text-sm text-sage-400">$</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={((details as CommercialDetails).corporateAnnualExpenses || {})[year] || ""}
+                              onChange={(e) => updateCommercialYearField("corporateAnnualExpenses", year, e.target.value)}
+                              placeholder="0"
+                              className="input-field pl-7"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div>
                 <label htmlFor="ownerNetIncome" className="label-text">
                   {t("request.ownerNetIncome")}
                 </label>
-                <input
-                  id="ownerNetIncome"
-                  type="text"
-                  value={(details as CommercialDetails).ownerNetIncome || ""}
-                  onChange={(e) => updateDetails("ownerNetIncome", e.target.value)}
-                  placeholder={t("request.ownerNetIncomePlaceholder")}
-                  className="input-field"
-                />
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-body text-sm text-sage-400">$</span>
+                  <input
+                    id="ownerNetIncome"
+                    type="text"
+                    inputMode="numeric"
+                    value={(details as CommercialDetails).ownerNetIncome || ""}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^0-9]/g, "");
+                      updateDetails("ownerNetIncome", digits ? Number(digits).toLocaleString() : "");
+                    }}
+                    placeholder="0"
+                    className="input-field pl-7"
+                  />
+                </div>
               </div>
             </div>
           )}

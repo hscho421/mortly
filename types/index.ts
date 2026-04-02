@@ -52,8 +52,8 @@ export interface ResidentialDetails {
 
 export interface CommercialDetails {
   businessType: string;
-  corporateAnnualIncome: string;
-  corporateAnnualExpenses: string;
+  corporateAnnualIncome: AnnualIncomeByYear;
+  corporateAnnualExpenses: AnnualIncomeByYear;
   ownerNetIncome: string;
 }
 

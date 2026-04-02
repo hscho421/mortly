@@ -183,30 +183,50 @@ export default function SignupPage() {
 
               {!roleLocked && (
                 <div className="opacity-0 animate-fade-in-up stagger-4">
-                  <label className="label-text">{t("auth.role")}</label>
-                  <div className="mt-2 grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
+                  <p className="font-body text-sm font-medium text-forest-800 mb-3">{t("auth.role")}</p>
+                  <div className="space-y-3">
+                    <label
                       onClick={() => setRole("BORROWER")}
-                      className={`rounded-xl border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3.5 cursor-pointer transition-all duration-200 ${
                         role === "BORROWER"
-                          ? "border-forest-700 bg-forest-50 text-forest-800 shadow-sm"
-                          : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
+                          ? "border-forest-700 bg-forest-50 shadow-sm"
+                          : "border-cream-300 bg-white hover:border-sage-300 hover:bg-cream-50"
                       }`}
                     >
-                      {t("auth.borrower")}
-                    </button>
-                    <button
-                      type="button"
+                      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
+                        role === "BORROWER"
+                          ? "border-forest-700 bg-forest-700"
+                          : "border-cream-400"
+                      }`}>
+                        {role === "BORROWER" && (
+                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="font-body text-sm text-forest-800 leading-snug">{t("auth.borrower")}</span>
+                    </label>
+                    <label
                       onClick={() => setRole("BROKER")}
-                      className={`rounded-xl border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
+                      className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3.5 cursor-pointer transition-all duration-200 ${
                         role === "BROKER"
-                          ? "border-forest-700 bg-forest-50 text-forest-800 shadow-sm"
-                          : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
+                          ? "border-forest-700 bg-forest-50 shadow-sm"
+                          : "border-cream-300 bg-white hover:border-sage-300 hover:bg-cream-50"
                       }`}
                     >
-                      {t("auth.broker")}
-                    </button>
+                      <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
+                        role === "BROKER"
+                          ? "border-forest-700 bg-forest-700"
+                          : "border-cream-400"
+                      }`}>
+                        {role === "BROKER" && (
+                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="font-body text-sm text-forest-800 leading-snug">{t("auth.broker")}</span>
+                    </label>
                   </div>
                 </div>
               )}

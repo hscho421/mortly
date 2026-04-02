@@ -188,11 +188,11 @@ export default function BrokerRequestDetailPage() {
                       </div>
                       <div className="rounded-xl bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.corporateIncome")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.corporateAnnualIncome || t("request.notSpecified")}</p>
+                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{Object.entries(d.corporateAnnualIncome || {}).map(([y, v]) => `${y}: $${v}`).join(", ") || t("request.notSpecified")}</p>
                       </div>
                       <div className="rounded-xl bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.corporateExpenses")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.corporateAnnualExpenses || t("request.notSpecified")}</p>
+                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{Object.entries(d.corporateAnnualExpenses || {}).map(([y, v]) => `${y}: $${v}`).join(", ") || t("request.notSpecified")}</p>
                       </div>
                       <div className="rounded-xl bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.ownerNetIncome")}</h3>

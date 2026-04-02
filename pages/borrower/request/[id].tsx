@@ -435,8 +435,8 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
             {t("request.businessInfo")}
           </h3>
           <DetailRow label={t("request.businessType")} value={(details as CommercialDetails).businessType || "--"} />
-          <DetailRow label={t("request.corporateIncome")} value={(details as CommercialDetails).corporateAnnualIncome || "--"} />
-          <DetailRow label={t("request.corporateExpenses")} value={(details as CommercialDetails).corporateAnnualExpenses || "--"} />
+          <DetailRow label={t("request.corporateIncome")} value={Object.entries((details as CommercialDetails).corporateAnnualIncome || {}).map(([y, v]) => `${y}: $${v}`).join(", ") || "--"} />
+          <DetailRow label={t("request.corporateExpenses")} value={Object.entries((details as CommercialDetails).corporateAnnualExpenses || {}).map(([y, v]) => `${y}: $${v}`).join(", ") || "--"} />
           <DetailRow label={t("request.ownerNetIncome")} value={(details as CommercialDetails).ownerNetIncome || "--"} />
         </>
       )}
