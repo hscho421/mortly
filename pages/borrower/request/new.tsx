@@ -6,6 +6,7 @@ import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import RequestForm from "@/components/RequestForm";
 import type { CreateRequestInput } from "@/types";
+import posthog from "posthog-js";
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({
   props: {
@@ -48,6 +49,10 @@ export default function NewRequestPage() {
     }
 
     const created = await res.json();
+    posthog.capture("loan_request_submitted", {
+      mortgage_category: data.mortgageCategory,
+      province: data.province,
+    });
     router.push(`/borrower/request/${created.publicId}`);
   };
 

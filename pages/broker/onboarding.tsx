@@ -6,6 +6,7 @@ import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import posthog from "posthog-js";
 
 const PROVINCES = [
   "Alberta",
@@ -96,8 +97,13 @@ export default function BrokerOnboardingPage() {
         return;
       }
 
+      posthog.capture("broker_onboarding_completed", {
+        province: form.province,
+        mortgage_category: form.mortgageCategory,
+      });
       router.push("/broker/dashboard", undefined, { locale: router.locale });
-    } catch {
+    } catch (err) {
+      posthog.captureException(err);
       setError(t("common.unexpectedError"));
       setIsSubmitting(false);
     }

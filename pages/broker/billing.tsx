@@ -5,6 +5,7 @@ import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import posthog from "posthog-js";
 
 interface PlanFeature {
   text: string;
@@ -201,6 +202,13 @@ export default function BrokerBillingPage() {
   const handleSelectPlan = async (tier: string) => {
     if (tier === currentTier || actionLoading) return;
 
+    const isDowngrade = (TIER_RANK[tier] ?? 0) < (TIER_RANK[currentTier] ?? 0);
+    posthog.capture("billing_plan_selected", {
+      selected_tier: tier,
+      current_tier: currentTier,
+      is_upgrade: !isDowngrade,
+    });
+
     // Downgrade to FREE → open portal to cancel
     if (tier === "FREE" && hasStripeSubscription) {
       handleManageSubscription();
@@ -208,7 +216,6 @@ export default function BrokerBillingPage() {
     }
 
     // Confirm downgrade via modal
-    const isDowngrade = (TIER_RANK[tier] ?? 0) < (TIER_RANK[currentTier] ?? 0);
     if (isDowngrade) {
       setDowngradeTarget(tier);
       return;
@@ -276,6 +283,7 @@ export default function BrokerBillingPage() {
 
   const handleManageSubscription = async () => {
     setActionLoading("portal");
+    posthog.capture("billing_portal_opened", { current_tier: currentTier });
     try {
       const res = await fetch("/api/stripe/create-portal", {
         method: "POST",
@@ -285,6 +293,7 @@ export default function BrokerBillingPage() {
         window.location.href = data.url;
       }
     } catch (err) {
+      posthog.captureException(err);
       console.error("Failed to open portal:", err);
     } finally {
       setActionLoading(null);

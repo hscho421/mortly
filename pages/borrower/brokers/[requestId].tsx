@@ -8,6 +8,7 @@ import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
 import ReportButton from "@/components/ReportButton";
 import type { IntroductionWithBroker } from "@/types";
+import posthog from "posthog-js";
 
 type SortOption = "fastest" | "most_experienced";
 
@@ -95,8 +96,13 @@ export default function BrokerComparison() {
       }
 
       const data = await res.json();
+      posthog.capture("broker_selected", {
+        broker_id: brokerId,
+        request_id: requestId,
+      });
       router.push(`/borrower/messages?id=${data.id}`, undefined, { locale: router.locale });
     } catch (err: unknown) {
+      posthog.captureException(err);
       setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
       setSelectingId(null);
     }

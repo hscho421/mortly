@@ -5,6 +5,7 @@ import Link from "next/link";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import posthog from "posthog-js";
 
 const ROLE_REDIRECTS: Record<string, string> = {
   BORROWER: "/borrower/dashboard",
@@ -57,10 +58,14 @@ export default function LoginPage() {
       const session = await sessionRes.json();
       const role = session?.user?.role;
 
+      posthog.identify(email, { email, role });
+      posthog.capture("user_logged_in", { role, method: "credentials" });
+
       const callbackUrl = router.query.callbackUrl as string | undefined;
       const redirectUrl = callbackUrl || ROLE_REDIRECTS[role] || "/";
       router.push(redirectUrl, undefined, { locale: router.locale });
-    } catch {
+    } catch (err) {
+      posthog.captureException(err);
       setError(t("common.unexpectedError"));
       setIsLoading(false);
     }

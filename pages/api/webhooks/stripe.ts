@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type Stripe from "stripe";
 import { getStripe, getTierForPriceId, getPriceIdForTier, getCreditsForTier } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export const config = {
   api: { bodyParser: false },
@@ -158,6 +159,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       },
     }),
   ]);
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: brokerId,
+    event: "subscription_checkout_completed",
+    properties: { tier, broker_id: brokerId },
+  });
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
@@ -227,16 +235,37 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
       },
     }),
   ]);
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: subscription.broker.id,
+    event: "subscription_renewed",
+    properties: { tier, broker_id: subscription.broker.id },
+  });
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   const stripeSubscriptionId = getInvoiceSubscriptionId(invoice);
   if (!stripeSubscriptionId) return;
 
+  const subscription = await prisma.subscription.findUnique({
+    where: { stripeSubscriptionId },
+    include: { broker: { select: { id: true } } },
+  });
+
   await prisma.subscription.update({
     where: { stripeSubscriptionId },
     data: { status: "PAST_DUE" },
   });
+
+  if (subscription) {
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: subscription.broker.id,
+      event: "subscription_payment_failed",
+      properties: { tier: subscription.tier, broker_id: subscription.broker.id },
+    });
+  }
 }
 
 async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
@@ -311,4 +340,11 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
       },
     }),
   ]);
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: subscription.broker.id,
+    event: "subscription_cancelled",
+    properties: { previous_tier: subscription.tier, broker_id: subscription.broker.id },
+  });
 }

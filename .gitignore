@@ -46,3 +46,4 @@ PROJECT.md
 
 # OS files
 Thumbs.db
+.env.local

@@ -8,6 +8,7 @@ import type { CreateIntroductionInput } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import posthog from "posthog-js";
 import { PRODUCT_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 
 export default function NewIntroductionPage() {
@@ -113,8 +114,12 @@ export default function NewIntroductionPage() {
         return;
       }
 
+      posthog.capture("broker_introduction_submitted", {
+        request_id: requestId,
+      });
       router.push("/broker/requests", undefined, { locale: router.locale });
-    } catch {
+    } catch (err) {
+      posthog.captureException(err);
       setError(t("common.unexpectedError"));
       setIsSubmitting(false);
     }

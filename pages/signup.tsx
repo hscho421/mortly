@@ -5,6 +5,7 @@ import Link from "next/link";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import posthog from "posthog-js";
 
 export default function SignupPage() {
   const { t } = useTranslation("common");
@@ -68,13 +69,17 @@ export default function SignupPage() {
         return;
       }
 
+      posthog.identify(email, { name, email, role });
+      posthog.capture("user_signed_up", { role });
+
       // Redirect to email verification page
       router.push(
         `/verify-email?email=${encodeURIComponent(email)}`,
         undefined,
         { locale: router.locale }
       );
-    } catch {
+    } catch (err) {
+      posthog.captureException(err);
       setError(t("common.unexpectedError"));
       setIsLoading(false);
     }
