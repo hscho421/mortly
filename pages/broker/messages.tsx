@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/lib/supabase";
 import { useTranslation } from "next-i18next";
@@ -237,6 +238,7 @@ export default function BrokerMessagesPage() {
   if (authStatus === "loading") {
     return (
       <>
+        <Head><title>{t("broker.messages")}</title></Head>
         <Navbar />
         <div className="flex items-center justify-center" style={{ height: "calc(100vh - 80px)" }}>
           <p className="text-body-sm">{t("common.loading")}</p>
@@ -267,6 +269,7 @@ export default function BrokerMessagesPage() {
 
   return (
     <>
+      <Head><title>{t("broker.messages")}</title></Head>
       <Navbar />
       <div
         className="flex animate-fade-in"

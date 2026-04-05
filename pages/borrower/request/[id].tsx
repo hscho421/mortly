@@ -3,6 +3,7 @@ import { GetServerSideProps } from "next";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import Head from "next/head";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
@@ -162,6 +163,7 @@ export default function RequestDetail() {
 
   return (
     <Layout>
+      <Head><title>{t("borrowerDashboard.myRequest")}</title></Head>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
         <Link
           href="/borrower/dashboard"

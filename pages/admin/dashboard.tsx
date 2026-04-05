@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import { SkeletonAdminDashboard } from "@/components/Skeleton";
 import dynamic from "next/dynamic";
@@ -242,6 +243,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
+      <Head><title>{t("admin.dashboard")}</title></Head>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-6 animate-fade-in">

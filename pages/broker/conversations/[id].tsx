@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, FormEvent } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
+import Head from "next/head";
 import Layout from "@/components/Layout";
 import type { Message } from "@/types";
 import { useTranslation } from "next-i18next";
@@ -164,6 +165,7 @@ export default function BrokerChatPage() {
   if (authStatus === "loading" || loading) {
     return (
       <Layout>
+        <Head><title>{t("broker.conversation")}</title></Head>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("messages.loading")}</p>
         </div>
@@ -178,6 +180,7 @@ export default function BrokerChatPage() {
   if (!conversation) {
     return (
       <Layout>
+        <Head><title>{t("broker.conversation")}</title></Head>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-body-sm">{t("messages.notFound")}</p>
         </div>
@@ -201,6 +204,7 @@ export default function BrokerChatPage() {
 
   return (
     <Layout>
+      <Head><title>{t("broker.conversation")}</title></Head>
       <div
         className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col animate-fade-in"
         style={{ height: "calc(100vh - 80px)" }}

@@ -1,6 +1,7 @@
 import { useState, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Layout from "@/components/Layout";
 import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
@@ -43,6 +44,7 @@ export default function BrokerOnboardingPage() {
   if (status === "loading") {
     return (
       <Layout>
+        <Head><title>{t("broker.setup")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-body-sm">{t("common.loading")}</p>
         </div>
@@ -111,6 +113,7 @@ export default function BrokerOnboardingPage() {
 
   return (
     <Layout>
+      <Head><title>{t("broker.setup")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 text-center animate-fade-in">

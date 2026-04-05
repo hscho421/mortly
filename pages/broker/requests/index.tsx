@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import type { RequestWithIntroductions } from "@/types";
@@ -79,6 +80,7 @@ export default function BrokerRequestsPage() {
   if (status === "loading") {
     return (
       <Layout>
+        <Head><title>{t("broker.browseRequests")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-body-sm">{t("common.loading")}</p>
         </div>
@@ -94,6 +96,7 @@ export default function BrokerRequestsPage() {
   if (error === "NOT_VERIFIED") {
     return (
       <Layout>
+        <Head><title>{t("broker.browseRequests")}</title></Head>
         <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="card-elevated text-center py-16 animate-fade-in-up">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
@@ -122,6 +125,7 @@ export default function BrokerRequestsPage() {
 
   return (
     <Layout>
+      <Head><title>{t("broker.browseRequests")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 animate-fade-in">
           <h1 className="heading-lg">{t("broker.browseRequests")}</h1>

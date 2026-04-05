@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
+import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import { getRequestTitle } from "@/lib/requestConfig";
 
@@ -167,6 +168,7 @@ export default function AdminConversationDetail() {
 
   return (
     <AdminLayout>
+      <Head><title>{t("admin.conversation")}</title></Head>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">

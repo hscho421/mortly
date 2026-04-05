@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { SkeletonDashboard } from "@/components/Skeleton";
@@ -141,6 +142,7 @@ export default function BrokerDashboardPage() {
   if (status === "loading" || loading) {
     return (
       <Layout>
+        <Head><title>{t("broker.dashboard")}</title></Head>
         <SkeletonDashboard />
       </Layout>
     );
@@ -153,6 +155,7 @@ export default function BrokerDashboardPage() {
   if (error) {
     return (
       <Layout>
+        <Head><title>{t("broker.dashboard")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
             <p className="text-body mb-4 text-red-600">{error}</p>
@@ -191,16 +194,6 @@ export default function BrokerDashboardPage() {
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-        </svg>
-      ),
-      accent: false,
-    },
-    {
-      label: t("broker.introsSent"),
-      value: stats.introductionsSent,
-      icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
         </svg>
       ),
       accent: false,
@@ -292,12 +285,13 @@ export default function BrokerDashboardPage() {
 
   return (
     <Layout>
+      <Head><title>{t("broker.dashboard")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
           <div>
             <h1 className="heading-lg">
-              {t("broker.welcome")}, {session.user.name || "Broker"}
+              {t("broker.welcome", { name: session.user.name || "Broker" })}
             </h1>
             <p className="text-body mt-2">
               {t("broker.dashboardSubtitle")}
@@ -389,7 +383,7 @@ export default function BrokerDashboardPage() {
         )}
 
         {/* Stats */}
-        <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {statCards.map((stat, i) => (
             <div
               key={stat.label}

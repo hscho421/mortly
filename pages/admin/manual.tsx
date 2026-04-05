@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 
 const SECTION_IDS = [
@@ -133,6 +134,7 @@ export default function AdminManual() {
 
   return (
     <AdminLayout>
+      <Head><title>{t("admin.sidebar.manual")}</title></Head>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">

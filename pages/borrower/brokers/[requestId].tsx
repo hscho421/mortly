@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
+import Head from "next/head";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
@@ -122,6 +123,7 @@ export default function BrokerComparison() {
 
   return (
     <Layout>
+      <Head><title>{t("borrowerDashboard.brokers")}</title></Head>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
         <div className="mb-8 animate-fade-in-up stagger-1">
           <h1 className="heading-lg mb-2">

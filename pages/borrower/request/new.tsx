@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
+import Head from "next/head";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
@@ -58,6 +59,7 @@ export default function NewRequestPage() {
 
   return (
     <Layout>
+      <Head><title>{t("borrowerDashboard.newRequest")}</title></Head>
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 animate-fade-in">

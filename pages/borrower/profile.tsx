@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -143,6 +144,7 @@ export default function BorrowerProfilePage() {
 
   return (
     <Layout>
+      <Head><title>{t("borrowerDashboard.profile")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 animate-fade-in">

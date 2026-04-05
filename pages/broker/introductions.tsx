@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
@@ -77,6 +78,7 @@ export default function BrokerIntroductionsPage() {
   if (status === "loading" || isLoading) {
     return (
       <Layout>
+        <Head><title>{t("broker.myIntroductions")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-body-sm">{t("common.loading")}</p>
         </div>
@@ -90,6 +92,7 @@ export default function BrokerIntroductionsPage() {
 
   return (
     <Layout>
+      <Head><title>{t("broker.myIntroductions")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 animate-fade-in">

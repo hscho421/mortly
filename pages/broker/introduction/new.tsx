@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import type { BorrowerRequest } from "@/types";
@@ -72,6 +73,7 @@ export default function NewIntroductionPage() {
   if (status === "loading") {
     return (
       <Layout>
+        <Head><title>{t("broker.newIntroduction")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-body-sm">{t("common.loading")}</p>
         </div>
@@ -127,6 +129,7 @@ export default function NewIntroductionPage() {
 
   return (
     <Layout>
+      <Head><title>{t("broker.newIntroduction")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         <Link
           href="/broker/requests"
