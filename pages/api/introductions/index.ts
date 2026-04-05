@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { generateConversationPublicId } from "@/lib/publicId";
 
 export default async function handler(
   req: NextApiRequest,
@@ -152,7 +153,7 @@ export default async function handler(
         : { id: requestId };
       const postRequest = await prisma.borrowerRequest.findUnique({
         where: postLookup,
-        select: { id: true },
+        select: { id: true, borrowerId: true },
       });
       if (!postRequest) {
         return res.status(404).json({ error: "Request not found" });
@@ -173,15 +174,38 @@ export default async function handler(
       }
 
       let introduction;
+      const convoPublicId = await generateConversationPublicId();
 
       if (isPremium) {
         // PREMIUM brokers have unlimited credits — no deduction needed
-        introduction = await prisma.brokerIntroduction.create({
-          data: {
-            requestId: internalReqId,
-            brokerId: broker.id,
-            message,
-          },
+        introduction = await prisma.$transaction(async (tx) => {
+          const intro = await tx.brokerIntroduction.create({
+            data: {
+              requestId: internalReqId,
+              brokerId: broker.id,
+              message,
+            },
+          });
+
+          // Also create conversation + first message so it appears in messages
+          const existingConvo = await tx.conversation.findUnique({
+            where: { requestId_brokerId: { requestId: internalReqId, brokerId: broker.id } },
+          });
+          if (!existingConvo) {
+            const convo = await tx.conversation.create({
+              data: {
+                publicId: convoPublicId,
+                requestId: internalReqId,
+                borrowerId: postRequest.borrowerId,
+                brokerId: broker.id,
+              },
+            });
+            await tx.message.create({
+              data: { conversationId: convo.id, senderId: session.user.id, body: message },
+            });
+          }
+
+          return intro;
         });
       } else {
         introduction = await prisma.$transaction(async (tx) => {
@@ -195,13 +219,33 @@ export default async function handler(
             throw new Error("NO_CREDITS");
           }
 
-          return tx.brokerIntroduction.create({
+          const intro = await tx.brokerIntroduction.create({
             data: {
               requestId: internalReqId,
               brokerId: broker.id,
               message,
             },
           });
+
+          // Also create conversation + first message so it appears in messages
+          const existingConvo = await tx.conversation.findUnique({
+            where: { requestId_brokerId: { requestId: internalReqId, brokerId: broker.id } },
+          });
+          if (!existingConvo) {
+            const convo = await tx.conversation.create({
+              data: {
+                publicId: convoPublicId,
+                requestId: internalReqId,
+                borrowerId: postRequest.borrowerId,
+                brokerId: broker.id,
+              },
+            });
+            await tx.message.create({
+              data: { conversationId: convo.id, senderId: session.user.id, body: message },
+            });
+          }
+
+          return intro;
         });
       }
 

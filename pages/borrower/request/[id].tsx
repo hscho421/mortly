@@ -76,7 +76,7 @@ export default function RequestDetail() {
       }
       const data = await res.json();
       setRequest(data);
-      setIntroCount(data._count?.introductions ?? data.introductions?.length ?? 0);
+      setIntroCount(data._count?.conversations ?? data.conversations?.length ?? 0);
     } catch {
       setError(t("request.failedToLoad"));
     } finally {
@@ -273,23 +273,24 @@ export default function RequestDetail() {
             hasActiveConversation={request.conversations?.some((c: { status: string }) => c.status === "ACTIVE") ?? false}
             conversationClosed={request.conversations?.some((c: { status: string }) => c.status === "CLOSED") ?? false}
           />
+
         )}
 
-        {/* Broker responses card */}
+        {/* Broker messages card */}
         <div className="card-elevated mb-8 animate-fade-in-up stagger-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-body-sm">{t("request.brokerResponses")}</p>
+              <p className="text-body-sm">{t("request.brokerMessages")}</p>
               <p className="font-display text-4xl text-forest-800 mt-1">
                 {introCount}
               </p>
             </div>
             {introCount > 0 ? (
               <Link
-                href={`/borrower/brokers/${request.publicId}`}
+                href="/borrower/messages"
                 className="btn-amber"
               >
-                {t("request.viewBrokerIntros")}
+                {t("request.viewMessages")}
               </Link>
             ) : (
               <span className="text-body-sm text-sage-400">

@@ -5,8 +5,9 @@ import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import ReportButton from "@/components/ReportButton";
-import type { RequestWithIntroductions, ResidentialDetails, CommercialDetails } from "@/types";
+import type { ResidentialDetails, CommercialDetails } from "@/types";
 import { useTranslation } from "next-i18next";
+import posthog from "posthog-js";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetStaticProps, GetStaticPaths } from "next";
@@ -26,11 +27,14 @@ export default function BrokerRequestDetailPage() {
   const { id } = router.query;
   const { t } = useTranslation("common");
 
-  const [request, setRequest] = useState<RequestWithIntroductions | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [request, setRequest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [brokerCredits, setBrokerCredits] = useState<number | null>(null);
   const [brokerTier, setBrokerTier] = useState("");
+  const [brokerProfileId, setBrokerProfileId] = useState("");
+  const [isStartingChat, setIsStartingChat] = useState(false);
 
   useEffect(() => {
     if (status === "loading" || !id) return;
@@ -60,6 +64,7 @@ export default function BrokerRequestDetailPage() {
           const data = await res.json();
           setBrokerCredits(data.responseCredits ?? 0);
           setBrokerTier(data.subscriptionTier || "");
+          setBrokerProfileId(data.id || "");
         }
       } catch {
         // ignore
@@ -69,6 +74,37 @@ export default function BrokerRequestDetailPage() {
     fetchRequest();
     fetchProfile();
   }, [session, status, router, id]);
+
+  async function handleStartConversation() {
+    if (!request || isStartingChat) return;
+    setIsStartingChat(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: request.publicId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || t("common.somethingWentWrong"));
+        setIsStartingChat(false);
+        return;
+      }
+
+      const conversation = await res.json();
+      posthog.capture("broker_conversation_started", {
+        request_id: request.publicId,
+      });
+      router.push(`/broker/messages?id=${conversation.id}`, undefined, { locale: router.locale });
+    } catch (err) {
+      posthog.captureException(err);
+      setError(t("common.unexpectedError"));
+      setIsStartingChat(false);
+    }
+  }
 
   if (status === "loading" || isLoading) {
     return (
@@ -104,11 +140,16 @@ export default function BrokerRequestDetailPage() {
     );
   }
 
-  const hasResponded = request.introductions
+  // Check if this broker already has a conversation or introduction for this request
+  const hasIntroduction = request.introductions
     ? request.introductions.some(
-        (intro) => intro.broker?.userId === session.user.id
+        (intro: { broker?: { userId: string } }) => intro.broker?.userId === session.user.id
       )
-    : (request._count?.introductions ?? 0) > 0;
+    : false;
+  const hasConversation = (request.conversations ?? []).some(
+    (conv: { brokerId: string }) => conv.brokerId === brokerProfileId
+  );
+  const hasResponded = hasIntroduction || hasConversation;
 
   const statusColors: Record<string, string> = {
     OPEN: "bg-forest-100 text-forest-700",
@@ -144,7 +185,7 @@ export default function BrokerRequestDetailPage() {
                 : t("request.residential")}
             </span>
             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${statusColors[request.status] || "bg-sage-100 text-sage-700"}`}>
-              {t(`statusLabel.${request.status}`, request.status)}
+              {t(`statusLabel.${request.status}`, request.status as string)}
             </span>
           </div>
 
@@ -167,7 +208,7 @@ export default function BrokerRequestDetailPage() {
               {t("request.selectProducts")}
             </h3>
             <div className="flex flex-wrap gap-2">
-              {(request.productTypes ?? []).map((pt) => (
+              {(request.productTypes ?? []).map((pt: string) => (
                 <span
                   key={pt}
                   className="inline-flex items-center rounded-full bg-cream-200 px-3 py-1 font-body text-sm font-medium text-forest-700"
@@ -296,9 +337,14 @@ export default function BrokerRequestDetailPage() {
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <p className="font-body text-sm font-medium text-forest-800">
-                  {t("broker.alreadySubmitted")}
-                </p>
+                <div className="flex flex-1 items-center justify-between">
+                  <p className="font-body text-sm font-medium text-forest-800">
+                    {t("broker.alreadyMessaged")}
+                  </p>
+                  <Link href="/broker/messages" className="btn-secondary !py-2 !px-4 !text-xs">
+                    {t("broker.goToMessages")}
+                  </Link>
+                </div>
               </div>
             </div>
           ) : (brokerTier === "BASIC" || brokerTier === "PRO") && brokerCredits === 0 ? (
@@ -310,7 +356,7 @@ export default function BrokerRequestDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                     </svg>
                   </div>
-                  <p className="font-body text-sm font-medium text-forest-800">{t("credits.noCreditsIntro")}</p>
+                  <p className="font-body text-sm font-medium text-forest-800">{t("credits.noCreditsMessage")}</p>
                 </div>
                 <Link href="/broker/billing" className="btn-amber shrink-0 text-center">
                   {t("credits.upgradePlan")}
@@ -318,12 +364,13 @@ export default function BrokerRequestDetailPage() {
               </div>
             </div>
           ) : (
-            <Link
-              href={`/broker/introduction/new?requestId=${request.publicId}`}
-              className="btn-primary w-full sm:w-auto text-center"
+            <button
+              onClick={handleStartConversation}
+              disabled={isStartingChat}
+              className="btn-primary w-full sm:w-auto text-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t("broker.submitIntroduction")}
-            </Link>
+              {isStartingChat ? t("broker.startingChat") : t("broker.sendMessage")}
+            </button>
           )}
         </div>
       </div>

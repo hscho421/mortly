@@ -29,7 +29,7 @@ export default async function handler(
         where: lookup,
         include: {
           _count: {
-            select: { introductions: true },
+            select: { introductions: true, conversations: true },
           },
           introductions: {
             include: {
@@ -41,7 +41,7 @@ export default async function handler(
             },
           },
           conversations: {
-            select: { status: true },
+            select: { status: true, brokerId: true },
           },
         },
       });
@@ -62,10 +62,13 @@ export default async function handler(
           return res.status(403).json({ error: "Broker must be verified to view requests" });
         }
         if (request.status !== "OPEN") {
-          const hasResponded = request.introductions.some(
+          const hasIntroduction = request.introductions.some(
             (intro: { broker: { userId: string } }) => intro.broker.userId === session.user.id
           );
-          if (!hasResponded) {
+          const hasConversation = request.conversations.some(
+            (conv: { brokerId: string }) => conv.brokerId === broker.id
+          );
+          if (!hasIntroduction && !hasConversation) {
             return res.status(403).json({ error: "Forbidden" });
           }
         }

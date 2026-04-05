@@ -115,14 +115,14 @@ export default async function handler(
     }
 
     if (req.method === "POST") {
-      if (session.user.role !== "BORROWER") {
-        return res.status(403).json({ error: "Only borrowers can create conversations" });
+      if (session.user.role !== "BORROWER" && session.user.role !== "BROKER") {
+        return res.status(403).json({ error: "Only borrowers or brokers can create conversations" });
       }
 
-      const { requestId, brokerId } = req.body;
+      const { requestId, brokerId: bodyBrokerId, message } = req.body;
 
-      if (!requestId || !brokerId) {
-        return res.status(400).json({ error: "requestId and brokerId are required" });
+      if (!requestId) {
+        return res.status(400).json({ error: "requestId is required" });
       }
 
       // Resolve publicId to internal id
@@ -137,27 +137,119 @@ export default async function handler(
         return res.status(404).json({ error: "Request not found" });
       }
 
-      if (request.borrowerId !== session.user.id) {
-        return res.status(403).json({ error: "You can only create conversations for your own requests" });
+      if (session.user.role === "BORROWER") {
+        if (!bodyBrokerId) {
+          return res.status(400).json({ error: "brokerId is required" });
+        }
+        if (request.borrowerId !== session.user.id) {
+          return res.status(403).json({ error: "You can only create conversations for your own requests" });
+        }
+
+        const existing = await prisma.conversation.findUnique({
+          where: { requestId_brokerId: { requestId: request.id, brokerId: bodyBrokerId } },
+        });
+        if (existing) {
+          return res.status(200).json(existing);
+        }
+
+        const convoPublicId = await generateConversationPublicId();
+        const conversation = await prisma.conversation.create({
+          data: {
+            publicId: convoPublicId,
+            requestId: request.id,
+            borrowerId: session.user.id,
+            brokerId: bodyBrokerId,
+          },
+        });
+        return res.status(201).json(conversation);
       }
 
-      // Check for existing conversation to prevent duplicates
-      const existing = await prisma.conversation.findUnique({
-        where: { requestId_brokerId: { requestId: request.id, brokerId } },
+      // BROKER flow: create conversation directly with credit deduction
+      const broker = await prisma.broker.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true, verificationStatus: true, subscriptionTier: true, responseCredits: true },
       });
 
+      if (!broker) {
+        return res.status(404).json({ error: "Broker profile not found" });
+      }
+      if (broker.verificationStatus !== "VERIFIED") {
+        return res.status(403).json({ error: "Broker must be verified to message clients" });
+      }
+      if (broker.subscriptionTier === "FREE") {
+        return res.status(403).json({ error: "Free plan brokers cannot message clients. Please upgrade your plan." });
+      }
+
+      const isPremium = broker.subscriptionTier === "PREMIUM";
+
+      if (!isPremium && broker.responseCredits <= 0) {
+        return res.status(403).json({ error: "No response credits remaining" });
+      }
+
+      // Check for existing conversation
+      const existing = await prisma.conversation.findUnique({
+        where: { requestId_brokerId: { requestId: request.id, brokerId: broker.id } },
+      });
       if (existing) {
         return res.status(200).json(existing);
       }
 
       const convoPublicId = await generateConversationPublicId();
-      const conversation = await prisma.conversation.create({
-        data: {
-          publicId: convoPublicId,
-          requestId: request.id,
-          borrowerId: session.user.id,
-          brokerId,
-        },
+
+      if (isPremium) {
+        const conversation = await prisma.conversation.create({
+          data: {
+            publicId: convoPublicId,
+            requestId: request.id,
+            borrowerId: request.borrowerId,
+            brokerId: broker.id,
+          },
+        });
+
+        // Create initial message if provided
+        if (message) {
+          await prisma.message.create({
+            data: { conversationId: conversation.id, senderId: session.user.id, body: message },
+          });
+          await prisma.conversation.update({
+            where: { id: conversation.id },
+            data: { updatedAt: new Date() },
+          });
+        }
+
+        return res.status(201).json(conversation);
+      }
+
+      // Non-premium: atomically deduct credit and create conversation
+      const conversation = await prisma.$transaction(async (tx) => {
+        const updated = await tx.broker.updateMany({
+          where: { id: broker.id, responseCredits: { gt: 0 } },
+          data: { responseCredits: { decrement: 1 } },
+        });
+        if (updated.count === 0) {
+          throw new Error("NO_CREDITS");
+        }
+
+        const conv = await tx.conversation.create({
+          data: {
+            publicId: convoPublicId,
+            requestId: request.id,
+            borrowerId: request.borrowerId,
+            brokerId: broker.id,
+          },
+        });
+
+        if (message) {
+          await tx.message.create({
+            data: { conversationId: conv.id, senderId: session.user.id, body: message },
+          });
+          await tx.conversation.update({
+            where: { id: conv.id },
+            data: { updatedAt: new Date() },
+          });
+        }
+
+        return conv;
       });
 
       return res.status(201).json(conversation);
@@ -165,6 +257,9 @@ export default async function handler(
 
     return res.status(405).json({ error: "Method not allowed" });
   } catch (error) {
+    if (error instanceof Error && error.message === "NO_CREDITS") {
+      return res.status(403).json({ error: "No response credits remaining" });
+    }
     console.error("Error in /api/conversations:", error);
     return res.status(500).json({ error: "Internal server error" });
   }

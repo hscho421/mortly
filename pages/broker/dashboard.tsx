@@ -234,20 +234,8 @@ export default function BrokerDashboardPage() {
       ),
     },
     {
-      href: "/broker/introductions",
-      label: t("broker.myIntroductions"),
-      colorBg: "bg-forest-100",
-      colorText: "text-forest-600",
-      colorHover: "group-hover:bg-forest-200",
-      icon: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-        </svg>
-      ),
-    },
-    {
-      href: "/broker/conversations",
-      label: t("broker.conversations"),
+      href: "/broker/messages",
+      label: t("broker.messages"),
       colorBg: "bg-sage-100",
       colorText: "text-sage-600",
       colorHover: "group-hover:bg-sage-200",
@@ -412,7 +400,7 @@ export default function BrokerDashboardPage() {
 
         {/* Quick Actions */}
         <h2 className="heading-md mb-5 animate-fade-in stagger-5">{t("broker.quickActions")}</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 animate-fade-in-up stagger-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in-up stagger-6">
           {quickActions.map((action) => (
             <Link
               key={action.href}

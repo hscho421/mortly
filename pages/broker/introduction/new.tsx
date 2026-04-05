@@ -119,7 +119,7 @@ export default function NewIntroductionPage() {
       posthog.capture("broker_introduction_submitted", {
         request_id: requestId,
       });
-      router.push("/broker/requests", undefined, { locale: router.locale });
+      router.push("/broker/messages", undefined, { locale: router.locale });
     } catch (err) {
       posthog.captureException(err);
       setError(t("common.unexpectedError"));

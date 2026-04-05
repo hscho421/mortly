@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "@/components/Navbar";
+import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
 import { supabase } from "@/lib/supabase";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -85,6 +86,8 @@ export default function BrokerMessagesPage() {
   const [error, setError] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
 
+  const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(activeConvId);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -133,6 +136,15 @@ export default function BrokerMessagesPage() {
       setLoadingChat(false);
     }
   }, []);
+
+  // Auto-select from query param (e.g. after starting a new conversation)
+  useEffect(() => {
+    const qid = router.query.id;
+    if (typeof qid === "string" && qid && !activeConvId) {
+      selectConversation(qid);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query.id]);
 
   // Supabase Realtime for instant messages
   useEffect(() => {
@@ -271,6 +283,12 @@ export default function BrokerMessagesPage() {
     <>
       <Head><title>{t("broker.messages")}</title></Head>
       <Navbar />
+
+      {/* Chat disclaimer */}
+      {disclaimerNeeded && activeConvId && (
+        <ChatDisclaimer conversationId={activeConvId} onAccept={acceptDisclaimer} />
+      )}
+
       <div
         className="flex animate-fade-in"
         style={{ height: "calc(100vh - 80px)" }}
