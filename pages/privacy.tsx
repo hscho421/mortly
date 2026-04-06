@@ -280,6 +280,10 @@ export default function Privacy() {
                 <h4 className="heading-sm mb-1">{t("privacy.reportTitle")}</h4>
                 <p className="text-body-sm">
                   {t("privacy.reportDesc")}
+                  <a href="mailto:support@mortly.ca" className="font-semibold text-forest-700 underline underline-offset-2 hover:text-amber-600 transition-colors">
+                    {t("privacy.reportDescEmail")}
+                  </a>
+                  {t("privacy.reportDesc2")}
                 </p>
               </div>
             </div>

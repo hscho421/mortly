@@ -476,7 +476,7 @@ async function seedMock() {
   // ── System settings ───────────────────────────────────────
   const defaults: [string, string][] = [
     ["platform_name", "mortly"],
-    ["support_email", "support@mortgagematch.ca"],
+    ["support_email", "support@mortly.ca"],
     ["free_tier_credits", "3"],
     ["basic_tier_credits", "15"],
     ["pro_tier_credits", "40"],
@@ -557,7 +557,7 @@ async function seedEmpty() {
   // System settings
   for (const [key, value] of [
     ["platform_name", "mortly"],
-    ["support_email", "support@mortgagematch.ca"],
+    ["support_email", "support@mortly.ca"],
     ["free_tier_credits", "3"],
     ["basic_tier_credits", "15"],
     ["pro_tier_credits", "40"],
