@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import { useTranslation } from "next-i18next";
 
 export default function Footer() {
+  const { data: session } = useSession();
   const { t } = useTranslation("common");
   return (
     <footer className="border-t border-cream-300 bg-forest-800">
@@ -57,19 +59,34 @@ export default function Footer() {
             </nav>
           </div>
 
-          {/* Get started */}
+          {/* Get started / Dashboard */}
           <div>
-            <h4 className="font-body text-xs font-semibold uppercase tracking-widest text-cream-400/50">
-              {t("footer.getStarted")}
-            </h4>
-            <nav className="mt-4 flex flex-col gap-3">
-              <Link href="/signup" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                {t("footer.createAccount")}
-              </Link>
-              <Link href="/login" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
-                {t("footer.signIn")}
-              </Link>
-            </nav>
+            {session ? (
+              <>
+                <h4 className="font-body text-xs font-semibold uppercase tracking-widest text-cream-400/50">
+                  {t("nav.dashboard")}
+                </h4>
+                <nav className="mt-4 flex flex-col gap-3">
+                  <Link href={session.user.role === "ADMIN" ? "/admin" : session.user.role === "BROKER" ? "/broker/dashboard" : "/borrower/dashboard"} className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
+                    {t("nav.dashboard")}
+                  </Link>
+                </nav>
+              </>
+            ) : (
+              <>
+                <h4 className="font-body text-xs font-semibold uppercase tracking-widest text-cream-400/50">
+                  {t("footer.getStarted")}
+                </h4>
+                <nav className="mt-4 flex flex-col gap-3">
+                  <Link href="/signup" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
+                    {t("footer.createAccount")}
+                  </Link>
+                  <Link href="/login" className="font-body text-sm text-cream-300/80 transition-colors hover:text-amber-400">
+                    {t("footer.signIn")}
+                  </Link>
+                </nav>
+              </>
+            )}
           </div>
         </div>
 

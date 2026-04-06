@@ -1618,6 +1618,19 @@
     "brokerResponses": "{{count}} broker response(s)",
     "requestNotFound": "Request not found."
   },
+  "contact": {
+    "metaTitle": "Contact Us — mortly",
+    "metaDesc": "Get in touch with the mortly team. We're here to help with any questions about our mortgage marketplace.",
+    "badge": "Get in Touch",
+    "title": "We're Here to Help",
+    "subtitle": "Have a question about mortly? Whether you're a borrower or a broker, our team is ready to assist you.",
+    "emailTitle": "Email Us",
+    "emailDesc": "Send us a message and we'll get back to you as soon as possible.",
+    "responseTitle": "Response Time",
+    "responseDesc": "We typically respond within 2 days and will do our best to assist you as quickly as possible.",
+    "faqHint": "Have a common question? Check our FAQ for quick answers.",
+    "faqLink": "Go to FAQ"
+  },
   "onboarding": {
     "placeholderBrokerage": "e.g. Maple Mortgage Group",
     "placeholderLicense": "e.g. M12345678",

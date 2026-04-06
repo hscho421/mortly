@@ -46,9 +46,9 @@ export default async function handler(
 
       const { brokerageName, province, licenseNumber, phone, ...rest } = req.body;
 
-      if (!brokerageName || !province || !licenseNumber || !phone) {
+      if (!brokerageName || !province || !phone) {
         return res.status(400).json({
-          error: "brokerageName, province, licenseNumber, and phone are required",
+          error: "brokerageName, province, and phone are required",
         });
       }
 

@@ -132,7 +132,7 @@ export default function HowItWorks() {
       </section>
 
       {/* FAQ */}
-      <section className="section-padding bg-cream-100">
+      <section id="faq" className="section-padding bg-cream-100">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
