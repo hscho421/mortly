@@ -18,6 +18,7 @@ export default function SignupPage() {
   const [role, setRole] = useState<"BORROWER" | "BROKER">("BORROWER");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Lock role from query param (e.g. /signup?role=borrower)
   const queryRole = (router.query.role as string)?.toUpperCase();
@@ -39,6 +40,8 @@ export default function SignupPage() {
       return t("auth.passwordTooShort");
 
     if (password !== confirmPassword) return t("auth.passwordMismatch");
+
+    if (!agreedToTerms) return t("auth.mustAgreeToTerms");
 
     return null;
   };
@@ -240,6 +243,28 @@ export default function SignupPage() {
                 </div>
               )}
 
+              <div className="opacity-0 animate-fade-in-up stagger-5">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-cream-400 text-forest-700 focus:ring-forest-500 cursor-pointer"
+                  />
+                  <span className="font-body text-xs text-forest-700/70 leading-relaxed">
+                    {t("auth.agreeToTermsPrefix")}{" "}
+                    <Link href="/terms" target="_blank" className="font-semibold text-forest-700 underline underline-offset-2 hover:text-amber-600 transition-colors">
+                      {t("auth.termsOfService")}
+                    </Link>
+                    {" "}{t("auth.and")}{" "}
+                    <Link href="/privacy" target="_blank" className="font-semibold text-forest-700 underline underline-offset-2 hover:text-amber-600 transition-colors">
+                      {t("auth.privacyPolicy")}
+                    </Link>
+                    {t("auth.agreeToTermsSuffix")}
+                  </span>
+                </label>
+              </div>
+
               <div className="opacity-0 animate-fade-in-up stagger-5 pt-1">
                 <button
                   type="submit"
@@ -262,13 +287,17 @@ export default function SignupPage() {
             <div className="opacity-0 animate-fade-in-up stagger-7">
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  if (!agreedToTerms) {
+                    setError(t("auth.mustAgreeToTerms"));
+                    return;
+                  }
                   signIn("google", {
                     callbackUrl: roleLocked
                       ? `/select-role?role=${role.toLowerCase()}`
                       : "/select-role",
-                  })
-                }
+                  });
+                }}
                 className="btn-secondary w-full flex items-center justify-center gap-2.5"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24">
