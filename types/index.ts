@@ -20,7 +20,7 @@ export type {
   Report,
 };
 
-export type BrokerWithUser = Broker & { user: Pick<User, "publicId" | "name" | "email"> };
+export type BrokerWithUser = Broker & { user: Pick<User, "publicId" | "name"> };
 
 export type IntroductionWithBroker = BrokerIntroduction & {
   broker: BrokerWithUser;
@@ -28,6 +28,7 @@ export type IntroductionWithBroker = BrokerIntroduction & {
 
 export type ConversationWithParticipants = Conversation & {
   broker: BrokerWithUser;
+  borrower?: Pick<User, "id" | "name">;
   messages: Message[];
   request: Pick<BorrowerRequest, "id" | "province" | "city" | "mortgageCategory" | "productTypes" | "schemaVersion">;
 };

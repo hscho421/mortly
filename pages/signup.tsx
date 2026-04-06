@@ -7,6 +7,11 @@ import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import posthog from "posthog-js";
+import {
+  CURRENT_LEGAL_VERSION,
+  LEGAL_ACCEPTANCE_COOKIE,
+  LEGAL_ACCEPTANCE_COOKIE_MAX_AGE_SECONDS,
+} from "@/lib/legal";
 
 export default function SignupPage() {
   const { t } = useTranslation("common");
@@ -29,6 +34,12 @@ export default function SignupPage() {
       setRole(queryRole as "BORROWER" | "BROKER");
     }
   }, [queryRole, roleLocked]);
+
+  useEffect(() => {
+    if (router.query.legal === "required") {
+      setError(t("auth.mustAgreeToTerms"));
+    }
+  }, [router.query.legal, t]);
 
   const validateForm = (): string | null => {
     if (!name.trim()) return t("auth.nameRequired");
@@ -62,7 +73,14 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role,
+          locale: router.locale,
+          legalVersion: CURRENT_LEGAL_VERSION,
+        }),
       });
 
       const data = await res.json();
@@ -87,6 +105,15 @@ export default function SignupPage() {
       setError(t("common.unexpectedError"));
       setIsLoading(false);
     }
+  };
+
+  const setLegalAcceptanceCookie = () => {
+    document.cookie = [
+      `${LEGAL_ACCEPTANCE_COOKIE}=${encodeURIComponent(CURRENT_LEGAL_VERSION)}`,
+      `Max-Age=${LEGAL_ACCEPTANCE_COOKIE_MAX_AGE_SECONDS}`,
+      "Path=/",
+      "SameSite=Lax",
+    ].join("; ");
   };
 
   return (
@@ -292,6 +319,8 @@ export default function SignupPage() {
                     setError(t("auth.mustAgreeToTerms"));
                     return;
                   }
+                  setError("");
+                  setLegalAcceptanceCookie();
                   signIn("google", {
                     callbackUrl: roleLocked
                       ? `/select-role?role=${role.toLowerCase()}`

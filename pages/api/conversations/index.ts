@@ -35,20 +35,31 @@ export default async function handler(
 
       const conversations = await prisma.conversation.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          publicId: true,
+          status: true,
+          updatedAt: true,
+          borrowerLastReadAt: true,
+          brokerLastReadAt: true,
           messages: {
             orderBy: { createdAt: "desc" },
             take: 1,
+            select: { body: true, createdAt: true, senderId: true },
           },
           broker: {
-            include: {
+            select: {
+              id: true,
+              userId: true,
+              brokerageName: true,
+              verificationStatus: true,
               user: {
-                select: { id: true, name: true, email: true },
+                select: { id: true, publicId: true, name: true },
               },
             },
           },
           borrower: {
-            select: { id: true, name: true, email: true },
+            select: { id: true, name: true },
           },
           request: {
             select: { id: true, publicId: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
@@ -106,6 +117,7 @@ export default async function handler(
 
       const withUnread = conversations.map((c) => ({
         ...c,
+        borrower: isBorrower ? c.borrower : { id: c.borrower.id, name: null },
         unreadCount: lastReadMap.get(c.id)
           ? (filteredCountMap.get(c.id) ?? 0)
           : (totalCountMap.get(c.id) ?? 0),

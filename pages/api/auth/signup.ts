@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { generatePublicId } from "@/lib/publicId";
 import { generateVerificationCode, sendVerificationCode } from "@/lib/email";
+import { CURRENT_LEGAL_VERSION, createLegalAcceptanceMetadata } from "@/lib/legal";
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,7 +14,7 @@ export default async function handler(
   }
 
   try {
-    const { name, email, password, role, locale } = req.body;
+    const { name, email, password, role, locale, legalVersion } = req.body;
 
     // Validate required fields
     if (!name || !email || !password || !role) {
@@ -36,6 +37,12 @@ export default async function handler(
     // Validate role
     if (!["BORROWER", "BROKER"].includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
+    }
+
+    if (legalVersion !== CURRENT_LEGAL_VERSION) {
+      return res.status(400).json({
+        message: "Please accept the latest Terms of Service and Privacy Policy",
+      });
     }
 
     // Check if user already exists
@@ -71,6 +78,7 @@ export default async function handler(
         verificationCode,
         verificationCodeExpiry,
         verificationCodeSentAt: new Date(),
+        preferences: createLegalAcceptanceMetadata(),
       },
       select: {
         id: true,

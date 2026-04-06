@@ -33,9 +33,9 @@ interface ConversationListItem {
     id: string;
     brokerageName: string;
     verificationStatus: string;
-    user: { id: string; name: string | null; email: string };
+    user: { id: string; publicId?: string; name: string | null };
   };
-  borrower: { id: string; name: string | null; email: string };
+  borrower: { id: string; name: string | null };
   request: { id: string; province: string; mortgageCategory?: string | null };
 }
 
@@ -70,12 +70,6 @@ function relativeTime(date: string, justNowLabel = "Just now") {
   const diffDay = Math.floor(diffHr / 24);
   if (diffDay < 7) return `${diffDay}d`;
   return formatDate(date);
-}
-
-function displayLabel(val: string) {
-  return val
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /* ────────────────────────────────────────────── */
@@ -419,7 +413,7 @@ export default function BorrowerMessagesPage() {
                 const isActive = conv.id === activeId;
                 const lastMsg = conv.messages[0];
                 const brokerName =
-                  conv.broker.user.name || conv.broker.user.email;
+                  conv.broker.user.name || conv.broker.brokerageName || t("misc.broker");
                 const hasUnread = (conv.unreadCount ?? 0) > 0;
 
                 return (

@@ -63,6 +63,34 @@ export default function Privacy() {
       items: [t("privacy.data3Item1"), t("privacy.data3Item2"), t("privacy.data3Item3")],
       purpose: t("privacy.data3Purpose"),
     },
+    {
+      category: t("privacy.data4Title"),
+      items: [t("privacy.data4Item1"), t("privacy.data4Item2"), t("privacy.data4Item3")],
+      purpose: t("privacy.data4Purpose"),
+    },
+  ];
+
+  const providers = [
+    {
+      title: t("privacy.provider1Title"),
+      description: t("privacy.provider1Desc"),
+    },
+    {
+      title: t("privacy.provider2Title"),
+      description: t("privacy.provider2Desc"),
+    },
+    {
+      title: t("privacy.provider3Title"),
+      description: t("privacy.provider3Desc"),
+    },
+    {
+      title: t("privacy.provider4Title"),
+      description: t("privacy.provider4Desc"),
+    },
+    {
+      title: t("privacy.provider5Title"),
+      description: t("privacy.provider5Desc"),
+    },
   ];
 
   const verificationSteps = [
@@ -176,8 +204,47 @@ export default function Privacy() {
         </div>
       </section>
 
-      {/* When Identity Is Shared */}
+      {/* Service Providers */}
       <section className="section-padding bg-cream-100">
+        <div className="max-w-5xl mx-auto">
+          <div className="max-w-2xl mb-16 animate-fade-in-up opacity-0">
+            <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
+              {t("privacy.providersBadge")}
+            </span>
+            <h2 className="heading-lg">{t("privacy.providersTitle")}</h2>
+            <p className="text-body mt-4">{t("privacy.providersSubtitle")}</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {providers.map((provider, index) => (
+              <div
+                key={provider.title}
+                className={`card-elevated animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
+              >
+                <h3 className="heading-sm mb-3">{provider.title}</h3>
+                <p className="text-body-sm">{provider.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 animate-fade-in-up opacity-0 stagger-6 card-elevated !bg-forest-50 border-forest-200">
+            <h3 className="heading-sm mb-3">{t("privacy.requestsTitle")}</h3>
+            <p className="text-body-sm">
+              {t("privacy.requestsDesc")}
+              <a
+                href="mailto:support@mortly.ca"
+                className="font-semibold text-forest-700 underline underline-offset-2 hover:text-amber-600 transition-colors"
+              >
+                {t("privacy.reportDescEmail")}
+              </a>
+              {t("privacy.requestsDesc2")}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* When Identity Is Shared */}
+      <section className="section-padding bg-cream-50">
         <div className="max-w-4xl mx-auto">
           <div className="grid lg:grid-cols-12 gap-16 items-start">
             <div className="lg:col-span-5 animate-fade-in-up opacity-0">
@@ -238,7 +305,7 @@ export default function Privacy() {
       </section>
 
       {/* Broker Verification */}
-      <section className="section-padding bg-cream-50">
+      <section className="section-padding bg-cream-100">
         <div className="max-w-5xl mx-auto">
           <div className="max-w-2xl mb-16 animate-fade-in-up opacity-0">
             <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">

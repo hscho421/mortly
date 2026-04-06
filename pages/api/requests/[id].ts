@@ -35,7 +35,7 @@ export default async function handler(
             include: {
               broker: {
                 include: {
-                  user: { select: { id: true, name: true, email: true, publicId: true } },
+                  user: { select: { id: true, name: true, publicId: true } },
                 },
               },
             },

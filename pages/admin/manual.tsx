@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
@@ -97,7 +96,6 @@ function NavItem({ href, label, active }: { href: string; label: string; active:
 
 export default function AdminManual() {
   const { data: session, status } = useSession();
-  const router = useRouter();
   const { t } = useTranslation("common");
   const [activeSection, setActiveSection] = useState("overview");
 
@@ -261,8 +259,7 @@ export default function AdminManual() {
                   t("manual.brokerCol4", "License # — the broker's license number"),
                   t("manual.brokerCol5", "Status — verification status: PENDING, VERIFIED, or REJECTED"),
                   t("manual.brokerCol6", "Tier — subscription tier: FREE, BASIC, PRO, or PREMIUM"),
-                  t("manual.brokerCol7", "Rating — average borrower rating (or -- if no reviews)"),
-                  t("manual.brokerCol8", "Actions — View (opens detail page), Verify, or Suspend buttons"),
+                  t("manual.brokerCol7", "Actions — View (opens detail page), Verify, or Suspend buttons"),
                 ]} />
               </SubSection>
 
@@ -289,7 +286,6 @@ export default function AdminManual() {
                   t("manual.brokerSection4", "Verification Actions — Approve, Reject, or Reset to Pending buttons (changes take effect immediately)"),
                   t("manual.brokerSection5", "Recent Introductions — last 20 introductions with request type, location, status, and date. Click 'View' to go to request management."),
                   t("manual.brokerSection6", "Recent Conversations — last 20 conversations with borrower name, status, message count, and last activity. Click 'Messages' to view the thread."),
-                  t("manual.brokerSection7", "Reviews — all reviews with star ratings, borrower names, dates, and comments"),
                 ]} />
               </SubSection>
             </Section>
@@ -317,7 +313,7 @@ export default function AdminManual() {
                 <BulletList items={[
                   t("manual.requestAction1", "Details — opens a modal showing the full request information: borrower, property type, price range, mortgage amount, employment type, credit score band, closing timeline, and notes"),
                   t("manual.requestAction2", "Status — opens a modal to change the request status. You must select a new status and can optionally provide a reason. When closing a request, all active conversations are automatically closed too."),
-                  t("manual.requestAction3", "Delete — permanently removes the request and ALL related data: introductions, conversations, messages, and reviews. This cannot be undone."),
+                  t("manual.requestAction3", "Delete — permanently removes the request and ALL related data: introductions, conversations, and messages. This cannot be undone."),
                 ]} />
                 <Warning>{t("manual.requestDeleteWarning", "Warning: Deleting a request is irreversible. All associated introductions, conversations, messages, and reviews will be permanently removed. Always provide a reason for the audit trail.")}</Warning>
               </SubSection>
@@ -331,7 +327,7 @@ export default function AdminManual() {
                 <BulletList items={[
                   t("manual.convoList1", "Search by participant name, email, or brokerage name"),
                   t("manual.convoList2", "Filter by status: Active or Closed"),
-                  t("manual.convoList3v2", "Each row shows: conversation public ID, participants (with account status badges if suspended/banned), related request info, message count, last message preview, and review rating if exists"),
+                  t("manual.convoList3v2", "Each row shows: conversation public ID, participants (with account status badges if suspended or banned), related request info, message count, and the last message preview"),
                 ]} />
               </SubSection>
 

@@ -29,7 +29,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Remove needsRoleSelection flag and update role
-  const { needsRoleSelection: _, ...restPrefs } = prefs;
+  const restPrefs = { ...prefs };
+  delete restPrefs.needsRoleSelection;
   const newPrefs = Object.keys(restPrefs).length > 0 ? JSON.parse(JSON.stringify(restPrefs)) : null;
   await prisma.user.update({
     where: { id: session.user.id },

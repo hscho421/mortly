@@ -22,9 +22,9 @@ interface ConversationListItem {
     brokerageName: string;
     verificationStatus: string;
     userId: string;
-    user: { id: string; name: string | null; email: string };
+    user: { id: string; publicId?: string; name: string | null };
   };
-  borrower: { id: string; name: string | null; email: string };
+  borrower: { id: string; name: string | null };
   request: { id: string; province: string; mortgageCategory?: string | null };
 }
 

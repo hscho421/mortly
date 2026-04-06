@@ -21,24 +21,42 @@ export default async function handler(
     if (req.method === "GET") {
       const conversation = await prisma.conversation.findUnique({
         where: { id },
-        include: {
+        select: {
+          id: true,
+          publicId: true,
+          requestId: true,
+          borrowerId: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          borrowerLastReadAt: true,
+          brokerLastReadAt: true,
           messages: {
             orderBy: { createdAt: "asc" },
-            include: {
+            select: {
+              id: true,
+              body: true,
+              createdAt: true,
+              senderId: true,
+              conversationId: true,
               sender: {
-                select: { id: true, name: true, email: true, role: true },
+                select: { id: true, name: true, role: true },
               },
             },
           },
           broker: {
-            include: {
+            select: {
+              id: true,
+              userId: true,
+              brokerageName: true,
+              verificationStatus: true,
               user: {
-                select: { id: true, name: true, email: true },
+                select: { id: true, publicId: true, name: true },
               },
             },
           },
           borrower: {
-            select: { id: true, name: true, email: true },
+            select: { id: true, name: true },
           },
           request: {
             select: { id: true, publicId: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
@@ -67,7 +85,10 @@ export default async function handler(
           : { brokerLastReadAt: new Date() },
       });
 
-      return res.status(200).json(conversation);
+      return res.status(200).json({
+        ...conversation,
+        borrower: isBorrower ? conversation.borrower : { id: conversation.borrower.id, name: null },
+      });
     }
 
     if (req.method === "PUT") {
