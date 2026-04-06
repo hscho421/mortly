@@ -15,7 +15,7 @@ export default function VerificationRedirect() {
     });
   }, [router]);
 
-  return <Head><title>{t("admin.sidebar.verification")}</title></Head>;
+  return <Head><title>{t("titles.adminVerification")}</title></Head>;
 }
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({

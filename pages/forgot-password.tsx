@@ -1,5 +1,6 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
+import Head from "next/head";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -38,6 +39,9 @@ export default function ForgotPasswordPage() {
 
   return (
     <Layout>
+      <Head>
+        <title>{t("titles.forgotPassword")}</title>
+      </Head>
       <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           {/* Decorative top accent */}

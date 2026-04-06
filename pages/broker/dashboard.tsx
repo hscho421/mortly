@@ -142,7 +142,7 @@ export default function BrokerDashboardPage() {
   if (status === "loading" || loading) {
     return (
       <Layout>
-        <Head><title>{t("broker.dashboard")}</title></Head>
+        <Head><title>{t("titles.brokerDashboard")}</title></Head>
         <SkeletonDashboard />
       </Layout>
     );
@@ -155,7 +155,7 @@ export default function BrokerDashboardPage() {
   if (error) {
     return (
       <Layout>
-        <Head><title>{t("broker.dashboard")}</title></Head>
+        <Head><title>{t("titles.brokerDashboard")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
             <p className="text-body mb-4 text-red-600">{error}</p>
@@ -273,7 +273,7 @@ export default function BrokerDashboardPage() {
 
   return (
     <Layout>
-      <Head><title>{t("broker.dashboard")}</title></Head>
+      <Head><title>{t("titles.brokerDashboard")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">

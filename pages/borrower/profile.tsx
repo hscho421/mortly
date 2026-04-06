@@ -144,7 +144,7 @@ export default function BorrowerProfilePage() {
 
   return (
     <Layout>
-      <Head><title>{t("borrowerDashboard.profile")}</title></Head>
+      <Head><title>{t("titles.borrowerProfile")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 animate-fade-in">

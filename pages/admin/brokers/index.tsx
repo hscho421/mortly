@@ -148,7 +148,7 @@ export default function AdminBrokers() {
 
   return (
     <AdminLayout>
-      <Head><title>{t("admin.sidebar.brokers")}</title></Head>
+      <Head><title>{t("titles.adminBrokers")}</title></Head>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 animate-fade-in">

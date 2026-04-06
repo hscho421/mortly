@@ -168,7 +168,7 @@ export default function AdminConversationDetail() {
 
   return (
     <AdminLayout>
-      <Head><title>{t("admin.conversation")}</title></Head>
+      <Head><title>{t("titles.adminConversationDetail")}</title></Head>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">

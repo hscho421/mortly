@@ -73,7 +73,7 @@ export default function NewIntroductionPage() {
   if (status === "loading") {
     return (
       <Layout>
-        <Head><title>{t("broker.newIntroduction")}</title></Head>
+        <Head><title>{t("titles.brokerNewIntroduction")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-body-sm">{t("common.loading")}</p>
         </div>
@@ -129,7 +129,7 @@ export default function NewIntroductionPage() {
 
   return (
     <Layout>
-      <Head><title>{t("broker.newIntroduction")}</title></Head>
+      <Head><title>{t("titles.brokerNewIntroduction")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         <Link
           href="/broker/requests"

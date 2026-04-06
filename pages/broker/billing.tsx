@@ -304,7 +304,7 @@ export default function BrokerBillingPage() {
   if (status === "loading" || isLoadingProfile) {
     return (
       <Layout>
-        <Head><title>{t("broker.billingTitle")}</title></Head>
+        <Head><title>{t("titles.brokerBilling")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-body-sm">{t("common.loading")}</p>
         </div>
@@ -321,7 +321,7 @@ export default function BrokerBillingPage() {
 
   return (
     <Layout>
-      <Head><title>{t("broker.billingTitle")}</title></Head>
+      <Head><title>{t("titles.brokerBilling")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-10 animate-fade-in">
           <h1 className="heading-lg">{t("broker.billingTitle")}</h1>

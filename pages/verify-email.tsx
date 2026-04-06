@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -119,6 +120,9 @@ export default function VerifyEmailPage() {
 
   return (
     <Layout>
+      <Head>
+        <title>{t("titles.verifyEmail")}</title>
+      </Head>
       <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           {/* Decorative top accent */}

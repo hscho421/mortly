@@ -321,7 +321,7 @@ export default function BorrowerMessagesPage() {
 
   return (
     <>
-      <Head><title>{t("nav.messages")}</title></Head>
+      <Head><title>{t("titles.borrowerMessages")}</title></Head>
       <Navbar />
 
       {/* Chat disclaimer */}

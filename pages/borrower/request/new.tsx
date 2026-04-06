@@ -59,7 +59,7 @@ export default function NewRequestPage() {
 
   return (
     <Layout>
-      <Head><title>{t("borrowerDashboard.newRequest")}</title></Head>
+      <Head><title>{t("titles.borrowerNewRequest")}</title></Head>
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 animate-fade-in">

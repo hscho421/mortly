@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import { useSession } from "next-auth/react";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
@@ -72,6 +73,9 @@ export default function SelectRolePage() {
   if (status === "loading" || !session?.user?.needsRoleSelection) {
     return (
       <Layout>
+        <Head>
+          <title>{t("titles.selectRole")}</title>
+        </Head>
         <div className="flex min-h-[calc(100vh-160px)] items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-forest-300 border-t-forest-700" />
         </div>
@@ -81,6 +85,9 @@ export default function SelectRolePage() {
 
   return (
     <Layout>
+      <Head>
+        <title>{t("titles.selectRole")}</title>
+      </Head>
       <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           <div className="mb-8 flex justify-center opacity-0 animate-fade-in">

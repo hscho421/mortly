@@ -109,7 +109,7 @@ export default function BrokerRequestDetailPage() {
   if (status === "loading" || isLoading) {
     return (
       <Layout>
-        <Head><title>{t("broker.requestDetails")}</title></Head>
+        <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-body-sm">{t("common.loading")}</p>
         </div>
@@ -124,7 +124,7 @@ export default function BrokerRequestDetailPage() {
   if (error || !request) {
     return (
       <Layout>
-        <Head><title>{t("broker.requestDetails")}</title></Head>
+        <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="rounded-xl bg-error-50 border border-error-500/20 p-4" role="alert">
             <p className="font-body text-sm text-error-700">{error || t("misc.requestNotFound")}</p>
@@ -160,7 +160,7 @@ export default function BrokerRequestDetailPage() {
 
   return (
     <Layout>
-      <Head><title>{t("broker.requestDetails")}</title></Head>
+      <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8 animate-fade-in">
         <Link
           href="/broker/requests"

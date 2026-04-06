@@ -218,7 +218,7 @@ export default function AdminBrokerDetail() {
 
   return (
     <AdminLayout>
-      <Head><title>{t("admin.brokerDetails")}</title></Head>
+      <Head><title>{t("titles.adminBrokerDetail")}</title></Head>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="mb-8 animate-fade-in">

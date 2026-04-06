@@ -163,7 +163,7 @@ export default function RequestDetail() {
 
   return (
     <Layout>
-      <Head><title>{t("borrowerDashboard.myRequest")}</title></Head>
+      <Head><title>{t("titles.borrowerRequestDetail")}</title></Head>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
         <Link
           href="/borrower/dashboard"

@@ -123,7 +123,7 @@ export default function BrokerComparison() {
 
   return (
     <Layout>
-      <Head><title>{t("borrowerDashboard.brokers")}</title></Head>
+      <Head><title>{t("titles.borrowerBrokers")}</title></Head>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
         <div className="mb-8 animate-fade-in-up stagger-1">
           <h1 className="heading-lg mb-2">

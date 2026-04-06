@@ -1,6 +1,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import Head from "next/head";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -55,6 +56,9 @@ export default function ResetPasswordPage() {
 
   return (
     <Layout>
+      <Head>
+        <title>{t("titles.resetPassword")}</title>
+      </Head>
       <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           {/* Decorative top accent */}
