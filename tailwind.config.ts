@@ -92,7 +92,7 @@ const config: Config = {
         "amber-glow": "0 4px 14px rgba(196,154,58,0.25)",
       },
       fontFamily: {
-        display: ["var(--font-display)", "Georgia", "serif"],
+        display: ["var(--font-body)", "system-ui", "sans-serif"],
         body: ["var(--font-body)", "system-ui", "sans-serif"],
       },
       animation: {

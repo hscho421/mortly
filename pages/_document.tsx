@@ -5,7 +5,7 @@ import Document, {
   Main,
   NextScript,
 } from "next/document";
-import { dmSerif, outfit } from "@/lib/fonts";
+import { outfit } from "@/lib/fonts";
 
 type Props = {
   locale: string;
@@ -26,7 +26,7 @@ export default class MyDocument extends Document<Props> {
     return (
       <Html
         lang={locale}
-        className={`${dmSerif.variable} ${outfit.variable}`}
+        className={outfit.variable}
       >
         <Head>
           <link rel="icon" href="/logo/favicon.svg" type="image/svg+xml" />
