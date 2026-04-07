@@ -1,0 +1,24 @@
+{
+  "name": "mortly - Find Your Mortgage Broker",
+  "short_name": "mortly",
+  "description": "Canada's bilingual mortgage broker marketplace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF8F3",
+  "theme_color": "#1B3A2D",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

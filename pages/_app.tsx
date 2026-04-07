@@ -89,10 +89,19 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function useServiceWorker() {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
+}
+
 function App({
   Component,
   pageProps: { session, ...pageProps },
 }: AppProps) {
+  useServiceWorker();
   return (
     <SessionProvider session={session} refetchInterval={60} refetchOnWindowFocus={true}>
       <ToastProvider>
