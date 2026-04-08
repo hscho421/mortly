@@ -15,22 +15,17 @@
     @apply bg-forest-200 text-forest-900;
   }
 
-  /* Korean locale font override — Pretendard (modern, thin) */
-  html[lang="ko"] body {
-    font-family: Pretendard, -apple-system, system-ui, sans-serif;
+  /* Korean locale — Pretendard for all text */
+  html[lang="ko"] * {
+    font-family: Pretendard, -apple-system, system-ui, sans-serif !important;
   }
 
-  html[lang="ko"] .font-display,
   html[lang="ko"] .heading-hero,
   html[lang="ko"] .heading-lg,
   html[lang="ko"] .heading-md,
-  html[lang="ko"] .heading-sm {
-    font-family: Pretendard, -apple-system, system-ui, sans-serif !important;
+  html[lang="ko"] .heading-sm,
+  html[lang="ko"] .font-display {
     font-weight: 600;
-  }
-
-  html[lang="ko"] .font-body {
-    font-family: Pretendard, -apple-system, system-ui, sans-serif !important;
   }
 }
 

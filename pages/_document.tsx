@@ -5,7 +5,6 @@ import Document, {
   Main,
   NextScript,
 } from "next/document";
-import { outfit } from "@/lib/fonts";
 
 type Props = {
   locale: string;
@@ -24,10 +23,7 @@ export default class MyDocument extends Document<Props> {
     const { locale } = this.props;
 
     return (
-      <Html
-        lang={locale}
-        className={outfit.variable}
-      >
+      <Html lang={locale}>
         <Head>
           <link rel="icon" href="/logo/favicon.svg" type="image/svg+xml" />
           <link rel="manifest" href="/manifest.json" />
@@ -35,6 +31,12 @@ export default class MyDocument extends Document<Props> {
           <meta name="theme-color" content="#1B3A2D" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+          />
           <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
           <link
             rel="stylesheet"

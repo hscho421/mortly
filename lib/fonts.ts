@@ -1,7 +1,2 @@
-import { Outfit } from "next/font/google";
-
-export const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-body",
-  display: "swap",
-});
+// Outfit is loaded via CDN link in _document.tsx
+// This file kept for any future font config
