@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Layout from "@/components/Layout";
+import { SkeletonForm } from "@/components/Skeleton";
 import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -45,9 +46,7 @@ export default function BrokerOnboardingPage() {
     return (
       <Layout>
         <Head><title>{t("titles.brokerOnboarding")}</title></Head>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonForm />
       </Layout>
     );
   }

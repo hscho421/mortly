@@ -7,6 +7,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
+import { SkeletonBrokerList } from "@/components/Skeleton";
 import ReportButton from "@/components/ReportButton";
 import type { IntroductionWithBroker } from "@/types";
 import posthog from "posthog-js";
@@ -114,9 +115,7 @@ export default function BrokerComparison() {
   if (authStatus === "loading" || loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonBrokerList />
       </Layout>
     );
   }

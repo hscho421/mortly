@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Navbar from "@/components/Navbar";
+import { SkeletonChat } from "@/components/Skeleton";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
 import { supabase } from "@/lib/supabase";
 import { useTranslation } from "next-i18next";
@@ -252,9 +253,7 @@ export default function BrokerMessagesPage() {
       <>
         <Head><title>{t("titles.brokerMessages")}</title></Head>
         <Navbar />
-        <div className="flex items-center justify-center" style={{ height: "calc(100vh - 80px)" }}>
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonChat />
       </>
     );
   }

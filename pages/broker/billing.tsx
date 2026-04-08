@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Layout from "@/components/Layout";
+import { SkeletonBilling } from "@/components/Skeleton";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
@@ -305,9 +306,7 @@ export default function BrokerBillingPage() {
     return (
       <Layout>
         <Head><title>{t("titles.brokerBilling")}</title></Head>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonBilling />
       </Layout>
     );
   }

@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { SkeletonForm } from "@/components/Skeleton";
 import type { BorrowerRequest } from "@/types";
 import type { CreateIntroductionInput } from "@/types";
 import { useTranslation } from "next-i18next";
@@ -74,9 +75,7 @@ export default function NewIntroductionPage() {
     return (
       <Layout>
         <Head><title>{t("titles.brokerNewIntroduction")}</title></Head>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonForm />
       </Layout>
     );
   }

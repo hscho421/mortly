@@ -5,6 +5,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
+import { SkeletonForm } from "@/components/Skeleton";
 import RequestForm from "@/components/RequestForm";
 import type { CreateRequestInput } from "@/types";
 import posthog from "posthog-js";
@@ -23,9 +24,7 @@ export default function NewRequestPage() {
   if (status === "loading") {
     return (
       <Layout>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonForm />
       </Layout>
     );
   }

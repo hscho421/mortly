@@ -8,6 +8,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import Layout from "@/components/Layout";
+import { SkeletonRequestDetail } from "@/components/Skeleton";
 import StatusBadge from "@/components/StatusBadge";
 import ConsultationStepper from "@/components/ConsultationStepper";
 import RequestForm from "@/components/RequestForm";
@@ -137,9 +138,7 @@ export default function RequestDetail() {
   if (loading || !request) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-forest-600" />
-        </div>
+        <SkeletonRequestDetail />
       </Layout>
     );
   }

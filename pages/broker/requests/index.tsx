@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { SkeletonRequestList } from "@/components/Skeleton";
 import type { RequestWithIntroductions } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -81,9 +82,7 @@ export default function BrokerRequestsPage() {
     return (
       <Layout>
         <Head><title>{t("titles.brokerBrowseRequests")}</title></Head>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonRequestList />
       </Layout>
     );
   }

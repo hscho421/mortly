@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { SkeletonRequestDetail } from "@/components/Skeleton";
 import ReportButton from "@/components/ReportButton";
 import type { ResidentialDetails, CommercialDetails } from "@/types";
 import { useTranslation } from "next-i18next";
@@ -110,9 +111,7 @@ export default function BrokerRequestDetailPage() {
     return (
       <Layout>
         <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-body-sm">{t("common.loading")}</p>
-        </div>
+        <SkeletonRequestDetail />
       </Layout>
     );
   }
