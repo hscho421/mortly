@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -358,25 +357,6 @@ export default function Privacy() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-forest-800" />
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,_theme(colors.sage.400),_transparent_50%)]" />
-        <div className="relative section-padding max-w-3xl mx-auto text-center">
-          <h2 className="animate-fade-in-up opacity-0 font-display text-3xl sm:text-4xl lg:text-5xl tracking-tight text-cream-100">
-            {t("privacy.ctaTitle")}
-          </h2>
-          <p className="animate-fade-in-up opacity-0 stagger-1 mt-6 text-lg text-cream-300/70 font-body">
-            {t("privacy.ctaDesc")}
-          </p>
-          <Link
-            href="/borrower/request/new"
-            className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
-          >
-            {t("privacy.ctaButton")}
-          </Link>
-        </div>
-      </section>
     </Layout>
   );
 }

@@ -65,10 +65,6 @@ export default function HowItWorks() {
       a: t("howItWorks.faq3A"),
     },
     {
-      q: t("howItWorks.faq4Q"),
-      a: t("howItWorks.faq4A"),
-    },
-    {
       q: t("howItWorks.faq5Q"),
       a: t("howItWorks.faq5A"),
     },

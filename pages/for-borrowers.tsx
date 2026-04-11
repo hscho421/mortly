@@ -84,12 +84,10 @@ export default function ForBorrowers() {
           <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-4xl sm:text-5xl lg:text-7xl tracking-tight text-cream-100 leading-[1.05]">
             {t("forBorrowers.title1")}
             <br />
-            <em className="text-amber-300">{t("forBorrowers.title2")}</em>
+            <span className="text-amber-300">{t("forBorrowers.title2")}</span>
           </h1>
           <p className="animate-fade-in-up opacity-0 stagger-3 mt-8 text-lg text-cream-300/70 leading-relaxed max-w-2xl mx-auto font-body">
             {t("forBorrowers.subtitle")}
-            <br />
-            {t("forBorrowers.subtitle2")}
           </p>
           
           <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
