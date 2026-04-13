@@ -139,16 +139,11 @@ export default function BrokerRequestDetailPage() {
     );
   }
 
-  // Check if this broker already has a conversation or introduction for this request
-  const hasIntroduction = request.introductions
-    ? request.introductions.some(
-        (intro: { broker?: { userId: string } }) => intro.broker?.userId === session.user.id
-      )
-    : false;
+  // Check if this broker already has a conversation for this request
   const hasConversation = (request.conversations ?? []).some(
     (conv: { brokerId: string }) => conv.brokerId === brokerProfileId
   );
-  const hasResponded = hasIntroduction || hasConversation;
+  const hasResponded = hasConversation;
 
   const statusColors: Record<string, string> = {
     OPEN: "bg-forest-100 text-forest-700",
@@ -196,7 +191,7 @@ export default function BrokerRequestDetailPage() {
           </div>
           <p className="text-body-sm mb-8">
             {t("misc.posted", { date: formatDate(request.createdAt as unknown as string) })} &middot;{" "}
-            {t("misc.brokerResponses", { count: request._count?.introductions ?? 0 })}
+            {t("misc.brokerResponses", { count: request._count?.conversations ?? 0 })}
           </p>
 
           <hr className="divider mb-8" />

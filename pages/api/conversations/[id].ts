@@ -32,7 +32,7 @@ export default async function handler(
           borrowerLastReadAt: true,
           brokerLastReadAt: true,
           messages: {
-            orderBy: { createdAt: "asc" },
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
             select: {
               id: true,
               body: true,

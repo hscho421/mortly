@@ -29,15 +29,6 @@ export default async function handler(
           user: {
             select: { id: true, publicId: true, name: true, email: true, status: true, createdAt: true },
           },
-          introductions: {
-            include: {
-              request: {
-                select: { id: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
-              },
-            },
-            orderBy: { createdAt: "desc" as const },
-            take: 20,
-          },
           conversations: {
             include: {
               borrower: { select: { id: true, name: true, email: true } },
@@ -49,7 +40,7 @@ export default async function handler(
           },
           subscription: true,
           _count: {
-            select: { introductions: true, conversations: true },
+            select: { conversations: true },
           },
       };
 

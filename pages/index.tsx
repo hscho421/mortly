@@ -262,7 +262,7 @@ export const getStaticProps = async ({ locale }: { locale: string }) => {
       take: 20,
     });
 
-    liveRequests = rows.map((r) => ({
+    liveRequests = rows.map((r: typeof rows[number]) => ({
       key: createHash("sha256").update(r.id).digest("hex").slice(0, 8),
       mortgageCategory: r.mortgageCategory,
       productTypes: r.productTypes.slice(0, 2),

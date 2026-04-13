@@ -30,7 +30,6 @@ interface RequestRow {
     status: string;
   };
   _count: {
-    introductions: number;
     conversations: number;
   };
 }
@@ -202,7 +201,7 @@ export default function AdminRequests() {
         setActionMessage({ id: statusModal.id, text: data.error, ok: false });
       }
     } catch {
-      setActionMessage({ id: statusModal.id, text: "Failed to update", ok: false });
+      setActionMessage({ id: statusModal.id, text: t("admin.failedToUpdate", "Failed to update"), ok: false });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -230,7 +229,7 @@ export default function AdminRequests() {
         setActionMessage({ id: deleteModal.id, text: data.error, ok: false });
       }
     } catch {
-      setActionMessage({ id: deleteModal.id, text: "Failed to delete", ok: false });
+      setActionMessage({ id: deleteModal.id, text: t("admin.failedToDelete", "Failed to delete"), ok: false });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -255,7 +254,7 @@ export default function AdminRequests() {
         setActionMessage({ id: publicId, text: data.error, ok: false });
       }
     } catch {
-      setActionMessage({ id: publicId, text: "Failed to approve", ok: false });
+      setActionMessage({ id: publicId, text: t("admin.failedToApprove", "Failed to approve"), ok: false });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -283,7 +282,7 @@ export default function AdminRequests() {
         setActionMessage({ id: rejectModal.id, text: data.error, ok: false });
       }
     } catch {
-      setActionMessage({ id: rejectModal.id, text: "Failed to reject", ok: false });
+      setActionMessage({ id: rejectModal.id, text: t("admin.failedToReject", "Failed to reject"), ok: false });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -298,7 +297,7 @@ export default function AdminRequests() {
       const json = await res.json();
       const rows: RequestRow[] = json.data;
 
-      const headers = ["ID", "Borrower Name", "Borrower Email", "Type", "Category", "Province", "City", "Status", "Introductions", "Conversations", "Created"];
+      const headers = ["ID", "Borrower Name", "Borrower Email", "Type", "Category", "Province", "City", "Status", "Conversations", "Created"];
       const csvRows = [
         headers.join(","),
         ...rows.map((r) =>
@@ -311,7 +310,6 @@ export default function AdminRequests() {
             r.province,
             r.city || "",
             r.status,
-            r._count.introductions,
             r._count.conversations,
             formatDate(r.createdAt),
           ].join(",")
@@ -508,9 +506,6 @@ export default function AdminRequests() {
                     {/* Intros / Convos */}
                     <td className="whitespace-nowrap px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <span className="font-body text-xs text-forest-700/70" title="Introductions">
-                          {req._count.introductions} intro
-                        </span>
                         <span className="font-body text-xs text-forest-700/70" title="Conversations">
                           {req._count.conversations} conv
                         </span>
@@ -822,44 +817,7 @@ export default function AdminRequests() {
               )}
             </div>
 
-            {/* Section 4: Broker Introductions */}
-            <div className="card-elevated mb-6">
-              <h4 className="heading-sm mb-3">{t("admin.introductionDetails", "Broker Introductions")}</h4>
-              {detailLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <svg className="animate-spin h-5 w-5 text-forest-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                </div>
-              ) : detailData?.introductions && detailData.introductions.length > 0 ? (
-                <div className="space-y-3">
-                  {detailData.introductions.map((intro: any, idx: number) => (
-                    <div key={idx} className="rounded-lg border border-cream-200 p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-body text-sm font-semibold text-forest-800">
-                            {t("admin.brokerNameLabel", "Broker")}: {intro.broker?.user?.name || "—"}
-                          </p>
-                          <p className="font-body text-xs text-forest-700/60">
-                            {t("admin.brokerageLabel", "Brokerage")}: {intro.broker?.brokerageName || "—"} · {intro.broker?.user?.email || "—"}
-                          </p>
-                        </div>
-                        <p className="font-body text-xs text-forest-700/50">{formatDate(intro.createdAt)}</p>
-                      </div>
-                      <div>
-                        <p className="label-text">{t("admin.introMessage", "Message")}</p>
-                        <p className="font-body text-sm text-forest-800 bg-cream-50 rounded-lg p-2 whitespace-pre-line">{intro.message || intro.howCanHelp || "—"}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-body-sm text-forest-700/50">{t("admin.noIntroductionsShort", "No introductions yet.")}</p>
-              )}
-            </div>
-
-            {/* Section 5: Conversations Summary */}
+            {/* Section 4: Conversations Summary */}
             <div className="card-elevated mb-4">
               <h4 className="heading-sm mb-3">{t("admin.conversationSummary", "Conversations Summary")}</h4>
               {detailLoading ? (
@@ -1045,7 +1003,7 @@ export default function AdminRequests() {
             </div>
 
             <p className="text-body-sm mb-2">
-              {t("admin.deleteRequestWarning", "This will permanently delete this request and all related data (introductions, conversations, messages).")}
+              {t("admin.deleteRequestWarning", "This will permanently delete this request and all related data (conversations, messages).")}
             </p>
             <p className="font-body text-sm font-semibold text-forest-800 mb-4">
               {deleteModal.type} · {deleteModal.province}

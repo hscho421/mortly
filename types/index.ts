@@ -2,7 +2,6 @@ import type {
   User,
   BorrowerRequest,
   Broker,
-  BrokerIntroduction,
   Conversation,
   Message,
   Subscription,
@@ -13,7 +12,6 @@ export type {
   User,
   BorrowerRequest,
   Broker,
-  BrokerIntroduction,
   Conversation,
   Message,
   Subscription,
@@ -22,20 +20,11 @@ export type {
 
 export type BrokerWithUser = Broker & { user: Pick<User, "publicId" | "name"> };
 
-export type IntroductionWithBroker = BrokerIntroduction & {
-  broker: BrokerWithUser;
-};
-
 export type ConversationWithParticipants = Conversation & {
   broker: BrokerWithUser;
   borrower?: Pick<User, "id" | "name">;
   messages: Message[];
   request: Pick<BorrowerRequest, "id" | "province" | "city" | "mortgageCategory" | "productTypes" | "schemaVersion">;
-};
-
-export type RequestWithIntroductions = BorrowerRequest & {
-  introductions: IntroductionWithBroker[];
-  _count: { introductions: number };
 };
 
 // ── v2 Request Details ───────────────────────────────────────
@@ -70,11 +59,6 @@ export interface CreateRequestInput {
   details: RequestDetails;
   desiredTimeline?: string;
   notes?: string;
-}
-
-export interface CreateIntroductionInput {
-  requestId: string;
-  message: string;
 }
 
 // ── Live Activity (Homepage) ────────────────────────────────

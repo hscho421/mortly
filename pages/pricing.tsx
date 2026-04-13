@@ -56,7 +56,7 @@ export default function Pricing() {
       period: "",
       description: t("pricing.freeDesc"),
       features: {
-        introductions: t("pricing.val_none"),
+        responses: t("pricing.val_none"),
         notifications: false,
         realtimeAlerts: false,
       },
@@ -72,7 +72,7 @@ export default function Pricing() {
       period: t("pricing.perMonth"),
       description: t("pricing.basicDesc"),
       features: {
-        introductions: t("pricing.val_5perMonth"),
+        responses: t("pricing.val_5perMonth"),
         notifications: false,
         realtimeAlerts: false,
       },
@@ -88,7 +88,7 @@ export default function Pricing() {
       period: t("pricing.perMonth"),
       description: t("pricing.proDesc"),
       features: {
-        introductions: t("pricing.val_20perMonth"),
+        responses: t("pricing.val_20perMonth"),
         notifications: true,
         realtimeAlerts: false,
       },
@@ -104,7 +104,7 @@ export default function Pricing() {
       period: t("pricing.perMonth"),
       description: t("pricing.premiumDesc"),
       features: {
-        introductions: t("pricing.val_unlimited"),
+        responses: t("pricing.val_unlimited"),
         notifications: true,
         realtimeAlerts: true,
       },
@@ -114,7 +114,7 @@ export default function Pricing() {
   ];
 
   const comparisonRows = [
-    { label: t("pricing.feat_introductions"), key: "introductions" },
+    { label: t("pricing.feat_responses"), key: "responses" },
     { label: t("pricing.feat_notifications"), key: "notifications" },
     { label: t("pricing.feat_realtimeAlerts"), key: "realtimeAlerts" },
   ];

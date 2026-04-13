@@ -29,19 +29,10 @@ export default async function handler(
         where: lookup,
         include: {
           _count: {
-            select: { introductions: true, conversations: true },
-          },
-          introductions: {
-            include: {
-              broker: {
-                include: {
-                  user: { select: { id: true, name: true, publicId: true } },
-                },
-              },
-            },
+            select: { conversations: true },
           },
           conversations: {
-            select: { status: true, brokerId: true },
+            select: { status: true, brokerId: true, broker: { select: { userId: true } } },
           },
         },
       });
@@ -62,13 +53,10 @@ export default async function handler(
           return res.status(403).json({ error: "Broker must be verified to view requests" });
         }
         if (request.status !== "OPEN") {
-          const hasIntroduction = request.introductions.some(
-            (intro: { broker: { userId: string } }) => intro.broker.userId === session.user.id
-          );
           const hasConversation = request.conversations.some(
             (conv: { brokerId: string }) => conv.brokerId === broker.id
           );
-          if (!hasIntroduction && !hasConversation) {
+          if (!hasConversation) {
             return res.status(403).json({ error: "Forbidden" });
           }
         }
@@ -98,28 +86,29 @@ export default async function handler(
       });
 
       if (status === "CLOSED") {
-        const activeConversations = await prisma.conversation.findMany({
-          where: { requestId: request.id, status: "ACTIVE" },
-          select: { id: true },
-        });
+        await prisma.$transaction(async (tx) => {
+          const activeConversations = await tx.conversation.findMany({
+            where: { requestId: request.id, status: "ACTIVE" },
+            select: { id: true },
+          });
 
-        if (activeConversations.length > 0) {
-          await prisma.$transaction([
-            ...activeConversations.map((convo) =>
-              prisma.message.create({
+          if (activeConversations.length > 0) {
+            for (const convo of activeConversations) {
+              await tx.message.create({
                 data: {
                   conversationId: convo.id,
                   senderId: session.user.id,
-                  body: "This request has been closed by the borrower. Thank you for your interest.",
+                  body: "[System] This request has been closed. / 이 요청이 종료되었습니다.",
                 },
-              })
-            ),
-            prisma.conversation.updateMany({
+              });
+            }
+
+            await tx.conversation.updateMany({
               where: { requestId: request.id, status: "ACTIVE" },
               data: { status: "CLOSED" },
-            }),
-          ]);
-        }
+            });
+          }
+        });
       }
 
       return res.status(200).json(updated);
@@ -199,7 +188,7 @@ export default async function handler(
         select: { id: true },
       });
 
-      const conversationIds = conversations.map((c) => c.id);
+      const conversationIds = conversations.map((c: { id: string }) => c.id);
 
       await prisma.$transaction(async (tx) => {
         if (conversationIds.length > 0) {
@@ -210,9 +199,6 @@ export default async function handler(
             where: { requestId: request.id },
           });
         }
-        await tx.brokerIntroduction.deleteMany({
-          where: { requestId: request.id },
-        });
         await tx.borrowerRequest.delete({
           where: { id: request.id },
         });

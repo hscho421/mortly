@@ -34,17 +34,6 @@ interface BrokerDetail {
     status: string;
     createdAt: string;
   };
-  introductions: Array<{
-    id: string;
-    createdAt: string;
-    request: {
-      id: string;
-      province: string;
-      city: string | null;
-      status: string;
-      mortgageCategory?: string | null;
-    };
-  }>;
   conversations: Array<{
     id: string;
     status: string;
@@ -61,7 +50,6 @@ interface BrokerDetail {
     endedAt: string | null;
   } | null;
   _count: {
-    introductions: number;
     conversations: number;
   };
 }
@@ -126,7 +114,7 @@ export default function AdminBrokerDetail() {
           setError("Broker not found");
         }
       } catch {
-        setError("Failed to load broker");
+        setError(t("admin.failedToLoadBroker", "Failed to load broker"));
       } finally {
         setLoading(false);
       }
@@ -157,7 +145,7 @@ export default function AdminBrokerDetail() {
         setActionMessage({ text: data.error, ok: false });
       }
     } catch {
-      setActionMessage({ text: "Failed to update", ok: false });
+      setActionMessage({ text: t("admin.failedToUpdate", "Failed to update"), ok: false });
     } finally {
       setActionLoading(false);
       setTimeout(() => setActionMessage(null), 3000);
@@ -184,7 +172,7 @@ export default function AdminBrokerDetail() {
         setActionMessage({ text: data.error, ok: false });
       }
     } catch {
-      setActionMessage({ text: "Failed to update", ok: false });
+      setActionMessage({ text: t("admin.failedToUpdate", "Failed to update"), ok: false });
     } finally {
       setActionLoading(false);
       setTimeout(() => setActionMessage(null), 3000);
@@ -307,14 +295,10 @@ export default function AdminBrokerDetail() {
         </div>
 
         {/* Stats & Credits */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 animate-fade-in-up stagger-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 animate-fade-in-up stagger-2">
           <div className="card-elevated text-center">
             <p className="font-display text-2xl text-forest-800">{broker.responseCredits}</p>
             <p className="text-body-sm">{t("admin.creditsRemaining", "Credits")}</p>
-          </div>
-          <div className="card-elevated text-center">
-            <p className="font-display text-2xl text-forest-800">{broker._count.introductions}</p>
-            <p className="text-body-sm">{t("admin.totalIntros", "Introductions")}</p>
           </div>
           <div className="card-elevated text-center">
             <p className="font-display text-2xl text-forest-800">{broker._count.conversations}</p>
@@ -399,41 +383,6 @@ export default function AdminBrokerDetail() {
               {broker.user.status}
             </span>
           </p>
-        </div>
-
-        {/* Recent Introductions */}
-        <div className="card-elevated mb-6 animate-fade-in-up stagger-4">
-          <h2 className="heading-sm mb-4">
-            {t("admin.recentIntroductions", "Recent Introductions")} ({broker._count.introductions})
-          </h2>
-          {broker.introductions.length === 0 ? (
-            <p className="text-body-sm">{t("admin.noIntroductions", "No introductions sent yet.")}</p>
-          ) : (
-            <div className="space-y-2">
-              {broker.introductions.map((intro) => (
-                <div key={intro.id} className="flex items-center justify-between rounded-lg bg-cream-50 px-4 py-3">
-                  <div>
-                    <p className="font-body text-sm text-forest-800">
-                      {getRequestTitle(intro.request)} · {intro.request.province}
-                      {intro.request.city ? `, ${intro.request.city}` : ""}
-                    </p>
-                    <p className="font-body text-xs text-forest-700/50">
-                      <span className={intro.request.status === "OPEN" ? "text-forest-600" : "text-sage-500"}>
-                        {intro.request.status}
-                      </span>{" "}
-                      · {formatDate(intro.createdAt)}
-                    </p>
-                  </div>
-                  <Link
-                    href="/admin/requests"
-                    className="font-body text-xs text-forest-600 hover:underline"
-                  >
-                    {t("admin.viewRequest", "View")}
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Recent Conversations */}

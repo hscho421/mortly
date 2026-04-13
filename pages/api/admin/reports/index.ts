@@ -60,7 +60,7 @@ export default async function handler(
       ]);
 
       // Batch-resolve CUID targetIds to publicIds (avoids N+1)
-      const cuidReports = rawReports.filter((r) => !/^\d{9}$/.test(r.targetId));
+      const cuidReports = rawReports.filter((r: { targetId: string }) => !/^\d{9}$/.test(r.targetId));
       const idsByType: Record<string, string[]> = {};
       for (const r of cuidReports) {
         (idsByType[r.targetType] ??= []).push(r.targetId);
@@ -74,13 +74,13 @@ export default async function handler(
           prisma.broker.findMany({
             where: { id: { in: idsByType["BROKER"] } },
             include: { user: { select: { publicId: true } } },
-          }).then((brokers) => {
+          }).then((brokers: { id: string; user: { publicId: string } }[]) => {
             for (const b of brokers) publicIdMap.set(b.id, b.user.publicId);
           }),
           prisma.user.findMany({
             where: { id: { in: idsByType["BROKER"] } },
             select: { id: true, publicId: true },
-          }).then((users) => {
+          }).then((users: { id: string; publicId: string }[]) => {
             for (const u of users) {
               if (!publicIdMap.has(u.id)) publicIdMap.set(u.id, u.publicId);
             }
@@ -92,7 +92,7 @@ export default async function handler(
           prisma.borrowerRequest.findMany({
             where: { id: { in: idsByType["REQUEST"] } },
             select: { id: true, publicId: true },
-          }).then((reqs) => {
+          }).then((reqs: { id: string; publicId: string }[]) => {
             for (const r of reqs) publicIdMap.set(r.id, r.publicId);
           })
         );
@@ -102,7 +102,7 @@ export default async function handler(
           prisma.conversation.findMany({
             where: { id: { in: idsByType["CONVERSATION"] } },
             select: { id: true, publicId: true },
-          }).then((convos) => {
+          }).then((convos: { id: string; publicId: string }[]) => {
             for (const c of convos) publicIdMap.set(c.id, c.publicId);
           })
         );
@@ -110,7 +110,7 @@ export default async function handler(
 
       await Promise.all(batchQueries);
 
-      const reports = rawReports.map((report) => {
+      const reports = rawReports.map((report: typeof rawReports[number]) => {
         if (/^\d{9}$/.test(report.targetId)) return report;
         const resolved = publicIdMap.get(report.targetId);
         return resolved ? { ...report, targetId: resolved } : report;

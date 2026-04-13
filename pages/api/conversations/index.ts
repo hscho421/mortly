@@ -72,7 +72,7 @@ export default async function handler(
       const userId = session.user.id;
 
       // Build per-conversation OR conditions (same pattern as /api/messages/unread)
-      const orConditions = conversations.map((c) => {
+      const orConditions = conversations.map((c: { id: string; borrowerLastReadAt: Date | null; brokerLastReadAt: Date | null }) => {
         const lastReadAt = isBorrower ? c.borrowerLastReadAt : c.brokerLastReadAt;
         return {
           conversationId: c.id,
@@ -91,10 +91,10 @@ export default async function handler(
         : [];
 
       const unreadMap = new Map(
-        unreadCounts.map((r) => [r.conversationId, r._count._all])
+        unreadCounts.map((r: { conversationId: string; _count: { _all: number } }) => [r.conversationId, r._count._all])
       );
 
-      const withUnread = conversations.map((c) => ({
+      const withUnread = conversations.map((c: typeof conversations[number]) => ({
         ...c,
         borrower: c.borrower,
         unreadCount: unreadMap.get(c.id) ?? 0,
@@ -171,52 +171,26 @@ export default async function handler(
 
       const isPremium = broker.subscriptionTier === "PREMIUM";
 
-      if (!isPremium && broker.responseCredits <= 0) {
-        return res.status(403).json({ error: "No response credits remaining" });
-      }
-
-      // Check for existing conversation
-      const existing = await prisma.conversation.findUnique({
-        where: { requestId_brokerId: { requestId: request.id, brokerId: broker.id } },
-      });
-      if (existing) {
-        return res.status(200).json(existing);
-      }
-
+      // All conversation creation goes through a transaction to prevent
+      // race conditions (duplicate conversations + credit double-spend)
       const convoPublicId = await generateConversationPublicId();
 
-      if (isPremium) {
-        const conversation = await prisma.conversation.create({
-          data: {
-            publicId: convoPublicId,
-            requestId: request.id,
-            borrowerId: request.borrowerId,
-            brokerId: broker.id,
-          },
-        });
-
-        // Create initial message if provided
-        if (message) {
-          await prisma.message.create({
-            data: { conversationId: conversation.id, senderId: session.user.id, body: message },
-          });
-          await prisma.conversation.update({
-            where: { id: conversation.id },
-            data: { updatedAt: new Date() },
-          });
-        }
-
-        return res.status(201).json(conversation);
-      }
-
-      // Non-premium: atomically deduct credit and create conversation
       const conversation = await prisma.$transaction(async (tx) => {
-        const updated = await tx.broker.updateMany({
-          where: { id: broker.id, responseCredits: { gt: 0 } },
-          data: { responseCredits: { decrement: 1 } },
+        // Idempotency: return existing conversation if already created
+        const existing = await tx.conversation.findUnique({
+          where: { requestId_brokerId: { requestId: request.id, brokerId: broker.id } },
         });
-        if (updated.count === 0) {
-          throw new Error("NO_CREDITS");
+        if (existing) return existing;
+
+        // Non-premium brokers: atomically deduct credit
+        if (!isPremium) {
+          const updated = await tx.broker.updateMany({
+            where: { id: broker.id, responseCredits: { gt: 0 } },
+            data: { responseCredits: { decrement: 1 } },
+          });
+          if (updated.count === 0) {
+            throw new Error("NO_CREDITS");
+          }
         }
 
         const conv = await tx.conversation.create({

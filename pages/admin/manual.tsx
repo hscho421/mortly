@@ -267,7 +267,7 @@ export default function AdminManual() {
                 <BulletList items={[
                   t("manual.brokerAction1", "View — opens the full broker detail page"),
                   t("manual.brokerAction2", "Verify — instantly approves a pending broker (one click)"),
-                  t("manual.brokerAction3", "Suspend — rejects a broker's verification (they can no longer view requests or send introductions)"),
+                  t("manual.brokerAction3", "Suspend — rejects a broker's verification (they can no longer view requests or start conversations)"),
                 ]} />
               </SubSection>
 
@@ -282,9 +282,9 @@ export default function AdminManual() {
                 <BulletList items={[
                   t("manual.brokerSection1", "Header — broker name, public user ID, verification badge, subscription tier badge, account status badge"),
                   t("manual.brokerSection2", "Profile Info — brokerage, email, license number, province, mortgage category, experience, areas served, specialties, member since, bio"),
-                  t("manual.brokerSection3", "Stats Cards — credits remaining, total introductions, total conversations, average rating with review count"),
+                  t("manual.brokerSection3", "Stats Cards — credits remaining, total conversations, average rating with review count"),
                   t("manual.brokerSection4", "Verification Actions — Approve, Reject, or Reset to Pending buttons (changes take effect immediately)"),
-                  t("manual.brokerSection5", "Recent Introductions — last 20 introductions with request type, location, status, and date. Click 'View' to go to request management."),
+                  t("manual.brokerSection5", "Recent Conversations — last 20 conversations with borrower, status, message count, and last activity. Click 'Messages' to view the thread."),
                   t("manual.brokerSection6", "Recent Conversations — last 20 conversations with borrower name, status, message count, and last activity. Click 'Messages' to view the thread."),
                 ]} />
               </SubSection>
@@ -293,7 +293,7 @@ export default function AdminManual() {
             {/* Verification Queue */}
             <Section id="verification" title={t("manual.verificationTitle", "Verification Queue")}>
               <P>{t("manual.verificationP1", "The verification queue (/admin/verification) shows brokers awaiting license verification. This is a focused view — it only shows PENDING brokers.")}</P>
-              <P>{t("manual.verificationP2", "For each broker you can approve or reject. Approved brokers can immediately start viewing requests and sending introductions (depending on their subscription tier). Rejected brokers are blocked from these features.")}</P>
+              <P>{t("manual.verificationP2", "For each broker you can approve or reject. Approved brokers can immediately start viewing requests and starting conversations (depending on their subscription tier). Rejected brokers are blocked from these features.")}</P>
               <Tip>{t("manual.verificationTip", "Tip: You can also verify brokers from the broker management list or from the broker detail page. All three methods are equivalent.")}</Tip>
             </Section>
 
@@ -313,9 +313,9 @@ export default function AdminManual() {
                 <BulletList items={[
                   t("manual.requestAction1", "Details — opens a modal showing the full request information: borrower, property type, price range, mortgage amount, employment type, credit score band, closing timeline, and notes"),
                   t("manual.requestAction2", "Status — opens a modal to change the request status. You must select a new status and can optionally provide a reason. When closing a request, all active conversations are automatically closed too."),
-                  t("manual.requestAction3", "Delete — permanently removes the request and ALL related data: introductions, conversations, and messages. This cannot be undone."),
+                  t("manual.requestAction3", "Delete — permanently removes the request and ALL related data: conversations and messages. This cannot be undone."),
                 ]} />
-                <Warning>{t("manual.requestDeleteWarning", "Warning: Deleting a request is irreversible. All associated introductions, conversations, messages, and reviews will be permanently removed. Always provide a reason for the audit trail.")}</Warning>
+                <Warning>{t("manual.requestDeleteWarning", "Warning: Deleting a request is irreversible. All associated conversations, messages, and reviews will be permanently removed. Always provide a reason for the audit trail.")}</Warning>
               </SubSection>
             </Section>
 

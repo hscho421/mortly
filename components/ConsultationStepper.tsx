@@ -2,7 +2,7 @@ import { useTranslation } from "next-i18next";
 
 interface ConsultationStepperProps {
   requestStatus: string;
-  hasIntroduction: boolean;
+  hasConversation: boolean;
   hasActiveConversation: boolean;
   conversationClosed: boolean;
 }
@@ -11,7 +11,7 @@ type StepState = "completed" | "active" | "pending";
 
 function getStepStates(
   requestStatus: string,
-  hasIntroduction: boolean,
+  hasConversation: boolean,
   hasActiveConversation: boolean,
   conversationClosed: boolean
 ): [StepState, StepState, StepState] {
@@ -21,16 +21,16 @@ function getStepStates(
   }
 
   // Step 2 active: broker responded and conversation is active
-  if (hasIntroduction && hasActiveConversation) {
+  if (hasConversation && hasActiveConversation) {
     return ["completed", "active", "pending"];
   }
 
-  // Step 2 active: broker responded but conversation not yet started by borrower
-  if (hasIntroduction) {
+  // Step 2 active: broker responded but conversation not yet active
+  if (hasConversation) {
     return ["completed", "active", "pending"];
   }
 
-  // Step 1 active: pending approval or open but no introductions yet
+  // Step 1 active: pending approval or open but no conversations yet
   return ["active", "pending", "pending"];
 }
 
@@ -85,7 +85,7 @@ function ConnectorVertical({ completed }: { completed: boolean }) {
 
 export default function ConsultationStepper({
   requestStatus,
-  hasIntroduction,
+  hasConversation,
   hasActiveConversation,
   conversationClosed,
 }: ConsultationStepperProps) {
@@ -98,7 +98,7 @@ export default function ConsultationStepper({
 
   const [step1, step2, step3] = getStepStates(
     requestStatus,
-    hasIntroduction,
+    hasConversation,
     hasActiveConversation,
     conversationClosed
   );

@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { invalidateSettingsCache } from "@/lib/settings";
 
 export default async function handler(
   req: NextApiRequest,
@@ -34,12 +35,36 @@ export default async function handler(
         return res.status(400).json({ error: "Request body must be a key-value object" });
       }
 
+      const ALLOWED_KEYS = new Set([
+        "request_expiry_days",
+        "max_requests_per_user",
+        "maintenance_mode",
+        "free_tier_credits",
+        "basic_tier_credits",
+        "pro_tier_credits",
+        "broker_initial_message_limit",
+      ]);
+
+      const entries = Object.entries(updates);
+      if (entries.length === 0 || entries.length > 20) {
+        return res.status(400).json({ error: "Must update between 1 and 20 settings" });
+      }
+
+      for (const [key, value] of entries) {
+        if (!ALLOWED_KEYS.has(key)) {
+          return res.status(400).json({ error: `Unknown setting: ${key}` });
+        }
+        if (typeof value !== "string" || value.length > 500) {
+          return res.status(400).json({ error: `Invalid value for ${key}` });
+        }
+      }
+
       await prisma.$transaction([
-        ...Object.entries(updates).map(([key, value]) =>
+        ...entries.map(([key, value]) =>
           prisma.systemSetting.upsert({
             where: { key },
-            update: { value: String(value) },
-            create: { key, value: String(value) },
+            update: { value },
+            create: { key, value },
           })
         ),
       ]);
@@ -53,6 +78,8 @@ export default async function handler(
           details: JSON.stringify(updates),
         },
       });
+
+      invalidateSettingsCache();
 
       const settings = await prisma.systemSetting.findMany();
       const map: Record<string, string> = {};

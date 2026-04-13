@@ -9,7 +9,6 @@ import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
 import { SkeletonDashboard } from "@/components/Skeleton";
-import type { RequestWithIntroductions } from "@/types";
 import { PRODUCT_LABEL_KEYS } from "@/lib/requestConfig";
 
 function formatDate(dateStr: string) {
@@ -31,7 +30,20 @@ export default function BorrowerDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [requests, setRequests] = useState<RequestWithIntroductions[]>([]);
+  interface DashboardRequest {
+    id: string;
+    publicId: string;
+    province: string;
+    city?: string | null;
+    status: string;
+    createdAt: string | Date;
+    mortgageCategory?: string | null;
+    productTypes?: string[] | null;
+    conversations?: { broker?: { userId: string } }[];
+    _count?: { conversations?: number };
+  }
+
+  const [requests, setRequests] = useState<DashboardRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -57,7 +69,8 @@ export default function BorrowerDashboard() {
     };
 
     fetchRequests();
-  }, [session, status, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router.locale]);
 
   if (status === "loading" || isLoading) {
     return (
@@ -97,13 +110,13 @@ export default function BorrowerDashboard() {
         {/* Stats row */}
         {requests.length > 0 && (() => {
           const activeCount = requests.filter((r) => r.status === "OPEN" || r.status === "IN_PROGRESS").length;
-          const totalIntros = requests.reduce((sum, r) => sum + (r._count?.introductions ?? r.introductions?.length ?? 0), 0);
+          const totalConvos = requests.reduce((sum, r) => sum + (r._count?.conversations ?? r.conversations?.length ?? 0), 0);
           return (
             <div className="mb-10 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {[
                 { value: requests.length, label: t("borrowerDashboard.statTotal", "Total Requests") },
                 { value: activeCount, label: t("borrowerDashboard.statActive", "Active") },
-                { value: totalIntros, label: t("borrowerDashboard.statOffers", "Offers Received") },
+                { value: totalConvos, label: t("borrowerDashboard.statOffers", "Offers Received") },
                 { value: requests.filter((r) => r.status === "CLOSED").length, label: t("borrowerDashboard.statCompleted", "Completed") },
               ].map((stat, i) => (
                 <div key={i} className={`card-stat text-center animate-fade-in-up stagger-${i + 1}`}>
@@ -146,8 +159,8 @@ export default function BorrowerDashboard() {
             {requests.map((req, i) => {
               const staggerClass =
                 i < 6 ? `stagger-${i + 1}` : "stagger-6";
-              const introCount =
-                req._count?.introductions ?? req.introductions?.length ?? 0;
+              const convoCount =
+                req._count?.conversations ?? req.conversations?.length ?? 0;
 
               const isDimmed = req.status === "EXPIRED" || req.status === "REJECTED";
 
@@ -220,7 +233,7 @@ export default function BorrowerDashboard() {
                           d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
                         />
                       </svg>
-                      {introCount} {introCount !== 1 ? t("borrowerDashboard.introductionsPlural") : t("borrowerDashboard.introductions")}
+                      {convoCount} {convoCount !== 1 ? t("borrowerDashboard.responsesPlural", "responses") : t("borrowerDashboard.response", "response")}
                     </span>
                   </div>
                 </Link>

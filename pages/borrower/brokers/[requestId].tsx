@@ -9,15 +9,31 @@ import type { GetServerSideProps } from "next";
 import Layout from "@/components/Layout";
 import { SkeletonBrokerList } from "@/components/Skeleton";
 import ReportButton from "@/components/ReportButton";
-import type { IntroductionWithBroker } from "@/types";
-import posthog from "posthog-js";
+
+interface ConversationBroker {
+  id: string;
+  createdAt: string;
+  status: string;
+  broker: {
+    id: string;
+    brokerageName: string;
+    verificationStatus: string;
+    yearsExperience: number | null;
+    user: {
+      id: string;
+      publicId: string;
+      name: string | null;
+      email: string;
+    };
+  };
+}
 
 type SortOption = "fastest" | "most_experienced";
 
-function sortIntroductions(
-  items: IntroductionWithBroker[],
+function sortConversations(
+  items: ConversationBroker[],
   sort: SortOption
-): IntroductionWithBroker[] {
+): ConversationBroker[] {
   const sorted = [...items];
   switch (sort) {
     case "fastest":
@@ -48,69 +64,34 @@ export default function BrokerComparison() {
   const { requestId } = router.query;
   const { data: session, status: authStatus } = useSession();
 
-  const [introductions, setIntroductions] = useState<IntroductionWithBroker[]>(
-    []
-  );
+  const [conversations, setConversations] = useState<ConversationBroker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sort, setSort] = useState<SortOption>("fastest");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [selectingId, setSelectingId] = useState<string | null>(null);
 
-  const fetchIntroductions = useCallback(async () => {
+  const fetchConversations = useCallback(async () => {
     if (!requestId) return;
     try {
-      const res = await fetch(
-        `/api/introductions?requestId=${requestId}`
-      );
-      if (!res.ok) throw new Error(t("errors.failedToFetchIntroductions"));
+      const res = await fetch(`/api/requests/${requestId}`);
+      if (!res.ok) throw new Error(t("common.failedToLoad"));
       const data = await res.json();
-      setIntroductions(data);
+      setConversations(data.conversations ?? []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
     } finally {
       setLoading(false);
     }
-  }, [requestId]);
+  }, [requestId, t]);
 
   useEffect(() => {
     if (authStatus === "unauthenticated") {
       router.replace("/login", undefined, { locale: router.locale });
       return;
     }
-    fetchIntroductions();
-  }, [authStatus, router, fetchIntroductions]);
+    fetchConversations();
+  }, [authStatus, router, fetchConversations]);
 
-  async function handleSelectBroker(brokerId: string) {
-    if (!session?.user || !requestId) return;
-    setSelectingId(brokerId);
-
-    try {
-      const res = await fetch("/api/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, brokerId }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || t("errors.failedToCreateConversation"));
-      }
-
-      const data = await res.json();
-      posthog.capture("broker_selected", {
-        broker_id: brokerId,
-        request_id: requestId,
-      });
-      router.push(`/borrower/messages?id=${data.id}`, undefined, { locale: router.locale });
-    } catch (err: unknown) {
-      posthog.captureException(err);
-      setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
-      setSelectingId(null);
-    }
-  }
-
-  const sorted = sortIntroductions(introductions, sort);
+  const sorted = sortConversations(conversations, sort);
 
   if (authStatus === "loading" || loading) {
     return (
@@ -167,7 +148,7 @@ export default function BrokerComparison() {
           ))}
         </div>
 
-        {/* Introduction cards */}
+        {/* Broker cards */}
         {sorted.length === 0 ? (
           <div className="text-center py-16 animate-fade-in-up stagger-4">
             <p className="heading-sm text-sage-400 mb-2">{t("brokerIntros.noIntros")}</p>
@@ -177,14 +158,12 @@ export default function BrokerComparison() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
-            {sorted.map((intro, index) => {
-              const broker = intro.broker;
-              const isExpanded = expandedId === intro.id;
-              const isSelecting = selectingId === broker.id;
+            {sorted.map((conv, index) => {
+              const broker = conv.broker;
 
               return (
                 <div
-                  key={intro.id}
+                  key={conv.id}
                   className={`card-elevated hover:shadow-xl hover:shadow-forest-800/5 transition-all duration-300 animate-fade-in-up ${
                     index < 6 ? `stagger-${index + 1}` : ""
                   }`}
@@ -232,43 +211,15 @@ export default function BrokerComparison() {
                     <ReportButton targetType="BROKER" targetId={broker.user.publicId} />
                   </div>
 
-                  {/* Message preview / full */}
-                  <div className="mt-5">
-                    <p className="text-xs font-semibold font-body text-sage-500 uppercase tracking-widest mb-1">
-                      {t("brokerIntros.message")}
-                    </p>
-                    {(() => {
-                      const text = intro.message || intro.howCanHelp || "";
-                      return (
-                        <p className="text-body whitespace-pre-line">
-                          {isExpanded
-                            ? text
-                            : text.length > 200
-                              ? text.slice(0, 200) + "..."
-                              : text}
-                        </p>
-                      );
-                    })()}
-                  </div>
-
                   {/* Actions */}
                   <div className="mt-6 flex items-center gap-3 pt-5 border-t divider">
                     <button
-                      onClick={() => handleSelectBroker(broker.id)}
-                      disabled={isSelecting}
-                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSelecting ? t("brokerIntros.connecting") : t("brokerIntros.selectBroker")}
-                    </button>
-                    <button
                       onClick={() =>
-                        setExpandedId(isExpanded ? null : intro.id)
+                        router.push(`/borrower/messages?id=${conv.id}`, undefined, { locale: router.locale })
                       }
-                      className="btn-secondary"
+                      className="btn-primary"
                     >
-                      {isExpanded
-                        ? t("brokerIntros.showLess")
-                        : t("brokerIntros.viewFull")}
+                      {t("request.viewMessages")}
                     </button>
                   </div>
                 </div>

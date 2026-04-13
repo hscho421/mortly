@@ -53,7 +53,7 @@ export default async function handler(
               select: { id: true, name: true, email: true, status: true },
             },
             _count: {
-              select: { introductions: true, conversations: true },
+              select: { conversations: true },
             },
           },
           orderBy: { createdAt: "desc" },

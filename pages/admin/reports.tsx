@@ -206,7 +206,7 @@ export default function AdminReports() {
         setNotesMessage({ text: data.error, ok: false });
       }
     } catch {
-      setNotesMessage({ text: "Failed to save", ok: false });
+      setNotesMessage({ text: t("admin.failedToSave", "Failed to save"), ok: false });
     } finally {
       setNotesSubmitting(false);
     }
@@ -245,7 +245,7 @@ export default function AdminReports() {
                   const json = await res.json();
                   const allReports: ReportRow[] = json.data;
 
-                  const headers = ["ID", "Reporter", "Target Type", "Target ID", "Reason", "Status", "Admin Notes", "Created", "Resolved"];
+                  const headers = [t("admin.csv.id", "ID"), t("admin.csv.reporter", "Reporter"), t("admin.csv.targetType", "Target Type"), t("admin.csv.targetId", "Target ID"), t("admin.csv.reason", "Reason"), t("admin.csv.status", "Status"), t("admin.csv.adminNotes", "Admin Notes"), t("admin.csv.created", "Created"), t("admin.csv.resolved", "Resolved")];
                   const rows = allReports.map((r) => [
                     r.id,
                     r.reporter.name || r.reporter.email,

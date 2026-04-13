@@ -156,7 +156,7 @@ export default function AdminConversations() {
         setActionMessage({ id: closeModal.id, text: data.error, ok: false });
       }
     } catch {
-      setActionMessage({ id: closeModal.id, text: "Failed to close", ok: false });
+      setActionMessage({ id: closeModal.id, text: t("admin.failedToClose", "Failed to close"), ok: false });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);

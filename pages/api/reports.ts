@@ -19,10 +19,17 @@ export default async function handler(
   try {
     const { targetType, targetId, reason } = req.body;
 
-    if (!targetType || !targetId || !reason) {
+    if (!targetType || typeof targetType !== "string" ||
+        !targetId || typeof targetId !== "string" ||
+        !reason || typeof reason !== "string") {
       return res
         .status(400)
         .json({ error: "targetType, targetId, and reason are required" });
+    }
+
+    const trimmedReason = reason.trim();
+    if (trimmedReason.length === 0 || trimmedReason.length > 2000) {
+      return res.status(400).json({ error: "Reason must be between 1 and 2000 characters" });
     }
 
     const allowedTypes = ["BROKER", "REQUEST", "CONVERSATION"];
@@ -48,7 +55,7 @@ export default async function handler(
         reporterId: session.user.id,
         targetType,
         targetId,
-        reason,
+        reason: trimmedReason,
       },
     });
 

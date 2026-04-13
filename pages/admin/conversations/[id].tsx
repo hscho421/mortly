@@ -105,7 +105,7 @@ export default function AdminConversationDetail() {
           setError("Conversation not found");
         }
       } catch {
-        setError("Failed to load conversation");
+        setError(t("admin.failedToLoadConversation", "Failed to load conversation"));
       } finally {
         setLoading(false);
       }

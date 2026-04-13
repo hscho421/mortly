@@ -1,6 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { timingSafeEqual } from "crypto";
 import prisma from "@/lib/prisma";
 import { getSettingInt } from "@/lib/settings";
+
+function verifyCronSecret(authHeader: string | undefined): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || !authHeader) return false;
+  const token = authHeader.replace("Bearer ", "");
+  if (token.length !== secret.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(token), Buffer.from(secret));
+  } catch {
+    return false;
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,8 +23,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(req.headers.authorization)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

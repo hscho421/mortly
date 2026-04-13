@@ -91,15 +91,17 @@ export default async function handler(
     });
 
     // Send verification email
+    let emailSent = true;
     try {
       await sendVerificationCode(email, verificationCode, locale || "ko");
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError);
+      emailSent = false;
     }
 
     // Note: If role is BROKER, the broker profile will be created during onboarding
 
-    return res.status(201).json({ user, requiresVerification: true });
+    return res.status(201).json({ user, requiresVerification: true, emailSent });
   } catch (error) {
     console.error("Signup error:", error);
     return res.status(500).json({ message: "Internal server error" });

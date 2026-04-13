@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import prisma from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
 
@@ -22,15 +22,17 @@ export default async function handler(
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (user) {
-      const resetToken = randomBytes(32).toString("hex");
+      const rawToken = randomBytes(32).toString("hex");
+      const hashedToken = createHash("sha256").update(rawToken).digest("hex");
       const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       await prisma.user.update({
         where: { email },
-        data: { resetToken, resetTokenExpiry },
+        data: { resetToken: hashedToken, resetTokenExpiry },
       });
 
-      const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
+      // Send the raw token to the user; only the hash is stored in DB
+      const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${rawToken}`;
 
       try {
         await sendPasswordResetEmail(email, resetUrl, "ko");

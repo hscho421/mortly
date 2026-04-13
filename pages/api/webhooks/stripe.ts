@@ -113,22 +113,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const period = getSubPeriod(stripeSub);
   if (!period) return;
 
-  // Idempotency: check if this subscription was already processed for this period
-  const existing = await prisma.subscription.findUnique({
-    where: { brokerId },
-  });
-  if (
-    existing?.stripeSubscriptionId === stripeSubscriptionId &&
-    existing?.currentPeriodStart &&
-    existing.currentPeriodStart.getTime() === period.start.getTime()
-  ) {
-    return;
-  }
-
   const credits = await getCreditsForTier(tier);
 
-  await prisma.$transaction([
-    prisma.subscription.upsert({
+  await prisma.$transaction(async (tx) => {
+    // Idempotency: check inside transaction to prevent concurrent duplicate processing
+    const existing = await tx.subscription.findUnique({
+      where: { brokerId },
+    });
+    if (
+      existing?.stripeSubscriptionId === stripeSubscriptionId &&
+      existing?.currentPeriodStart &&
+      existing.currentPeriodStart.getTime() === period.start.getTime()
+    ) {
+      return;
+    }
+
+    await tx.subscription.upsert({
       where: { brokerId },
       create: {
         brokerId,
@@ -150,15 +150,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
         endedAt: null,
       },
-    }),
-    prisma.broker.update({
+    });
+    await tx.broker.update({
       where: { id: brokerId },
       data: {
         subscriptionTier: tier as "BASIC" | "PRO" | "PREMIUM",
         responseCredits: credits,
       },
-    }),
-  ]);
+    });
+  });
 
   const posthog = getPostHogClient();
   posthog.capture({
@@ -186,14 +186,6 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const period = getSubPeriod(stripeSub);
   if (!period) return;
 
-  // Idempotency: skip if we already processed this period
-  if (
-    subscription.currentPeriodStart &&
-    subscription.currentPeriodStart.getTime() === period.start.getTime()
-  ) {
-    return;
-  }
-
   // If there's a pending downgrade, apply it now and swap the Stripe price
   const priceId = stripeSub.items.data[0]?.price.id;
   let tier = getTierForPriceId(priceId) || subscription.tier;
@@ -215,8 +207,19 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const credits = await getCreditsForTier(tier);
   const appliedPriceId = getPriceIdForTier(tier) || priceId;
 
-  await prisma.$transaction([
-    prisma.subscription.update({
+  await prisma.$transaction(async (tx) => {
+    // Idempotency: re-check inside transaction to prevent concurrent duplicate processing
+    const current = await tx.subscription.findUnique({
+      where: { stripeSubscriptionId },
+    });
+    if (
+      current?.currentPeriodStart &&
+      current.currentPeriodStart.getTime() === period.start.getTime()
+    ) {
+      return;
+    }
+
+    await tx.subscription.update({
       where: { stripeSubscriptionId },
       data: {
         status: "ACTIVE",
@@ -226,15 +229,15 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
         stripePriceId: appliedPriceId,
         pendingTier: null,
       },
-    }),
-    prisma.broker.update({
+    });
+    await tx.broker.update({
       where: { id: subscription.broker.id },
       data: {
         subscriptionTier: tier as "BASIC" | "PRO" | "PREMIUM",
         responseCredits: credits,
       },
-    }),
-  ]);
+    });
+  });
 
   const posthog = getPostHogClient();
   posthog.capture({

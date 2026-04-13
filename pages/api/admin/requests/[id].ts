@@ -33,16 +33,6 @@ export default async function handler(
           borrower: {
             select: { id: true, name: true, email: true, status: true },
           },
-          introductions: {
-            include: {
-              broker: {
-                include: {
-                  user: { select: { id: true, name: true, email: true } },
-                },
-              },
-            },
-            orderBy: { createdAt: "desc" },
-          },
           conversations: {
             include: {
               broker: {
@@ -58,7 +48,7 @@ export default async function handler(
             orderBy: { updatedAt: "desc" },
           },
           _count: {
-            select: { introductions: true, conversations: true },
+            select: { conversations: true },
           },
         },
       });
@@ -115,7 +105,7 @@ export default async function handler(
 
         if (activeConversations.length > 0) {
           await prisma.$transaction([
-            ...activeConversations.map((convo) =>
+            ...activeConversations.map((convo: { id: string }) =>
               prisma.message.create({
                 data: {
                   conversationId: convo.id,
@@ -178,7 +168,7 @@ export default async function handler(
         select: { id: true },
       });
 
-      const conversationIds = conversations.map((c) => c.id);
+      const conversationIds = conversations.map((c: { id: string }) => c.id);
 
       await prisma.$transaction(async (tx) => {
         if (conversationIds.length > 0) {
@@ -189,9 +179,6 @@ export default async function handler(
             where: { requestId: request.id },
           });
         }
-        await tx.brokerIntroduction.deleteMany({
-          where: { requestId: request.id },
-        });
         await tx.borrowerRequest.delete({
           where: { id: request.id },
         });

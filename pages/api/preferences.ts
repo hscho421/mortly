@@ -17,8 +17,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === "PUT") {
     const { preferences } = req.body;
-    if (!preferences || typeof preferences !== "object") {
+    if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) {
       return res.status(400).json({ message: "Invalid preferences" });
+    }
+
+    // Size guard: prevent storing excessively large preferences
+    const serialized = JSON.stringify(preferences);
+    if (serialized.length > 10000) {
+      return res.status(400).json({ message: "Preferences too large (max 10KB)" });
     }
 
     // Merge with existing preferences so partial updates work

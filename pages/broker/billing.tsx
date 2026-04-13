@@ -60,7 +60,7 @@ function usePlans(t: (key: string) => string): Plan[] {
       credits: t("pricing.val_none"),
       description: t("pricing.freeDesc"),
       features: [
-        { text: t("pricing.feat_introductions") + ": " + t("pricing.val_none"), included: false },
+        { text: t("pricing.feat_responses") + ": " + t("pricing.val_none"), included: false },
         { text: t("pricing.feat_notifications"), included: false },
         { text: t("pricing.feat_realtimeAlerts"), included: false },
       ],
@@ -76,7 +76,7 @@ function usePlans(t: (key: string) => string): Plan[] {
       credits: t("pricing.val_5perMonth"),
       description: t("pricing.basicDesc"),
       features: [
-        { text: t("pricing.feat_introductions") + ": " + t("pricing.val_5perMonth"), included: true },
+        { text: t("pricing.feat_responses") + ": " + t("pricing.val_5perMonth"), included: true },
         { text: t("pricing.feat_notifications"), included: false },
         { text: t("pricing.feat_realtimeAlerts"), included: false },
       ],
@@ -92,7 +92,7 @@ function usePlans(t: (key: string) => string): Plan[] {
       credits: t("pricing.val_20perMonth"),
       description: t("pricing.proDesc"),
       features: [
-        { text: t("pricing.feat_introductions") + ": " + t("pricing.val_20perMonth"), included: true },
+        { text: t("pricing.feat_responses") + ": " + t("pricing.val_20perMonth"), included: true },
         { text: t("pricing.feat_notifications"), included: true },
         { text: t("pricing.feat_realtimeAlerts"), included: false },
       ],
@@ -108,7 +108,7 @@ function usePlans(t: (key: string) => string): Plan[] {
       credits: t("pricing.val_unlimited"),
       description: t("pricing.premiumDesc"),
       features: [
-        { text: t("pricing.feat_introductions") + ": " + t("pricing.val_unlimited"), included: true },
+        { text: t("pricing.feat_responses") + ": " + t("pricing.val_unlimited"), included: true },
         { text: t("pricing.feat_notifications"), included: true },
         { text: t("pricing.feat_realtimeAlerts"), included: true },
       ],

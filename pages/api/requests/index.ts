@@ -52,9 +52,9 @@ export default async function handler(
           where,
           include: {
             _count: {
-              select: { introductions: true },
+              select: { conversations: true },
             },
-            introductions: {
+            conversations: {
               select: {
                 brokerId: true,
                 broker: { select: { userId: true } },

@@ -1,9 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { timingSafeEqual } from "crypto";
 import prisma from "@/lib/prisma";
 
 const INACTIVE_HOURS = 72;
 const UNSTARTED_DAYS = 7;
 const SYSTEM_USER_ID = "SYSTEM";
+
+interface ConvoWithRequest {
+  id: string;
+  request: { id: string; borrowerId: string };
+}
+interface ConvoWithMessages extends ConvoWithRequest {
+  messages: { senderId: string }[];
+}
+
+function verifyCronSecret(authHeader: string | undefined): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || !authHeader) return false;
+  const token = authHeader.replace("Bearer ", "");
+  if (token.length !== secret.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(token), Buffer.from(secret));
+  } catch {
+    return false;
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,8 +34,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyCronSecret(req.headers.authorization)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
@@ -34,22 +54,19 @@ export default async function handler(
     });
 
     if (inactiveConversations.length > 0) {
-      await prisma.$transaction([
-        ...inactiveConversations.map((convo) =>
-          prisma.message.create({
-            data: {
-              conversationId: convo.id,
-              senderId: convo.request.borrowerId,
-              body: "[System] This conversation was automatically closed due to inactivity.",
-            },
-          })
-        ),
-        prisma.conversation.updateMany({
-          where: { id: { in: inactiveConversations.map((c) => c.id) } },
-          data: { status: "CLOSED" },
-        }),
-      ]);
-      closedCount += inactiveConversations.length;
+      const succeededIds: string[] = [];
+      for (const convo of inactiveConversations) {
+        try {
+          await prisma.conversation.update({
+            where: { id: convo.id },
+            data: { status: "CLOSED" },
+          });
+          succeededIds.push(convo.id);
+        } catch (err) {
+          console.error(`Failed to close inactive conversation ${convo.id}:`, err);
+        }
+      }
+      closedCount += succeededIds.length;
     }
 
     // 2. Close conversations where borrower never engaged within 7 days of broker intro
@@ -73,26 +90,23 @@ export default async function handler(
     });
 
     const toClose = unstartedConversations.filter(
-      (convo) => !convo.messages.some((msg) => msg.senderId === convo.request.borrowerId)
+      (convo: ConvoWithMessages) => !convo.messages.some((msg: { senderId: string }) => msg.senderId === convo.request.borrowerId)
     );
 
     if (toClose.length > 0) {
-      await prisma.$transaction([
-        ...toClose.map((convo) =>
-          prisma.message.create({
-            data: {
-              conversationId: convo.id,
-              senderId: convo.request.borrowerId,
-              body: "[System] This conversation was automatically closed because the borrower did not respond within 7 days.",
-            },
-          })
-        ),
-        prisma.conversation.updateMany({
-          where: { id: { in: toClose.map((c) => c.id) } },
-          data: { status: "CLOSED" },
-        }),
-      ]);
-      closedCount += toClose.length;
+      const succeededIds: string[] = [];
+      for (const convo of toClose) {
+        try {
+          await prisma.conversation.update({
+            where: { id: convo.id },
+            data: { status: "CLOSED" },
+          });
+          succeededIds.push(convo.id);
+        } catch (err) {
+          console.error(`Failed to close unstarted conversation ${convo.id}:`, err);
+        }
+      }
+      closedCount += succeededIds.length;
     }
 
     // 3. For requests where ALL conversations are now CLOSED, update request status to CLOSED
@@ -110,7 +124,7 @@ export default async function handler(
         where: { requestId: { in: requestIdList }, status: "ACTIVE" },
         _count: { _all: true },
       });
-      const activeCountMap = new Map(activeCounts.map((r) => [r.requestId, r._count._all]));
+      const activeCountMap = new Map(activeCounts.map((r: { requestId: string; _count: { _all: number } }) => [r.requestId, r._count._all]));
 
       const requestsToClose = requestIdList.filter((rid) => !activeCountMap.has(rid) || activeCountMap.get(rid) === 0);
 

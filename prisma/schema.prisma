@@ -35,6 +35,8 @@ model User {
   noticesSent      AdminNotice[] @relation("adminNoticesSent")
   noticesReceived  AdminNotice[] @relation("adminNoticesReceived")
 
+  @@index([status])
+  @@index([role])
   @@map("users")
 }
 
@@ -56,7 +58,6 @@ model BorrowerRequest {
   updatedAt          DateTime             @updatedAt
 
   borrower           User                 @relation(fields: [borrowerId], references: [id])
-  introductions      BrokerIntroduction[]
   conversations      Conversation[]
 
   @@index([borrowerId])
@@ -84,34 +85,15 @@ model Broker {
   responseCredits    Int                  @default(0)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
-  introductions      BrokerIntroduction[]
   user               User                 @relation(fields: [userId], references: [id])
   conversations      Conversation[]
   subscription       Subscription?
   @@index([verificationStatus])
+  @@index([subscriptionTier])
   @@map("brokers")
 }
 
-model BrokerIntroduction {
-  id                String          @id @default(cuid())
-  requestId         String
-  brokerId          String
-  message           String?
-  howCanHelp        String?
-  experience        String?
-  lenderNetwork     String?
-  processNotes      String?
-  personalMessage   String?
-  estimatedTimeline String?
-  createdAt         DateTime        @default(now())
-  broker            Broker          @relation(fields: [brokerId], references: [id])
-  request           BorrowerRequest @relation(fields: [requestId], references: [id])
 
-  @@unique([requestId, brokerId])
-  @@index([brokerId])
-  @@index([requestId])
-  @@map("broker_introductions")
-}
 
 model Conversation {
   id                 String             @id @default(cuid())

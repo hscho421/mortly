@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { hash } from "bcryptjs";
+import { createHash } from "crypto";
 import prisma from "@/lib/prisma";
 
 export default async function handler(
@@ -21,8 +22,9 @@ export default async function handler(
       return res.status(400).json({ message: "Password must be at least 8 characters" });
     }
 
+    const hashedToken = createHash("sha256").update(token).digest("hex");
     const user = await prisma.user.findUnique({
-      where: { resetToken: token },
+      where: { resetToken: hashedToken },
     });
 
     if (!user || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {

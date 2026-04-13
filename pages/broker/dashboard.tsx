@@ -18,7 +18,6 @@ interface BrokerProfile {
   verificationStatus: string;
   subscriptionTier: string;
   responseCredits: number;
-  introductions?: { id: string }[];
   user: { id: string; name: string | null; email: string };
   subscription: { id: string; tier: string; status: string } | null;
 }
@@ -26,8 +25,6 @@ interface BrokerProfile {
 interface BorrowerRequest {
   id: string;
   status: string;
-  introductions: { brokerId: string; broker: { userId: string } }[];
-  _count: { introductions: number };
 }
 
 interface Conversation {
@@ -37,7 +34,6 @@ interface Conversation {
 
 interface DashboardStats {
   openRequests: number;
-  introductionsSent: number;
   activeConversations: number;
   responseCredits: number;
 }
@@ -50,7 +46,6 @@ export default function BrokerDashboardPage() {
   const [profile, setProfile] = useState<BrokerProfile | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     openRequests: 0,
-    introductionsSent: 0,
     activeConversations: 0,
     responseCredits: 0,
   });
@@ -111,13 +106,6 @@ export default function BrokerDashboardPage() {
         // Count open requests
         const openRequests = requests.length;
 
-        // Count introductions sent by this broker
-        const introductionsSent = requests.filter((req) =>
-          req.introductions.some(
-            (intro) => intro.broker.userId === session!.user.id
-          )
-        ).length;
-
         // Count active conversations
         const activeConversations = conversations.filter(
           (c) => c.status === "ACTIVE"
@@ -125,7 +113,6 @@ export default function BrokerDashboardPage() {
 
         setStats({
           openRequests,
-          introductionsSent,
           activeConversations,
           responseCredits: brokerProfile.responseCredits,
         });
@@ -137,7 +124,8 @@ export default function BrokerDashboardPage() {
     }
 
     fetchDashboardData();
-  }, [session, status, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router.locale]);
 
   if (status === "loading" || loading) {
     return (

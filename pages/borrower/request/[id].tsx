@@ -56,7 +56,7 @@ export default function RequestDetail() {
 
   const [request, setRequest] = useState<RequestData>(null);
   const [loading, setLoading] = useState(true);
-  const [introCount, setIntroCount] = useState(0);
+  const [convoCount, setConvoCount] = useState(0);
 
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -77,7 +77,7 @@ export default function RequestDetail() {
       }
       const data = await res.json();
       setRequest(data);
-      setIntroCount(data._count?.conversations ?? data.conversations?.length ?? 0);
+      setConvoCount(data._count?.conversations ?? data.conversations?.length ?? 0);
     } catch {
       setError(t("request.failedToLoad"));
     } finally {
@@ -268,7 +268,7 @@ export default function RequestDetail() {
         {request.status !== "REJECTED" && (
           <ConsultationStepper
             requestStatus={request.status}
-            hasIntroduction={introCount > 0}
+            hasConversation={convoCount > 0}
             hasActiveConversation={request.conversations?.some((c: { status: string }) => c.status === "ACTIVE") ?? false}
             conversationClosed={request.conversations?.some((c: { status: string }) => c.status === "CLOSED") ?? false}
           />
@@ -281,10 +281,10 @@ export default function RequestDetail() {
             <div>
               <p className="text-body-sm">{t("request.brokerMessages")}</p>
               <p className="font-display text-4xl text-forest-800 mt-1">
-                {introCount}
+                {convoCount}
               </p>
             </div>
-            {introCount > 0 ? (
+            {convoCount > 0 ? (
               <Link
                 href="/borrower/messages"
                 className="btn-amber"

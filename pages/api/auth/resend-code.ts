@@ -61,6 +61,7 @@ export default async function handler(
       await sendVerificationCode(email, code, locale || "ko");
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError);
+      return res.status(502).json({ message: "Failed to send verification email. Please try again." });
     }
 
     return res.status(200).json({ success: true });

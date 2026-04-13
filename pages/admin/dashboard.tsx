@@ -33,7 +33,6 @@ interface DashboardStats {
   };
   activeConversations: number;
   totalConversations: number;
-  totalIntroductions: number;
   openReports: number;
 }
 
@@ -179,16 +178,14 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         setPendingBrokers((prev) => prev.filter((b) => b.id !== brokerId));
-        if (stats) {
-          setStats({ ...stats, pendingVerifications: Math.max(0, stats.pendingVerifications - 1) });
-        }
+        setStats(prev => prev ? { ...prev, pendingVerifications: Math.max(0, prev.pendingVerifications - 1) } : prev);
       }
     } catch {
       // silent
     } finally {
       setActionLoading(null);
     }
-  }, [stats]);
+  }, []);
 
   const handleApproveRequest = useCallback(async (requestId: string) => {
     setActionLoading(requestId);
@@ -200,23 +197,21 @@ export default function AdminDashboard() {
       });
       if (res.ok) {
         setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
-        if (stats) {
-          setStats({
-            ...stats,
-            requestsByStatus: {
-              ...stats.requestsByStatus,
-              pendingApproval: Math.max(0, stats.requestsByStatus.pendingApproval - 1),
-              open: stats.requestsByStatus.open + 1,
-            },
-          });
-        }
+        setStats(prev => prev ? {
+          ...prev,
+          requestsByStatus: {
+            ...prev.requestsByStatus,
+            pendingApproval: Math.max(0, prev.requestsByStatus.pendingApproval - 1),
+            open: prev.requestsByStatus.open + 1,
+          },
+        } : prev);
       }
     } catch {
       // silent
     } finally {
       setActionLoading(null);
     }
-  }, [stats]);
+  }, []);
 
   if (status === "loading" || loading) {
     return (
@@ -328,7 +323,7 @@ export default function AdminDashboard() {
 
             <div className="card-elevated lg:col-span-2 animate-fade-in-up opacity-0 stagger-3">
               <h3 className="font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50 mb-3">{t("admin.activitySection")}</h3>
-              <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                   <dt className="font-body text-[11px] text-forest-700/60">{t("admin.activeConversations")}</dt>
                   <dd className="font-display text-xl text-forest-800">{stats.activeConversations}</dd>
@@ -336,10 +331,6 @@ export default function AdminDashboard() {
                 <div>
                   <dt className="font-body text-[11px] text-forest-700/60">{t("admin.totalConversationsLabel")}</dt>
                   <dd className="font-display text-xl text-forest-800">{stats.totalConversations}</dd>
-                </div>
-                <div>
-                  <dt className="font-body text-[11px] text-forest-700/60">{t("admin.totalIntroductions")}</dt>
-                  <dd className="font-display text-xl text-forest-800">{stats.totalIntroductions}</dd>
                 </div>
                 <div>
                   <dt className="font-body text-[11px] text-forest-700/60">{t("admin.openReports")}</dt>

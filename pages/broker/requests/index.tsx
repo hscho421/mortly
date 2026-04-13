@@ -5,7 +5,6 @@ import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { SkeletonRequestList } from "@/components/Skeleton";
-import type { RequestWithIntroductions } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
@@ -39,7 +38,21 @@ export default function BrokerRequestsPage() {
   const router = useRouter();
   const { t } = useTranslation("common");
 
-  const [requests, setRequests] = useState<RequestWithIntroductions[]>([]);
+  interface BrokerRequest {
+    id: string;
+    publicId: string;
+    province: string;
+    city?: string | null;
+    status: string;
+    createdAt: string | Date;
+    mortgageCategory?: string | null;
+    productTypes?: string[] | null;
+    desiredTimeline?: string | null;
+    conversations?: { broker?: { userId: string } }[];
+    _count?: { conversations?: number };
+  }
+
+  const [requests, setRequests] = useState<BrokerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -119,7 +132,7 @@ export default function BrokerRequestsPage() {
   // Filter out requests the broker has already responded to
   const brokerId = session.user.id;
   const filteredRequests = requests.filter(
-    (req) => !req.introductions?.some((intro) => intro.broker?.userId === brokerId)
+    (req) => !req.conversations?.some((conv: { broker?: { userId: string } }) => conv.broker?.userId === brokerId)
   );
 
   return (
@@ -251,7 +264,7 @@ export default function BrokerRequestsPage() {
                         )}
                         <div>
                           <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
-                          <p className="font-body text-sm text-forest-800">{req._count?.introductions ?? 0}</p>
+                          <p className="font-body text-sm text-forest-800">{req._count?.conversations ?? 0}</p>
                         </div>
                       </div>
                     </div>
@@ -263,7 +276,7 @@ export default function BrokerRequestsPage() {
                         {t("broker.viewDetails")}
                       </Link>
                       <Link
-                        href={`/broker/introduction/new?requestId=${req.publicId}`}
+                        href={`/broker/requests/${req.publicId}`}
                         className="btn-primary text-center text-xs px-4 py-2"
                       >
                         {t("broker.respondToRequest")}

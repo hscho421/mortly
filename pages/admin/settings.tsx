@@ -87,7 +87,7 @@ export default function AdminSettings() {
         setMessage({ text: data.error, ok: false });
       }
     } catch {
-      setMessage({ text: "Failed to save settings", ok: false });
+      setMessage({ text: t("admin.failedToSaveSettings", "Failed to save settings"), ok: false });
     } finally {
       setSaving(false);
       setTimeout(() => setMessage(null), 3000);

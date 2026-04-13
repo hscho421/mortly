@@ -219,7 +219,7 @@ export default function AdminUsers() {
         setActionMessage({ id: userId, text: data.error, ok: false });
       }
     } catch {
-      setActionMessage({ id: userId, text: "Failed to update status", ok: false });
+      setActionMessage({ id: userId, text: t("admin.failedToUpdateStatus", "Failed to update status"), ok: false });
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -270,7 +270,7 @@ export default function AdminUsers() {
         setCreditMessage({ text: data.error, ok: false });
       }
     } catch {
-      setCreditMessage({ text: "Failed to adjust credits", ok: false });
+      setCreditMessage({ text: t("admin.failedToAdjustCredits", "Failed to adjust credits"), ok: false });
     } finally {
       setCreditSubmitting(false);
     }
@@ -305,7 +305,7 @@ export default function AdminUsers() {
         setInviteMessage({ text: data.error, ok: false });
       }
     } catch {
-      setInviteMessage({ text: "Failed to create admin", ok: false });
+      setInviteMessage({ text: t("admin.failedToCreateAdmin", "Failed to create admin"), ok: false });
     } finally {
       setInviteSubmitting(false);
     }
@@ -336,7 +336,7 @@ export default function AdminUsers() {
         setNoticeMessage({ text: data.error, ok: false });
       }
     } catch {
-      setNoticeMessage({ text: "Failed to send notice", ok: false });
+      setNoticeMessage({ text: t("admin.failedToSendNotice", "Failed to send notice"), ok: false });
     } finally {
       setNoticeSubmitting(false);
     }
@@ -392,7 +392,7 @@ export default function AdminUsers() {
       if (!res.ok) return;
       const json = await res.json();
       const allUsers: UserRow[] = json.data ?? json;
-      const headers = ["Public ID", "Name", "Email", "Role", "Status", "Joined", "Brokerage", "Tier", "Credits", "Requests", "Conversations"];
+      const headers = [t("admin.csv.publicId", "Public ID"), t("admin.csv.name", "Name"), t("admin.csv.email", "Email"), t("admin.csv.role", "Role"), t("admin.csv.status", "Status"), t("admin.csv.joined", "Joined"), t("admin.csv.brokerage", "Brokerage"), t("admin.csv.tier", "Tier"), t("admin.csv.credits", "Credits"), t("admin.csv.requests", "Requests"), t("admin.csv.conversations", "Conversations")];
       const rows = allUsers.map((u) => [
         u.publicId,
         u.name || "",

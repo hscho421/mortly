@@ -47,7 +47,7 @@ export default async function handler(
     }
 
     // Build OR conditions for a single query across all conversations
-    const orConditions = conversations.map((c) => {
+    const orConditions = conversations.map((c: { id: string; borrowerLastReadAt: Date | null; brokerLastReadAt: Date | null }) => {
       const lastReadAt = isBroker ? c.brokerLastReadAt : c.borrowerLastReadAt;
       return {
         conversationId: c.id,

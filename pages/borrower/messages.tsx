@@ -202,8 +202,8 @@ export default function BorrowerMessagesPage() {
         (payload) => {
           const updated = payload.new as { status: string };
           if (updated.status === "CLOSED") {
-            setConversation((prev) =>
-              prev ? { ...prev, status: "CLOSED" } : prev
+            setConversation((prev: ConversationWithParticipants | null) =>
+              prev ? { ...prev, status: "CLOSED" as const } : prev
             );
             fetchConversations();
           }

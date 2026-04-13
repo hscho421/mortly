@@ -29,7 +29,6 @@ export default async function handler(
         openReports,
         activeConversations,
         totalConversations,
-        totalIntroductions,
         pendingApprovalList,
       ] = await Promise.all([
         prisma.user.count(),
@@ -45,7 +44,6 @@ export default async function handler(
         prisma.report.count({ where: { status: "OPEN" } }),
         prisma.conversation.count({ where: { status: "ACTIVE" } }),
         prisma.conversation.count(),
-        prisma.brokerIntroduction.count(),
         prisma.borrowerRequest.findMany({
           where: { status: "PENDING_APPROVAL" },
           include: {
@@ -92,7 +90,6 @@ export default async function handler(
         // Conversations & activity
         activeConversations,
         totalConversations,
-        totalIntroductions,
         openReports,
         // Pending approval queue
         pendingApprovalList,
