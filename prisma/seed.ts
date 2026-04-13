@@ -452,6 +452,7 @@ async function seedMock() {
     ["max_requests_per_user", "10"],
     ["request_expiry_days", "30"],
     ["maintenance_mode", "false"],
+    ["broker_initial_message_limit", "3"],
   ];
   for (const [key, value] of defaults) {
     await prisma.systemSetting.upsert({
