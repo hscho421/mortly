@@ -18,6 +18,7 @@ export default function Navbar() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const noticeRef = useRef<HTMLDivElement>(null);
   const { data: session } = useSession();
   const router = useRouter();
@@ -121,6 +122,7 @@ export default function Navbar() {
   const isProfileActive = isActive("/borrower/profile") || isActive("/broker/profile");
 
   return (
+    <>
     <nav
       className={`sticky top-0 z-50 transition-all duration-500 ${
         scrolled
@@ -284,7 +286,7 @@ export default function Navbar() {
                 <div className="mx-1 h-5 w-px bg-cream-300" />
 
                 <button
-                  onClick={async () => { await signOut({ redirect: false }); window.location.href = "/"; }}
+                  onClick={() => setShowLogoutConfirm(true)}
                   className="rounded-lg p-2 text-forest-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
                   title={t("nav.signOut")}
                   aria-label={t("nav.signOut")}
@@ -450,10 +452,9 @@ export default function Navbar() {
               <div className="my-2 h-px bg-cream-200" />
 
               <button
-                onClick={async () => {
+                onClick={() => {
                   setMobileOpen(false);
-                  await signOut({ redirect: false });
-                  window.location.href = "/";
+                  setShowLogoutConfirm(true);
                 }}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-body text-[13px] font-medium text-red-500/80 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
               >
@@ -477,5 +478,41 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+
+    {/* Logout confirmation modal */}
+    {showLogoutConfirm && (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+      onClick={() => setShowLogoutConfirm(false)}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="heading-sm mb-2">{t("nav.logoutConfirmTitle")}</h3>
+        <p className="text-body-sm text-sage-500 mb-6">{t("nav.logoutConfirmDesc")}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowLogoutConfirm(false)}
+            className="flex-1 rounded-lg border border-cream-300 px-4 py-2.5 font-body text-sm font-medium text-forest-700 transition-all duration-200 hover:bg-cream-100 hover:border-cream-400"
+          >
+            {t("nav.logoutCancel")}
+          </button>
+          <button
+            onClick={async () => {
+              setShowLogoutConfirm(false);
+              await signOut({ redirect: false });
+              window.location.href = "/";
+            }}
+            className="flex-1 rounded-lg bg-red-500 px-4 py-2.5 font-body text-sm font-medium text-white transition-all duration-200 hover:bg-red-600 hover:shadow-md"
+          >
+            {t("nav.logoutConfirm")}
+          </button>
+        </div>
+      </div>
+    </div>
+    )}
+    </>
   );
 }

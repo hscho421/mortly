@@ -12,6 +12,10 @@
     "imBroker": "I'm a Broker",
     "signIn": "Sign in",
     "signOut": "Sign Out",
+    "logoutConfirmTitle": "Sign out of your account?",
+    "logoutConfirmDesc": "You'll be signed out of your current session. You can sign back in at any time.",
+    "logoutCancel": "Cancel",
+    "logoutConfirm": "Sign Out",
     "notifications": "Notifications",
     "noNotifications": "No notifications",
     "settings": "Settings"
@@ -381,7 +385,10 @@
     "dismiss": "Dismiss",
     "disclaimerTitle": "Before You Begin",
     "disclaimerBody": "Mortly is a marketplace platform that connects those exploring mortgage options with mortgage professionals.\nConsultations provided here are offered independently by each mortgage professional.\nAs Mortly is not a party to the consultation, we do not assume responsibility for the content or outcomes of individual consultations.",
-    "disclaimerAccept": "I Understand"
+    "disclaimerAccept": "I Understand",
+    "brokerDisclaimerTitle": "Before You Begin",
+    "brokerDisclaimerBody": "Mortly is a marketplace platform that connects those exploring mortgage options with mortgage professionals.\nConsultation requests listed here are submitted directly by clients. Mortly does not guarantee the accuracy or completeness of any request details.",
+    "brokerDisclaimerAccept": "I Understand"
   },
   "broker": {
     "dashboard": "Dashboard",

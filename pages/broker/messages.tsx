@@ -285,7 +285,7 @@ export default function BrokerMessagesPage() {
 
       {/* Chat disclaimer */}
       {disclaimerNeeded && activeConvId && (
-        <ChatDisclaimer conversationId={activeConvId} onAccept={acceptDisclaimer} />
+        <ChatDisclaimer conversationId={activeConvId} onAccept={acceptDisclaimer} role="BROKER" />
       )}
 
       <div

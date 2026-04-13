@@ -4,6 +4,7 @@ import { useTranslation } from "next-i18next";
 interface ChatDisclaimerProps {
   conversationId: string;
   onAccept: () => void;
+  role?: "BORROWER" | "BROKER";
 }
 
 const STORAGE_KEY = "mortly_chat_disclaimer_accepted";
@@ -45,8 +46,9 @@ export function useDisclaimerNeeded(conversationId: string | null) {
   return { disclaimerNeeded: needed, acceptDisclaimer: accept };
 }
 
-export default function ChatDisclaimer({ conversationId, onAccept }: ChatDisclaimerProps) {
+export default function ChatDisclaimer({ conversationId, onAccept, role }: ChatDisclaimerProps) {
   const { t } = useTranslation("common");
+  const isBroker = role === "BROKER";
 
   const handleAccept = () => {
     markAccepted(conversationId);
@@ -62,17 +64,19 @@ export default function ChatDisclaimer({ conversationId, onAccept }: ChatDisclai
           </svg>
         </div>
 
-        <h3 className="heading-md mb-4">{t("messages.disclaimerTitle")}</h3>
+        <h3 className="heading-md mb-4">
+          {t(isBroker ? "messages.brokerDisclaimerTitle" : "messages.disclaimerTitle")}
+        </h3>
 
         <p className="text-body-sm whitespace-pre-line leading-relaxed mb-8">
-          {t("messages.disclaimerBody")}
+          {t(isBroker ? "messages.brokerDisclaimerBody" : "messages.disclaimerBody")}
         </p>
 
         <button
           onClick={handleAccept}
           className="btn-primary w-full py-3"
         >
-          {t("messages.disclaimerAccept")}
+          {t(isBroker ? "messages.brokerDisclaimerAccept" : "messages.disclaimerAccept")}
         </button>
       </div>
     </div>
