@@ -1,7 +1,3 @@
-아래 프롬프트를 `Claude for PowerPoint`에 그대로 붙여 넣어 사용해. 필요한 경우 맨 위의 괄호형 변수만 바꿔서 써라.
-
----
-
 너는 최고 수준의 사업제안서 프레젠테이션 디렉터이자 스토리텔러다.  
 `mortly`를 위한 한국어 중심의 `business proposal PowerPoint`를 만들어라.
 
