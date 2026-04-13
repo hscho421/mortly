@@ -371,7 +371,7 @@ export default function BrokerMessagesPage() {
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
                       <div className="relative shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-display font-bold text-sm">
-                        B
+                        {(conv.borrower?.name || "B")[0].toUpperCase()}
                         {hasUnread && (
                           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 font-body text-[10px] font-bold text-white">
                             {conv.unreadCount! > 9 ? "9+" : conv.unreadCount}
@@ -382,7 +382,7 @@ export default function BrokerMessagesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className={`font-body text-sm truncate ${hasUnread ? "font-bold text-forest-900" : "font-semibold text-forest-800"}`}>
-                            {t("messages.borrowerLabel")}
+                            {conv.borrower?.name || t("messages.borrowerLabel")}
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
                             {conv.status === "CLOSED" && (
@@ -483,12 +483,12 @@ export default function BrokerMessagesPage() {
 
                   {/* Avatar */}
                   <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-display font-bold text-sm">
-                    B
+                    {(activeConversation?.borrower?.name || "B")[0].toUpperCase()}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <h2 className="font-body text-sm font-semibold text-forest-800">
-                      {t("messages.borrowerLabel")}
+                      {activeConversation?.borrower?.name || t("messages.borrowerLabel")}
                     </h2>
                     {activeConversation?.request && (
                       <p className="text-body-sm truncate">

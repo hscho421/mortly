@@ -96,7 +96,7 @@ export default async function handler(
 
       const withUnread = conversations.map((c) => ({
         ...c,
-        borrower: isBorrower ? c.borrower : { id: c.borrower.id, name: null },
+        borrower: c.borrower,
         unreadCount: unreadMap.get(c.id) ?? 0,
       }));
 

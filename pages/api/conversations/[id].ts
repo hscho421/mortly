@@ -85,10 +85,7 @@ export default async function handler(
           : { brokerLastReadAt: new Date() },
       });
 
-      return res.status(200).json({
-        ...conversation,
-        borrower: isBorrower ? conversation.borrower : { id: conversation.borrower.id, name: null },
-      });
+      return res.status(200).json(conversation);
     }
 
     if (req.method === "PUT") {
