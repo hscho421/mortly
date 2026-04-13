@@ -84,7 +84,7 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      router.push("/login?verified=true", undefined, { locale: router.locale });
+      router.push(`/login?verified=true${email ? `&email=${encodeURIComponent(email)}` : ""}`, undefined, { locale: router.locale });
     } catch {
       setError(t("auth.invalidCode"));
       setIsLoading(false);

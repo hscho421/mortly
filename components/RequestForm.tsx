@@ -218,6 +218,30 @@ export default function RequestForm({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
+
+    // Validate commercial financials: if income exists for a year, expenses must too
+    if (form.mortgageCategory === "COMMERCIAL") {
+      const cd = form.details as CommercialDetails;
+      const incomeYears = Object.keys(cd.corporateAnnualIncome || {}).filter(
+        (y) => (cd.corporateAnnualIncome || {})[y]
+      );
+      const expenseYears = Object.keys(cd.corporateAnnualExpenses || {}).filter(
+        (y) => (cd.corporateAnnualExpenses || {})[y]
+      );
+      for (const y of incomeYears) {
+        if (!expenseYears.includes(y)) {
+          setError(t("request.commercialFinancialsHelper"));
+          return;
+        }
+      }
+      for (const y of expenseYears) {
+        if (!incomeYears.includes(y)) {
+          setError(t("request.commercialFinancialsHelper"));
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
     try {
       await onSubmit(form);
@@ -405,6 +429,13 @@ export default function RequestForm({
       {/* ── Step 2: Details ───────────────────────────────── */}
       {step === 2 && (
         <div className="space-y-8 animate-fade-in">
+          {/* Privacy reminder */}
+          <div className="rounded-xl border border-forest-200 bg-forest-50 px-4 py-3 flex items-start gap-3">
+            <svg className="h-5 w-5 text-forest-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+            </svg>
+            <p className="font-body text-sm text-forest-700">{t("request.privacyReminderFinancial")}</p>
+          </div>
           {/* Location */}
           <div className="card-elevated">
             <h2 className="heading-sm mb-4">{t("request.province")}</h2>
@@ -508,12 +539,16 @@ export default function RequestForm({
                 <label className="label-text">
                   {t("request.annualIncome")}{required}
                 </label>
+                <p className="text-body-sm text-sage-500 mt-1 mb-2">
+                  {t("request.incomeHelperText")}
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                   {([
-                    { year: incomeYear1, setYear: setIncomeYear1, otherYear: incomeYear2 },
-                    { year: incomeYear2, setYear: setIncomeYear2, otherYear: incomeYear1 },
-                  ] as const).map(({ year, setYear, otherYear }, idx) => (
+                    { year: incomeYear1, setYear: setIncomeYear1, otherYear: incomeYear2, label: t("request.currentYear") },
+                    { year: incomeYear2, setYear: setIncomeYear2, otherYear: incomeYear1, label: t("request.priorYear") },
+                  ] as const).map(({ year, setYear, otherYear, label }, idx) => (
                     <div key={idx} className="rounded-xl border border-cream-200 bg-white p-4">
+                      <p className="font-body text-xs font-medium text-sage-600 mb-1">{label}</p>
                       <select
                         value={year}
                         onChange={(e) => changeIncomeYear(year, e.target.value, setYear)}
@@ -564,6 +599,9 @@ export default function RequestForm({
                 <label className="label-text">
                   {t("request.corporateFinancials")}{required}
                 </label>
+                <p className="text-body-sm text-sage-500 mt-1 mb-2">
+                  {t("request.commercialFinancialsHelper")}
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                   {([
                     { year: corpYear1, setYear: setCorpYear1, otherYear: corpYear2 },

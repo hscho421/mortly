@@ -34,7 +34,7 @@ export function SkeletonCard() {
 export function SkeletonStatCard() {
   return (
     <div className="card-stat text-center">
-      <Skeleton className="h-9 w-16 mx-auto mb-2" />
+      <Skeleton className="h-8 w-14 mx-auto mb-2" />
       <Skeleton className="h-4 w-24 mx-auto" />
     </div>
   );

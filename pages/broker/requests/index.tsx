@@ -117,8 +117,14 @@ export default function BrokerRequestsPage() {
               </svg>
             </div>
             <h2 className="heading-md mb-2">{t("broker.verificationRequired", "Verification Required")}</h2>
-            <p className="text-body mb-6 max-w-md mx-auto">
+            <p className="text-body mb-4 max-w-md mx-auto">
               {t("broker.verificationRequiredDesc", "Your broker profile must be verified before you can browse borrower requests. Please wait for admin approval.")}
+            </p>
+            <p className="text-body-sm text-sage-500 mb-2 max-w-md mx-auto">
+              {t("broker.verificationTimeline")}
+            </p>
+            <p className="text-body-sm text-sage-500 mb-6 max-w-md mx-auto">
+              {t("broker.contactSupport")} <a href="mailto:support@mortly.ca" className="text-forest-700 underline hover:text-forest-900">support@mortly.ca</a>
             </p>
             <Link href="/broker/dashboard" className="btn-primary">
               {t("nav.dashboard")}

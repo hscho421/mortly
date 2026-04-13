@@ -9,6 +9,7 @@ import { SkeletonForm } from "@/components/Skeleton";
 import RequestForm from "@/components/RequestForm";
 import type { CreateRequestInput } from "@/types";
 import posthog from "posthog-js";
+import { useEffect } from "react";
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({
   props: {
@@ -35,6 +36,12 @@ export default function NewRequestPage() {
     }
     return null;
   }
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
   const handleSubmit = async (data: CreateRequestInput) => {
     const res = await fetch("/api/requests", {

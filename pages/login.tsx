@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -22,6 +22,17 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const verified = router.query.verified === "true";
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Pre-fill email from query param (e.g., after email verification)
+  useEffect(() => {
+    const qEmail = router.query.email;
+    if (typeof qEmail === "string" && qEmail) {
+      setEmail(qEmail);
+      // Auto-focus password field so user just types password and hits enter
+      setTimeout(() => passwordRef.current?.focus(), 100);
+    }
+  }, [router.query.email]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -132,6 +143,7 @@ export default function LoginPage() {
                   {t("auth.password")}
                 </label>
                 <input
+                  ref={passwordRef}
                   id="password"
                   type="password"
                   required

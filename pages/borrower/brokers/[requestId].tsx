@@ -14,11 +14,14 @@ interface ConversationBroker {
   id: string;
   createdAt: string;
   status: string;
+  _count?: { messages: number };
   broker: {
     id: string;
     brokerageName: string;
     verificationStatus: string;
     yearsExperience: number | null;
+    specialties: string | null;
+    bio: string | null;
     user: {
       id: string;
       publicId: string;
@@ -205,11 +208,31 @@ export default function BrokerComparison() {
                               {t("brokerCard.yearsExperience_other", { count: broker.yearsExperience })}
                             </span>
                           )}
+                          {conv._count?.messages != null && (
+                            <span>
+                              {t("brokerComparison.messagesExchanged", { count: conv._count.messages })}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                     <ReportButton targetType="BROKER" targetId={broker.user.publicId} />
                   </div>
+
+                  {/* Specialties */}
+                  {broker.specialties && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-body font-medium text-sage-500">{t("brokerComparison.specialties")}:</span>
+                      {broker.specialties.split(",").map((s, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center rounded-full bg-forest-50 px-2.5 py-0.5 text-xs font-body font-medium text-forest-700"
+                        >
+                          {s.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="mt-6 flex items-center gap-3 pt-5 border-t divider">

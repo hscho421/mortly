@@ -22,7 +22,7 @@ export default function ServerError() {
           </p>
           <div className="mt-8">
             <Link href="/" className="btn-primary px-6 py-3">
-              {t("notFound.goHome")}
+              {t("serverError.goHome")}
             </Link>
           </div>
         </div>

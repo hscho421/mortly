@@ -294,8 +294,7 @@ export default function BrokerMessagesPage() {
       )}
 
       <div
-        className="flex animate-fade-in"
-        style={{ height: "calc(100vh - 80px)" }}
+        className="flex animate-fade-in h-[calc(100dvh-80px)]"
       >
         {/* Left panel - Conversation list */}
         <div
@@ -354,7 +353,7 @@ export default function BrokerMessagesPage() {
                 const lastMessage =
                   conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
                 const isActive = conv.id === activeConvId;
-                const hasUnread = (conv.unreadCount ?? 0) > 0;
+                const hasUnread = (conv.unreadCount ?? 0) > 0 && conv.status !== "CLOSED";
 
                 return (
                   <button

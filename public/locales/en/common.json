@@ -263,12 +263,14 @@
     "edit": "Edit",
     "reviewTitle": "Review Your Request",
     "privacyReminder": "Messages happen inside mortly. Share phone numbers, email addresses, or other identifying details only when you are ready.",
+    "privacyReminderFinancial": "Your financial details are only shared with brokers who respond to your request.",
     "requestLabel": "Request",
     "brokerResponses": "Broker Responses",
     "brokerMessages": "Broker Messages",
     "viewBrokerIntros": "View Broker Introductions",
     "viewMessages": "View Messages",
     "waitingForBrokers": "Waiting for brokers to respond...",
+    "waitingForBrokersDetail": "Your request was submitted. Brokers typically respond within 24 hours.",
     "requestDetails": "Request Details",
     "property": "Property",
     "financial": "Financial",
@@ -339,6 +341,10 @@
     "corporateExpenses": "Corporate Annual Expenses",
     "corpIncome": "Income",
     "corpExpenses": "Expenses",
+    "incomeHelperText": "Enter your income for the current year and one prior year",
+    "currentYear": "Current Year",
+    "priorYear": "Prior Year",
+    "commercialFinancialsHelper": "Enter both income and expenses for each year",
     "ownerNetIncome": "Owner's estimated annual net income",
     "ownerNetIncomePlaceholder": "e.g. $100,000",
     "desiredTimeline": "When do you need this?",
@@ -418,6 +424,7 @@
     "specialties": "Specialties",
     "save": "Save",
     "saving": "Saving...",
+    "onboardingSuccess": "Profile submitted successfully! Redirecting to dashboard...",
     "requestsSubtitle": "Find borrowers looking for a mortgage broker in your area.",
     "allProvinces": "All Provinces",
     "allTypes": "All Types",
@@ -525,7 +532,9 @@
     "pendingDesc": "Your license is under review. Once verified, you'll be able to browse borrower requests.",
     "freePlanTitle": "You're on the Free Plan",
     "failedToLoadRequests": "Failed to load requests. Please try again.",
-    "failedToFetchRequests": "Failed to fetch requests"
+    "failedToFetchRequests": "Failed to fetch requests",
+    "verificationTimeline": "Your profile is under review. This typically takes 1-2 business days.",
+    "contactSupport": "Questions? Contact us at"
   },
   "admin": {
     "dashboard": "Admin Dashboard",
@@ -558,6 +567,9 @@
     "verify": "Verify",
     "suspend": "Suspend",
     "view": "View",
+    "rejectBrokerTitle": "Reject Broker",
+    "rejectBrokerDesc": "Please provide a reason for rejecting this broker.",
+    "rejectBrokerConfirm": "Reject",
     "resolve": "Resolve",
     "dismiss": "Dismiss",
     "markReviewed": "Mark Reviewed",
@@ -1498,6 +1510,10 @@
     "showLess": "Show Less",
     "viewFull": "View Full Introduction"
   },
+  "brokerComparison": {
+    "specialties": "Specialties",
+    "messagesExchanged": "{{count}} messages"
+  },
   "notFound": {
     "title": "Page Not Found",
     "heading": "Page not found",
@@ -1508,7 +1524,8 @@
   "serverError": {
     "title": "Server Error",
     "heading": "Something went wrong",
-    "description": "We're experiencing a temporary issue. Please try again in a moment."
+    "description": "We're experiencing a temporary issue. Please try again in a moment.",
+    "goHome": "Go Home"
   },
   "about": {
     "badge": "About Us",

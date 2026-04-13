@@ -370,8 +370,7 @@ export default function BorrowerMessagesPage() {
       )}
 
       <div
-        className="flex animate-fade-in"
-        style={{ height: "calc(100vh - 80px)" }}
+        className="flex animate-fade-in h-[calc(100dvh-80px)]"
       >
         {/* ──────────────── LEFT PANEL ──────────────── */}
         <div
@@ -419,7 +418,7 @@ export default function BorrowerMessagesPage() {
                 const lastMsg = conv.messages[0];
                 const brokerName =
                   conv.broker.user.name || conv.broker.brokerageName || t("misc.broker");
-                const hasUnread = (conv.unreadCount ?? 0) > 0;
+                const hasUnread = (conv.unreadCount ?? 0) > 0 && conv.status !== "CLOSED";
 
                 return (
                   <button

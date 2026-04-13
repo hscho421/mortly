@@ -32,7 +32,27 @@ export default async function handler(
             select: { conversations: true },
           },
           conversations: {
-            select: { status: true, brokerId: true, broker: { select: { userId: true } } },
+            select: {
+              id: true,
+              createdAt: true,
+              status: true,
+              brokerId: true,
+              broker: {
+                select: {
+                  id: true,
+                  userId: true,
+                  brokerageName: true,
+                  verificationStatus: true,
+                  yearsExperience: true,
+                  specialties: true,
+                  bio: true,
+                  user: {
+                    select: { id: true, publicId: true, name: true, email: true },
+                  },
+                },
+              },
+              _count: { select: { messages: true } },
+            },
           },
         },
       });

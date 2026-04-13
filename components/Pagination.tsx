@@ -45,7 +45,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
           </svg>
         </button>
         {pages.map((p, i) =>
-          p === "..." ? (
+          typeof p !== "number" ? (
             <span key={`dots-${i}`} className="px-2 font-body text-sm text-sage-400">...</span>
           ) : (
             <button

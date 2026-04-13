@@ -99,7 +99,7 @@ export default function AdminDashboard() {
 
     const fetchData = async () => {
       try {
-        const [statsRes, trendsRes, brokersRes, requestsRes, reportsRes, actionsRes] = await Promise.all([
+        const [statsResult, trendsResult, brokersResult, requestsResult, reportsResult, actionsResult] = await Promise.allSettled([
           fetch("/api/admin/stats"),
           fetch("/api/admin/trends"),
           fetch("/api/admin/brokers?status=PENDING&limit=5"),
@@ -108,11 +108,11 @@ export default function AdminDashboard() {
           fetch("/api/admin/actions?limit=10"),
         ]);
 
-        if (statsRes.ok) setStats(await statsRes.json());
-        if (trendsRes.ok) setTrends(await trendsRes.json());
+        if (statsResult.status === "fulfilled" && statsResult.value.ok) setStats(await statsResult.value.json());
+        if (trendsResult.status === "fulfilled" && trendsResult.value.ok) setTrends(await trendsResult.value.json());
 
-        if (brokersRes.ok) {
-          const json = await brokersRes.json();
+        if (brokersResult.status === "fulfilled" && brokersResult.value.ok) {
+          const json = await brokersResult.value.json();
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setPendingBrokers((json.data || []).slice(0, 5).map((b: any) => ({
             id: b.id,
@@ -123,8 +123,8 @@ export default function AdminDashboard() {
           })));
         }
 
-        if (requestsRes.ok) {
-          const json = await requestsRes.json();
+        if (requestsResult.status === "fulfilled" && requestsResult.value.ok) {
+          const json = await requestsResult.value.json();
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setPendingRequests((json.data || []).slice(0, 5).map((r: any) => ({
             id: r.id,
@@ -135,8 +135,8 @@ export default function AdminDashboard() {
           })));
         }
 
-        if (reportsRes.ok) {
-          const json = await reportsRes.json();
+        if (reportsResult.status === "fulfilled" && reportsResult.value.ok) {
+          const json = await reportsResult.value.json();
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setOpenReports((json.data || []).slice(0, 5).map((r: any) => ({
             id: r.id,
@@ -147,8 +147,8 @@ export default function AdminDashboard() {
           })));
         }
 
-        if (actionsRes.ok) {
-          const json = await actionsRes.json();
+        if (actionsResult.status === "fulfilled" && actionsResult.value.ok) {
+          const json = await actionsResult.value.json();
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           setRecentActions((json.data || []).slice(0, 10).map((a: any) => ({
             id: a.id,

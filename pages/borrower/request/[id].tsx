@@ -293,7 +293,7 @@ export default function RequestDetail() {
               </Link>
             ) : (
               <span className="text-body-sm text-sage-400">
-                {t("request.waitingForBrokers")}
+                {t("request.waitingForBrokersDetail")}
               </span>
             )}
           </div>

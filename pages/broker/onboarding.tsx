@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import { SkeletonForm } from "@/components/Skeleton";
 import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
+import { useToast } from "@/components/Toast";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import posthog from "posthog-js";
@@ -27,6 +28,7 @@ export default function BrokerOnboardingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
+  const { toast } = useToast();
 
   const [form, setForm] = useState<CreateBrokerProfileInput>({
     brokerageName: "",
@@ -102,6 +104,7 @@ export default function BrokerOnboardingPage() {
         province: form.province,
         mortgage_category: form.mortgageCategory,
       });
+      toast(t("broker.onboardingSuccess"), "success");
       router.push("/broker/dashboard", undefined, { locale: router.locale });
     } catch (err) {
       posthog.captureException(err);

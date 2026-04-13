@@ -20,9 +20,13 @@ function getAccepted(): Set<string> {
 }
 
 function markAccepted(conversationId: string) {
-  const accepted = getAccepted();
-  accepted.add(conversationId);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...accepted]));
+  try {
+    const accepted = getAccepted();
+    accepted.add(conversationId);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...accepted]));
+  } catch {
+    // localStorage may be unavailable (private browsing, quota exceeded, etc.)
+  }
 }
 
 export function useDisclaimerNeeded(conversationId: string | null) {

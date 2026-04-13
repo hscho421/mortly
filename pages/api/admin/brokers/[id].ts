@@ -62,7 +62,7 @@ export default async function handler(
     }
 
     if (req.method === "PUT") {
-      const { verificationStatus } = req.body;
+      const { verificationStatus, reason } = req.body;
 
       if (!verificationStatus) {
         return res.status(400).json({ error: "verificationStatus is required" });
@@ -97,6 +97,7 @@ export default async function handler(
             details: JSON.stringify({
               previousStatus: broker.verificationStatus,
               newStatus: verificationStatus,
+              ...(reason ? { reason } : {}),
             }),
           },
         }),

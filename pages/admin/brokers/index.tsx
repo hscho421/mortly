@@ -43,6 +43,8 @@ export default function AdminBrokers() {
   const [brokers, setBrokers] = useState<BrokerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [rejectModalBrokerId, setRejectModalBrokerId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
   const initialStatus = (router.query.status as string) || "ALL";
   const [filterStatus, setFilterStatus] = useState<
     VerificationStatus | "ALL"
@@ -112,14 +114,15 @@ export default function AdminBrokers() {
 
   const handleStatusChange = async (
     brokerId: string,
-    newStatus: VerificationStatus
+    newStatus: VerificationStatus,
+    reason?: string
   ) => {
     setActionLoading(brokerId);
     try {
       const res = await fetch(`/api/admin/brokers/${brokerId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verificationStatus: newStatus }),
+        body: JSON.stringify({ verificationStatus: newStatus, ...(reason ? { reason } : {}) }),
       });
 
       if (res.ok) {
@@ -130,6 +133,13 @@ export default function AdminBrokers() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectModalBrokerId || !rejectionReason.trim()) return;
+    await handleStatusChange(rejectModalBrokerId, "REJECTED", rejectionReason.trim());
+    setRejectModalBrokerId(null);
+    setRejectionReason("");
   };
 
   if (status === "loading" || loading) {
@@ -265,9 +275,10 @@ export default function AdminBrokers() {
                         )}
                         {broker.verificationStatus !== "REJECTED" && (
                           <button
-                            onClick={() =>
-                              handleStatusChange(broker.id, "REJECTED")
-                            }
+                            onClick={() => {
+                              setRejectModalBrokerId(broker.id);
+                              setRejectionReason("");
+                            }}
                             disabled={actionLoading === broker.id}
                             className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all duration-300 hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
                           >
@@ -303,6 +314,47 @@ export default function AdminBrokers() {
           onPageChange={handlePageChange}
         />
       </div>
+
+      {/* Rejection Reason Modal */}
+      {rejectModalBrokerId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl mx-4">
+            <h3 className="heading-sm mb-2">{t("admin.rejectBrokerTitle")}</h3>
+            <p className="text-body-sm mb-4">{t("admin.rejectBrokerDesc")}</p>
+            <label htmlFor="rejectionReason" className="label-text">
+              {t("admin.rejectionReason")}
+            </label>
+            <textarea
+              id="rejectionReason"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows={3}
+              className="input-field mt-1 w-full resize-none"
+              autoFocus
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setRejectModalBrokerId(null);
+                  setRejectionReason("");
+                }}
+                className="btn-secondary !px-4 !py-2 !text-sm"
+              >
+                {t("nav.logoutCancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectConfirm}
+                disabled={!rejectionReason.trim() || actionLoading === rejectModalBrokerId}
+                className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2 font-body text-sm font-semibold text-white transition-all duration-300 hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+              >
+                {actionLoading === rejectModalBrokerId ? "..." : t("admin.rejectBrokerConfirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

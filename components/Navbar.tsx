@@ -30,6 +30,13 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    const close = () => setMobileOpen(false);
+    router.events.on("routeChangeStart", close);
+    return () => router.events.off("routeChangeStart", close);
+  }, [router.events]);
+
   // Fetch notices and unread messages for logged-in non-admin users
   const fetchNotices = useCallback(async () => {
     if (!session || session.user.role === "ADMIN") return;
@@ -219,7 +226,12 @@ export default function Navbar() {
 
                     {/* Dropdown */}
                     {noticeOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-white shadow-xl ring-1 ring-forest-900/5 animate-fade-in overflow-hidden z-50">
+                      <div
+                        role="menu"
+                        aria-label={t("nav.notifications", "Notifications")}
+                        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Escape") setNoticeOpen(false); }}
+                        className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-white shadow-xl ring-1 ring-forest-900/5 animate-fade-in overflow-hidden z-50"
+                      >
                         <div className="px-4 py-3 border-b border-cream-200">
                           <p className="font-body text-sm font-semibold text-forest-800">
                             {t("nav.notifications", "Notifications")}
@@ -316,6 +328,7 @@ export default function Navbar() {
             className="inline-flex items-center justify-center rounded-lg p-2 text-forest-600 transition-colors hover:bg-cream-200 md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-expanded={mobileOpen}
+            aria-controls="mobile-menu"
             aria-label={t("misc.toggleNav")}
           >
             <div className="relative w-5 h-4 flex flex-col justify-between">
@@ -329,6 +342,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       <div
+        id="mobile-menu"
         className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
           mobileOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         }`}
