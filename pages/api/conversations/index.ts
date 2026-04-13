@@ -68,59 +68,36 @@ export default async function handler(
         orderBy: { updatedAt: "desc" },
       });
 
-      // Compute unread counts in a single batched query instead of N+1
+      // Compute unread counts in a single batched query
       const userId = session.user.id;
-      const conversationIds = conversations.map((c) => c.id);
 
-      // Build per-conversation lastReadAt map
-      const lastReadMap = new Map<string, Date | null>();
-      for (const c of conversations) {
-        lastReadMap.set(c.id, isBorrower ? c.borrowerLastReadAt : c.brokerLastReadAt);
-      }
+      // Build per-conversation OR conditions (same pattern as /api/messages/unread)
+      const orConditions = conversations.map((c) => {
+        const lastReadAt = isBorrower ? c.borrowerLastReadAt : c.brokerLastReadAt;
+        return {
+          conversationId: c.id,
+          senderId: { not: userId },
+          ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+        };
+      });
 
-      // Single groupBy query for all unread counts
-      const unreadCounts = conversationIds.length > 0
+      // Single groupBy query for all conversations — no N+1
+      const unreadCounts = orConditions.length > 0
         ? await prisma.message.groupBy({
             by: ["conversationId"],
-            where: {
-              conversationId: { in: conversationIds },
-              senderId: { not: userId },
-            },
+            where: { OR: orConditions },
             _count: { _all: true },
           })
         : [];
 
-      // For conversations with lastReadAt, we need filtered counts
-      const convsWithLastRead = conversations.filter(
-        (c) => lastReadMap.get(c.id) != null
-      );
-      const filteredUnreadCounts = convsWithLastRead.length > 0
-        ? await Promise.all(
-            convsWithLastRead.map((c) =>
-              prisma.message.count({
-                where: {
-                  conversationId: c.id,
-                  senderId: { not: userId },
-                  createdAt: { gt: lastReadMap.get(c.id)! },
-                },
-              }).then((count) => ({ conversationId: c.id, count }))
-            )
-          )
-        : [];
-
-      const filteredCountMap = new Map(
-        filteredUnreadCounts.map((r) => [r.conversationId, r.count])
-      );
-      const totalCountMap = new Map(
+      const unreadMap = new Map(
         unreadCounts.map((r) => [r.conversationId, r._count._all])
       );
 
       const withUnread = conversations.map((c) => ({
         ...c,
         borrower: isBorrower ? c.borrower : { id: c.borrower.id, name: null },
-        unreadCount: lastReadMap.get(c.id)
-          ? (filteredCountMap.get(c.id) ?? 0)
-          : (totalCountMap.get(c.id) ?? 0),
+        unreadCount: unreadMap.get(c.id) ?? 0,
       }));
 
       return res.status(200).json(withUnread);

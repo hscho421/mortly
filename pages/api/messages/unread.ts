@@ -56,14 +56,12 @@ export default async function handler(
       };
     });
 
-    // Single query: count distinct conversations that have unread messages
-    const unreadConversations = await prisma.message.findMany({
+    // Single query: count total unread messages across all conversations
+    const unreadCount = await prisma.message.count({
       where: { OR: orConditions },
-      select: { conversationId: true },
-      distinct: ["conversationId"],
     });
 
-    return res.status(200).json({ unread: unreadConversations.length });
+    return res.status(200).json({ unread: unreadCount });
   } catch (error) {
     console.error("Error fetching unread count:", error);
     return res.status(500).json({ error: "Internal server error" });

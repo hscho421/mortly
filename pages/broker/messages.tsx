@@ -90,6 +90,7 @@ export default function BrokerMessagesPage() {
   const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(activeConvId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isSelectingRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -166,7 +167,10 @@ export default function BrokerMessagesPage() {
           setMessages((prev) =>
             prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]
           );
-          fetchConversations();
+          if (!isSelectingRef.current) {
+            fetchConversations();
+            window.dispatchEvent(new Event("refresh-unread"));
+          }
         }
       )
       .on(
@@ -207,12 +211,13 @@ export default function BrokerMessagesPage() {
     setActiveConversation(null);
     setNewMessage("");
     setMobileView("chat");
+    // Optimistically clear unread count before API call
+    setConversations((prev) =>
+      prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
+    );
+    isSelectingRef.current = true;
     fetchActiveConversation(convId).then(() => {
-      // Clear unread count locally for this conversation
-      setConversations((prev) =>
-        prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
-      );
-      // Tell Navbar to refresh its badge
+      isSelectingRef.current = false;
       window.dispatchEvent(new Event("refresh-unread"));
     });
   }

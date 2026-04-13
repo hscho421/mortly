@@ -104,6 +104,7 @@ export default function BorrowerMessagesPage() {
   const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(activeId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isSelectingRef = useRef(false);
 
   /* ---- auth guard ---- */
   useEffect(() => {
@@ -183,8 +184,11 @@ export default function BorrowerMessagesPage() {
           setMessages((prev) =>
             prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]
           );
-          // Refresh conversation list sidebar for latest preview
-          fetchConversations();
+          // Refresh conversation list sidebar and navbar badge (skip during active selection to avoid race)
+          if (!isSelectingRef.current) {
+            fetchConversations();
+            window.dispatchEvent(new Event("refresh-unread"));
+          }
         }
       )
       .on(
@@ -221,12 +225,13 @@ export default function BorrowerMessagesPage() {
   function selectConversation(id: string) {
     setActiveId(id);
     setMobileShowChat(true);
+    // Optimistically clear unread count before API call
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+    );
+    isSelectingRef.current = true;
     fetchActiveConversation(id).then(() => {
-      // Clear unread count locally for this conversation
-      setConversations((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
-      );
-      // Tell Navbar to refresh its badge
+      isSelectingRef.current = false;
       window.dispatchEvent(new Event("refresh-unread"));
     });
   }

@@ -50,6 +50,8 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchNotices();
+    const interval = setInterval(fetchNotices, 30000);
+    return () => clearInterval(interval);
   }, [fetchNotices]);
 
   // Refresh unread badge on custom event (from message pages) and route changes
