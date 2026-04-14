@@ -53,6 +53,8 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
               </h1>
               <p className="animate-fade-in-up opacity-0 stagger-3 mt-8 text-lg text-cream-300/80 leading-relaxed max-w-xl font-body">
                 {t("home.subtitle")}
+                <br />
+                {t("home.subtitle2")}
               </p>
               <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-start gap-4">
                 <Link href="/signup" className="btn-amber px-8 py-4 text-base min-w-[180px] text-center">
