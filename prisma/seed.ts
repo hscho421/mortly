@@ -123,6 +123,7 @@ async function clearAll() {
   await prisma.subscription.deleteMany();
   await prisma.borrowerRequest.deleteMany();
   await prisma.broker.deleteMany();
+  await prisma.deviceToken.deleteMany();
   await prisma.user.deleteMany();
   await prisma.systemSetting.deleteMany();
   console.log("All tables cleared (including Stripe references).");

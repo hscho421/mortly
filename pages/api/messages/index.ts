@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getSettingInt } from "@/lib/settings";
+import { sendPushToUsers, messagePush } from "@/lib/push";
 
 export default async function handler(
   req: NextApiRequest,
@@ -31,7 +32,8 @@ export default async function handler(
       const conversation = await prisma.conversation.findUnique({
         where: { id: conversationId },
         include: {
-          broker: { select: { userId: true } },
+          broker: { select: { userId: true, brokerageName: true } },
+          borrower: { select: { id: true, name: true } },
         },
       });
 
@@ -80,6 +82,22 @@ export default async function handler(
             : { brokerLastReadAt: new Date() }),
         },
       });
+
+      // Fire-and-forget push to the other participant
+      const recipientUserId = isBorrower
+        ? conversation.broker.userId
+        : conversation.borrowerId;
+      const senderName = isBorrower
+        ? conversation.borrower?.name || "Client"
+        : conversation.broker.brokerageName || "Broker";
+      sendPushToUsers({
+        userIds: [recipientUserId],
+        content: messagePush(senderName, trimmed),
+        data: {
+          type: "message",
+          conversationId: conversation.id,
+        },
+      }).catch((err) => console.error("Push notify failed:", err));
 
       return res.status(201).json(message);
     }

@@ -34,10 +34,37 @@ model User {
   adminActions     AdminAction[] @relation("adminActions")
   noticesSent      AdminNotice[] @relation("adminNoticesSent")
   noticesReceived  AdminNotice[] @relation("adminNoticesReceived")
+  deviceTokens     DeviceToken[]
 
   @@index([status])
   @@index([role])
   @@map("users")
+}
+
+model DeviceToken {
+  id             String   @id @default(cuid())
+  userId         String
+  token          String   @unique
+  platform       DevicePlatform
+  locale         String   @default("ko")
+  deviceName     String?
+  appVersion     String?
+  pushEnabled    Boolean  @default(true)
+  mutedUntil     DateTime?
+  lastActiveAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, pushEnabled])
+  @@map("device_tokens")
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
 }
 
 model BorrowerRequest {

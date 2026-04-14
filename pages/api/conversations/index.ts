@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { generateConversationPublicId } from "@/lib/publicId";
+import { sendPushToUsers, brokerInquiryPush, borrowerInquiryPush } from "@/lib/push";
 
 export default async function handler(
   req: NextApiRequest,
@@ -150,13 +151,30 @@ export default async function handler(
             brokerId: bodyBrokerId,
           },
         });
+
+        // Fire-and-forget push to the broker
+        const broker = await prisma.broker.findUnique({
+          where: { id: bodyBrokerId },
+          select: { userId: true },
+        });
+        if (broker) {
+          sendPushToUsers({
+            userIds: [broker.userId],
+            content: borrowerInquiryPush(session.user.name),
+            data: {
+              type: "conversation",
+              conversationId: conversation.id,
+            },
+          }).catch((err) => console.error("Push notify failed:", err));
+        }
+
         return res.status(201).json(conversation);
       }
 
       // BROKER flow: create conversation directly with credit deduction
       const broker = await prisma.broker.findUnique({
         where: { userId: session.user.id },
-        select: { id: true, verificationStatus: true, subscriptionTier: true, responseCredits: true },
+        select: { id: true, brokerageName: true, verificationStatus: true, subscriptionTier: true, responseCredits: true },
       });
 
       if (!broker) {
@@ -175,12 +193,12 @@ export default async function handler(
       // race conditions (duplicate conversations + credit double-spend)
       const convoPublicId = await generateConversationPublicId();
 
-      const conversation = await prisma.$transaction(async (tx) => {
+      const { conversation, isNew } = await prisma.$transaction(async (tx) => {
         // Idempotency: return existing conversation if already created
         const existing = await tx.conversation.findUnique({
           where: { requestId_brokerId: { requestId: request.id, brokerId: broker.id } },
         });
-        if (existing) return existing;
+        if (existing) return { conversation: existing, isNew: false };
 
         // Non-premium brokers: atomically deduct credit
         if (!isPremium) {
@@ -212,10 +230,25 @@ export default async function handler(
           });
         }
 
-        return conv;
+        return { conversation: conv, isNew: true };
       });
 
-      return res.status(201).json(conversation);
+      // Fire-and-forget push to the borrower (only on new conversation)
+      if (isNew) {
+        sendPushToUsers({
+          userIds: [request.borrowerId],
+          content: brokerInquiryPush(
+            broker.brokerageName || "A broker",
+            typeof message === "string" ? message : undefined
+          ),
+          data: {
+            type: "conversation",
+            conversationId: conversation.id,
+          },
+        }).catch((err) => console.error("Push notify failed:", err));
+      }
+
+      return res.status(isNew ? 201 : 200).json(conversation);
     }
 
     return res.status(405).json({ error: "Method not allowed" });
