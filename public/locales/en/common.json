@@ -194,7 +194,7 @@
     "selectRoleBtn": "Continue"
   },
   "borrowerDashboard": {
-    "title": "My Mortgage Requests",
+    "title": "Hello, {{name}}.",
     "myRequest": "My Request",
     "brokers": "Brokers",
     "chat": "Chat",

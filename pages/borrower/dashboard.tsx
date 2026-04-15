@@ -91,7 +91,7 @@ export default function BorrowerDashboard() {
         {/* Header */}
         <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
           <div>
-            <h1 className="heading-lg">{t("borrowerDashboard.title")}</h1>
+            <h1 className="heading-lg">{t("borrowerDashboard.title", { name: session.user?.name ?? "" })}</h1>
             <p className="text-body mt-2">
               {t("borrowerDashboard.subtitle")}
             </p>
