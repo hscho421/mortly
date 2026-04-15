@@ -206,6 +206,21 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                   </p>
                 </div>
               </div>
+
+              {/* Mobile Ready */}
+              <div className="card-elevated animate-fade-in-up opacity-0 stagger-4 flex gap-4 sm:gap-6">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3.75 18h4.5" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="heading-sm mb-2">{t("home.mobileReady")}</h3>
+                  <p className="text-body-sm">
+                    {t("home.mobileReadyDesc")}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

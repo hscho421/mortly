@@ -60,6 +60,8 @@
     "verifiedBrokersDesc": "Every broker on mortly must provide licensing information before marketplace access. Broker access is controlled through verification status and admin review.",
     "noCommitment": "No Commitment",
     "noCommitmentDesc": "Explore your options freely. There is no obligation to connect with any broker and no fees for borrowers — ever.",
+    "mobileReady": "Now easier, right from your phone",
+    "mobileReadyDesc": "Compare offers from multiple mortgage experts anytime, anywhere — and find the option that fits you best, more easily than ever.",
     "readyTitle": "Ready to Find Your Broker?",
     "readyDesc": "Submit your request in minutes and let brokers come to you.",
     "getStartedFree": "Get Started Free",
