@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import AppleProvider from "next-auth/providers/apple";
 import { compare } from "bcryptjs";
 import prisma from "./prisma";
 import { generatePublicId } from "./publicId";
@@ -13,6 +14,14 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
         clientId: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       }),
+      ...(process.env.APPLE_CLIENT_ID && process.env.APPLE_PRIVATE_KEY
+        ? [
+            AppleProvider({
+              clientId: process.env.APPLE_CLIENT_ID,
+              clientSecret: process.env.APPLE_PRIVATE_KEY,
+            }),
+          ]
+        : []),
       CredentialsProvider({
         name: "credentials",
         credentials: {
@@ -65,26 +74,27 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
     ],
     callbacks: {
       async signIn({ user, account }) {
-        if (account?.provider !== "google") return true;
+        if (account?.provider !== "google" && account?.provider !== "apple") {
+          return true;
+        }
 
         const email = user.email;
         if (!email) return false;
 
-        const googleId = account.providerAccountId;
+        const providerField = account.provider === "google" ? "googleId" : "appleId";
+        const providerId = account.providerAccountId;
 
-        // Check if user already exists with this googleId
-        const existingByGoogle = await prisma.user.findUnique({
-          where: { googleId },
+        const existingByProvider = await prisma.user.findUnique({
+          where: { [providerField]: providerId } as { googleId: string } | { appleId: string },
         });
 
-        if (existingByGoogle) {
-          if (existingByGoogle.status === "SUSPENDED" || existingByGoogle.status === "BANNED") {
+        if (existingByProvider) {
+          if (existingByProvider.status === "SUSPENDED" || existingByProvider.status === "BANNED") {
             return false;
           }
           return true;
         }
 
-        // Check if user exists with this email (credentials account)
         const existingByEmail = await prisma.user.findUnique({
           where: { email },
         });
@@ -100,11 +110,10 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
               ? createLegalAcceptanceMetadata()
               : null;
 
-          // Link Google to existing account
           await prisma.user.update({
             where: { id: existingByEmail.id },
             data: {
-              googleId,
+              [providerField]: providerId,
               emailVerified: true,
               name: existingByEmail.name || user.name,
               ...(legalMetadata && {
@@ -122,12 +131,11 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
           return "/signup?legal=required";
         }
 
-        // New user — create account
         const publicId = await generatePublicId();
         await prisma.user.create({
           data: {
             email,
-            googleId,
+            [providerField]: providerId,
             name: user.name || null,
             publicId,
             role: "BORROWER",
