@@ -87,6 +87,7 @@ model BorrowerRequest {
 
   borrower           User                 @relation(fields: [borrowerId], references: [id])
   conversations      Conversation[]
+  brokerSeens        BrokerRequestSeen[]
 
   @@index([borrowerId])
   @@index([borrowerId, status])
@@ -111,14 +112,31 @@ model Broker {
   verificationStatus VerificationStatus   @default(PENDING)
   subscriptionTier   SubscriptionTier     @default(FREE)
   responseCredits    Int                  @default(0)
+  lastRequestsSeenAt DateTime?            @map("last_requests_seen_at")
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   user               User                 @relation(fields: [userId], references: [id])
   conversations      Conversation[]
   subscription       Subscription?
+  seenRequests       BrokerRequestSeen[]
   @@index([verificationStatus])
   @@index([subscriptionTier])
   @@map("brokers")
+}
+
+// Per-broker, per-request "seen" tracker for unread indicators on the browse page.
+// Layers on top of Broker.lastRequestsSeenAt (which is kept as a legacy fallback).
+// A row here means: this broker has acknowledged this request (via opening it OR
+// leaving the browse page with it visible). No row = still "new" for this broker.
+model BrokerRequestSeen {
+  brokerId  String
+  requestId String
+  seenAt    DateTime @default(now())
+  broker    Broker          @relation(fields: [brokerId], references: [id], onDelete: Cascade)
+  request   BorrowerRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  @@id([brokerId, requestId])
+  @@index([brokerId])
+  @@map("broker_request_seen")
 }
 
 

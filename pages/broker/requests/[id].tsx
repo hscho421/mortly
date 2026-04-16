@@ -74,6 +74,14 @@ export default function BrokerRequestDetailPage() {
 
     fetchRequest();
     fetchProfile();
+
+    // Mark this single request as seen so the gold "new" dot clears from the
+    // browse list. Fire-and-forget — UI doesn't depend on the response.
+    fetch(`/api/brokers/requests/${encodeURIComponent(id as string)}/mark-seen`, {
+      method: "POST",
+    }).catch(() => {
+      // Best-effort — stale dot on next load isn't a hard failure
+    });
   }, [session, status, router, id]);
 
   async function handleStartConversation() {

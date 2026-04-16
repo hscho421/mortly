@@ -50,11 +50,14 @@ export default function BrokerRequestsPage() {
     desiredTimeline?: string | null;
     conversations?: { broker?: { userId: string } }[];
     _count?: { conversations?: number };
+    /** True if this broker hasn't marked this request as seen yet. */
+    isNew?: boolean;
   }
 
   const [requests, setRequests] = useState<BrokerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [newCount, setNewCount] = useState(0);
 
   const [filterProvince, setFilterProvince] = useState("");
   const [filterMortgageCategory, setFilterMortgageCategory] = useState("");
@@ -81,6 +84,9 @@ export default function BrokerRequestsPage() {
         if (!res.ok) throw new Error(t("broker.failedToFetchRequests"));
         const json = await res.json();
         setRequests(json.data ?? json);
+        if (typeof json.newCount === "number") {
+          setNewCount(json.newCount);
+        }
       } catch {
         setError(t("broker.failedToLoadRequests"));
       } finally {
@@ -90,6 +96,20 @@ export default function BrokerRequestsPage() {
 
     fetchRequests();
   }, [session, status, router, filterProvince, filterMortgageCategory]);
+
+  // Mark requests as seen when the broker navigates away from this page.
+  // The `newCount` badge stays visible during the visit; the backend timestamp
+  // updates on unmount so the next visit reflects only genuinely new requests.
+  useEffect(() => {
+    if (!session || session.user.role !== "BROKER") return;
+    return () => {
+      fetch("/api/brokers/mark-requests-seen", { method: "POST" }).catch(
+        () => {
+          // Best-effort — stale count on next load isn't a hard failure
+        },
+      );
+    };
+  }, [session]);
 
   if (status === "loading") {
     return (
@@ -146,7 +166,20 @@ export default function BrokerRequestsPage() {
       <Head><title>{t("titles.brokerBrowseRequests")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 animate-fade-in">
-          <h1 className="heading-lg">{t("broker.browseRequests")}</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="heading-lg">{t("broker.browseRequests")}</h1>
+            {newCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 font-body text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-300/50">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                <span>{newCount}</span>
+                <span>{t("browse.newSuffix", { defaultValue: "new" })}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 font-body text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                {t("browse.allCaughtUp", { defaultValue: "All caught up" })}
+              </span>
+            )}
+          </div>
           <p className="text-body mt-2">
             {t("broker.requestsSubtitle")}
           </p>
@@ -226,11 +259,19 @@ export default function BrokerRequestsPage() {
               return (
                 <div
                   key={req.id}
-                  className={`card animate-fade-in-up stagger-${Math.min(i + 2, 6)}`}
+                  className={`card animate-fade-in-up stagger-${Math.min(i + 2, 6)} ${
+                    req.isNew ? "ring-2 ring-amber-300/50 bg-amber-50/30" : ""
+                  }`}
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
                       <div className="mb-3 flex flex-wrap items-center gap-2">
+                        {req.isNew && (
+                          <span
+                            className="h-2 w-2 rounded-full bg-amber-400"
+                            aria-label="New"
+                          />
+                        )}
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
                           req.mortgageCategory === "COMMERCIAL"
                             ? "bg-amber-100 text-amber-800"

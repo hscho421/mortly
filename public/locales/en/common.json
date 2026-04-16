@@ -1,4 +1,8 @@
 {
+  "browse": {
+    "newSuffix": "new",
+    "allCaughtUp": "All caught up"
+  },
   "nav": {
     "howItWorks": "How It Works",
     "forBrokers": "For Brokers",

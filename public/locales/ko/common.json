@@ -1,4 +1,8 @@
 {
+  "browse": {
+    "newSuffix": "건 신규요청",
+    "allCaughtUp": "모두 확인했어요"
+  },
   "nav": {
     "howItWorks": "이용 방법",
     "forBrokers": "모기지 전문가 안내",

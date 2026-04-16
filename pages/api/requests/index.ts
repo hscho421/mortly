@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { generateRequestPublicId } from "@/lib/publicId";
 import { getSettingInt } from "@/lib/settings";
 import { validateProductTypes } from "@/lib/requestConfig";
@@ -20,6 +21,7 @@ export default async function handler(
       const { province, mortgageCategory } = req.query;
 
       const where: Record<string, unknown> = {};
+      let brokerId: string | null = null;
 
       if (session.user.role === "BORROWER") {
         where.borrowerId = session.user.id;
@@ -30,6 +32,7 @@ export default async function handler(
         if (!broker || broker.verificationStatus !== "VERIFIED") {
           return res.status(403).json({ error: "Broker must be verified to view requests" });
         }
+        brokerId = broker.id;
         where.status = "OPEN";
       } else {
         return res.status(403).json({ error: "Forbidden" });
@@ -47,7 +50,18 @@ export default async function handler(
       const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
       const skip = (page - 1) * limit;
 
-      const [requests, total] = await Promise.all([
+      // For brokers: `newCount` = OPEN requests (respecting filters) WITHOUT
+      // a BrokerRequestSeen record for this broker. Per-request granularity,
+      // so opening one card clears only its dot (not the others).
+      const newCountWhere =
+        brokerId != null
+          ? {
+              ...where,
+              brokerSeens: { none: { brokerId } },
+            }
+          : null;
+
+      const [requests, total, newCount] = await Promise.all([
         prisma.borrowerRequest.findMany({
           where,
           include: {
@@ -61,17 +75,45 @@ export default async function handler(
               },
               take: 50,
             },
+            // When viewing as broker, eager-load whether THIS broker has a seen
+            // record for each listed request. One row max (composite PK enforces it).
+            ...(brokerId
+              ? {
+                  brokerSeens: {
+                    where: { brokerId },
+                    take: 1,
+                    select: { seenAt: true },
+                  },
+                }
+              : {}),
           },
           orderBy: { createdAt: "desc" },
           skip,
           take: limit,
         }),
         prisma.borrowerRequest.count({ where }),
+        newCountWhere
+          ? prisma.borrowerRequest.count({
+              where: newCountWhere as Prisma.BorrowerRequestWhereInput,
+            })
+          : Promise.resolve(0),
       ]);
 
+      // For brokers, translate the eager-loaded relation into a flat boolean
+      // so the frontend doesn't need to know about the join table.
+      const enrichedRequests =
+        brokerId != null
+          ? requests.map((r) => {
+              const seens = (r as { brokerSeens?: unknown[] }).brokerSeens ?? [];
+              const { brokerSeens: _omit, ...rest } = r as Record<string, unknown>;
+              return { ...rest, isNew: seens.length === 0 };
+            })
+          : requests;
+
       return res.status(200).json({
-        data: requests,
+        data: enrichedRequests,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        ...(brokerId != null ? { newCount } : {}),
       });
     }
 
