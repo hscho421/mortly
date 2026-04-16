@@ -34,6 +34,25 @@ export default withAdmin(async (req, res, session) => {
             verificationStatus: true,
             subscriptionTier: true,
             responseCredits: true,
+            // Broker-side conversations live on Broker.conversations (brokerId FK),
+            // not on User.conversations (which is the borrower-side relation).
+            // Surface them here so the admin user-detail page can render
+            // conversations for broker users.
+            conversations: {
+              take: 10,
+              orderBy: { updatedAt: "desc" },
+              select: {
+                id: true,
+                publicId: true,
+                status: true,
+                updatedAt: true,
+                _count: { select: { messages: true } },
+                broker: { select: { id: true, user: { select: { name: true, email: true } } } },
+                borrower: { select: { id: true, name: true, email: true } },
+                request: { select: { id: true, province: true, mortgageCategory: true } },
+              },
+            },
+            _count: { select: { conversations: true } },
           },
         },
         borrowerRequests: {
