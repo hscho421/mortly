@@ -32,7 +32,13 @@ export default async function handler(
       const conversation = await prisma.conversation.findUnique({
         where: { id: conversationId },
         include: {
-          broker: { select: { userId: true, brokerageName: true } },
+          broker: {
+            select: {
+              userId: true,
+              brokerageName: true,
+              user: { select: { name: true } },
+            },
+          },
           borrower: { select: { id: true, name: true } },
         },
       });
@@ -83,19 +89,24 @@ export default async function handler(
         },
       });
 
-      // Fire-and-forget push to the other participant
+      // Fire-and-forget push to the other participant. Title must be the
+      // sender's personal name (broker.user.name), not the brokerage name —
+      // the brokerageName is only a fallback when the user hasn't set a name.
       const recipientUserId = isBorrower
         ? conversation.broker.userId
         : conversation.borrowerId;
       const senderName = isBorrower
         ? conversation.borrower?.name || "Client"
-        : conversation.broker.brokerageName || "Broker";
+        : conversation.broker.user?.name ||
+          conversation.broker.brokerageName ||
+          "Broker";
       sendPushToUsers({
         userIds: [recipientUserId],
         content: messagePush(senderName, trimmed),
         data: {
           type: "message",
           conversationId: conversation.id,
+          senderName,
         },
       }).catch((err) => console.error("Push notify failed:", err));
 
