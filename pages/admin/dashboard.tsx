@@ -67,14 +67,6 @@ interface OpenReport {
   createdAt: string;
 }
 
-interface RecentAction {
-  id: string;
-  action: string;
-  targetType: string;
-  adminName: string;
-  createdAt: string;
-}
-
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -86,7 +78,6 @@ export default function AdminDashboard() {
   const [pendingBrokers, setPendingBrokers] = useState<PendingBroker[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [openReports, setOpenReports] = useState<OpenReport[]>([]);
-  const [recentActions, setRecentActions] = useState<RecentAction[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const hasFetched = useRef(false);
@@ -99,13 +90,12 @@ export default function AdminDashboard() {
 
     const fetchData = async () => {
       try {
-        const [statsResult, trendsResult, brokersResult, requestsResult, reportsResult, actionsResult] = await Promise.allSettled([
+        const [statsResult, trendsResult, brokersResult, requestsResult, reportsResult] = await Promise.allSettled([
           fetch("/api/admin/stats"),
           fetch("/api/admin/trends"),
           fetch("/api/admin/brokers?status=PENDING&limit=5"),
           fetch("/api/admin/requests?status=PENDING_APPROVAL&limit=5"),
           fetch("/api/admin/reports?status=OPEN&limit=5"),
-          fetch("/api/admin/actions?limit=10"),
         ]);
 
         if (statsResult.status === "fulfilled" && statsResult.value.ok) setStats(await statsResult.value.json());
@@ -144,18 +134,6 @@ export default function AdminDashboard() {
             reason: r.reason,
             reporterName: r.reporter?.name ?? r.reporter?.email ?? "Unknown",
             createdAt: r.createdAt?.slice(0, 10) ?? "",
-          })));
-        }
-
-        if (actionsResult.status === "fulfilled" && actionsResult.value.ok) {
-          const json = await actionsResult.value.json();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setRecentActions((json.data || []).slice(0, 10).map((a: any) => ({
-            id: a.id,
-            action: a.action,
-            targetType: a.targetType,
-            adminName: a.admin?.name ?? a.admin?.email ?? "Admin",
-            createdAt: a.createdAt?.slice(0, 10) ?? "",
           })));
         }
       } catch {
@@ -450,35 +428,6 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* Recent Activity */}
-          <div className="card-elevated animate-fade-in-up opacity-0 stagger-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-body text-sm font-semibold text-forest-800">{t("admin.queue.recentActivity", "Recent Activity")}</h3>
-              <Link
-                href="/admin/activity"
-                className="font-body text-xs font-medium text-forest-600 hover:text-forest-800 transition-colors"
-              >
-                {t("admin.queue.viewAll", "View All")} &rarr;
-              </Link>
-            </div>
-            {recentActions.length === 0 ? (
-              <p className="text-body-sm py-4 text-center">{t("admin.queue.noRecentActivity", "No recent activity")}</p>
-            ) : (
-              <ul className="divide-y divide-cream-200">
-                {recentActions.slice(0, 5).map((a) => (
-                  <li key={a.id} className="flex items-center justify-between py-2.5">
-                    <div className="min-w-0">
-                      <p className="font-body text-sm font-medium text-forest-800 truncate">
-                        {a.action.replace(/_/g, " ")}
-                      </p>
-                      <p className="font-body text-xs text-forest-700/50 truncate">{a.targetType} &middot; {a.adminName}</p>
-                    </div>
-                    <span className="font-body text-[11px] text-forest-700/40 shrink-0 ml-3">{formatDate(a.createdAt)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
 
         {/* 30-Day Trends */}
