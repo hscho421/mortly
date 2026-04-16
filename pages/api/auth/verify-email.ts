@@ -1,5 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { timingSafeEqual } from "crypto";
 import prisma from "@/lib/prisma";
+import { verifyCodeLimiter } from "@/lib/rate-limit";
+
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -14,6 +25,11 @@ export default async function handler(
 
     if (!email || !code) {
       return res.status(400).json({ message: "Email and code are required" });
+    }
+
+    const { success } = verifyCodeLimiter.check(5, `verify-${email}`);
+    if (!success) {
+      return res.status(429).json({ message: "Too many attempts. Please wait and try again." });
     }
 
     const user = await prisma.user.findUnique({
@@ -44,7 +60,7 @@ export default async function handler(
         .json({ message: "Code expired. Request a new one.", expired: true });
     }
 
-    if (user.verificationCode !== code) {
+    if (!safeCompare(user.verificationCode, code)) {
       return res.status(400).json({ message: "Invalid code. Try again." });
     }
 

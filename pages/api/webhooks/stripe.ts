@@ -256,6 +256,8 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     include: { broker: { select: { id: true } } },
   });
 
+  if (!subscription) return;
+
   await prisma.subscription.update({
     where: { stripeSubscriptionId },
     data: { status: "PAST_DUE" },

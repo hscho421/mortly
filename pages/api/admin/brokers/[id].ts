@@ -68,6 +68,11 @@ export default async function handler(
         return res.status(400).json({ error: "verificationStatus is required" });
       }
 
+      const VALID_STATUSES = ["PENDING", "VERIFIED", "REJECTED"];
+      if (!VALID_STATUSES.includes(verificationStatus)) {
+        return res.status(400).json({ error: `verificationStatus must be one of: ${VALID_STATUSES.join(", ")}` });
+      }
+
       const broker = await prisma.broker.findUnique({
         where: { id },
         include: { user: { select: { publicId: true } } },

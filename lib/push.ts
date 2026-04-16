@@ -105,7 +105,8 @@ export async function sendPushToUsers({
 
 function truncate(s: string, max = 120): string {
   const trimmed = s.trim();
-  return trimmed.length > max ? `${trimmed.slice(0, max)}…` : trimmed;
+  const chars = Array.from(trimmed);
+  return chars.length > max ? `${chars.slice(0, max).join("")}…` : trimmed;
 }
 
 /** A new chat message arrived. Title = sender's display name. */

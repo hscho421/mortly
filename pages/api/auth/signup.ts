@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { generatePublicId } from "@/lib/publicId";
 import { generateVerificationCode, sendVerificationCode } from "@/lib/email";
 import { CURRENT_LEGAL_VERSION, createLegalAcceptanceMetadata } from "@/lib/legal";
+import { authLimiter, getClientIp } from "@/lib/rate-limit";
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,6 +12,11 @@ export default async function handler(
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  const { success } = authLimiter.check(5, `signup-${getClientIp(req)}`);
+  if (!success) {
+    return res.status(429).json({ message: "Too many requests. Please try again later." });
   }
 
   try {

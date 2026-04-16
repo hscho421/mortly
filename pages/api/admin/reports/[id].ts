@@ -69,6 +69,13 @@ export default async function handler(
         return res.status(400).json({ error: "status or adminNotes is required" });
       }
 
+      if (status) {
+        const VALID_STATUSES = ["PENDING", "REVIEWING", "RESOLVED", "DISMISSED"];
+        if (!VALID_STATUSES.includes(status)) {
+          return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` });
+        }
+      }
+
       const report = await prisma.report.findUnique({
         where: { id },
       });

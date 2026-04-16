@@ -78,7 +78,7 @@ export default async function handler(
         return {
           conversationId: c.id,
           senderId: { not: userId },
-          ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+          ...(lastReadAt ? { createdAt: { gte: lastReadAt } } : {}),
         };
       });
 

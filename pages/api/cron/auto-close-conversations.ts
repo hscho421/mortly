@@ -54,19 +54,12 @@ export default async function handler(
     });
 
     if (inactiveConversations.length > 0) {
-      const succeededIds: string[] = [];
-      for (const convo of inactiveConversations) {
-        try {
-          await prisma.conversation.update({
-            where: { id: convo.id },
-            data: { status: "CLOSED" },
-          });
-          succeededIds.push(convo.id);
-        } catch (err) {
-          console.error(`Failed to close inactive conversation ${convo.id}:`, err);
-        }
-      }
-      closedCount += succeededIds.length;
+      const ids = inactiveConversations.map((c: { id: string }) => c.id);
+      const result = await prisma.conversation.updateMany({
+        where: { id: { in: ids }, status: "ACTIVE" },
+        data: { status: "CLOSED", updatedAt: new Date() },
+      });
+      closedCount += result.count;
     }
 
     // 2. Close conversations where borrower never engaged within 7 days of broker intro
@@ -94,19 +87,12 @@ export default async function handler(
     );
 
     if (toClose.length > 0) {
-      const succeededIds: string[] = [];
-      for (const convo of toClose) {
-        try {
-          await prisma.conversation.update({
-            where: { id: convo.id },
-            data: { status: "CLOSED" },
-          });
-          succeededIds.push(convo.id);
-        } catch (err) {
-          console.error(`Failed to close unstarted conversation ${convo.id}:`, err);
-        }
-      }
-      closedCount += succeededIds.length;
+      const ids = toClose.map((c: { id: string }) => c.id);
+      const result = await prisma.conversation.updateMany({
+        where: { id: { in: ids }, status: "ACTIVE" },
+        data: { status: "CLOSED", updatedAt: new Date() },
+      });
+      closedCount += result.count;
     }
 
     // 3. For requests where ALL conversations are now CLOSED, update request status to CLOSED

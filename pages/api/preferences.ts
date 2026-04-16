@@ -33,12 +33,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       select: { preferences: true },
     });
 
+    const ALLOWED_KEYS = ["locale", "emailNotifications", "pushNotifications", "theme"];
+    const filtered: Record<string, unknown> = {};
+    for (const key of ALLOWED_KEYS) {
+      if (key in preferences) filtered[key] = preferences[key];
+    }
+
     const existing = (user?.preferences as Record<string, unknown>) ?? {};
-    const merged = { ...existing, ...preferences };
+    const merged = { ...existing, ...filtered };
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { preferences: merged },
+      data: { preferences: merged as any },
     });
 
     return res.json(merged);

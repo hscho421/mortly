@@ -33,8 +33,13 @@ export default async function handler(
       const normalizedLocale = locale === "en" ? "en" : "ko";
       const now = new Date();
 
-      // Upsert by token: if this token already exists (e.g., device handed off
-      // between accounts on the same phone), reassign to the current user.
+      // If the token belongs to a different user (e.g. shared device with
+      // multiple accounts), remove the old binding first to prevent hijacking.
+      const existing = await prisma.deviceToken.findUnique({ where: { token } });
+      if (existing && existing.userId !== session.user.id) {
+        await prisma.deviceToken.delete({ where: { id: existing.id } });
+      }
+
       await prisma.deviceToken.upsert({
         where: { token },
         create: {

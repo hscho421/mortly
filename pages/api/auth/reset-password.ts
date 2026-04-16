@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { hash } from "bcryptjs";
 import { createHash } from "crypto";
 import prisma from "@/lib/prisma";
+import { authLimiter, getClientIp } from "@/lib/rate-limit";
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,6 +10,11 @@ export default async function handler(
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  const { success } = authLimiter.check(5, `reset-${getClientIp(req)}`);
+  if (!success) {
+    return res.status(429).json({ message: "Too many requests. Please try again later." });
   }
 
   try {

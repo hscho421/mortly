@@ -19,6 +19,9 @@ export default async function handler(
 
   try {
     if (req.method === "GET") {
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+      const before = req.query.before as string | undefined;
+
       const conversation = await prisma.conversation.findUnique({
         where: { id },
         select: {
@@ -32,7 +35,9 @@ export default async function handler(
           borrowerLastReadAt: true,
           brokerLastReadAt: true,
           messages: {
-            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+            ...(before ? { cursor: { id: before }, skip: 1 } : {}),
+            take: limit,
+            orderBy: [{ createdAt: "desc" as const }, { id: "desc" as const }],
             select: {
               id: true,
               body: true,
@@ -76,16 +81,21 @@ export default async function handler(
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      // Mark conversation as read for this user
-      const isBorrower = conversation.borrowerId === session.user.id;
-      await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: isBorrower
-          ? { borrowerLastReadAt: new Date() }
-          : { brokerLastReadAt: new Date() },
-      });
+      conversation.messages.reverse();
+      const hasMore = conversation.messages.length === limit;
 
-      return res.status(200).json(conversation);
+      // Mark conversation as read for this user (only on initial load, not pagination)
+      if (!before) {
+        const isBorrower = conversation.borrowerId === session.user.id;
+        await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: isBorrower
+            ? { borrowerLastReadAt: new Date() }
+            : { brokerLastReadAt: new Date() },
+        });
+      }
+
+      return res.status(200).json({ ...conversation, hasMore });
     }
 
     if (req.method === "PUT") {
@@ -108,6 +118,10 @@ export default async function handler(
 
       if (conversation.borrowerId !== session.user.id) {
         return res.status(403).json({ error: "Forbidden" });
+      }
+
+      if (conversation.status === "CLOSED") {
+        return res.status(400).json({ error: "Conversation already closed" });
       }
 
       const updated = await prisma.conversation.update({

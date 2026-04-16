@@ -37,17 +37,18 @@ export default async function handler(
         return res.status(404).json({ error: "Broker not found" });
       }
 
-      const newCredits = broker.responseCredits + amount;
-      if (newCredits < 0) {
+      if (amount < 0 && broker.responseCredits + amount < 0) {
         return res.status(400).json({
           error: `Cannot remove ${Math.abs(amount)} credits. Broker only has ${broker.responseCredits}.`,
         });
       }
 
+      const previousBalance = broker.responseCredits;
+
       const [updated] = await prisma.$transaction([
         prisma.broker.update({
           where: { id: brokerId },
-          data: { responseCredits: newCredits },
+          data: { responseCredits: { increment: amount } },
           select: {
             id: true,
             responseCredits: true,
@@ -62,8 +63,8 @@ export default async function handler(
             targetId: broker.user.publicId,
             details: JSON.stringify({
               amount,
-              previousBalance: broker.responseCredits,
-              newBalance: newCredits,
+              previousBalance,
+              newBalance: previousBalance + amount,
             }),
             reason: reason || null,
           },

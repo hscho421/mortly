@@ -44,6 +44,7 @@ export default async function handler(
         passwordHash,
         role: "ADMIN",
         publicId,
+        emailVerified: true,
       },
       select: {
         id: true,

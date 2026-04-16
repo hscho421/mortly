@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { randomBytes, createHash } from "crypto";
 import prisma from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { authLimiter, getClientIp } from "@/lib/rate-limit";
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,6 +10,11 @@ export default async function handler(
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  const { success } = authLimiter.check(3, `forgot-${getClientIp(req)}`);
+  if (!success) {
+    return res.status(429).json({ message: "Too many requests. Please try again later." });
   }
 
   try {
@@ -35,7 +41,8 @@ export default async function handler(
       const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${rawToken}`;
 
       try {
-        await sendPasswordResetEmail(email, resetUrl, "ko");
+        const locale = (user.preferences as Record<string, unknown>)?.locale === "en" ? "en" : "ko";
+        await sendPasswordResetEmail(email, resetUrl, locale);
       } catch (emailError) {
         console.error("Failed to send password reset email:", emailError);
       }

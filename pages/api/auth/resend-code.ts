@@ -4,6 +4,7 @@ import {
   generateVerificationCode,
   sendVerificationCode,
 } from "@/lib/email";
+import { authLimiter, getClientIp } from "@/lib/rate-limit";
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,6 +12,11 @@ export default async function handler(
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  const { success } = authLimiter.check(3, `resend-${getClientIp(req)}`);
+  if (!success) {
+    return res.status(429).json({ message: "Too many requests. Please try again later." });
   }
 
   try {

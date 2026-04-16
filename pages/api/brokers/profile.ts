@@ -44,7 +44,8 @@ export default async function handler(
         return res.status(409).json({ error: "Broker profile already exists" });
       }
 
-      const { brokerageName, province, licenseNumber, phone, ...rest } = req.body;
+      const { brokerageName, province, licenseNumber, phone, bio, yearsExperience,
+        areasServed, specialties, profilePhoto, mortgageCategory } = req.body;
 
       if (!brokerageName || !province || !phone) {
         return res.status(400).json({
@@ -52,15 +53,22 @@ export default async function handler(
         });
       }
 
+      const safeData: Record<string, unknown> = {
+        userId: session.user.id,
+        brokerageName,
+        province,
+        phone,
+      };
+      if (licenseNumber !== undefined) safeData.licenseNumber = licenseNumber;
+      if (bio !== undefined) safeData.bio = bio;
+      if (yearsExperience !== undefined) safeData.yearsExperience = yearsExperience;
+      if (areasServed !== undefined) safeData.areasServed = areasServed;
+      if (specialties !== undefined) safeData.specialties = specialties;
+      if (profilePhoto !== undefined) safeData.profilePhoto = profilePhoto;
+      if (mortgageCategory !== undefined) safeData.mortgageCategory = mortgageCategory;
+
       const broker = await prisma.broker.create({
-        data: {
-          userId: session.user.id,
-          brokerageName,
-          province,
-          licenseNumber,
-          phone,
-          ...rest,
-        },
+        data: safeData as any,
       });
 
       return res.status(201).json(broker);

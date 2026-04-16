@@ -185,7 +185,7 @@ export default async function handler(
     });
   } catch (err) {
     console.error("Mobile OAuth error:", err);
-    const message = err instanceof Error ? err.message : "OAuth verification failed";
-    return res.status(401).json({ error: message });
+    console.error("OAuth verification detail:", err instanceof Error ? err.message : err);
+    return res.status(401).json({ error: "Authentication failed" });
   }
 }

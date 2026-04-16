@@ -59,6 +59,7 @@ export default async function handler(
                 brokerId: true,
                 broker: { select: { userId: true } },
               },
+              take: 50,
             },
           },
           orderBy: { createdAt: "desc" },

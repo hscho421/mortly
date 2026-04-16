@@ -80,6 +80,10 @@ export default async function handler(
             return res.status(403).json({ error: "Forbidden" });
           }
         }
+        // Strip competitor conversations — broker should only see their own
+        request.conversations = request.conversations.filter(
+          (conv: { brokerId: string }) => conv.brokerId === broker.id
+        );
       }
 
       return res.status(200).json(request);
@@ -100,36 +104,40 @@ export default async function handler(
 
       const { status } = req.body;
 
-      const updated = await prisma.borrowerRequest.update({
-        where: { id: request.id },
-        data: { status },
-      });
+      if (status !== "CLOSED") {
+        return res.status(400).json({ error: "Only status CLOSED is allowed" });
+      }
 
-      if (status === "CLOSED") {
-        await prisma.$transaction(async (tx) => {
-          const activeConversations = await tx.conversation.findMany({
-            where: { requestId: request.id, status: "ACTIVE" },
-            select: { id: true },
-          });
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedReq = await tx.borrowerRequest.update({
+          where: { id: request.id },
+          data: { status },
+        });
 
-          if (activeConversations.length > 0) {
-            for (const convo of activeConversations) {
-              await tx.message.create({
-                data: {
-                  conversationId: convo.id,
-                  senderId: session.user.id,
-                  body: "[System] This request has been closed. / 이 요청이 종료되었습니다.",
-                },
-              });
-            }
+        const activeConversations = await tx.conversation.findMany({
+          where: { requestId: request.id, status: "ACTIVE" },
+          select: { id: true },
+        });
 
-            await tx.conversation.updateMany({
-              where: { requestId: request.id, status: "ACTIVE" },
-              data: { status: "CLOSED" },
+        if (activeConversations.length > 0) {
+          for (const convo of activeConversations) {
+            await tx.message.create({
+              data: {
+                conversationId: convo.id,
+                senderId: session.user.id,
+                body: "[System] This request has been closed. / 이 요청이 종료되었습니다.",
+              },
             });
           }
-        });
-      }
+
+          await tx.conversation.updateMany({
+            where: { requestId: request.id, status: "ACTIVE" },
+            data: { status: "CLOSED" },
+          });
+        }
+
+        return updatedReq;
+      });
 
       return res.status(200).json(updated);
     }

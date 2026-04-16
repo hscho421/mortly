@@ -91,36 +91,38 @@ export default async function handler(
         updateData.rejectionReason = null;
       }
 
-      const updated = await prisma.borrowerRequest.update({
-        where: { id: request.id },
-        data: updateData,
-      });
-
-      // If closing, also close active conversations
-      if (status === "CLOSED") {
-        const activeConversations = await prisma.conversation.findMany({
-          where: { requestId: request.id, status: "ACTIVE" },
-          select: { id: true },
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedReq = await tx.borrowerRequest.update({
+          where: { id: request.id },
+          data: updateData,
         });
 
-        if (activeConversations.length > 0) {
-          await prisma.$transaction([
-            ...activeConversations.map((convo: { id: string }) =>
-              prisma.message.create({
+        if (status === "CLOSED") {
+          const activeConversations = await tx.conversation.findMany({
+            where: { requestId: request.id, status: "ACTIVE" },
+            select: { id: true },
+          });
+
+          if (activeConversations.length > 0) {
+            for (const convo of activeConversations) {
+              await tx.message.create({
                 data: {
                   conversationId: convo.id,
                   senderId: session.user.id,
                   body: "[Admin] This request has been closed by an administrator.",
                 },
-              })
-            ),
-            prisma.conversation.updateMany({
+              });
+            }
+
+            await tx.conversation.updateMany({
               where: { requestId: request.id, status: "ACTIVE" },
               data: { status: "CLOSED" },
-            }),
-          ]);
+            });
+          }
         }
-      }
+
+        return updatedReq;
+      });
 
       // Determine the admin action type
       let actionType = "UPDATE_REQUEST_STATUS";
