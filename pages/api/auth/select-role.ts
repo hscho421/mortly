@@ -21,12 +21,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: "Invalid role" });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+  // Try to resolve user by session.user.id first, then fall back to email.
+  // Some mobile JWT paths have had session.user.id drift from the real DB id
+  // (e.g. stale encoded tokens predating schema migrations). Falling back to
+  // email unsticks users whose session id doesn't resolve but who are clearly
+  // authenticated (session was valid enough to reach this handler).
+  const sessionId = session.user.id;
+  const sessionEmail = (session.user as { email?: string | null }).email;
+
+  let user = await prisma.user.findUnique({
+    where: { id: sessionId },
     select: { id: true, publicId: true, email: true, name: true, role: true, preferences: true },
   });
 
+  if (!user && sessionEmail) {
+    user = await prisma.user.findUnique({
+      where: { email: sessionEmail.toLowerCase() },
+      select: { id: true, publicId: true, email: true, name: true, role: true, preferences: true },
+    });
+    if (user) {
+      console.warn(
+        `[select-role] session.user.id (${sessionId}) did not match DB, recovered via email (${sessionEmail}) → user.id=${user.id}`,
+      );
+    }
+  }
+
   if (!user) {
+    console.error(
+      `[select-role] User not found — sessionId=${sessionId}, sessionEmail=${sessionEmail ?? "(none)"}`,
+    );
     return res.status(404).json({ message: "User not found" });
   }
 
