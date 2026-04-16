@@ -1,3 +1,4 @@
+import { ReportStatus } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
 
@@ -17,13 +18,15 @@ export default withAdmin(async (req, res) => {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const brokerWhere = { verificationStatus: "PENDING" as const };
+  const brokerWhere = { verificationStatus: "PENDING" } as const;
   // Schema note: Prisma ReportStatus enum is { OPEN, REVIEWED, RESOLVED, DISMISSED }.
   // The spec asked for { PENDING, REVIEWING } — we map to the real non-terminal
   // statuses (OPEN = new, REVIEWED = actively under review) so the queue shows
   // everything not yet RESOLVED / DISMISSED.
-  const reportWhere = { status: { in: ["OPEN", "REVIEWED"] as const } };
-  const requestWhere = { status: "PENDING_APPROVAL" as const };
+  const reportWhere = {
+    status: { in: [ReportStatus.OPEN, ReportStatus.REVIEWED] },
+  };
+  const requestWhere = { status: "PENDING_APPROVAL" } as const;
 
   const [
     rawBrokers,
