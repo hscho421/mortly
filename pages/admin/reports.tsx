@@ -8,6 +8,8 @@ import type { GetStaticProps } from "next";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import Pagination from "@/components/Pagination";
+import StatusBadge from "@/components/StatusBadge";
+import { useToast } from "@/components/Toast";
 import { downloadCSV } from "@/lib/csvExport";
 
 type ReportStatus = "OPEN" | "REVIEWED" | "RESOLVED" | "DISMISSED";
@@ -35,13 +37,6 @@ interface PaginationMeta {
   total: number;
   totalPages: number;
 }
-
-const STATUS_BADGE: Record<string, string> = {
-  OPEN: "bg-rose-100 text-rose-700",
-  REVIEWED: "bg-amber-100 text-amber-800",
-  RESOLVED: "bg-forest-100 text-forest-700",
-  DISMISSED: "bg-sage-200 text-sage-700",
-};
 
 const TARGET_BADGE: Record<string, string> = {
   BROKER: "bg-forest-100 text-forest-700 ring-1 ring-inset ring-forest-600/20",
@@ -79,6 +74,7 @@ export default function AdminReports() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
+  const { toast } = useToast();
 
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>({ page: 1, limit: 20, total: 0, totalPages: 0 });
@@ -170,10 +166,14 @@ export default function AdminReports() {
       });
 
       if (res.ok) {
+        toast(t("admin.reportUpdated", "Report updated"), "success");
         await fetchReports();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast(data?.error || t("admin.failedToUpdate", "Failed to update"), "error");
       }
-    } catch {
-      // error
+    } catch (err) {
+      toast((err as Error)?.message || t("admin.failedToUpdate", "Failed to update"), "error");
     } finally {
       setActionLoading(null);
     }
@@ -195,6 +195,7 @@ export default function AdminReports() {
       });
 
       if (res.ok) {
+        toast(t("admin.reportUpdated", "Report updated"), "success");
         setNotesMessage({ text: t("admin.notesSaved", "Notes saved successfully"), ok: true });
         setTimeout(async () => {
           setNotesModal(null);
@@ -202,11 +203,15 @@ export default function AdminReports() {
           await fetchReports();
         }, 1200);
       } else {
-        const data = await res.json();
-        setNotesMessage({ text: data.error, ok: false });
+        const data = await res.json().catch(() => ({}));
+        const msg = data?.error || t("admin.failedToSave", "Failed to save");
+        setNotesMessage({ text: msg, ok: false });
+        toast(msg, "error");
       }
-    } catch {
-      setNotesMessage({ text: t("admin.failedToSave", "Failed to save"), ok: false });
+    } catch (err) {
+      const msg = (err as Error)?.message || t("admin.failedToSave", "Failed to save");
+      setNotesMessage({ text: msg, ok: false });
+      toast(msg, "error");
     } finally {
       setNotesSubmitting(false);
     }
@@ -403,9 +408,7 @@ export default function AdminReports() {
 
                       {/* Status */}
                       <td className="whitespace-nowrap px-4 py-4">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ${STATUS_BADGE[report.status]}`}>
-                          {report.status}
-                        </span>
+                        <StatusBadge status={report.status} />
                         {report.resolvedAt && (
                           <p className="mt-1 font-body text-[10px] text-forest-700/40">
                             {formatDate(report.resolvedAt)}

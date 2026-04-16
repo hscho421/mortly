@@ -1,65 +1,32 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { withAdmin } from "@/lib/admin/withAdmin";
+import { parsePagination, buildSearchWhere, paginatedResponse } from "@/lib/admin/query";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+export default withAdmin(async (req, res) => {
+  if (req.method === "GET") {
+    const { page, limit, skip } = parsePagination(req);
 
-  if (session.user.role !== "ADMIN") {
-    return res.status(403).json({ error: "Admin access required" });
-  }
+    const where = buildSearchWhere<Record<string, unknown>>({
+      filters: { verificationStatus: req.query.status },
+    });
 
-  try {
-    if (req.method === "GET") {
-      const { status, page: pageStr, limit: limitStr } = req.query;
-
-      const page = Math.max(1, parseInt(pageStr as string) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(limitStr as string) || 20));
-      const skip = (page - 1) * limit;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const where: any = {};
-
-      if (status && status !== "ALL") {
-        where.verificationStatus = status;
-      }
-
-      const [brokers, total] = await Promise.all([
-        prisma.broker.findMany({
-          where,
-          include: {
-            user: {
-              select: { name: true, publicId: true },
-            },
+    const [brokers, total] = await Promise.all([
+      prisma.broker.findMany({
+        where,
+        include: {
+          user: {
+            select: { name: true, publicId: true },
           },
-          orderBy: { createdAt: "desc" },
-          skip,
-          take: limit,
-        }),
-        prisma.broker.count({ where }),
-      ]);
-
-      return res.status(200).json({
-        data: brokers,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
         },
-      });
-    }
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.broker.count({ where }),
+    ]);
 
-    return res.status(405).json({ error: "Method not allowed" });
-  } catch (error) {
-    console.error("Error in /api/admin/brokers:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return paginatedResponse(res, brokers, { page, limit, total });
   }
-}
+
+  return res.status(405).json({ error: "Method not allowed" });
+});

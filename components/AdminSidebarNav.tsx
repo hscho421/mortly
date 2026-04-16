@@ -115,17 +115,27 @@ export default function AdminSidebarNav({ collapsed, onToggle }: AdminSidebarNav
     pendingRequests: 0,
     openReports: 0,
   });
+  const [badgesLoaded, setBadgesLoaded] = useState(false);
 
   const fetchBadges = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/stats");
       if (res.ok) {
         const data = await res.json();
+        // Prefer direct count field (requestsByStatus.pendingApproval) over
+        // pendingApprovalList.length because the list is capped at 10 items.
+        const pendingRequestsCount =
+          typeof data.requestsByStatus?.pendingApproval === "number"
+            ? data.requestsByStatus.pendingApproval
+            : Array.isArray(data.pendingApprovalList)
+            ? data.pendingApprovalList.length
+            : 0;
         setBadges({
           pendingVerifications: data.pendingVerifications ?? 0,
-          pendingRequests: data.requestsByStatus?.pendingApproval ?? 0,
+          pendingRequests: pendingRequestsCount,
           openReports: data.openReports ?? 0,
         });
+        setBadgesLoaded(true);
       }
     } catch {
       // silent
@@ -133,7 +143,17 @@ export default function AdminSidebarNav({ collapsed, onToggle }: AdminSidebarNav
   }, []);
 
   useEffect(() => {
-    fetchBadges();
+    let cancelled = false;
+    const run = async () => {
+      if (cancelled) return;
+      await fetchBadges();
+    };
+    run();
+    const intervalId = setInterval(run, 60000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
   }, [fetchBadges]);
 
   // Collect all query-param hrefs so plain items can exclude them
@@ -225,21 +245,15 @@ export default function AdminSidebarNav({ collapsed, onToggle }: AdminSidebarNav
                         {!collapsed && (
                           <>
                             <span className="flex-1 truncate">{t(item.labelKey)}</span>
-                            {badgeCount > 0 && (
-                              <span
-                                className={`inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none ${
-                                  active
-                                    ? "bg-white/20 text-white"
-                                    : "bg-amber-100 text-amber-800"
-                                }`}
-                              >
+                            {badgesLoaded && badgeCount > 0 && (
+                              <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold px-1.5">
                                 {badgeCount}
                               </span>
                             )}
                           </>
                         )}
-                        {collapsed && badgeCount > 0 && (
-                          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-amber-500" />
+                        {collapsed && badgesLoaded && badgeCount > 0 && (
+                          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500" />
                         )}
                       </Link>
                     </li>

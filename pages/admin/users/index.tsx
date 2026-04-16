@@ -8,6 +8,8 @@ import type { GetStaticProps } from "next";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import Pagination from "@/components/Pagination";
+import StatusBadge from "@/components/StatusBadge";
+import { useToast } from "@/components/Toast";
 import { downloadCSV } from "@/lib/csvExport";
 
 interface UserRow {
@@ -45,12 +47,6 @@ const ROLE_BADGE: Record<string, string> = {
   ADMIN: "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-600/20",
 };
 
-const STATUS_BADGE: Record<string, string> = {
-  ACTIVE: "bg-forest-100 text-forest-700",
-  SUSPENDED: "bg-amber-100 text-amber-800",
-  BANNED: "bg-rose-100 text-rose-700",
-};
-
 const TIER_BADGE: Record<string, string> = {
   FREE: "bg-cream-200 text-forest-600",
   BASIC: "bg-sage-100 text-sage-700",
@@ -70,6 +66,7 @@ export default function AdminUsers() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
+  const { toast } = useToast();
 
   // Paginated data
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -374,13 +371,41 @@ export default function AdminUsers() {
       )
     );
 
+    let successCount = 0;
+    let firstError: string | null = null;
     results.forEach((r) => {
       if (r.status === "fulfilled" && r.value.ok) {
+        successCount += 1;
         setUsers((prev) =>
           prev.map((u) => (u.id === r.value.id ? { ...u, status: r.value.data.status } : u))
         );
+      } else if (r.status === "fulfilled" && !r.value.ok) {
+        if (!firstError) firstError = r.value.data?.error || null;
+      } else if (r.status === "rejected") {
+        if (!firstError) firstError = (r.reason as Error)?.message || null;
       }
     });
+
+    const failCount = ids.length - successCount;
+    if (successCount > 0) {
+      toast(
+        t("admin.bulkUpdated", "{{count}} user(s) updated").replace(
+          "{{count}}",
+          String(successCount)
+        ),
+        "success"
+      );
+    }
+    if (failCount > 0) {
+      toast(
+        firstError ||
+          t("admin.bulkFailed", "{{count}} update(s) failed").replace(
+            "{{count}}",
+            String(failCount)
+          ),
+        "error"
+      );
+    }
 
     setSelectedIds(new Set());
     setBulkLoading(false);
@@ -627,9 +652,16 @@ export default function AdminUsers() {
 
                     {/* Account Status */}
                     <td className="whitespace-nowrap px-5 py-4">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ${STATUS_BADGE[user.status] || STATUS_BADGE.ACTIVE}`}>
-                        {user.status}
-                      </span>
+                      <StatusBadge
+                        status={user.status}
+                        variant={
+                          user.status === "SUSPENDED"
+                            ? "warning"
+                            : user.status === "BANNED"
+                              ? "error"
+                              : undefined
+                        }
+                      />
                       {actionMessage?.id === user.id && (
                         <p className={`mt-1 font-body text-[10px] ${actionMessage.ok ? "text-forest-600" : "text-rose-600"}`}>
                           {actionMessage.text}

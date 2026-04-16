@@ -9,6 +9,7 @@ import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import { getRequestTitle } from "@/lib/requestConfig";
+import { useToast } from "@/components/Toast";
 
 interface MessageItem {
   id: string;
@@ -52,6 +53,8 @@ interface ConversationDetail {
     mortgageCategory?: string | null;
   };
   messages: MessageItem[];
+  nextCursor?: string | null;
+  hasMore?: boolean;
 }
 
 const ROLE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
@@ -83,10 +86,16 @@ export default function AdminConversationDetail() {
   const router = useRouter();
   const { id } = router.query;
   const { t } = useTranslation("common");
+  const { toast } = useToast();
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Message pagination state
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   // Close modal
   const [showCloseModal, setShowCloseModal] = useState(false);
@@ -100,7 +109,10 @@ export default function AdminConversationDetail() {
       try {
         const res = await fetch(`/api/admin/conversations/${id}`);
         if (res.ok) {
-          setConversation(await res.json());
+          const data: ConversationDetail = await res.json();
+          setConversation(data);
+          setNextCursor(data.nextCursor ?? null);
+          setHasMoreMessages(Boolean(data.hasMore));
         } else {
           setError("Conversation not found");
         }
@@ -113,6 +125,31 @@ export default function AdminConversationDetail() {
 
     fetchConversation();
   }, [session, status, router, id]);
+
+  const handleLoadOlderMessages = async () => {
+    if (!conversation || !nextCursor || loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      const res = await fetch(
+        `/api/admin/conversations/${conversation.id}?messagesBefore=${encodeURIComponent(nextCursor)}`
+      );
+      if (!res.ok) {
+        toast(t("admin.failedToLoadOlderMessages", "Failed to load older messages"), "error");
+        return;
+      }
+      const data: ConversationDetail = await res.json();
+      const older = data.messages ?? [];
+      setConversation((prev) =>
+        prev ? { ...prev, messages: [...older, ...prev.messages] } : prev
+      );
+      setNextCursor(data.nextCursor ?? null);
+      setHasMoreMessages(Boolean(data.hasMore));
+    } catch {
+      toast(t("admin.failedToLoadOlderMessages", "Failed to load older messages"), "error");
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
 
   const handleClose = async () => {
     if (!conversation) return;
@@ -131,11 +168,15 @@ export default function AdminConversationDetail() {
         if (refreshRes.ok) {
           setConversation(await refreshRes.json());
         }
+        toast(t("admin.conversationClosed", "Conversation closed"), "success");
         setShowCloseModal(false);
         setCloseReason("");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast(data?.error || t("admin.failedToClose", "Failed to close conversation"), "error");
       }
-    } catch {
-      // error
+    } catch (err) {
+      toast((err as Error)?.message || t("admin.failedToClose", "Failed to close conversation"), "error");
     } finally {
       setActionLoading(false);
     }
@@ -260,6 +301,20 @@ export default function AdminConversationDetail() {
             <div className="card-elevated !p-0 overflow-hidden">
               {/* Chat container */}
               <div className="bg-cream-50 px-4 py-6 space-y-4 max-h-[600px] overflow-y-auto">
+                {hasMoreMessages && (
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleLoadOlderMessages}
+                      disabled={loadingOlder}
+                      className="inline-flex items-center justify-center rounded-xl border border-cream-200 bg-white px-4 py-2 font-body text-xs font-semibold text-forest-700 transition-all hover:bg-cream-100 active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {loadingOlder
+                        ? t("admin.loadingOlderMessages", "Loading...")
+                        : t("admin.loadOlderMessages", "Load older messages")}
+                    </button>
+                  </div>
+                )}
                 {conversation.messages.map((msg) => {
                   const roleInfo = ROLE_COLORS[msg.sender.role] || ROLE_COLORS.BORROWER;
                   const isBorrower = msg.sender.role === "BORROWER";

@@ -1,21 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { withAdmin } from "@/lib/admin/withAdmin";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  if (session.user.role !== "ADMIN") {
-    return res.status(403).json({ error: "Admin access required" });
-  }
-
+export default withAdmin(async (req, res, session) => {
   const { id: rawId } = req.query;
   if (!rawId || typeof rawId !== "string") {
     return res.status(400).json({ error: "Invalid conversation ID" });
@@ -24,94 +10,116 @@ export default async function handler(
   // Support lookup by publicId (9-digit) or internal id
   const lookup = /^\d{9}$/.test(rawId) ? { publicId: rawId } : { id: rawId };
 
-  try {
-    if (req.method === "GET") {
-      const conversation = await prisma.conversation.findUnique({
-        where: lookup,
-        include: {
-          messages: {
-            orderBy: { createdAt: "asc" },
-            include: {
-              sender: {
-                select: { id: true, name: true, email: true, role: true },
-              },
-            },
-          },
-          borrower: {
-            select: { id: true, name: true, email: true, status: true },
-          },
-          broker: {
-            include: {
-              user: { select: { id: true, name: true, email: true, status: true } },
-            },
-          },
-          request: {
-            select: { id: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
+  if (req.method === "GET") {
+    // Pagination: cursor-based. messagesBefore=<messageId> fetches older messages than the cursor.
+    const messagesBeforeRaw = req.query.messagesBefore;
+    const messagesBefore =
+      typeof messagesBeforeRaw === "string" && messagesBeforeRaw.length > 0
+        ? messagesBeforeRaw
+        : null;
+    const PAGE_SIZE = 50;
+
+    const conversation = await prisma.conversation.findUnique({
+      where: lookup,
+      include: {
+        borrower: {
+          select: { id: true, name: true, email: true, status: true },
+        },
+        broker: {
+          include: {
+            user: { select: { id: true, name: true, email: true, status: true } },
           },
         },
-      });
+        request: {
+          select: { id: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
+        },
+      },
+    });
 
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-
-      return res.status(200).json(conversation);
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
     }
 
-    if (req.method === "PUT") {
-      const { status, reason } = req.body;
+    // Fetch messages (newest first) with +1 to detect hasMore, then reverse to ascending for UI.
+    const messagesDescPlusOne = await prisma.message.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: "desc" },
+      take: PAGE_SIZE + 1,
+      ...(messagesBefore
+        ? { cursor: { id: messagesBefore }, skip: 1 }
+        : {}),
+      include: {
+        sender: {
+          select: { id: true, name: true, email: true, role: true },
+        },
+      },
+    });
 
-      if (status !== "CLOSED") {
-        return res.status(400).json({ error: "Only CLOSED status is supported" });
-      }
+    const hasMore = messagesDescPlusOne.length > PAGE_SIZE;
+    const pageDesc = hasMore ? messagesDescPlusOne.slice(0, PAGE_SIZE) : messagesDescPlusOne;
+    // Reverse to ascending (oldest first) so the UI renders them in chronological order.
+    const messages = [...pageDesc].reverse();
+    // nextCursor: id of the OLDEST message in the returned batch — pass this as messagesBefore to fetch older.
+    const nextCursor = messages.length > 0 ? messages[0].id : null;
 
-      const conversation = await prisma.conversation.findUnique({
-        where: lookup,
-      });
-
-      if (!conversation) {
-        return res.status(404).json({ error: "Conversation not found" });
-      }
-
-      if (conversation.status === "CLOSED") {
-        return res.status(400).json({ error: "Conversation is already closed" });
-      }
-
-      // Wrap closure in transaction for atomicity
-      const [, updated] = await prisma.$transaction([
-        prisma.message.create({
-          data: {
-            conversationId: conversation.id,
-            senderId: session.user.id,
-            body: "[Admin] This conversation has been closed by an administrator." + (reason ? ` Reason: ${reason}` : ""),
-          },
-        }),
-        prisma.conversation.update({
-          where: { id: conversation.id },
-          data: { status: "CLOSED" },
-        }),
-        prisma.adminAction.create({
-          data: {
-            adminId: session.user.id,
-            action: "CLOSE_CONVERSATION",
-            targetType: "CONVERSATION",
-            targetId: conversation.publicId,
-            details: JSON.stringify({
-              borrowerId: conversation.borrowerId,
-              brokerId: conversation.brokerId,
-              requestId: conversation.requestId,
-            }),
-            reason: reason || null,
-          },
-        }),
-      ]);
-
-      return res.status(200).json(updated);
-    }
-
-    return res.status(405).json({ error: "Method not allowed" });
-  } catch (error) {
-    console.error("Error in /api/admin/conversations/[id]:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(200).json({
+      ...conversation,
+      messages,
+      nextCursor,
+      hasMore,
+    });
   }
-}
+
+  if (req.method === "PUT") {
+    const { status, reason } = req.body;
+
+    if (status !== "CLOSED") {
+      return res.status(400).json({ error: "Only CLOSED status is supported" });
+    }
+
+    const conversation = await prisma.conversation.findUnique({
+      where: lookup,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    if (conversation.status === "CLOSED") {
+      return res.status(400).json({ error: "Conversation is already closed" });
+    }
+
+    // Wrap closure in transaction for atomicity
+    const [, updated] = await prisma.$transaction([
+      prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId: session.user.id,
+          body: "[Admin] This conversation has been closed by an administrator." + (reason ? ` Reason: ${reason}` : ""),
+        },
+      }),
+      prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { status: "CLOSED" },
+      }),
+      prisma.adminAction.create({
+        data: {
+          adminId: session.user.id,
+          action: "CLOSE_CONVERSATION",
+          targetType: "CONVERSATION",
+          targetId: conversation.publicId,
+          details: JSON.stringify({
+            borrowerId: conversation.borrowerId,
+            brokerId: conversation.brokerId,
+            requestId: conversation.requestId,
+          }),
+          reason: reason || null,
+        },
+      }),
+    ]);
+
+    return res.status(200).json(updated);
+  }
+
+  return res.status(405).json({ error: "Method not allowed" });
+});

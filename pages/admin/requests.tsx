@@ -7,6 +7,7 @@ import type { GetStaticProps } from "next";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import Pagination from "@/components/Pagination";
+import { useToast } from "@/components/Toast";
 import { getRequestTitle, PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 
 interface RequestRow {
@@ -67,6 +68,7 @@ export default function AdminRequests() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
+  const { toast } = useToast();
 
   // Paginated data
   const [requests, setRequests] = useState<RequestRow[]>([]);
@@ -193,15 +195,20 @@ export default function AdminRequests() {
           prev.map((r) => (r.publicId === statusModal.id ? { ...r, status: newStatus } : r))
         );
         setActionMessage({ id: statusModal.id, text: t("admin.statusUpdated"), ok: true });
+        toast(t("admin.statusUpdated", "Status updated"), "success");
         setStatusModal(null);
         setNewStatus("");
         setStatusReason("");
       } else {
-        const data = await res.json();
-        setActionMessage({ id: statusModal.id, text: data.error, ok: false });
+        const data = await res.json().catch(() => ({}));
+        const msg = data?.error || t("admin.failedToUpdate", "Failed to update");
+        setActionMessage({ id: statusModal.id, text: msg, ok: false });
+        toast(msg, "error");
       }
-    } catch {
-      setActionMessage({ id: statusModal.id, text: t("admin.failedToUpdate", "Failed to update"), ok: false });
+    } catch (err) {
+      const msg = (err as Error)?.message || t("admin.failedToUpdate", "Failed to update");
+      setActionMessage({ id: statusModal.id, text: msg, ok: false });
+      toast(msg, "error");
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -220,16 +227,21 @@ export default function AdminRequests() {
       });
 
       if (res.ok) {
+        toast(t("admin.requestDeleted", "Request deleted"), "success");
         setDeleteModal(null);
         setDeleteReason("");
         // Re-fetch current page (may now have fewer items)
         fetchRequests();
       } else {
-        const data = await res.json();
-        setActionMessage({ id: deleteModal.id, text: data.error, ok: false });
+        const data = await res.json().catch(() => ({}));
+        const msg = data?.error || t("admin.failedToDelete", "Failed to delete");
+        setActionMessage({ id: deleteModal.id, text: msg, ok: false });
+        toast(msg, "error");
       }
-    } catch {
-      setActionMessage({ id: deleteModal.id, text: t("admin.failedToDelete", "Failed to delete"), ok: false });
+    } catch (err) {
+      const msg = (err as Error)?.message || t("admin.failedToDelete", "Failed to delete");
+      setActionMessage({ id: deleteModal.id, text: msg, ok: false });
+      toast(msg, "error");
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -249,12 +261,17 @@ export default function AdminRequests() {
           prev.map((r) => (r.publicId === publicId ? { ...r, status: "OPEN" } : r))
         );
         setActionMessage({ id: publicId, text: t("admin.requestApproved", "Request approved"), ok: true });
+        toast(t("admin.requestApproved", "Request approved"), "success");
       } else {
-        const data = await res.json();
-        setActionMessage({ id: publicId, text: data.error, ok: false });
+        const data = await res.json().catch(() => ({}));
+        const msg = data?.error || t("admin.failedToApprove", "Failed to approve");
+        setActionMessage({ id: publicId, text: msg, ok: false });
+        toast(msg, "error");
       }
-    } catch {
-      setActionMessage({ id: publicId, text: t("admin.failedToApprove", "Failed to approve"), ok: false });
+    } catch (err) {
+      const msg = (err as Error)?.message || t("admin.failedToApprove", "Failed to approve");
+      setActionMessage({ id: publicId, text: msg, ok: false });
+      toast(msg, "error");
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);
@@ -275,14 +292,19 @@ export default function AdminRequests() {
           prev.map((r) => (r.publicId === rejectModal.id ? { ...r, status: "REJECTED" } : r))
         );
         setActionMessage({ id: rejectModal.id, text: t("admin.requestRejected", "Request rejected"), ok: true });
+        toast(t("admin.requestRejected", "Request rejected"), "success");
         setRejectModal(null);
         setRejectReason("");
       } else {
-        const data = await res.json();
-        setActionMessage({ id: rejectModal.id, text: data.error, ok: false });
+        const data = await res.json().catch(() => ({}));
+        const msg = data?.error || t("admin.failedToReject", "Failed to reject");
+        setActionMessage({ id: rejectModal.id, text: msg, ok: false });
+        toast(msg, "error");
       }
-    } catch {
-      setActionMessage({ id: rejectModal.id, text: t("admin.failedToReject", "Failed to reject"), ok: false });
+    } catch (err) {
+      const msg = (err as Error)?.message || t("admin.failedToReject", "Failed to reject");
+      setActionMessage({ id: rejectModal.id, text: msg, ok: false });
+      toast(msg, "error");
     } finally {
       setActionLoading(null);
       setTimeout(() => setActionMessage(null), 3000);

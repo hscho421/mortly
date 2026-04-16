@@ -8,6 +8,7 @@ import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
+import { useToast } from "@/components/Toast";
 import { getRequestTitle } from "@/lib/requestConfig";
 
 interface BrokerDetail {
@@ -95,38 +96,73 @@ export default function AdminBrokerDetail() {
   const router = useRouter();
   const { id } = router.query;
   const { t } = useTranslation("common");
+  const { toast } = useToast();
   const [broker, setBroker] = useState<BrokerDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionMessage, setActionMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  // Per-action loading key. e.g. "verify" | "reject" | "pending" | "suspend" | "ban" | "reactivate"
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const fetchBroker = async () => {
+    try {
+      const res = await fetch(`/api/admin/brokers/${id}`);
+      if (res.ok) {
+        setBroker(await res.json());
+      } else {
+        setError("Broker not found");
+      }
+    } catch {
+      setError(t("admin.failedToLoadBroker", "Failed to load broker"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (status === "loading" || !id) return;
     if (!session || session.user.role !== "ADMIN") return;
-
-    const fetchBroker = async () => {
-      try {
-        const res = await fetch(`/api/admin/brokers/${id}`);
-        if (res.ok) {
-          setBroker(await res.json());
-        } else {
-          setError("Broker not found");
-        }
-      } catch {
-        setError(t("admin.failedToLoadBroker", "Failed to load broker"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchBroker();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status, router, id]);
 
-  const handleAccountStatusChange = async (newStatus: string) => {
+  // Label helper for toast success/error messages
+  const actionLabel = (key: string): string => {
+    switch (key) {
+      case "verify":
+        return t("admin.verify", "Verify");
+      case "reject":
+        return t("admin.reject", "Reject");
+      case "pending":
+        return t("admin.resetToPending", "Reset to Pending");
+      case "suspend":
+        return t("admin.suspendUser", "Suspend");
+      case "ban":
+        return t("admin.banUser", "Ban");
+      case "reactivate":
+        return t("admin.reactivate", "Reactivate");
+      default:
+        return key;
+    }
+  };
+
+  const handleAccountStatusChange = async (
+    newStatus: string,
+    actionKey: string,
+    options?: { confirm?: boolean }
+  ) => {
     if (!broker) return;
-    setActionLoading(true);
-    setActionMessage(null);
+    if (options?.confirm) {
+      const label = actionLabel(actionKey);
+      const ok = window.confirm(
+        t("admin.confirmUserStatusChange", "Are you sure you want to {{action}} this user?").replace(
+          "{{action}}",
+          label
+        )
+      );
+      if (!ok) return;
+    }
+
+    setActionLoading(actionKey);
 
     try {
       const res = await fetch(`/api/admin/users/${broker.user.id}`, {
@@ -136,26 +172,48 @@ export default function AdminBrokerDetail() {
       });
 
       if (res.ok) {
-        setBroker((prev) =>
-          prev ? { ...prev, user: { ...prev.user, status: newStatus } } : prev
+        await fetchBroker();
+        toast(
+          `${actionLabel(actionKey)} ${t("admin.succeededSuffix", "succeeded")}`,
+          "success"
         );
-        setActionMessage({ text: t("admin.statusUpdated"), ok: true });
       } else {
-        const data = await res.json();
-        setActionMessage({ text: data.error, ok: false });
+        const data = await res.json().catch(() => ({}));
+        toast(
+          data?.error ||
+            `${actionLabel(actionKey)} ${t("admin.failedSuffix", "failed")}`,
+          "error"
+        );
       }
-    } catch {
-      setActionMessage({ text: t("admin.failedToUpdate", "Failed to update"), ok: false });
+    } catch (err) {
+      toast(
+        (err as Error)?.message ||
+          `${actionLabel(actionKey)} ${t("admin.failedSuffix", "failed")}`,
+        "error"
+      );
     } finally {
-      setActionLoading(false);
-      setTimeout(() => setActionMessage(null), 3000);
+      setActionLoading(null);
     }
   };
 
-  const handleVerificationChange = async (newStatus: string) => {
+  const handleVerificationChange = async (
+    newStatus: string,
+    actionKey: string,
+    options?: { confirm?: boolean }
+  ) => {
     if (!broker) return;
-    setActionLoading(true);
-    setActionMessage(null);
+    if (options?.confirm) {
+      const label = actionLabel(actionKey);
+      const ok = window.confirm(
+        t("admin.confirmVerificationChange", "Are you sure you want to {{action}} this broker?").replace(
+          "{{action}}",
+          label
+        )
+      );
+      if (!ok) return;
+    }
+
+    setActionLoading(actionKey);
 
     try {
       const res = await fetch(`/api/admin/brokers/${broker.id}`, {
@@ -165,17 +223,27 @@ export default function AdminBrokerDetail() {
       });
 
       if (res.ok) {
-        setBroker((prev) => prev ? { ...prev, verificationStatus: newStatus } : prev);
-        setActionMessage({ text: t("admin.statusUpdated"), ok: true });
+        await fetchBroker();
+        toast(
+          `${actionLabel(actionKey)} ${t("admin.succeededSuffix", "succeeded")}`,
+          "success"
+        );
       } else {
-        const data = await res.json();
-        setActionMessage({ text: data.error, ok: false });
+        const data = await res.json().catch(() => ({}));
+        toast(
+          data?.error ||
+            `${actionLabel(actionKey)} ${t("admin.failedSuffix", "failed")}`,
+          "error"
+        );
       }
-    } catch {
-      setActionMessage({ text: t("admin.failedToUpdate", "Failed to update"), ok: false });
+    } catch (err) {
+      toast(
+        (err as Error)?.message ||
+          `${actionLabel(actionKey)} ${t("admin.failedSuffix", "failed")}`,
+        "error"
+      );
     } finally {
-      setActionLoading(false);
-      setTimeout(() => setActionMessage(null), 3000);
+      setActionLoading(null);
     }
   };
 
@@ -312,37 +380,32 @@ export default function AdminBrokerDetail() {
           <div className="flex items-center gap-3 flex-wrap">
             {broker.verificationStatus !== "VERIFIED" && (
               <button
-                onClick={() => handleVerificationChange("VERIFIED")}
-                disabled={actionLoading}
+                onClick={() => handleVerificationChange("VERIFIED", "verify")}
+                disabled={actionLoading !== null}
                 className="btn-primary !rounded-lg disabled:opacity-50"
               >
-                {actionLoading ? "..." : t("admin.approve")}
+                {actionLoading === "verify" ? "..." : t("admin.approve")}
               </button>
             )}
             {broker.verificationStatus !== "REJECTED" && (
               <button
-                onClick={() => handleVerificationChange("REJECTED")}
-                disabled={actionLoading}
+                onClick={() => handleVerificationChange("REJECTED", "reject", { confirm: true })}
+                disabled={actionLoading !== null}
                 className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
               >
-                {actionLoading ? "..." : t("admin.reject")}
+                {actionLoading === "reject" ? "..." : t("admin.reject")}
               </button>
             )}
             {broker.verificationStatus !== "PENDING" && (
               <button
-                onClick={() => handleVerificationChange("PENDING")}
-                disabled={actionLoading}
+                onClick={() => handleVerificationChange("PENDING", "pending", { confirm: true })}
+                disabled={actionLoading !== null}
                 className="btn-secondary !rounded-lg disabled:opacity-50"
               >
-                {actionLoading ? "..." : t("admin.resetToPending", "Reset to Pending")}
+                {actionLoading === "pending" ? "..." : t("admin.resetToPending", "Reset to Pending")}
               </button>
             )}
           </div>
-          {actionMessage && (
-            <p className={`mt-3 font-body text-sm ${actionMessage.ok ? "text-forest-600" : "text-rose-600"}`}>
-              {actionMessage.text}
-            </p>
-          )}
         </div>
 
         {/* Account Actions */}
@@ -352,28 +415,28 @@ export default function AdminBrokerDetail() {
             {broker.user.status === "ACTIVE" && (
               <>
                 <button
-                  onClick={() => handleAccountStatusChange("SUSPENDED")}
-                  disabled={actionLoading}
+                  onClick={() => handleAccountStatusChange("SUSPENDED", "suspend", { confirm: true })}
+                  disabled={actionLoading !== null}
                   className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
                 >
-                  {actionLoading ? "..." : t("admin.suspendUser", "Suspend")}
+                  {actionLoading === "suspend" ? "..." : t("admin.suspendUser", "Suspend")}
                 </button>
                 <button
-                  onClick={() => handleAccountStatusChange("BANNED")}
-                  disabled={actionLoading}
+                  onClick={() => handleAccountStatusChange("BANNED", "ban", { confirm: true })}
+                  disabled={actionLoading !== null}
                   className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
                 >
-                  {actionLoading ? "..." : t("admin.banUser", "Ban")}
+                  {actionLoading === "ban" ? "..." : t("admin.banUser", "Ban")}
                 </button>
               </>
             )}
             {broker.user.status !== "ACTIVE" && (
               <button
-                onClick={() => handleAccountStatusChange("ACTIVE")}
-                disabled={actionLoading}
+                onClick={() => handleAccountStatusChange("ACTIVE", "reactivate")}
+                disabled={actionLoading !== null}
                 className="btn-primary !rounded-lg disabled:opacity-50"
               >
-                {actionLoading ? "..." : t("admin.reactivate", "Reactivate")}
+                {actionLoading === "reactivate" ? "..." : t("admin.reactivate", "Reactivate")}
               </button>
             )}
           </div>
