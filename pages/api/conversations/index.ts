@@ -34,6 +34,21 @@ export default async function handler(
 
       const isBorrower = session.user.role === "BORROWER";
 
+      // ── Block filtering ──
+      // Hide conversations where the OTHER party has been blocked by this user,
+      // or the OTHER party has blocked this user. Block is symmetric for visibility.
+      // Apple guideline 1.2 compliance.
+      const blockedUserIds = new Set<string>([
+        ...(await prisma.userBlock.findMany({
+          where: { blockerId: session.user.id },
+          select: { blockedId: true },
+        })).map((b) => b.blockedId),
+        ...(await prisma.userBlock.findMany({
+          where: { blockedId: session.user.id },
+          select: { blockerId: true },
+        })).map((b) => b.blockerId),
+      ]);
+
       const conversations = await prisma.conversation.findMany({
         where,
         select: {
@@ -60,7 +75,7 @@ export default async function handler(
             },
           },
           borrower: {
-            select: { id: true, name: true },
+            select: { id: true, publicId: true, name: true },
           },
           request: {
             select: { id: true, publicId: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
@@ -95,11 +110,22 @@ export default async function handler(
         unreadCounts.map((r: { conversationId: string; _count: { _all: number } }) => [r.conversationId, r._count._all])
       );
 
-      const withUnread = conversations.map((c: typeof conversations[number]) => ({
-        ...c,
-        borrower: c.borrower,
-        unreadCount: unreadMap.get(c.id) ?? 0,
-      }));
+      const withUnread = conversations
+        .filter((c: typeof conversations[number]) => {
+          // Drop conversations where the OTHER party is in the block set
+          // (either direction). Block is symmetric for visibility — Apple
+          // guideline 1.2.
+          const otherUserId = isBorrower
+            ? c.broker?.user?.id
+            : c.borrower?.id;
+          if (!otherUserId) return true; // no other party to compare → keep
+          return !blockedUserIds.has(otherUserId);
+        })
+        .map((c: typeof conversations[number]) => ({
+          ...c,
+          borrower: c.borrower,
+          unreadCount: unreadMap.get(c.id) ?? 0,
+        }));
 
       return res.status(200).json(withUnread);
     }
@@ -133,6 +159,26 @@ export default async function handler(
         }
         if (request.borrowerId !== session.user.id) {
           return res.status(403).json({ error: "You can only create conversations for your own requests" });
+        }
+
+        // Block check — borrower starting convo with broker.
+        // Look up the broker's userId and check both directions.
+        const targetBroker = await prisma.broker.findUnique({
+          where: { id: bodyBrokerId },
+          select: { userId: true },
+        });
+        if (targetBroker) {
+          const blocked = await prisma.userBlock.findFirst({
+            where: {
+              OR: [
+                { blockerId: session.user.id, blockedId: targetBroker.userId },
+                { blockerId: targetBroker.userId, blockedId: session.user.id },
+              ],
+            },
+          });
+          if (blocked) {
+            return res.status(403).json({ error: "Cannot start conversation with this user" });
+          }
         }
 
         const existing = await prisma.conversation.findUnique({
@@ -185,6 +231,20 @@ export default async function handler(
       }
       if (broker.subscriptionTier === "FREE") {
         return res.status(403).json({ error: "Free plan brokers cannot message clients. Please upgrade your plan." });
+      }
+
+      // Block check — broker reaching out to borrower.
+      // Either direction blocks the intro.
+      const blockedBetween = await prisma.userBlock.findFirst({
+        where: {
+          OR: [
+            { blockerId: session.user.id, blockedId: request.borrowerId },
+            { blockerId: request.borrowerId, blockedId: session.user.id },
+          ],
+        },
+      });
+      if (blockedBetween) {
+        return res.status(403).json({ error: "Cannot send intro to this borrower" });
       }
 
       const isPremium = broker.subscriptionTier === "PREMIUM";

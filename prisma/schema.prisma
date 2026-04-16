@@ -36,10 +36,27 @@ model User {
   noticesSent      AdminNotice[] @relation("adminNoticesSent")
   noticesReceived  AdminNotice[] @relation("adminNoticesReceived")
   deviceTokens     DeviceToken[]
+  blockedUsers     UserBlock[]   @relation("blocker")
+  blockedBy        UserBlock[]   @relation("blocked")
 
   @@index([status])
   @@index([role])
   @@map("users")
+}
+
+// User-to-user block list. Required by Apple guideline 1.2 for any UGC app
+// with chat or social features. A row means: `blocker` has blocked `blocked`,
+// hiding all communication in both directions until the row is removed.
+model UserBlock {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  @@id([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("user_blocks")
 }
 
 model DeviceToken {

@@ -1485,7 +1485,19 @@
     "requests": "Requests",
     "conversations": "Conversations",
     "userId": "User ID",
-    "userIdNote": "Use this ID when contacting support."
+    "userIdNote": "Use this ID when contacting support.",
+    "dangerZone": "Danger Zone",
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Permanently delete your account and all associated data. This cannot be undone.",
+    "deleteAccountConfirmTitle": "Delete your account?",
+    "deleteAccountConfirmDesc": "Your account and all associated data (requests, conversations, messages, profile, etc.) will be permanently deleted. This cannot be undone.",
+    "deleteAccountSecondConfirmTitle": "Final confirmation",
+    "deleteAccountSecondConfirmDesc": "Confirm to delete your account immediately. Continue?",
+    "deleteAccountConfirm": "Delete",
+    "deleteAccountCancel": "Cancel",
+    "deleteAccountDeleting": "Deleting...",
+    "deleteAccountSuccess": "Your account has been deleted.",
+    "deleteAccountFailed": "Failed to delete account. Please try again later."
   },
   "report": {
     "title": "Report",

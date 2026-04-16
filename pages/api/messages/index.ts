@@ -55,6 +55,25 @@ export default async function handler(
         return res.status(403).json({ error: "Forbidden" });
       }
 
+      // Block check — refuse to deliver new messages between blocked users
+      // (in either direction). Existing message history stays intact, but
+      // no new messages can be added once blocked. Apple guideline 1.2.
+      const otherUserId =
+        session.user.id === conversation.borrowerId
+          ? conversation.broker.userId
+          : conversation.borrowerId;
+      const blocked = await prisma.userBlock.findFirst({
+        where: {
+          OR: [
+            { blockerId: session.user.id, blockedId: otherUserId },
+            { blockerId: otherUserId, blockedId: session.user.id },
+          ],
+        },
+      });
+      if (blocked) {
+        return res.status(403).json({ error: "Cannot send messages to this user" });
+      }
+
       // Spam guard: limit brokers to 3 messages before borrower responds
       if (conversation.broker.userId === session.user.id) {
         const counts = await prisma.message.groupBy({

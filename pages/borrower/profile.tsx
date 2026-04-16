@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Layout from "@/components/Layout";
 import { SkeletonProfile } from "@/components/Skeleton";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
@@ -329,6 +330,9 @@ export default function BorrowerProfilePage() {
             </button>
           </form>
         </div>
+
+        {/* Account deletion — Apple App Store guideline 5.1.1(v) */}
+        <DeleteAccountSection />
       </div>
     </Layout>
   );

@@ -1485,7 +1485,19 @@
     "requests": "내 상담 신청",
     "conversations": "진행중인 상담",
     "userId": "사용자 ID",
-    "userIdNote": "고객 지원 문의 시 이 ID를 사용하세요."
+    "userIdNote": "고객 지원 문의 시 이 ID를 사용하세요.",
+    "dangerZone": "위험 구역",
+    "deleteAccount": "계정 삭제",
+    "deleteAccountDesc": "계정과 모든 관련 데이터를 영구적으로 삭제합니다. 되돌릴 수 없습니다.",
+    "deleteAccountConfirmTitle": "정말 계정을 삭제하시겠습니까?",
+    "deleteAccountConfirmDesc": "계정과 모든 관련 데이터(상담 신청, 대화, 메시지, 프로필 등)가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+    "deleteAccountSecondConfirmTitle": "마지막 확인",
+    "deleteAccountSecondConfirmDesc": "동의하시면 지금 바로 계정이 삭제됩니다. 계속하시겠습니까?",
+    "deleteAccountConfirm": "삭제",
+    "deleteAccountCancel": "취소",
+    "deleteAccountDeleting": "삭제 중...",
+    "deleteAccountSuccess": "계정이 삭제되었습니다.",
+    "deleteAccountFailed": "계정 삭제에 실패했습니다. 잠시 후 다시 시도해주세요."
   },
   "report": {
     "title": "신고",

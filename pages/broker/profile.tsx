@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Layout from "@/components/Layout";
 import { SkeletonProfile } from "@/components/Skeleton";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
 import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -404,6 +405,8 @@ export default function BrokerProfilePage() {
           </button>
         </form>
 
+        {/* Account deletion — Apple App Store guideline 5.1.1(v) */}
+        <DeleteAccountSection />
       </div>
     </Layout>
   );

@@ -61,7 +61,7 @@ export default async function handler(
             },
           },
           borrower: {
-            select: { id: true, name: true },
+            select: { id: true, publicId: true, name: true },
           },
           request: {
             select: { id: true, publicId: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
