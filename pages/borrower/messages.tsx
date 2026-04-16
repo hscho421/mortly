@@ -221,6 +221,44 @@ export default function BorrowerMessagesPage() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  /* ---- Polling fallback (when Supabase Realtime is unavailable) ----
+   * Every 5s while the tab is visible, refetch messages for the active
+   * conversation and merge any new ones. Id-based dedupe keeps existing
+   * messages stable — purely additive. Stops immediately if the tab is
+   * backgrounded to save bandwidth + battery. */
+  useEffect(() => {
+    if (!activeId || authStatus !== "authenticated") return;
+
+    const poll = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const res = await fetch(`/api/conversations/${activeId}`);
+        if (!res.ok) return;
+        const data: ConversationWithParticipants = await res.json();
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const incoming = data.messages.filter((m) => !existingIds.has(m.id));
+          return incoming.length === 0 ? prev : [...prev, ...incoming];
+        });
+      } catch {
+        // Silent — polling is best-effort; Realtime or next tick will catch up
+      }
+    };
+
+    const intervalId = setInterval(poll, 5000);
+    // Also poll immediately when the tab returns to foreground — catches the
+    // gap where the user was away and messages piled up.
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [activeId, authStatus]);
+
   /* ---- select conversation ---- */
   function selectConversation(id: string) {
     setActiveId(id);
@@ -257,8 +295,13 @@ export default function BorrowerMessagesPage() {
         throw new Error(data.message || t("errors.failedToSendMessage"));
       }
 
-      // Message will be added via Supabase Realtime — no need to add here
-      await res.json();
+      // Optimistic append: add the sent message locally on success. Supabase
+      // Realtime *may* also fire an INSERT event for the same row — the id-based
+      // dedupe below prevents a duplicate from appearing.
+      const created = (await res.json()) as Message;
+      setMessages((prev) =>
+        prev.some((m) => m.id === created.id) ? prev : [...prev, created]
+      );
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("errors.failedToSend"));
       setNewMessage(body);
