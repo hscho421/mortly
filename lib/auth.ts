@@ -163,6 +163,7 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
             token.role = dbUser.role;
             const prefs = dbUser.preferences as Record<string, unknown> | null;
             token.needsRoleSelection = prefs?.needsRoleSelection === true;
+            token.needsNameEntry = prefs?.needsNameEntry === true;
           }
         }
         return token;
@@ -178,6 +179,8 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
           (session.user as any).publicId = token.publicId;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (session.user as any).needsRoleSelection = token.needsRoleSelection;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (session.user as any).needsNameEntry = token.needsNameEntry;
         }
         return session;
       },

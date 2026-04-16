@@ -1,34 +1,25 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
+import { encode } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
+
 /**
- * DELETE /api/users/me
+ * DELETE /api/users/me — in-app account deletion (App Store 5.1.1(v)).
+ * PATCH  /api/users/me — update profile fields (currently: name).
  *
- * Required by Apple App Store guideline 5.1.1(v): in-app account deletion
- * for any app that lets users create an account. Apple rejects apps that
- * only soft-delete or only deactivate.
- *
- * Performs a hard cascade delete in a single transaction:
- *   1. Messages this user sent + Messages in their conversations
- *   2. BrokerRequestSeen rows referencing their broker or their requests
- *   3. Conversations they're a party to (as borrower or broker)
- *   4. BorrowerRequests they own
- *   5. Reports filed against their broker profile
- *   6. Subscription, Broker (if they're a broker)
- *   7. Reports filed BY them
- *   8. AdminNotices received
- *   9. DeviceTokens (cascades automatically — Broker too)
- *  10. The User row itself
- *
- * NOTE: ADMIN users cannot self-delete via this endpoint — admin removal
- * needs manual ops to preserve AdminAction audit trails.
+ * DELETE performs a hard cascade delete; PATCH is a targeted field update
+ * used by the post-OAuth name-entry screen when Apple didn't return fullName.
  */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.method === "PATCH") {
+    return handlePatch(req, res);
+  }
   if (req.method !== "DELETE") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -150,4 +141,81 @@ export default async function handler(
       error: "Failed to delete account. Please contact support.",
     });
   }
+}
+
+async function handlePatch(req: NextApiRequest, res: NextApiResponse) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session?.user?.id) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: "Server auth not configured" });
+  }
+
+  const rawName = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+  if (!rawName) {
+    return res.status(400).json({ error: "Name is required" });
+  }
+  if (rawName.length > 100) {
+    return res.status(400).json({ error: "Name must be 100 characters or fewer" });
+  }
+
+  const userId = session.user.id;
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, publicId: true, email: true, role: true, preferences: true },
+  });
+  if (!existing) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  // Clear needsNameEntry from preferences; preserve other prefs.
+  const prefs = (existing.preferences as Record<string, unknown>) || {};
+  const restPrefs = { ...prefs };
+  delete restPrefs.needsNameEntry;
+  const newPrefs = Object.keys(restPrefs).length > 0 ? restPrefs : null;
+
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      name: rawName,
+      preferences: newPrefs ? JSON.parse(JSON.stringify(newPrefs)) : null,
+    },
+    select: { id: true, publicId: true, email: true, name: true, role: true, preferences: true },
+  });
+
+  const updatedPrefs = (updated.preferences as Record<string, unknown> | null) ?? {};
+  const needsRoleSelection = updatedPrefs.needsRoleSelection === true;
+
+  // Re-encode the JWT so the client's next getSession() sees the updated
+  // name and cleared needsNameEntry (same pattern as select-role).
+  const sessionToken = await encode({
+    token: {
+      id: updated.id,
+      publicId: updated.publicId,
+      email: updated.email,
+      name: updated.name,
+      role: updated.role,
+      needsRoleSelection,
+      needsNameEntry: false,
+    },
+    secret,
+    maxAge: SESSION_MAX_AGE,
+  });
+
+  return res.status(200).json({
+    success: true,
+    sessionToken,
+    user: {
+      id: updated.id,
+      publicId: updated.publicId,
+      email: updated.email,
+      name: updated.name,
+      role: updated.role,
+      needsRoleSelection,
+      needsNameEntry: false,
+    },
+  });
 }

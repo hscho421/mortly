@@ -161,6 +161,10 @@ export default async function handler(
           emailVerified: true,
           preferences: {
             needsRoleSelection: true,
+            // Apple returns fullName only on the FIRST authorization per Apple
+            // ID. If we have no name at create-time, force the user through a
+            // name-entry screen before the dashboard.
+            ...(identity.name ? {} : { needsNameEntry: true }),
             ...createLegalAcceptanceMetadata(),
           },
         },
@@ -176,6 +180,7 @@ export default async function handler(
 
     const prefs = (user.preferences as Record<string, unknown> | null) ?? {};
     const needsRoleSelection = prefs.needsRoleSelection === true;
+    const needsNameEntry = prefs.needsNameEntry === true || !user.name;
 
     const token = await encode({
       token: {
@@ -185,6 +190,7 @@ export default async function handler(
         name: user.name,
         role: user.role,
         needsRoleSelection,
+        needsNameEntry,
       },
       secret,
       maxAge: SESSION_MAX_AGE,
@@ -199,6 +205,7 @@ export default async function handler(
         name: user.name,
         role: user.role,
         needsRoleSelection,
+        needsNameEntry,
       },
     });
   } catch (err) {

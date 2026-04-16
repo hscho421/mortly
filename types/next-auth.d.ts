@@ -7,6 +7,7 @@ declare module "next-auth" {
       publicId: string;
       role: "BORROWER" | "BROKER" | "ADMIN";
       needsRoleSelection?: boolean;
+      needsNameEntry?: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -17,5 +18,6 @@ declare module "next-auth/jwt" {
     publicId: string;
     role: "BORROWER" | "BROKER" | "ADMIN";
     needsRoleSelection?: boolean;
+    needsNameEntry?: boolean;
   }
 }
