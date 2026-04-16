@@ -120,6 +120,17 @@ export default async function handler(
       where: { [providerIdField]: identity.providerId } as { googleId: string } | { appleId: string },
     });
 
+    // Backfill name if the existing user has none but the client provided one.
+    // Apple only returns fullName on first auth; if the first auth failed
+    // server-side the user row may exist with name = null. Never overwrite
+    // a name the user has already set.
+    if (user && !user.name && identity.name) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { name: identity.name },
+      });
+    }
+
     if (!user && identity.email) {
       user = await prisma.user.findUnique({ where: { email: identity.email } });
 
