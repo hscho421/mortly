@@ -46,12 +46,19 @@ async function verifyApple(
   idToken: string,
   fallbackName: string | null
 ): Promise<AppleIdentity> {
-  const clientId = process.env.APPLE_CLIENT_ID;
-  if (!clientId) {
+  // Native iOS Sign in with Apple sets `aud` = app bundle ID (app.mortly.mobile).
+  // Web SIA sets `aud` = Services ID (app.mortly.mobile.signin).
+  // APPLE_CLIENT_ID accepts comma-separated values so both flows validate.
+  const raw = process.env.APPLE_CLIENT_ID;
+  if (!raw) {
+    throw new Error("Apple client ID not configured");
+  }
+  const audiences = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  if (audiences.length === 0) {
     throw new Error("Apple client ID not configured");
   }
   const payload = await appleSigninAuth.verifyIdToken(idToken, {
-    audience: clientId,
+    audience: audiences.length === 1 ? audiences[0] : audiences,
     ignoreExpiration: false,
   });
   if (!payload?.sub) {
