@@ -186,10 +186,7 @@ export default withAdmin(async (req, res) => {
     borrower: { name: rq.borrower.name ?? null, email: rq.borrower.email },
   }));
 
-  res.setHeader(
-    "Cache-Control",
-    "private, max-age=5, stale-while-revalidate=15",
-  );
+  res.setHeader("Cache-Control", "no-store");
 
   return res.status(200).json({
     pendingBrokers,
