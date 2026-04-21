@@ -377,100 +377,109 @@ export default function AdminRequests() {
       <Head><title>{t("titles.adminRequests")}</title></Head>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="mb-6 animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             <div>
-              <h1 className="heading-lg">{t("admin.requestManagement", "Request Management")}</h1>
-              <p className="text-body mt-2">
+              <div className="eyebrow">— {t("admin.sidebar.requests")}</div>
+              <h1 className="heading-lg mt-3">{t("admin.requestManagement", "Request Management")}</h1>
+              <p className="text-body mt-2 max-w-2xl">
                 {t("admin.requestManagementDesc", "View, search, and manage all borrower mortgage requests.")}
               </p>
             </div>
             <button
               onClick={handleExportCSV}
-              className="btn-secondary !px-4 !py-2 !text-sm"
+              className="rounded-sm border border-cream-300 bg-cream-50 text-forest-800 px-3.5 py-2 font-body text-xs font-semibold hover:bg-cream-200 whitespace-nowrap"
             >
-              {t("admin.exportCSV", "Export CSV")}
+              ⬇ {t("admin.exportCSV", "Export CSV")}
             </button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="card-elevated mb-8 animate-fade-in-up stagger-1">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="searchReq" className="label-text">
-                {t("admin.searchRequests", "Search requests")}
-              </label>
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                </svg>
-                <input
-                  id="searchReq"
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder={t("admin.searchRequestsPlaceholder", "Search by ID, borrower, province, city...")}
-                  className="input-field !pl-10"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="statusFilter" className="label-text">
-                {t("admin.filterByStatus", "Filter by status")}
-              </label>
-              <select
-                id="statusFilter"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="input-field w-auto min-w-[140px]"
-              >
-                <option value="ALL">{t("admin.allStatuses", "All Statuses")}</option>
-                <option value="PENDING_APPROVAL">{t("status.pendingApproval", "Pending Approval")}</option>
-                <option value="OPEN">{t("status.open")}</option>
-                <option value="IN_PROGRESS">{t("status.inProgress")}</option>
-                <option value="CLOSED">{t("status.closed")}</option>
-                <option value="EXPIRED">{t("status.expired")}</option>
-                <option value="REJECTED">{t("status.rejected", "Rejected")}</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="typeFilter" className="label-text">
-                {t("admin.filterByType", "Filter by category")}
-              </label>
-              <select
-                id="typeFilter"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="input-field w-auto min-w-[140px]"
-              >
-                <option value="ALL">{t("admin.allTypes", "All Types")}</option>
-                <option value="RESIDENTIAL">{t("request.residential", "Residential")}</option>
-                <option value="COMMERCIAL">{t("request.commercial", "Commercial")}</option>
-              </select>
-            </div>
+        {/* Search + Filter chips */}
+        <div className="mb-4 animate-fade-in-up stagger-1">
+          <div className="relative mb-4">
+            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+              id="searchReq"
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t("admin.searchRequestsPlaceholder", "Search by ID, borrower, province, city...")}
+              className="input-field !pl-10"
+            />
+          </div>
+
+          {/* Filter chips — status */}
+          <div className="flex flex-wrap items-center gap-1.5 pb-3">
+            {[
+              { v: "ALL", label: t("admin.allStatuses", "All") },
+              { v: "PENDING_APPROVAL", label: t("status.pendingApproval", "Pending Approval") },
+              { v: "OPEN", label: t("status.open") },
+              { v: "IN_PROGRESS", label: t("status.inProgress") },
+              { v: "CLOSED", label: t("status.closed") },
+              { v: "EXPIRED", label: t("status.expired") },
+              { v: "REJECTED", label: t("status.rejected", "Rejected") },
+            ].map((f) => {
+              const on = filterStatus === f.v;
+              return (
+                <button
+                  key={f.v}
+                  onClick={() => setFilterStatus(f.v)}
+                  className={`px-3 py-1.5 font-body text-[12px] rounded-sm border transition-colors ${
+                    on
+                      ? "bg-forest-800 text-cream-50 border-forest-800 font-semibold"
+                      : "bg-cream-50 text-forest-700 border-cream-300 hover:bg-cream-200"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+            <div className="w-px self-stretch bg-cream-300 mx-1" />
+            {[
+              { v: "ALL", label: t("admin.allTypes", "All Types") },
+              { v: "RESIDENTIAL", label: t("request.residential", "Residential") },
+              { v: "COMMERCIAL", label: t("request.commercial", "Commercial") },
+            ].map((f) => {
+              const on = filterType === f.v;
+              return (
+                <button
+                  key={`type-${f.v}`}
+                  onClick={() => setFilterType(f.v)}
+                  className={`px-3 py-1.5 font-body text-[12px] rounded-sm border transition-colors ${
+                    on
+                      ? "bg-forest-800 text-cream-50 border-forest-800 font-semibold"
+                      : "bg-cream-50 text-forest-700 border-cream-300 hover:bg-cream-200"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Results count */}
-        <p className="text-body-sm mb-4 animate-fade-in">
+        <p className="font-mono text-[11px] text-sage-500 tracking-[0.1em] mb-4 animate-fade-in">
           {t("admin.showingRequests", "Showing {{count}} request(s)").replace("{{count}}", String(pagination.total))}
         </p>
 
         {/* Requests Table */}
-        <div className="card-elevated !p-0 overflow-hidden animate-fade-in-up stagger-2">
+        <div className="rounded-sm border border-cream-300 bg-cream-50 overflow-hidden animate-fade-in-up stagger-2">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-cream-200">
+            <table className="min-w-full">
               <thead>
-                <tr className="bg-forest-800">
+                <tr className="bg-cream-100 border-b border-cream-300">
                   {["admin.requestId", "admin.borrowerLabel", "admin.type", "admin.location", "admin.statusLabel", "admin.introsConvos", "admin.created", "admin.actions"].map((key) => (
-                    <th key={key} className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
+                    <th key={key} className="px-4 py-3 text-left mono-label">
                       {t(key, key.split(".").pop() ?? "")}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-cream-200 bg-white">
+              <tbody>
                 {loading ? (
                   <tr>
                     <td colSpan={8} className="px-5 py-12 text-center text-body-sm">

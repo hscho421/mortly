@@ -179,95 +179,80 @@ export default function AdminConversations() {
     <AdminLayout>
       <Head><title>{t("titles.adminConversations")}</title></Head>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="heading-lg">{t("admin.conversationOversight", "Conversation Oversight")}</h1>
-          <p className="text-body mt-2">
+        {/* Header — editorial */}
+        <div className="mb-6 animate-fade-in">
+          <div className="eyebrow">— {t("admin.sidebar.conversations")}</div>
+          <h1 className="heading-lg mt-3">{t("admin.conversationOversight", "Conversation Oversight")}</h1>
+          <p className="text-body mt-2 max-w-2xl">
             {t("admin.conversationOversightDesc", "Monitor all conversations between borrowers and brokers. View messages and close abusive threads.")}
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="card-elevated mb-8 animate-fade-in-up stagger-1">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="searchConvo" className="label-text">
-                {t("admin.searchConversations", "Search conversations")}
-              </label>
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                </svg>
-                <input
-                  id="searchConvo"
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder={t("admin.searchConversationsPlaceholder", "Search by participant name, email, or brokerage...")}
-                  className="input-field !pl-10"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="convoStatusFilter" className="label-text">
-                {t("admin.filterByStatus")}
-              </label>
-              <select
-                id="convoStatusFilter"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="input-field w-auto min-w-[140px]"
-              >
-                <option value="ALL">{t("admin.allStatuses")}</option>
-                <option value="ACTIVE">{t("status.active")}</option>
-                <option value="CLOSED">{t("status.closed")}</option>
-              </select>
-            </div>
+        {/* Search + Filter chips */}
+        <div className="mb-4 animate-fade-in-up stagger-1">
+          <div className="relative mb-4">
+            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+              id="searchConvo"
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t("admin.searchConversationsPlaceholder", "Search by participant name, email, or brokerage...")}
+              className="input-field !pl-10"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 pb-3">
+            {[
+              { v: "ALL", label: t("admin.allStatuses") },
+              { v: "ACTIVE", label: t("status.active") },
+              { v: "CLOSED", label: t("status.closed") },
+            ].map((f) => {
+              const on = filterStatus === f.v;
+              return (
+                <button
+                  key={f.v}
+                  onClick={() => setFilterStatus(f.v)}
+                  className={`px-3 py-1.5 font-body text-[12px] rounded-sm border transition-colors ${
+                    on
+                      ? "bg-forest-800 text-cream-50 border-forest-800 font-semibold"
+                      : "bg-cream-50 text-forest-700 border-cream-300 hover:bg-cream-200"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Results count */}
-        <p className="text-body-sm mb-4 animate-fade-in">
+        <p className="font-mono text-[11px] text-sage-500 tracking-[0.1em] mb-4 animate-fade-in">
           {t("admin.showingConversations", "Showing {{count}} conversation(s)").replace("{{count}}", String(pagination.total))}
         </p>
 
         {/* Conversations Table */}
-        <div className="card-elevated !p-0 overflow-hidden animate-fade-in-up stagger-2">
+        <div className="rounded-sm border border-cream-300 bg-cream-50 overflow-hidden animate-fade-in-up stagger-2">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-cream-200">
+            <table className="min-w-full">
               <thead>
-                <tr className="bg-forest-800">
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    ID
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.participants", "Participants")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.relatedRequest", "Request")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.statusLabel", "Status")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.messagesCount", "Messages")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.lastMessage", "Last Message")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.created", "Created")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.actions")}
-                  </th>
+                <tr className="bg-cream-100 border-b border-cream-300">
+                  <th className="px-4 py-3 text-left mono-label">ID</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.participants", "Participants")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.relatedRequest", "Request")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.statusLabel", "Status")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.messagesCount", "Messages")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.lastMessage", "Last Message")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.created", "Created")}</th>
+                  <th className="px-4 py-3 text-right mono-label">{t("admin.actions")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-cream-200 bg-white">
-                {conversations.map((convo) => {
+              <tbody>
+                {conversations.map((convo, idx) => {
                   const lastMsg = convo.messages[0];
                   return (
-                    <tr key={convo.id} className="hover:bg-cream-50 transition-colors">
+                    <tr key={convo.id} className={`hover:bg-cream-100 transition-colors ${idx < conversations.length - 1 ? "border-b border-cream-200" : ""}`}>
                       {/* Conversation ID */}
                       <td className="whitespace-nowrap px-4 py-4 font-mono text-xs text-forest-700/70">
                         {convo.publicId}

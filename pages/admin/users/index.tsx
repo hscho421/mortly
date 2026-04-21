@@ -41,17 +41,17 @@ interface PaginationMeta {
   totalPages: number;
 }
 
-const ROLE_BADGE: Record<string, string> = {
-  BORROWER: "bg-sage-100 text-sage-700 ring-1 ring-inset ring-sage-600/20",
-  BROKER: "bg-forest-100 text-forest-700 ring-1 ring-inset ring-forest-600/20",
-  ADMIN: "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-600/20",
+const ROLE_CLASS: Record<string, string> = {
+  BORROWER: "badge-neutral",
+  BROKER: "badge-info",
+  ADMIN: "badge-accent",
 };
 
-const TIER_BADGE: Record<string, string> = {
-  FREE: "bg-cream-200 text-forest-600",
-  BASIC: "bg-sage-100 text-sage-700",
-  PRO: "bg-forest-100 text-forest-700",
-  PREMIUM: "bg-amber-100 text-amber-800",
+const TIER_CLASS: Record<string, string> = {
+  FREE: "badge-neutral",
+  BASIC: "badge-neutral",
+  PRO: "badge-info",
+  PREMIUM: "badge-accent",
 };
 
 function formatDate(dateStr: string): string {
@@ -455,104 +455,109 @@ export default function AdminUsers() {
     <AdminLayout>
       <Head><title>{t("titles.adminUsers")}</title></Head>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h1 className="heading-lg">{t("admin.userManagement", "User Management")}</h1>
-            <div className="flex items-center gap-3">
+        {/* Header — editorial */}
+        <div className="mb-6 animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <div className="eyebrow">— {t("admin.sidebar.users")}</div>
+              <h1 className="heading-lg mt-3">{t("admin.userManagement", "User Management")}</h1>
+              <p className="text-body mt-2 max-w-2xl">
+                {t("admin.userManagementDesc", "Search, view, and manage all users on the platform.")}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleExportCSV}
-                className="btn-secondary !rounded-lg"
+                className="rounded-sm border border-cream-300 bg-cream-50 text-forest-800 px-3.5 py-2 font-body text-xs font-semibold hover:bg-cream-200"
               >
-                {t("admin.exportCsv", "Export CSV")}
+                ⬇ {t("admin.exportCsv", "Export CSV")}
               </button>
               <button
                 onClick={() => setInviteModal(true)}
-                className="btn-primary !rounded-lg"
+                className="rounded-sm bg-amber-500 text-white px-3.5 py-2 font-body text-xs font-semibold hover:bg-amber-600"
               >
-                {t("admin.inviteAdmin", "Invite Admin")}
+                + {t("admin.inviteAdmin", "Invite Admin")}
               </button>
             </div>
           </div>
-          <p className="text-body mt-2">
-            {t("admin.userManagementDesc", "Search, view, and manage all users on the platform.")}
-          </p>
         </div>
 
-        {/* Search & Filters */}
-        <div className="card-elevated mb-8 animate-fade-in-up stagger-1">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="search" className="label-text">
-                {t("admin.searchUsers", "Search users")}
-              </label>
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                </svg>
-                <input
-                  id="search"
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder={t("admin.searchPlaceholder", "Search by name, email, or ID...")}
-                  className="input-field !pl-10"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="roleFilter" className="label-text">
-                {t("admin.filterByRole", "Filter by role")}
-              </label>
-              <select
-                id="roleFilter"
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
-                className="input-field w-auto min-w-[140px]"
-              >
-                <option value="ALL">{t("admin.allRoles", "All Roles")}</option>
-                <option value="BORROWER">{t("admin.borrowers", "Borrowers")}</option>
-                <option value="BROKER">{t("admin.brokersLabel", "Brokers")}</option>
-                <option value="ADMIN">{t("admin.admins", "Admins")}</option>
-              </select>
-            </div>
+        {/* Search + Filter chips */}
+        <div className="mb-4 animate-fade-in-up stagger-1">
+          <div className="relative mb-4">
+            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+              id="search"
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t("admin.searchPlaceholder", "Search by name, email, or ID...")}
+              className="input-field !pl-10"
+            />
+          </div>
+
+          {/* Filter chips */}
+          <div className="flex flex-wrap items-center gap-1.5 pb-4 border-b border-cream-300">
+            {[
+              { v: "ALL", label: t("admin.allRoles", "All Roles") },
+              { v: "BORROWER", label: t("admin.borrowers", "Borrowers") },
+              { v: "BROKER", label: t("admin.brokersLabel", "Brokers") },
+              { v: "ADMIN", label: t("admin.admins", "Admins") },
+            ].map((f) => {
+              const on = filterRole === f.v;
+              return (
+                <button
+                  key={f.v}
+                  onClick={() => setFilterRole(f.v)}
+                  className={`px-3 py-1.5 font-body text-[12px] rounded-sm border transition-colors ${
+                    on
+                      ? "bg-forest-800 text-cream-50 border-forest-800 font-semibold"
+                      : "bg-cream-50 text-forest-700 border-cream-300 hover:bg-cream-200"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Results count & bulk actions */}
         <div className="flex items-center justify-between mb-4 animate-fade-in">
-          <p className="text-body-sm">
+          <p className="font-mono text-[11px] text-sage-500 tracking-[0.1em]">
             {t("admin.showingUsers", "Showing {{count}} user(s)").replace("{{count}}", String(pagination.total))}
           </p>
           {selectedIds.size > 0 && (
-            <div className="flex items-center gap-3">
-              <span className="font-body text-sm text-forest-700 font-medium">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[11px] text-forest-800 font-semibold">
                 {selectedIds.size} {t("admin.selected", "selected")}
               </span>
               <button
                 onClick={() => handleBulkStatus("SUSPENDED")}
                 disabled={bulkLoading}
-                className="inline-flex items-center rounded-lg bg-amber-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-amber-700 disabled:opacity-50"
+                className="rounded-sm bg-amber-500 text-white px-3 py-1.5 font-body text-xs font-semibold hover:bg-amber-600 disabled:opacity-50"
               >
                 {bulkLoading ? "..." : t("admin.bulkSuspend", "Suspend All")}
               </button>
               <button
                 onClick={() => handleBulkStatus("BANNED")}
                 disabled={bulkLoading}
-                className="inline-flex items-center rounded-lg bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-rose-700 disabled:opacity-50"
+                className="rounded-sm border border-red-200 bg-red-50 text-red-600 px-3 py-1.5 font-body text-xs font-semibold hover:bg-red-100 disabled:opacity-50"
               >
                 {bulkLoading ? "..." : t("admin.bulkBan", "Ban All")}
               </button>
               <button
                 onClick={() => handleBulkStatus("ACTIVE")}
                 disabled={bulkLoading}
-                className="btn-primary !px-3 !py-1.5 !text-xs !rounded-lg disabled:opacity-50"
+                className="rounded-sm bg-success-700 text-white px-3 py-1.5 font-body text-xs font-semibold hover:bg-success-600 disabled:opacity-50"
               >
                 {bulkLoading ? "..." : t("admin.bulkReactivate", "Reactivate All")}
               </button>
               <button
                 onClick={() => setSelectedIds(new Set())}
-                className="font-body text-xs text-forest-700/50 hover:text-forest-700 transition-colors"
+                className="font-body text-xs text-sage-500 hover:text-forest-700 transition-colors"
               >
                 {t("admin.clearSelection", "Clear")}
               </button>
@@ -561,45 +566,31 @@ export default function AdminUsers() {
         </div>
 
         {/* User Table */}
-        <div className="card-elevated !p-0 overflow-hidden animate-fade-in-up stagger-2">
+        <div className="rounded-sm border border-cream-300 bg-cream-50 overflow-hidden animate-fade-in-up stagger-2">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-cream-200">
+            <table className="min-w-full">
               <thead>
-                <tr className="bg-forest-800">
-                  <th className="px-3 py-3.5 w-10">
+                <tr className="bg-cream-100 border-b border-cream-300">
+                  <th className="px-3 py-3 w-10">
                     <input
                       type="checkbox"
                       checked={selectedIds.size > 0 && selectedIds.size === users.filter((u) => u.role !== "ADMIN").length}
                       onChange={toggleSelectAll}
-                      className="h-4 w-4 rounded border-cream-300 text-forest-600 focus:ring-forest-500"
+                      className="h-4 w-4 rounded-sm border-cream-400 text-amber-500 focus:ring-amber-500"
                     />
                   </th>
-                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.user", "User")}
-                  </th>
-                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.userId", "User ID")}
-                  </th>
-                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.role", "Role")}
-                  </th>
-                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.accountStatus", "Status")}
-                  </th>
-                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.details", "Details")}
-                  </th>
-                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.joined", "Joined")}
-                  </th>
-                  <th className="px-5 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.actions", "Actions")}
-                  </th>
+                  <th className="px-5 py-3 text-left mono-label">{t("admin.user", "User")}</th>
+                  <th className="px-5 py-3 text-left mono-label">{t("admin.userId", "User ID")}</th>
+                  <th className="px-5 py-3 text-left mono-label">{t("admin.role", "Role")}</th>
+                  <th className="px-5 py-3 text-left mono-label">{t("admin.accountStatus", "Status")}</th>
+                  <th className="px-5 py-3 text-left mono-label">{t("admin.details", "Details")}</th>
+                  <th className="px-5 py-3 text-left mono-label">{t("admin.joined", "Joined")}</th>
+                  <th className="px-5 py-3 text-right mono-label">{t("admin.actions", "Actions")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-cream-200 bg-white">
-                {users.map((user) => (
-                  <tr key={user.id} data-user-id={user.publicId} className={`transition-colors ${user.status !== "ACTIVE" ? "bg-rose-50/30" : "hover:bg-cream-50"}`}>
+              <tbody>
+                {users.map((user, idx) => (
+                  <tr key={user.id} data-user-id={user.publicId} className={`transition-colors ${user.status !== "ACTIVE" ? "bg-red-50/30" : "hover:bg-cream-100"} ${idx < users.length - 1 ? "border-b border-cream-200" : ""}`}>
                     {/* Checkbox */}
                     <td className="px-3 py-4">
                       {user.role !== "ADMIN" ? (
@@ -645,7 +636,7 @@ export default function AdminUsers() {
 
                     {/* Role */}
                     <td className="whitespace-nowrap px-5 py-4">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ${ROLE_BADGE[user.role]}`}>
+                      <span className={ROLE_CLASS[user.role]}>
                         {user.role}
                       </span>
                     </td>
@@ -677,10 +668,10 @@ export default function AdminUsers() {
                             {user.broker.brokerageName}
                           </p>
                           <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-body text-[10px] font-semibold ${TIER_BADGE[user.broker.subscriptionTier] || TIER_BADGE.FREE}`}>
+                            <span className={TIER_CLASS[user.broker.subscriptionTier] || TIER_CLASS.FREE}>
                               {user.broker.subscriptionTier}
                             </span>
-                            <span className="font-body text-[10px] text-forest-700/50">
+                            <span className="font-mono text-[10px] text-sage-500">
                               {user.broker.responseCredits} {t("admin.creditsShort", "cr.")}
                             </span>
                           </div>
@@ -706,12 +697,12 @@ export default function AdminUsers() {
 
                     {/* Actions */}
                     <td className="whitespace-nowrap px-5 py-4">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
                         {user.role === "BROKER" && user.broker && (
                           <>
                             <Link
                               href={`/admin/brokers/${user.broker.id}`}
-                              className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
+                              className="rounded-sm border border-cream-300 bg-cream-50 text-forest-800 px-3 py-1.5 font-body text-xs font-semibold hover:bg-cream-200"
                             >
                               {t("admin.viewBroker", "View Broker")}
                             </Link>
@@ -723,7 +714,7 @@ export default function AdminUsers() {
                                   currentCredits: user.broker!.responseCredits,
                                 })
                               }
-                              className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
+                              className="rounded-sm border border-cream-300 bg-cream-50 text-forest-800 px-3 py-1.5 font-body text-xs font-semibold hover:bg-cream-200"
                             >
                               {t("admin.adjustCredits", "Credits")}
                             </button>
@@ -733,7 +724,7 @@ export default function AdminUsers() {
                           <>
                             <button
                               onClick={() => setNoticeModal({ userId: user.id, userName: user.name || user.email })}
-                              className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
+                              className="rounded-sm border border-cream-300 bg-cream-50 text-forest-800 px-3 py-1.5 font-body text-xs font-semibold hover:bg-cream-200"
                             >
                               {t("admin.sendNotice", "Notice")}
                             </button>
@@ -741,7 +732,7 @@ export default function AdminUsers() {
                               <button
                                 onClick={() => handleStatusChange(user.id, "SUSPENDED")}
                                 disabled={actionLoading === user.id}
-                                className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
+                                className="rounded-sm bg-amber-500 text-white px-3 py-1.5 font-body text-xs font-semibold hover:bg-amber-600 disabled:opacity-50"
                               >
                                 {actionLoading === user.id ? "..." : t("admin.suspendUser", "Suspend")}
                               </button>
@@ -750,7 +741,7 @@ export default function AdminUsers() {
                               <button
                                 onClick={() => handleStatusChange(user.id, "BANNED")}
                                 disabled={actionLoading === user.id}
-                                className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+                                className="rounded-sm border border-red-200 bg-red-50 text-red-600 px-3 py-1.5 font-body text-xs font-semibold hover:bg-red-100 disabled:opacity-50"
                               >
                                 {actionLoading === user.id ? "..." : t("admin.banUser", "Ban")}
                               </button>
@@ -759,7 +750,7 @@ export default function AdminUsers() {
                               <button
                                 onClick={() => handleStatusChange(user.id, "ACTIVE")}
                                 disabled={actionLoading === user.id}
-                                className="btn-primary !px-3 !py-1.5 !text-xs !rounded-lg disabled:opacity-50"
+                                className="rounded-sm bg-success-700 text-white px-3 py-1.5 font-body text-xs font-semibold hover:bg-success-600 disabled:opacity-50"
                               >
                                 {actionLoading === user.id ? "..." : t("admin.reactivate", "Reactivate")}
                               </button>

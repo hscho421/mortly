@@ -90,21 +90,11 @@ export default function LoginPage() {
       </Head>
       <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
-          {/* Decorative top accent */}
-          <div className="mb-8 flex justify-center opacity-0 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <div className="h-px w-8 bg-amber-400" />
-              <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">
-                mortly
-              </span>
-              <div className="h-px w-8 bg-amber-400" />
-            </div>
-          </div>
-
           {/* Card */}
           <div className="card-elevated opacity-0 animate-fade-in-up stagger-1">
-            <div className="mb-8 text-center">
-              <h1 className="heading-lg mb-2">{t("auth.loginTitle")}</h1>
+            <div className="mb-8">
+              <div className="eyebrow">— {t("nav.signIn")}</div>
+              <h1 className="heading-lg mt-3 mb-2">{t("auth.loginTitle")}</h1>
               <p className="text-body-sm">
                 {t("auth.loginSubtitle")}
               </p>

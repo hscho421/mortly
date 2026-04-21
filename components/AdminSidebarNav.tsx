@@ -176,16 +176,21 @@ export default function AdminSidebarNav({ collapsed, onToggle }: AdminSidebarNav
 
   return (
     <aside
-      className={`sticky top-0 h-[calc(100vh-4rem)] shrink-0 border-r border-cream-200 bg-cream-50 transition-all duration-200 ${
+      className={`sticky top-0 h-[calc(100vh-4rem)] shrink-0 border-r border-cream-300 bg-cream-50 transition-all duration-200 ${
         collapsed ? "w-16" : "w-56"
       }`}
     >
       <div className="flex h-full flex-col">
-        {/* Toggle */}
-        <div className="flex items-center justify-end px-3 py-3 border-b border-cream-200">
+        {/* Header — editorial ADMIN mark */}
+        <div className="flex items-center justify-between px-3 py-3 border-b border-cream-300">
+          {!collapsed && (
+            <div className="pl-2">
+              <div className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-500">admin</div>
+            </div>
+          )}
           <button
             onClick={onToggle}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-forest-600 hover:bg-cream-200 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-sm text-forest-600 hover:bg-cream-200 transition-colors"
             title={collapsed ? t("admin.sidebar.expand") : t("admin.sidebar.collapse")}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -199,11 +204,11 @@ export default function AdminSidebarNav({ collapsed, onToggle }: AdminSidebarNav
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
           {NAV_SECTIONS.map((section) => (
             <div key={section.labelKey}>
               {!collapsed && (
-                <p className="mb-1.5 px-2 font-body text-[10px] font-semibold uppercase tracking-[0.12em] text-forest-700/40">
+                <p className="mb-2 px-2 font-mono text-[10px] font-normal uppercase tracking-[0.15em] text-sage-500">
                   {t(section.labelKey)}
                 </p>
               )}
@@ -216,15 +221,15 @@ export default function AdminSidebarNav({ collapsed, onToggle }: AdminSidebarNav
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className={`group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 font-body text-sm transition-all ${
+                        className={`group relative flex items-center gap-2.5 rounded-sm px-2.5 py-2 font-body text-[13px] transition-all ${
                           active
-                            ? "bg-forest-700 text-white shadow-sm"
-                            : "text-forest-700 hover:bg-cream-200"
-                        } ${collapsed ? "justify-center" : ""}`}
+                            ? "bg-amber-50 text-forest-800 font-semibold border-l-2 border-amber-500 pl-[8px]"
+                            : "text-forest-700 border-l-2 border-transparent hover:bg-cream-200"
+                        } ${collapsed ? "justify-center !pl-2.5 !border-l-0" : ""}`}
                         title={collapsed ? t(item.labelKey) : undefined}
                       >
                         <svg
-                          className={`h-[18px] w-[18px] shrink-0 ${active ? "text-white" : "text-forest-600/70"}`}
+                          className={`h-[18px] w-[18px] shrink-0 ${active ? "text-amber-600" : "text-forest-600/70"}`}
                           fill="none"
                           viewBox="0 0 24 24"
                           strokeWidth={1.5}
@@ -236,14 +241,14 @@ export default function AdminSidebarNav({ collapsed, onToggle }: AdminSidebarNav
                           <>
                             <span className="flex-1 truncate">{t(item.labelKey)}</span>
                             {badgesLoaded && badgeCount > 0 && (
-                              <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold px-1.5">
+                              <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] rounded-sm bg-amber-500 text-white font-mono text-[10px] font-bold px-1.5">
                                 {badgeCount}
                               </span>
                             )}
                           </>
                         )}
                         {collapsed && badgesLoaded && badgeCount > 0 && (
-                          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500" />
+                          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-amber-500" />
                         )}
                       </Link>
                     </li>

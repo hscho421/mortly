@@ -94,6 +94,11 @@ const config: Config = {
       fontFamily: {
         display: ["Outfit", "system-ui", "sans-serif"],
         body: ["Outfit", "system-ui", "sans-serif"],
+        mono: ['"IBM Plex Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
+      },
+      letterSpacing: {
+        tightest: "-0.04em",
+        tightest2: "-0.05em",
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-out forwards",

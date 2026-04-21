@@ -233,10 +233,16 @@ export default function AdminReports() {
     <AdminLayout>
       <Head><title>{t("titles.adminReports")}</title></Head>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h1 className="heading-lg">{t("admin.reports")}</h1>
+        {/* Header — editorial */}
+        <div className="mb-6 animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <div className="eyebrow">— {t("admin.sidebar.reports")}</div>
+              <h1 className="heading-lg mt-3">{t("admin.reports")}</h1>
+              <p className="text-body mt-2 max-w-2xl">
+                {t("admin.reportsDesc", "Review, investigate, and resolve user-submitted reports. Add notes and link to targets.")}
+              </p>
+            </div>
             <button
               onClick={async () => {
                 try {
@@ -267,113 +273,102 @@ export default function AdminReports() {
                   // export error
                 }
               }}
-              className="btn-secondary !rounded-lg"
+              className="rounded-sm border border-cream-300 bg-cream-50 text-forest-800 px-3.5 py-2 font-body text-xs font-semibold hover:bg-cream-200 whitespace-nowrap"
             >
-              {t("admin.exportCsv", "Export CSV")}
+              ⬇ {t("admin.exportCsv", "Export CSV")}
             </button>
           </div>
-          <p className="text-body mt-2">
-            {t("admin.reportsDesc", "Review, investigate, and resolve user-submitted reports. Add notes and link to targets.")}
-          </p>
         </div>
 
-        {/* Filters */}
-        <div className="card-elevated mb-8 animate-fade-in-up stagger-1">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="searchReport" className="label-text">
-                {t("admin.searchReports", "Search reports")}
-              </label>
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                </svg>
-                <input
-                  id="searchReport"
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder={t("admin.searchReportsPlaceholder", "Search by reporter, reason, or target ID...")}
-                  className="input-field !pl-10"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="reportStatusFilter" className="label-text">
-                {t("admin.filterByStatus")}
-              </label>
-              <select
-                id="reportStatusFilter"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as ReportStatus | "ALL")}
-                className="input-field w-auto min-w-[140px]"
-              >
-                <option value="ALL">{t("admin.allStatuses")}</option>
-                <option value="OPEN">{t("status.open")}</option>
-                <option value="REVIEWED">{t("status.reviewed")}</option>
-                <option value="RESOLVED">{t("status.resolved")}</option>
-                <option value="DISMISSED">{t("status.dismissed")}</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="targetFilter" className="label-text">
-                {t("admin.filterByTarget", "Filter by target")}
-              </label>
-              <select
-                id="targetFilter"
-                value={filterTarget}
-                onChange={(e) => setFilterTarget(e.target.value)}
-                className="input-field w-auto min-w-[140px]"
-              >
-                <option value="ALL">{t("admin.allTargets", "All Targets")}</option>
-                <option value="BROKER">{t("admin.brokerTarget", "Broker")}</option>
-                <option value="REQUEST">{t("admin.requestTarget", "Request")}</option>
-                <option value="CONVERSATION">{t("admin.conversationTarget", "Conversation")}</option>
-              </select>
-            </div>
+        {/* Search + Filter chips */}
+        <div className="mb-4 animate-fade-in-up stagger-1">
+          <div className="relative mb-4">
+            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sage-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+              id="searchReport"
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t("admin.searchReportsPlaceholder", "Search by reporter, reason, or target ID...")}
+              className="input-field !pl-10"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 pb-3">
+            {[
+              { v: "ALL" as const, label: t("admin.allStatuses") },
+              { v: "OPEN" as const, label: t("status.open") },
+              { v: "REVIEWED" as const, label: t("status.reviewed") },
+              { v: "RESOLVED" as const, label: t("status.resolved") },
+              { v: "DISMISSED" as const, label: t("status.dismissed") },
+            ].map((f) => {
+              const on = filterStatus === f.v;
+              return (
+                <button
+                  key={f.v}
+                  onClick={() => setFilterStatus(f.v)}
+                  className={`px-3 py-1.5 font-body text-[12px] rounded-sm border transition-colors ${
+                    on
+                      ? "bg-forest-800 text-cream-50 border-forest-800 font-semibold"
+                      : "bg-cream-50 text-forest-700 border-cream-300 hover:bg-cream-200"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+            <div className="w-px self-stretch bg-cream-300 mx-1" />
+            {[
+              { v: "ALL", label: t("admin.allTargets", "All Targets") },
+              { v: "BROKER", label: t("admin.brokerTarget", "Broker") },
+              { v: "REQUEST", label: t("admin.requestTarget", "Request") },
+              { v: "CONVERSATION", label: t("admin.conversationTarget", "Conversation") },
+            ].map((f) => {
+              const on = filterTarget === f.v;
+              return (
+                <button
+                  key={`t-${f.v}`}
+                  onClick={() => setFilterTarget(f.v)}
+                  className={`px-3 py-1.5 font-body text-[12px] rounded-sm border transition-colors ${
+                    on
+                      ? "bg-forest-800 text-cream-50 border-forest-800 font-semibold"
+                      : "bg-cream-50 text-forest-700 border-cream-300 hover:bg-cream-200"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Results count */}
-        <p className="text-body-sm mb-4 animate-fade-in">
+        <p className="font-mono text-[11px] text-sage-500 tracking-[0.1em] mb-4 animate-fade-in">
           {t("admin.showingReports", "Showing {{count}} report(s)").replace("{{count}}", String(pagination.total))}
         </p>
 
         {/* Reports Table */}
-        <div className="card-elevated !p-0 overflow-hidden animate-fade-in-up stagger-2">
+        <div className="rounded-sm border border-cream-300 bg-cream-50 overflow-hidden animate-fade-in-up stagger-2">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-cream-200">
+            <table className="min-w-full">
               <thead>
-                <tr className="bg-forest-800">
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.reporter", "Reporter")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.targetLabel", "Target")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.reasonLabel", "Reason")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.statusLabel", "Status")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.notesLabel", "Notes")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.dateLabel", "Date")}
-                  </th>
-                  <th className="px-4 py-3.5 text-left font-body text-xs font-semibold uppercase tracking-wider text-cream-100">
-                    {t("admin.actions")}
-                  </th>
+                <tr className="bg-cream-100 border-b border-cream-300">
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.reporter", "Reporter")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.targetLabel", "Target")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.reasonLabel", "Reason")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.statusLabel", "Status")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.notesLabel", "Notes")}</th>
+                  <th className="px-4 py-3 text-left mono-label">{t("admin.dateLabel", "Date")}</th>
+                  <th className="px-4 py-3 text-right mono-label">{t("admin.actions")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-cream-200 bg-white">
-                {reports.map((report) => {
+              <tbody>
+                {reports.map((report, idx) => {
                   const targetLink = getTargetLink(report.targetType, report.targetId);
 
                   return (
-                    <tr key={report.id} className={`transition-colors ${report.status === "OPEN" ? "bg-rose-50/20" : "hover:bg-cream-50"}`}>
+                    <tr key={report.id} className={`transition-colors ${report.status === "OPEN" ? "bg-red-50/30 border-l-[3px] border-red-500" : "hover:bg-cream-100"} ${idx < reports.length - 1 ? "border-b border-cream-200" : ""}`}>
                       {/* Reporter */}
                       <td className="px-4 py-4">
                         <p className="font-body text-sm font-semibold text-forest-800">{report.reporter.name || "—"}</p>

@@ -264,23 +264,22 @@ export default function BrokerDashboardPage() {
       <Head><title>{t("titles.brokerDashboard")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-fade-in">
           <div>
-            <h1 className="heading-lg">
+            <div className="eyebrow">— {t("broker.dashboard")}</div>
+            <h1 className="heading-lg mt-3">
               {t("broker.welcome", { name: session.user.name || "Broker" })}
             </h1>
-            <p className="text-body mt-2">
+            <p className="text-body mt-3 max-w-2xl">
               {t("broker.dashboardSubtitle")}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 font-body text-xs font-semibold ${tierColors[subscriptionTier] || tierColors.BASIC}`}
-            >
+          <div className="flex items-center gap-2">
+            <span className={`badge ${subscriptionTier === "PREMIUM" || subscriptionTier === "PRO" ? "badge-accent" : "badge-neutral"}`}>
               {subscriptionTier} {t("common.plan")}
             </span>
             <span
-              className={`inline-flex items-center rounded-full px-3 py-1 font-body text-xs font-semibold ${verificationColors[verificationStatus] || verificationColors.PENDING}`}
+              className={`badge ${verificationStatus === "VERIFIED" ? "badge-success" : verificationStatus === "REJECTED" ? "badge-error" : "badge-warning"}`}
             >
               {verificationStatus === "VERIFIED"
                 ? t("status.verified")
@@ -359,7 +358,7 @@ export default function BrokerDashboardPage() {
         )}
 
         {/* Stats */}
-        <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {statCards.map((stat, i) => (
             <div
               key={stat.label}
@@ -367,17 +366,17 @@ export default function BrokerDashboardPage() {
                 stat.accent ? "!border-amber-300 !bg-amber-50/50" : ""
               }`}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-body-sm">{stat.label}</p>
-                  <p className={`mt-2 font-display text-4xl tracking-tight ${
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="mono-label">{stat.label}</div>
+                  <div className={`mt-2 font-display font-semibold text-4xl tracking-[-0.03em] leading-none ${
                     stat.accent ? "text-amber-700" : "text-forest-800"
                   }`}>
                     {stat.value}
-                  </p>
+                  </div>
                 </div>
-                <div className={`rounded-xl p-3 ${
-                  stat.accent ? "bg-amber-200/50 text-amber-700" : "bg-forest-100 text-forest-600"
+                <div className={`rounded-sm p-2.5 ${
+                  stat.accent ? "bg-amber-100 text-amber-700" : "bg-cream-200 text-forest-600"
                 }`}>
                   {stat.icon}
                 </div>

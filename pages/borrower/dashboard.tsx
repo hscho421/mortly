@@ -88,15 +88,18 @@ export default function BorrowerDashboard() {
     <Layout>
       <Head><title>{t("titles.borrowerDashboard")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+        {/* Header — editorial serif with name accent */}
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-fade-in">
           <div>
-            <h1 className="heading-lg">{t("borrowerDashboard.title", { name: session.user?.name ?? "" })}</h1>
-            <p className="text-body mt-2">
+            <div className="eyebrow">— {t("nav.dashboard")}</div>
+            <h1 className="heading-lg mt-3">
+              {t("borrowerDashboard.title", { name: session.user?.name ?? "" })}
+            </h1>
+            <p className="text-body mt-3 max-w-2xl">
               {t("borrowerDashboard.subtitle")}
             </p>
           </div>
-          <Link href="/borrower/request/new" className="btn-amber">
+          <Link href="/borrower/request/new" className="btn-amber whitespace-nowrap">
             + {t("borrowerDashboard.newRequest")}
           </Link>
         </div>
@@ -119,9 +122,9 @@ export default function BorrowerDashboard() {
                 { value: totalConvos, label: t("borrowerDashboard.statOffers", "Offers Received") },
                 { value: requests.filter((r) => r.status === "CLOSED").length, label: t("borrowerDashboard.statCompleted", "Completed") },
               ].map((stat, i) => (
-                <div key={i} className={`card-stat text-center animate-fade-in-up stagger-${i + 1}`}>
-                  <p className="font-display text-3xl text-forest-800 mb-1">{stat.value}</p>
-                  <p className="text-body-sm">{stat.label}</p>
+                <div key={i} className={`card-stat animate-fade-in-up stagger-${i + 1}`}>
+                  <div className="mono-label">{stat.label}</div>
+                  <div className="mt-2 font-display font-semibold text-4xl text-forest-800 tracking-[-0.03em] leading-none">{stat.value}</div>
                 </div>
               ))}
             </div>
