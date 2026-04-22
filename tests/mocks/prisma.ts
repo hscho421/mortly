@@ -18,16 +18,17 @@ export type PrismaMock = DeepMockProxy<PrismaClient>;
 export const prismaMock: PrismaMock = mockDeep<PrismaClient>();
 
 function wireTransaction(mock: PrismaMock) {
-  // @ts-expect-error — replace generated mock with real-ish implementation
-  mock.$transaction.mockImplementation(async (arg: unknown) => {
-    if (typeof arg === "function") {
-      return (arg as (tx: PrismaClient) => unknown)(mock as unknown as PrismaClient);
+  (mock.$transaction as unknown as { mockImplementation: (fn: (arg: unknown) => unknown) => void }).mockImplementation(
+    async (arg: unknown) => {
+      if (typeof arg === "function") {
+        return (arg as (tx: PrismaClient) => unknown)(mock as unknown as PrismaClient);
+      }
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+      return undefined;
     }
-    if (Array.isArray(arg)) {
-      return Promise.all(arg);
-    }
-    return undefined;
-  });
+  );
 }
 
 wireTransaction(prismaMock);
