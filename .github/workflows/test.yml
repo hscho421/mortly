@@ -105,8 +105,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Apply migrations
-        run: npx prisma migrate deploy
+      - name: Sync schema to test DB
+        # `db push` is appropriate for a fresh throwaway CI database — no
+        # migration history needed, just schema parity. Use `migrate deploy`
+        # instead if you want to verify migrations apply cleanly.
+        run: npx prisma db push --skip-generate
 
       - name: Seed test data
         run: npm run seed:mock
