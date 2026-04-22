@@ -1,0 +1,123 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-integration:
+    name: Unit + Integration (Vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXTAUTH_SECRET: test-ci-secret
+      NEXTAUTH_URL: http://localhost:3000
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      DIRECT_URL: postgresql://test:test@localhost:5432/test
+      STRIPE_SECRET_KEY: sk_test_ci
+      STRIPE_WEBHOOK_SECRET: whsec_test_ci
+      STRIPE_PRICE_BASIC: price_basic_test
+      STRIPE_PRICE_PRO: price_pro_test
+      STRIPE_PRICE_PREMIUM: price_premium_test
+      RESEND_API_KEY: re_test_ci
+      CRON_SECRET: cron-test-secret-32-bytes-long-xxxx
+      GOOGLE_CLIENT_ID: google-ci
+      GOOGLE_CLIENT_SECRET: google-ci-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      # Prisma client must be generated — `postinstall` usually handles this,
+      # but we're explicit in CI so unit tests that import `@prisma/client` work.
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run Vitest (unit + integration + component)
+        run: npm run test:coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # E2E is opt-in for PRs to keep CI cost down. Always run on main.
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'run-e2e')
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: mortly_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      NEXTAUTH_SECRET: test-ci-secret
+      NEXTAUTH_URL: http://localhost:3100
+      PLAYWRIGHT_PORT: "3100"
+      PLAYWRIGHT_BASE_URL: http://localhost:3100
+      DATABASE_URL: postgresql://test:test@localhost:5432/mortly_test
+      DIRECT_URL: postgresql://test:test@localhost:5432/mortly_test
+      STRIPE_SECRET_KEY: sk_test_ci
+      STRIPE_WEBHOOK_SECRET: whsec_test_ci
+      STRIPE_PRICE_BASIC: price_basic_test
+      STRIPE_PRICE_PRO: price_pro_test
+      STRIPE_PRICE_PREMIUM: price_premium_test
+      RESEND_API_KEY: re_test_ci
+      CRON_SECRET: cron-test-secret-32-bytes-long-xxxx
+      GOOGLE_CLIENT_ID: google-ci
+      GOOGLE_CLIENT_SECRET: google-ci-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed test data
+        run: npm run seed:mock
+
+      - name: Run Playwright
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

@@ -464,6 +464,11 @@ async function seedMock() {
   }
   console.log("System settings seeded.");
 
+  // ── E2E fixtures (deterministic, never randomized) ────────
+  // These are upserts so re-running the seed doesn't collide. They're
+  // referenced by stable emails in tests/e2e/request-to-broker-flow.spec.ts.
+  await seedE2EFixtures(hash);
+
   // ── Summary ───────────────────────────────────────────────
   const totalUsers = admins.length + borrowers.length + brokerUsers.length;
   console.log(`\nSeed complete! ${totalUsers} users created (password: password123)`);
@@ -477,6 +482,103 @@ async function seedMock() {
   console.log("  Suspended broker:   broker13@test.com (also REJECTED)");
   console.log("  Pending brokers:    broker8, broker9, broker12");
   console.log("  Tier spread: FREE(4), BASIC(4), PRO(4), PREMIUM(3)");
+}
+
+// ─── E2E fixtures ─────────────────────────────────────────────
+// Deterministic users + one OPEN request consumed by
+// tests/e2e/request-to-broker-flow.spec.ts. Idempotent via upsert so the
+// E2E suite can re-run without re-seeding (and re-seeding doesn't collide).
+const E2E_BORROWER_EMAIL = "seed-e2e-borrower@mortly.test";
+const E2E_BROKER_EMAIL = "seed-e2e-broker@mortly.test";
+const E2E_BORROWER_PUBLIC_ID = "999000001";
+const E2E_BROKER_PUBLIC_ID = "999000002";
+const E2E_OPEN_REQUEST_PUBLIC_ID = "999000010";
+
+async function seedE2EFixtures(passwordHash: string) {
+  // Borrower
+  const borrower = await prisma.user.upsert({
+    where: { email: E2E_BORROWER_EMAIL },
+    update: { passwordHash, emailVerified: true, status: "ACTIVE" },
+    create: {
+      email: E2E_BORROWER_EMAIL,
+      passwordHash,
+      role: "BORROWER",
+      name: "E2E Borrower",
+      publicId: E2E_BORROWER_PUBLIC_ID,
+      emailVerified: true,
+      status: "ACTIVE",
+    },
+  });
+
+  // Broker user + broker profile (VERIFIED, BASIC tier, 10 credits)
+  const brokerUser = await prisma.user.upsert({
+    where: { email: E2E_BROKER_EMAIL },
+    update: { passwordHash, emailVerified: true, status: "ACTIVE" },
+    create: {
+      email: E2E_BROKER_EMAIL,
+      passwordHash,
+      role: "BROKER",
+      name: "E2E Broker",
+      publicId: E2E_BROKER_PUBLIC_ID,
+      emailVerified: true,
+      status: "ACTIVE",
+    },
+  });
+
+  await prisma.broker.upsert({
+    where: { userId: brokerUser.id },
+    update: {
+      verificationStatus: "VERIFIED",
+      subscriptionTier: "BASIC",
+      responseCredits: 10,
+      province: "ON",
+    },
+    create: {
+      userId: brokerUser.id,
+      brokerageName: "E2E Test Brokerage",
+      province: "ON",
+      licenseNumber: "E2E12345",
+      phone: "+14165550000",
+      mortgageCategory: "BOTH",
+      bio: "Deterministic broker used by the E2E suite.",
+      yearsExperience: 10,
+      areasServed: "Toronto, Ottawa",
+      specialties: "First-time buyers",
+      verificationStatus: "VERIFIED",
+      subscriptionTier: "BASIC",
+      responseCredits: 10,
+    },
+  });
+
+  // A pre-existing OPEN request owned by the E2E borrower. The E2E flow
+  // needs an OPEN request because admin approval (PENDING_APPROVAL → OPEN)
+  // is out of scope for the E2E test — seeding it OPEN is simpler and keeps
+  // the assertion stable across runs.
+  await prisma.borrowerRequest.upsert({
+    where: { publicId: E2E_OPEN_REQUEST_PUBLIC_ID },
+    update: { status: "OPEN" },
+    create: {
+      publicId: E2E_OPEN_REQUEST_PUBLIC_ID,
+      borrowerId: borrower.id,
+      mortgageCategory: "RESIDENTIAL",
+      productTypes: ["NEW_MORTGAGE"],
+      province: "ON",
+      city: "Toronto",
+      details: {
+        purposeOfUse: ["OWNER_OCCUPIED"],
+        incomeTypes: ["EMPLOYMENT"],
+        annualIncome: { "2025": "100,000" },
+      },
+      desiredTimeline: "3_MONTHS",
+      notes: "E2E fixture request — do not modify in dev.",
+      status: "OPEN",
+      schemaVersion: 2,
+    },
+  });
+
+  console.log(
+    `E2E fixtures seeded: ${E2E_BORROWER_EMAIL} + ${E2E_BROKER_EMAIL} + OPEN request ${E2E_OPEN_REQUEST_PUBLIC_ID}`
+  );
 }
 
 // ─── Empty seed ───────────────────────────────────────────────

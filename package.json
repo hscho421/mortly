@@ -11,7 +11,18 @@
     "lint": "next lint",
     "seed": "npx tsx prisma/seed.ts",
     "seed:mock": "npm run seed -- mock",
-    "seed:empty": "npm run seed -- empty"
+    "seed:empty": "npm run seed -- empty",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:component": "vitest run tests/component",
+    "test:invariants": "vitest run tests/invariants",
+    "test:concurrency": "vitest run tests/concurrency --no-file-parallelism",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:all": "npm run test && npm run test:e2e"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -39,17 +50,27 @@
     "stripe": "^20.4.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "jsdom": "^25.0.1",
+    "node-mocks-http": "^1.16.2",
     "postcss": "^8",
     "prisma": "5.22.0",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.8",
+    "vitest-mock-extended": "^2.0.2"
   }
 }
