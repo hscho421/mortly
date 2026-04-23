@@ -1,5 +1,9 @@
-// Shared types + fetchers used by /admin/inbox and (eventually) the ⌘K palette.
+// Shared types + fetcher for /admin/inbox (and the ⌘K palette, later).
 // The Inbox merges three disjoint queues into one list sorted by age.
+//
+// Phase 3: switched from a 3-way fan-out against the public list endpoints
+// (`/api/admin/requests`, `/brokers`, `/reports`) to a single call against
+// `/api/admin/queue`, which returns all three queues in one round-trip.
 
 export type InboxKind = "REQ" | "BRK" | "REP";
 
@@ -38,18 +42,38 @@ export interface InboxReportRow {
   createdAt: string;
   reason: string;
   targetType: string;
-  targetId: string; // already-resolved publicId from the reports endpoint
+  targetId: string; // resolved publicId from queue endpoint
   reporter: { id: string; name: string | null; email: string };
 }
 
 export type InboxRow = InboxRequestRow | InboxBrokerRow | InboxReportRow;
 
-interface Paginated<T> {
-  data: T[];
-  pagination?: unknown;
+// ── Queue-endpoint response shape ────────────────────────────────────
+
+interface QueueBroker {
+  id: string;
+  publicId: string;
+  createdAt: string;
+  brokerageName: string | null;
+  licenseNumber: string | null;
+  province: string | null;
+  subscriptionTier: string | null;
+  yearsExperience: number | null;
+  user: { publicId: string; name: string | null; email: string };
 }
 
-interface AdminRequestRow {
+interface QueueReport {
+  id: string;
+  publicId: string;
+  createdAt: string;
+  reason: string;
+  targetType: string;
+  targetId: string;
+  status: string;
+  reporter: { id: string; name: string | null; email: string } | null;
+}
+
+interface QueueRequest {
   id: string;
   publicId: string;
   createdAt: string;
@@ -63,67 +87,68 @@ interface AdminRequestRow {
   borrower: { id: string; name: string | null; email: string };
 }
 
-interface AdminBrokerRow {
-  id: string;
-  createdAt: string;
-  brokerageName: string;
-  province: string;
-  licenseNumber: string;
-  subscriptionTier: string;
-  yearsExperience: number | null;
-  user: { publicId: string; name: string | null };
-}
-
-interface AdminReportRow {
-  id: string;
-  createdAt: string;
-  reason: string;
-  targetType: string;
-  targetId: string;
-  reporter: { id: string; name: string | null; email: string };
+interface QueueResponse {
+  pendingBrokers: QueueBroker[];
+  openReports: QueueReport[];
+  pendingRequests: QueueRequest[];
+  counts: {
+    pendingBrokers: number;
+    openReports: number;
+    pendingRequests: number;
+    total: number;
+  };
 }
 
 export async function fetchInboxQueue(): Promise<InboxRow[]> {
-  const endpoints = [
-    "/api/admin/requests?status=PENDING_APPROVAL&limit=25",
-    "/api/admin/brokers?status=PENDING&limit=25",
-    "/api/admin/reports?status=OPEN&limit=25",
-  ] as const;
-
-  const [reqRes, brkRes, repRes] = await Promise.all(endpoints.map((u) => fetch(u)));
-
-  // Short-circuit loud: if any source is 4xx/5xx, fail the whole queue so the
-  // UI shows a real error instead of a confusing "empty" queue.
-  const failed = [reqRes, brkRes, repRes].findIndex((r) => !r.ok);
-  if (failed !== -1) {
-    const bad = [reqRes, brkRes, repRes][failed];
-    const body = await bad.text().catch(() => "");
+  const r = await fetch("/api/admin/queue");
+  if (!r.ok) {
+    const body = await r.text().catch(() => "");
     throw new Error(
-      `inbox source ${endpoints[failed]} returned ${bad.status}${body ? ` · ${body.slice(0, 120)}` : ""}`,
+      `queue endpoint returned ${r.status}${body ? ` · ${body.slice(0, 120)}` : ""}`,
     );
   }
-
-  const [reqs, brks, reps] = (await Promise.all([
-    reqRes.json(),
-    brkRes.json(),
-    repRes.json(),
-  ])) as [Paginated<AdminRequestRow>, Paginated<AdminBrokerRow>, Paginated<AdminReportRow>];
+  const data = (await r.json()) as QueueResponse;
 
   const rows: InboxRow[] = [
-    ...reqs.data.map<InboxRequestRow>((r) => ({ ...r, kind: "REQ" })),
-    ...brks.data.map<InboxBrokerRow>((b) => ({
-      ...b,
-      kind: "BRK",
-      publicId: b.user.publicId,
+    ...data.pendingRequests.map<InboxRequestRow>((r) => ({
+      kind: "REQ",
+      id: r.id,
+      publicId: r.publicId,
+      createdAt: r.createdAt,
+      status: r.status,
+      province: r.province,
+      city: r.city,
+      mortgageCategory: r.mortgageCategory,
+      productTypes: r.productTypes,
+      notes: r.notes,
+      details: r.details,
+      borrower: r.borrower,
     })),
-    ...reps.data.map<InboxReportRow>((r) => ({
-      ...r,
+    ...data.pendingBrokers.map<InboxBrokerRow>((b) => ({
+      kind: "BRK",
+      id: b.id,
+      publicId: b.publicId,
+      createdAt: b.createdAt,
+      brokerageName: b.brokerageName ?? "",
+      province: b.province ?? "",
+      licenseNumber: b.licenseNumber ?? "",
+      subscriptionTier: b.subscriptionTier ?? "FREE",
+      yearsExperience: b.yearsExperience,
+      user: { publicId: b.user.publicId, name: b.user.name },
+    })),
+    ...data.openReports.map<InboxReportRow>((r) => ({
       kind: "REP",
+      id: r.id,
+      // The inbox UI expects a synthesized short code for display.
       publicId: `REP-${r.id.slice(-4).toUpperCase()}`,
+      createdAt: r.createdAt,
+      reason: r.reason,
+      targetType: r.targetType,
+      targetId: r.targetId,
+      reporter: r.reporter ?? { id: "", name: null, email: "" },
     })),
   ];
 
-  // Sort: most recent first.
   rows.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
   return rows;
 }

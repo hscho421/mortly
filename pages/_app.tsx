@@ -66,11 +66,14 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isAdmin = session?.user?.role === "ADMIN";
-  const isAdminRoute = router.pathname.startsWith("/admin");
   const isAuthRoute = router.pathname.startsWith("/login") || router.pathname.startsWith("/signup");
   const isApiRoute = router.pathname.startsWith("/api");
 
-  if (checked && maintenance && !isAdmin && !isAdminRoute && !isAuthRoute && !isApiRoute) {
+  // Maintenance gate applies to everything except API (server logic stays open)
+  // and the auth routes (needed so admins can sign in during maintenance).
+  // Admins bypass it regardless of route — including /admin/* so they can
+  // finish fixing whatever triggered maintenance mode.
+  if (checked && maintenance && !isAdmin && !isAuthRoute && !isApiRoute) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-cream-50 px-4">
         <div className="card-elevated max-w-lg text-center">

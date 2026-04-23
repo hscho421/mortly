@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
@@ -14,6 +14,9 @@ import {
 import type { Tone } from "@/components/admin/primitives/ABadge";
 import { formatAge } from "@/lib/admin/inboxQueue";
 import { jsonOrThrow, useDrawerResource } from "@/lib/admin/useDrawerResource";
+import { useAdminUrlFilters, parseEnum } from "@/lib/admin/useAdminUrlFilters";
+import { useAdminShortcuts } from "@/lib/admin/useAdminShortcuts";
+import { useToast } from "@/components/Toast";
 
 /**
  * /admin/reports — two-pane. List on the left, investigation drawer on the right.
@@ -55,6 +58,7 @@ const STATUS_TONE: Record<ReportRow["status"], Tone> = {
 export default function AdminReportsPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const { toast } = useToast();
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [totalByStatus, setTotalByStatus] = useState({
     OPEN: 0,
@@ -83,37 +87,18 @@ export default function AdminReportsPage() {
     }
   }, [detailState.state, detailState.state === "ready" ? detailState.data.id : null]);
 
-  // URL-driven filters
-  const status: StatusFilter = (() => {
-    const q = router.query.status;
-    if (q === "OPEN" || q === "REVIEWED" || q === "RESOLVED" || q === "DISMISSED" || q === "ALL") {
-      return q;
-    }
-    return "OPEN"; // default landing filter
-  })();
-  const target: TargetFilter = (() => {
-    const q = router.query.target;
-    if (q === "BROKER" || q === "REQUEST" || q === "CONVERSATION") return q;
-    return "ALL";
-  })();
+  // URL-driven filters — Phase 5: shared hook replaces hand-rolled patchQuery.
+  const { filters, patch: patchQuery } = useAdminUrlFilters((q) => ({
+    status: parseEnum(
+      q.status,
+      ["OPEN", "REVIEWED", "RESOLVED", "DISMISSED", "ALL"] as const,
+      "OPEN" as const,
+    ),
+    target: parseEnum(q.target, ["BROKER", "REQUEST", "CONVERSATION"] as const, "ALL" as const),
+  }));
+  const status: StatusFilter = filters.status;
+  const target: TargetFilter = filters.target;
 
-  const patchQuery = useCallback(
-    (patch: Record<string, string | null>) => {
-      const next: Record<string, string> = {};
-      for (const [k, v] of Object.entries(router.query)) {
-        if (typeof v === "string") next[k] = v;
-      }
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === null) delete next[k];
-        else next[k] = v;
-      }
-      router.replace({ pathname: router.pathname, query: next }, undefined, {
-        shallow: true,
-        locale: router.locale,
-      });
-    },
-    [router],
-  );
   const setStatus = (v: StatusFilter) =>
     patchQuery({ status: v === "OPEN" ? null : v, id: null });
   const setTarget = (v: TargetFilter) =>
@@ -191,13 +176,52 @@ export default function AdminReportsPage() {
       await Promise.all([load(), refreshSummary()]);
       detailCtl.refresh();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Failed");
+      toast(err instanceof Error ? err.message : "Failed", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const counts = useMemo(() => totalByStatus, [totalByStatus]);
+
+  // Keyboard nav — J/K move the cursor, E opens the resolved target link.
+  const cursorIdx = rows.findIndex((r) => r.id === selectedId);
+  const cursorRef = useRef(cursorIdx);
+  useEffect(() => {
+    cursorRef.current = cursorIdx;
+  });
+  useAdminShortcuts([
+    {
+      key: ["j", "ArrowDown"],
+      handler: () => {
+        const next = Math.min(cursorRef.current + 1, rows.length - 1);
+        if (next >= 0 && rows[next]) selectRow(rows[next].id);
+      },
+    },
+    {
+      key: ["k", "ArrowUp"],
+      handler: () => {
+        const next = Math.max(cursorRef.current - 1, 0);
+        if (rows[next]) selectRow(rows[next].id);
+      },
+    },
+    {
+      key: ["e", "E"],
+      handler: () => {
+        if (detailState.state !== "ready") return;
+        const d = detailState.data;
+        const link =
+          d.targetType === "BROKER"
+            ? `/admin/brokers/${d.targetId}`
+            : d.targetType === "REQUEST"
+            ? `/admin/activity?req=${d.targetId}`
+            : d.targetType === "CONVERSATION"
+            ? `/admin/activity?id=${d.targetId}`
+            : null;
+        if (link) router.push(link);
+      },
+    },
+  ]);
 
   return (
     <AdminShell active="reports" pageTitle={t("admin.reports.pageTitle", "신고 · mortly admin")}>
@@ -336,9 +360,9 @@ function ReportDrawer({
     detail.targetType === "BROKER"
       ? `/admin/brokers/${detail.targetId}`
       : detail.targetType === "REQUEST"
-      ? `/admin/requests/${detail.targetId}`
+      ? `/admin/activity?req=${detail.targetId}`
       : detail.targetType === "CONVERSATION"
-      ? `/admin/conversations/${detail.targetId}`
+      ? `/admin/activity?id=${detail.targetId}`
       : null;
 
   return (

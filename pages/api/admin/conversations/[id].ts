@@ -1,5 +1,10 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
+import {
+  buildAdminActionCreate,
+  MAX_REASON_LEN,
+  validateText,
+} from "@/lib/admin/audit";
 
 export default withAdmin(async (req, res, session) => {
   const { id: rawId } = req.query;
@@ -77,6 +82,11 @@ export default withAdmin(async (req, res, session) => {
       return res.status(400).json({ error: "Only CLOSED status is supported" });
     }
 
+    const reasonValidated = validateText(reason, MAX_REASON_LEN, "reason");
+    if (reasonValidated && typeof reasonValidated === "object") {
+      return res.status(400).json({ error: reasonValidated.error });
+    }
+
     const conversation = await prisma.conversation.findUnique({
       where: lookup,
     });
@@ -95,27 +105,28 @@ export default withAdmin(async (req, res, session) => {
         data: {
           conversationId: conversation.id,
           senderId: session.user.id,
-          body: "[Admin] This conversation has been closed by an administrator." + (reason ? ` Reason: ${reason}` : ""),
+          body:
+            "[Admin] This conversation has been closed by an administrator." +
+            (reasonValidated ? ` Reason: ${reasonValidated}` : ""),
         },
       }),
       prisma.conversation.update({
         where: { id: conversation.id },
         data: { status: "CLOSED" },
       }),
-      prisma.adminAction.create({
-        data: {
-          adminId: session.user.id,
+      prisma.adminAction.create(
+        buildAdminActionCreate(req, session, {
           action: "CLOSE_CONVERSATION",
           targetType: "CONVERSATION",
           targetId: conversation.publicId,
-          details: JSON.stringify({
+          details: {
             borrowerId: conversation.borrowerId,
             brokerId: conversation.brokerId,
             requestId: conversation.requestId,
-          }),
-          reason: reason || null,
-        },
-      }),
+          },
+          reason: reasonValidated,
+        }),
+      ),
     ]);
 
     return res.status(200).json(updated);

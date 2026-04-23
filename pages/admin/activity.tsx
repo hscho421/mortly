@@ -1,19 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
 import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
+import { useToast } from "@/components/Toast";
 import {
   ABadge,
   ABtn,
   ASectionHead,
   ADrawerError,
+  AConfirmDialog,
   FilterChip,
 } from "@/components/admin/primitives";
 import type { Tone } from "@/components/admin/primitives/ABadge";
 import { formatAge } from "@/lib/admin/inboxQueue";
 import { jsonOrThrow, useDrawerResource } from "@/lib/admin/useDrawerResource";
+import { useAdminUrlFilters, parseEnum } from "@/lib/admin/useAdminUrlFilters";
+import { useAdminShortcuts } from "@/lib/admin/useAdminShortcuts";
+import RequestDetails from "@/components/admin/RequestDetails";
 
 /**
  * /admin/activity — unified feed of requests + conversations.
@@ -107,40 +112,24 @@ const STATUS_TONE: Record<string, Tone> = {
 export default function AdminActivityPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const { toast } = useToast();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [selectedReqPublicId, setSelectedReqPublicId] = useState<string | null>(null);
 
-  // URL-driven filters
-  const typeFilter: TypeFilter = (() => {
-    const q = router.query.type;
-    if (q === "REQ" || q === "CONV") return q;
-    return "ALL";
-  })();
-  const statusFilter: StatusFilter = (() => {
-    const q = router.query.status;
-    if (q === "ACTIVE" || q === "IN_PROGRESS" || q === "CLOSED" || q === "FLAGGED") return q;
-    return "ALL";
-  })();
+  // URL-driven filters — Phase 5: shared hook replaces hand-rolled patchQuery.
+  const { filters, patch: patchQuery } = useAdminUrlFilters((q) => ({
+    type: parseEnum(q.type, ["REQ", "CONV"] as const, "ALL" as const),
+    status: parseEnum(
+      q.status,
+      ["ACTIVE", "IN_PROGRESS", "CLOSED", "FLAGGED"] as const,
+      "ALL" as const,
+    ),
+  }));
+  const typeFilter: TypeFilter = filters.type;
+  const statusFilter: StatusFilter = filters.status;
 
-  const patchQuery = useCallback(
-    (patch: Record<string, string | null>) => {
-      const next: Record<string, string> = {};
-      for (const [k, v] of Object.entries(router.query)) {
-        if (typeof v === "string") next[k] = v;
-      }
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === null) delete next[k];
-        else next[k] = v;
-      }
-      router.replace({ pathname: router.pathname, query: next }, undefined, {
-        shallow: true,
-        locale: router.locale,
-      });
-    },
-    [router],
-  );
   const setTypeFilter = (v: TypeFilter) =>
     patchQuery({ type: v === "ALL" ? null : v });
   const setStatusFilter = (v: StatusFilter) =>
@@ -271,20 +260,33 @@ export default function AdminActivityPage() {
     });
   };
 
-  const adminCloseConversation = async () => {
+  // ── Dialog state for close + reject actions ─────────────
+  // Phase 6: replaces window.prompt. Flow:
+  //   1. click "종료" / "반려" → opens AConfirmDialog with reason textarea
+  //   2. user types reason + confirms → runs the mutation
+  //   3. on error → toast; on success → drawer + feed update
+  const [pendingDialog, setPendingDialog] = useState<
+    | null
+    | { kind: "closeConv" }
+    | { kind: "rejectReq" }
+  >(null);
+  const [dialogSaving, setDialogSaving] = useState(false);
+
+  const adminCloseConversation = async (reason: string | null) => {
     if (convDrawerState.state !== "ready") return;
     const current = convDrawerState.data;
-    const reason = window.prompt(
-      t("admin.activity.closePrompt", "관리자 종료 사유 (선택):"),
-      "",
-    );
-    if (reason === null) return;
-    const r = await fetch(`/api/admin/conversations/${current.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "CLOSED", reason: reason || undefined }),
-    });
-    if (r.ok) {
+    setDialogSaving(true);
+    try {
+      const r = await fetch(`/api/admin/conversations/${current.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CLOSED", reason: reason ?? undefined }),
+      });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        toast(data.error || "Failed", "error");
+        return;
+      }
       convDrawerCtl.setData({ ...current, status: "CLOSED" });
       setItems((prev) =>
         prev.map((it) =>
@@ -293,9 +295,9 @@ export default function AdminActivityPage() {
             : it,
         ),
       );
-    } else {
-      const data = await r.json().catch(() => ({}));
-      window.alert(data.error || "Failed");
+    } finally {
+      setDialogSaving(false);
+      setPendingDialog(null);
     }
   };
 
@@ -324,26 +326,54 @@ export default function AdminActivityPage() {
   const showDrawer = Boolean(selectedConvId) || Boolean(selectedReqPublicId);
   const drawerKey = selectedConvId || selectedReqPublicId || "drawer";
 
-  const decideRequest = async (decision: "approve" | "reject") => {
+  // Keyboard navigation across the visible feed. Current cursor is whichever
+  // item has an open drawer; J/K move within `visible`, Enter re-opens.
+  const activeIdx = (() => {
+    for (let i = 0; i < visible.length; i++) {
+      const v = visible[i];
+      if (v.kind === "CONV" && v.row.id === selectedConvId) return i;
+      if (v.kind === "REQ" && v.row.publicId === selectedReqPublicId) return i;
+    }
+    return -1;
+  })();
+  const activeIdxRef = useRef(activeIdx);
+  useEffect(() => {
+    activeIdxRef.current = activeIdx;
+  });
+  useAdminShortcuts([
+    {
+      key: ["j", "ArrowDown"],
+      handler: () => {
+        const next = Math.min(activeIdxRef.current + 1, visible.length - 1);
+        const v = visible[next];
+        if (!v) return;
+        if (v.kind === "CONV") openConversation(v.row);
+        else openRequest(v.row);
+      },
+    },
+    {
+      key: ["k", "ArrowUp"],
+      handler: () => {
+        const next = Math.max(activeIdxRef.current - 1, 0);
+        const v = visible[next];
+        if (!v) return;
+        if (v.kind === "CONV") openConversation(v.row);
+        else openRequest(v.row);
+      },
+    },
+  ]);
+
+  const approveRequest = async () => {
     if (reqDrawerState.state !== "ready") return;
     const current = reqDrawerState.data;
-    let reason: string | null | undefined;
-    if (decision === "reject") {
-      reason = window.prompt(t("admin.activity.reqRejectPrompt", "반려 사유 (선택):"), "");
-      if (reason === null) return;
-    }
-    const body =
-      decision === "approve"
-        ? { status: "OPEN" }
-        : { status: "REJECTED", ...(reason ? { reason } : {}) };
     const r = await fetch(`/api/admin/requests/${current.publicId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ status: "OPEN" }),
     });
     if (!r.ok) {
       const data = await r.json().catch(() => ({}));
-      window.alert(data.error || "Failed");
+      toast(data.error || "Failed", "error");
       return;
     }
     const updated = await r.json();
@@ -355,6 +385,39 @@ export default function AdminActivityPage() {
           : it,
       ),
     );
+  };
+
+  const rejectRequest = async (reason: string | null) => {
+    if (reqDrawerState.state !== "ready") return;
+    const current = reqDrawerState.data;
+    setDialogSaving(true);
+    try {
+      const r = await fetch(`/api/admin/requests/${current.publicId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "REJECTED",
+          ...(reason ? { reason } : {}),
+        }),
+      });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        toast(data.error || "Failed", "error");
+        return;
+      }
+      const updated = await r.json();
+      reqDrawerCtl.setData({ ...current, status: updated.status });
+      setItems((prev) =>
+        prev.map((it) =>
+          it.kind === "REQ" && it.row.publicId === current.publicId
+            ? { ...it, row: { ...it.row, status: updated.status } }
+            : it,
+        ),
+      );
+    } finally {
+      setDialogSaving(false);
+      setPendingDialog(null);
+    }
   };
 
   return (
@@ -439,7 +502,7 @@ export default function AdminActivityPage() {
                   conv={convDrawerState.data}
                   messages={convDrawerState.data.messages || []}
                   onClose={closeDrawer}
-                  onAdminClose={adminCloseConversation}
+                  onAdminClose={() => setPendingDialog({ kind: "closeConv" })}
                 />
               ) : convDrawerState.state === "error" ? (
                 <ADrawerError
@@ -454,8 +517,8 @@ export default function AdminActivityPage() {
               <RequestDrawer
                 detail={reqDrawerState.data}
                 onClose={closeDrawer}
-                onApprove={() => decideRequest("approve")}
-                onReject={() => decideRequest("reject")}
+                onApprove={approveRequest}
+                onReject={() => setPendingDialog({ kind: "rejectReq" })}
                 onOpenConversation={(convId) => {
                   setSelectedReqPublicId(null);
                   setSelectedConvId(convId);
@@ -479,13 +542,57 @@ export default function AdminActivityPage() {
           </div>
         )}
       </div>
+
+      {pendingDialog?.kind === "closeConv" && (
+        <AConfirmDialog
+          open
+          onClose={() => setPendingDialog(null)}
+          tone="danger"
+          title={t("admin.activity.closeDialog.title", "대화 종료")}
+          description={t(
+            "admin.activity.closeDialog.body",
+            "이 대화를 종료합니다. 양 당사자에게 관리자 종료 메시지가 전달됩니다.",
+          )}
+          requireReason="optional"
+          reasonLabel={t("admin.activity.closeDialog.reasonLabel", "종료 사유")}
+          reasonPlaceholder={t(
+            "admin.activity.closeDialog.reasonPlaceholder",
+            "예: 스팸, 욕설, 중복 문의…",
+          )}
+          confirmLabel={t("admin.activity.closeDialog.confirm", "종료")}
+          onConfirm={adminCloseConversation}
+          loading={dialogSaving}
+        />
+      )}
+
+      {pendingDialog?.kind === "rejectReq" && (
+        <AConfirmDialog
+          open
+          onClose={() => setPendingDialog(null)}
+          tone="danger"
+          title={t("admin.activity.rejectDialog.title", "상담 요청 반려")}
+          description={t(
+            "admin.activity.rejectDialog.body",
+            "이 요청을 반려합니다. 사유는 신청인에게 표시됩니다.",
+          )}
+          requireReason="optional"
+          reasonLabel={t("admin.activity.rejectDialog.reasonLabel", "반려 사유")}
+          reasonPlaceholder={t(
+            "admin.activity.rejectDialog.reasonPlaceholder",
+            "예: 정보 부족, 중복 요청…",
+          )}
+          confirmLabel={t("admin.activity.rejectDialog.confirm", "반려")}
+          onConfirm={rejectRequest}
+          loading={dialogSaving}
+        />
+      )}
     </AdminShell>
   );
 }
 
 // ── Row ─────────────────────────────────────────────────────
 
-function ActivityRow({
+const ActivityRow = memo(function ActivityRow({
   item,
   selected,
   onOpen,
@@ -555,7 +662,7 @@ function ActivityRow({
       </div>
     </button>
   );
-}
+});
 
 // ── Drawer skeleton ────────────────────────────────────────
 // Shown while switching between conversations so the old messages don't
@@ -614,7 +721,6 @@ function RequestDrawer({
   onOpenConversation: (convId: string) => void;
 }) {
   const { t } = useTranslation("common");
-  const d = (detail.details as Record<string, unknown>) ?? {};
   const tone: Tone =
     detail.status === "OPEN"
       ? "accent"
@@ -625,16 +731,6 @@ function RequestDrawer({
       : detail.status === "REJECTED"
       ? "danger"
       : "neutral";
-
-  const summaryPairs: Array<[string, string]> = [
-    ["지역", [detail.city, detail.province].filter(Boolean).join(", ") || "—"],
-    ["유형", detail.mortgageCategory === "COMMERCIAL" ? "상업용" : "주거용"],
-    ["상품", detail.productTypes.join(", ") || "—"],
-    ["시기", detail.desiredTimeline || "—"],
-  ];
-  if (typeof d.amount === "string") summaryPairs.push(["금액", d.amount as string]);
-  if (typeof d.creditScore === "string") summaryPairs.push(["신용", d.creditScore as string]);
-  if (typeof d.downPayment === "string") summaryPairs.push(["다운페이", d.downPayment as string]);
 
   return (
     <>
@@ -656,32 +752,19 @@ function RequestDrawer({
       </div>
 
       <div className="flex-1 overflow-auto p-5">
-        {/* Details grid */}
-        <div className="p-3.5 bg-cream-100 border border-cream-300">
-          <div className="grid grid-cols-2 gap-3">
-            {summaryPairs.map(([k, v]) => (
-              <div key={k}>
-                <div className="font-mono text-[9px] text-sage-500 uppercase tracking-widest">{k}</div>
-                <div className="text-[13px] font-medium mt-0.5 truncate">{v}</div>
-              </div>
-            ))}
-          </div>
-          {detail.notes && (
-            <div className="mt-3 pt-3 border-t border-cream-300">
-              <div className="font-mono text-[9px] text-sage-500 uppercase tracking-widest">신청인 메모</div>
-              <div className="text-[13px] text-forest-700/80 italic mt-1 leading-relaxed whitespace-pre-wrap">"{detail.notes}"</div>
-            </div>
-          )}
-          {detail.rejectionReason && (
-            <div className="mt-3 pt-3 border-t border-cream-300">
-              <div className="font-mono text-[9px] text-error-700 uppercase tracking-widest">반려 사유</div>
-              <div className="text-[13px] text-error-700 italic mt-1 leading-relaxed">"{detail.rejectionReason}"</div>
-            </div>
-          )}
-        </div>
+        <RequestDetails
+          mortgageCategory={detail.mortgageCategory}
+          productTypes={detail.productTypes}
+          province={detail.province}
+          city={detail.city}
+          desiredTimeline={detail.desiredTimeline}
+          notes={detail.notes}
+          rejectionReason={detail.rejectionReason}
+          details={detail.details}
+        />
 
         {/* Borrower */}
-        <div className="mt-3 p-3.5 bg-cream-100 border border-cream-300">
+        <div className="mt-4 p-3.5 bg-cream-100 border border-cream-300">
           <div className="font-mono text-[9px] text-sage-500 uppercase tracking-widest mb-1">신청인</div>
           <div className="text-[13px] font-medium">{detail.borrower.name || detail.borrower.email}</div>
           <div className="text-[12px] text-sage-500 mt-0.5">{detail.borrower.email} · {detail.borrower.status}</div>

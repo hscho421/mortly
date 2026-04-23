@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "next-i18next";
 import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
+import { useToast } from "@/components/Toast";
 import {
   ABadge,
   ABtn,
   ASectionHead,
   FilterChip,
 } from "@/components/admin/primitives";
+import RequestDetails from "@/components/admin/RequestDetails";
 import { useRouter } from "next/router";
 import {
   formatAge,
@@ -48,6 +50,7 @@ const KIND_META: Record<InboxKind, { tone: React.ComponentProps<typeof ABadge>["
 export default function AdminInboxPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const { toast } = useToast();
   const { inboxRows, inboxLoaded, error, invalidate } = useAdminData();
   const rows: InboxRow[] | null = inboxLoaded ? inboxRows : null;
   const [filter, setFilter] = useState<FilterKey>("ALL");
@@ -122,7 +125,7 @@ export default function AdminInboxPage() {
           return next;
         });
       } catch (err) {
-        window.alert(err instanceof Error ? err.message : "Failed");
+        toast(err instanceof Error ? err.message : "Failed", "error");
         // Rollback the optimistic hide so the admin can see + retry.
         setHiddenIds((prev) => {
           const next = new Set(prev);
@@ -133,7 +136,7 @@ export default function AdminInboxPage() {
         setBusy(false);
       }
     },
-    [invalidate],
+    [invalidate, toast],
   );
 
   /** Trigger an undoable decision — optimistically hides the row + shows the toast. */
@@ -332,7 +335,7 @@ export default function AdminInboxPage() {
 
 // ── Queue row ─────────────────────────────────────────────────
 
-function QueueRow({
+const QueueRow = memo(function QueueRow({
   row,
   index,
   selected,
@@ -396,7 +399,7 @@ function QueueRow({
       </div>
     </div>
   );
-}
+});
 
 function QueueLoading() {
   return (
@@ -462,31 +465,17 @@ function InboxDetail({
 
 function DetailFields({ row }: { row: InboxRow }) {
   if (row.kind === "REQ") {
-    const details = (row.details as Record<string, unknown>) ?? {};
-    const pairs: Array<[string, string]> = [
-      ["지역", [row.city, row.province].filter(Boolean).join(", ")],
-      ["유형", row.mortgageCategory === "COMMERCIAL" ? "상업용" : "주거용"],
-      ["상품", (row.productTypes || []).join(", ") || "—"],
-    ];
-    if (typeof details.downPayment === "string") pairs.push(["다운페이", details.downPayment as string]);
-    if (typeof details.creditScore === "string") pairs.push(["신용", details.creditScore as string]);
-    if (typeof details.timeline === "string") pairs.push(["시기", details.timeline as string]);
     return (
-      <div className="mt-4 p-3.5 bg-cream-100 border border-cream-300">
-        <div className="grid grid-cols-2 gap-3">
-          {pairs.map(([k, v]) => (
-            <div key={k}>
-              <div className="font-mono text-[9px] text-sage-500 uppercase tracking-widest">{k}</div>
-              <div className="text-[13px] font-medium mt-0.5 truncate">{v || "—"}</div>
-            </div>
-          ))}
-        </div>
-        {row.notes && (
-          <div className="mt-3 pt-3 border-t border-cream-300">
-            <div className="font-mono text-[9px] text-sage-500 uppercase tracking-widest">신청인 메모</div>
-            <div className="text-[13px] text-forest-700/80 italic mt-1 leading-relaxed">"{row.notes}"</div>
-          </div>
-        )}
+      <div className="mt-4">
+        <RequestDetails
+          mortgageCategory={row.mortgageCategory}
+          productTypes={row.productTypes}
+          province={row.province}
+          city={row.city}
+          notes={row.notes}
+          details={(row.details as Record<string, unknown>) ?? null}
+          compact
+        />
       </div>
     );
   }

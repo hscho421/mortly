@@ -337,14 +337,35 @@ export default function AdminSystemPage() {
 
 // ── Trends card (used in both Settings aside + Trends tab) ────────
 
+interface TrendPoint {
+  date: string;
+  users: number;
+  requests: number;
+  conversations: number;
+}
+
 function TrendsCard({ compact }: { compact?: boolean }) {
   const { t } = useTranslation("common");
-  // Deterministic synthetic series — clearly labeled as "예시" until a real
-  // /api/admin/stats/timeseries endpoint lands. Generating deterministically
-  // (no Math.random) so SSR matches the first client render.
-  const req = genSeries(30, 8, 18);
-  const conv = genSeries(30, 4, 12);
-  const usr = genSeries(30, 2, 6);
+  const [series, setSeries] = useState<TrendPoint[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/admin/trends");
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = (await r.json()) as TrendPoint[];
+        if (!cancelled) setSeries(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const h = compact ? 96 : 144;
 
   return (
@@ -354,12 +375,6 @@ function TrendsCard({ compact }: { compact?: boolean }) {
           <div className="font-display text-lg font-semibold text-forest-800">
             {t("admin.system.trendsTitle", "30일 트렌드")}
           </div>
-          <span
-            className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-sm border border-cream-300 bg-cream-200 text-sage-500"
-            title={t("admin.system.trendsDemoHint", "실제 데이터가 아닌 예시입니다.")}
-          >
-            {t("admin.system.trendsDemoLabel", "예시")}
-          </span>
         </div>
         <div className="flex gap-3 font-mono text-[10px] text-sage-500">
           <span className="text-amber-600">● {t("admin.system.legend.requests", "요청")}</span>
@@ -367,33 +382,52 @@ function TrendsCard({ compact }: { compact?: boolean }) {
           <span className="text-sage-500">● {t("admin.system.legend.users", "사용자")}</span>
         </div>
       </div>
-      <div className={`${compact ? "h-24" : "h-36"} relative`}>
-        <div className="absolute inset-0 text-amber-500">
-          <ASpark points={req} width={400} height={h} stroke={2} className="w-full h-full" />
+      {error ? (
+        <div
+          className={`${compact ? "h-24" : "h-36"} flex items-center justify-center text-sm text-sage-500`}
+        >
+          {t("admin.system.trendsError", "트렌드를 불러올 수 없습니다")}
         </div>
-        <div className="absolute inset-0 opacity-70 text-info-700">
-          <ASpark points={conv} width={400} height={h} stroke={1.5} className="w-full h-full" />
+      ) : series === null ? (
+        <div
+          className={`${compact ? "h-24" : "h-36"} flex items-center justify-center text-sm text-sage-500`}
+        >
+          {t("common.loading", "로딩 중…")}
         </div>
-        <div className="absolute inset-0 opacity-60 text-sage-500">
-          <ASpark points={usr} width={400} height={h} stroke={1.5} dashed className="w-full h-full" />
+      ) : (
+        <div className={`${compact ? "h-24" : "h-36"} relative`}>
+          <div className="absolute inset-0 text-amber-500">
+            <ASpark
+              points={series.map((p) => p.requests)}
+              width={400}
+              height={h}
+              stroke={2}
+              className="w-full h-full"
+            />
+          </div>
+          <div className="absolute inset-0 opacity-70 text-info-700">
+            <ASpark
+              points={series.map((p) => p.conversations)}
+              width={400}
+              height={h}
+              stroke={1.5}
+              className="w-full h-full"
+            />
+          </div>
+          <div className="absolute inset-0 opacity-60 text-sage-500">
+            <ASpark
+              points={series.map((p) => p.users)}
+              width={400}
+              height={h}
+              stroke={1.5}
+              dashed
+              className="w-full h-full"
+            />
+          </div>
         </div>
-      </div>
+      )}
     </ACard>
   );
-}
-
-// ── Helpers ───────────────────────────────────────────────────────
-
-function genSeries(n: number, min: number, max: number) {
-  const out: number[] = [];
-  let v = (min + max) / 2;
-  for (let i = 0; i < n; i++) {
-    // seeded-ish wobble — not random so SSR matches client
-    const delta = Math.sin(i * 0.8) * (max - min) * 0.15 + i * 0.4;
-    v = Math.max(min, Math.min(max, v + delta * 0.3));
-    out.push(Math.round(v));
-  }
-  return out;
 }
 
 function formatTimeShort(iso: string) {

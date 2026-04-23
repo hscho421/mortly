@@ -175,25 +175,12 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
         case "suspend":
         case "ban":
         case "reactivate": {
-          const label =
-            action === "suspend" ? t("admin.palette.confirm.suspend", "이 사용자를 정지하시겠습니까?")
-            : action === "ban"   ? t("admin.palette.confirm.ban", "이 사용자를 차단하시겠습니까?")
-                                 : t("admin.palette.confirm.reactivate", "이 사용자를 다시 활성화하시겠습니까?");
-          if (!window.confirm(`${label}\n\n${user.name || user.email}`)) return;
-          const status = action === "suspend" ? "SUSPENDED" : action === "ban" ? "BANNED" : "ACTIVE";
-          const r = await fetch(`/api/admin/users/${user.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status }),
-          });
-          if (r.ok) {
-            onClose();
-            router.reload();
-          } else {
-            const data = await r.json().catch(() => ({}));
-            window.alert(data.error || "Failed");
-          }
-          return;
+          // The palette's tight-surface UX is not a good home for a full
+          // AConfirmDialog — instead we route the admin to the user detail
+          // page where the proper confirm dialog (with per-action title and
+          // danger tone) lives. Matches "open" behavior: navigate, don't
+          // mutate from inside a 620px command strip.
+          return go(`/admin/users/${user.publicId}`);
         }
       }
     },

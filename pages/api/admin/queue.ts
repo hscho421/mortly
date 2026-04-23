@@ -42,23 +42,23 @@ export default withAdmin(async (req, res) => {
         user: { select: { name: true, email: true, publicId: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 25,
     }),
     prisma.report.findMany({
       where: reportWhere,
       include: {
-        reporter: { select: { name: true, email: true } },
+        reporter: { select: { id: true, name: true, email: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 25,
     }),
     prisma.borrowerRequest.findMany({
       where: requestWhere,
       include: {
-        borrower: { select: { name: true, email: true } },
+        borrower: { select: { id: true, name: true, email: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 25,
     }),
     prisma.broker.count({ where: brokerWhere }),
     prisma.report.count({ where: reportWhere }),
@@ -151,8 +151,14 @@ export default withAdmin(async (req, res) => {
     brokerageName: b.brokerageName ?? null,
     licenseNumber: b.licenseNumber ?? null,
     province: b.province ?? null,
+    subscriptionTier: b.subscriptionTier ?? null,
+    yearsExperience: b.yearsExperience ?? null,
     createdAt: b.createdAt.toISOString(),
-    user: { name: b.user.name ?? null, email: b.user.email },
+    user: {
+      publicId: b.user.publicId,
+      name: b.user.name ?? null,
+      email: b.user.email,
+    },
   }));
 
   const openReports = rawReports.map((r: ReportRow) => {
@@ -170,7 +176,11 @@ export default withAdmin(async (req, res) => {
       status: r.status,
       createdAt: r.createdAt.toISOString(),
       reporter: r.reporter
-        ? { name: r.reporter.name ?? null, email: r.reporter.email }
+        ? {
+            id: r.reporter.id,
+            name: r.reporter.name ?? null,
+            email: r.reporter.email,
+          }
         : null,
     };
   });
@@ -178,12 +188,19 @@ export default withAdmin(async (req, res) => {
   const pendingRequests = rawRequests.map((rq: RequestRow) => ({
     id: rq.id,
     publicId: rq.publicId,
+    status: rq.status,
     mortgageCategory: rq.mortgageCategory,
     productTypes: rq.productTypes,
     province: rq.province,
     city: rq.city ?? null,
+    notes: rq.notes ?? null,
+    details: rq.details ?? null,
     createdAt: rq.createdAt.toISOString(),
-    borrower: { name: rq.borrower.name ?? null, email: rq.borrower.email },
+    borrower: {
+      id: rq.borrower.id,
+      name: rq.borrower.name ?? null,
+      email: rq.borrower.email,
+    },
   }));
 
   res.setHeader("Cache-Control", "no-store");

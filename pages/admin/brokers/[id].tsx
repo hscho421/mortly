@@ -1,15 +1,36 @@
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/router";
+import { useCallback, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
-import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import nextI18NextConfig from "@/next-i18next.config.js";
-import type { GetServerSideProps } from "next";
-import Head from "next/head";
-import AdminLayout from "@/components/AdminLayout";
+import { adminSSR } from "@/lib/admin/ssrAuth";
+import AdminShell from "@/components/admin/AdminShell";
+import { useAdminData } from "@/lib/admin/AdminDataContext";
 import { useToast } from "@/components/Toast";
-import { getRequestTitle } from "@/lib/requestConfig";
+import {
+  ABadge,
+  ABtn,
+  ACard,
+  ASectionHead,
+  ADrawerError,
+  AConfirmDialog,
+} from "@/components/admin/primitives";
+import type { Tone } from "@/components/admin/primitives/ABadge";
+import { useDrawerResource, jsonOrThrow } from "@/lib/admin/useDrawerResource";
+import { formatAdminDate } from "@/lib/admin/format";
+
+/**
+ * /admin/brokers/[id] — broker detail.
+ *
+ * Rewrite against AdminShell + adminSSR + primitives (Phase 1 execution).
+ * Previous implementation used AdminLayout shim + legacy `rounded-full`
+ * badges, `rose-600` buttons, `card-elevated`, `animate-fade-in-up stagger-*`,
+ * and `window.confirm` — see audit §3 / §4.
+ *
+ * Related-conversation rows link into the Activity page's drawer
+ * (`/admin/activity?id=<cuid>`) instead of the legacy
+ * `/admin/conversations/[id]` page. That legacy page is scheduled for
+ * deletion in Phase 2.
+ */
 
 interface BrokerDetail {
   id: string;
@@ -22,8 +43,7 @@ interface BrokerDetail {
   yearsExperience: number | null;
   areasServed: string | null;
   specialties: string | null;
-  profilePhoto: string | null;
-  verificationStatus: string;
+  verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
   subscriptionTier: string;
   responseCredits: number;
   createdAt: string;
@@ -32,7 +52,7 @@ interface BrokerDetail {
     publicId: string;
     name: string | null;
     email: string;
-    status: string;
+    status: "ACTIVE" | "SUSPENDED" | "BANNED";
     createdAt: string;
   };
   conversations: Array<{
@@ -43,452 +63,462 @@ interface BrokerDetail {
     request: { id: string; province: string; mortgageCategory?: string | null };
     _count: { messages: number };
   }>;
-  subscription: {
-    id: string;
-    tier: string;
-    status: string;
-    startedAt: string;
-    endedAt: string | null;
-  } | null;
-  _count: {
-    conversations: number;
-  };
+  _count: { conversations: number };
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  VERIFIED: "bg-forest-100 text-forest-700",
-  REJECTED: "bg-rose-100 text-rose-700",
+const VERIFICATION_TONE: Record<BrokerDetail["verificationStatus"], Tone> = {
+  PENDING: "warn",
+  VERIFIED: "success",
+  REJECTED: "danger",
+};
+const ACCOUNT_TONE: Record<BrokerDetail["user"]["status"], Tone> = {
+  ACTIVE: "success",
+  SUSPENDED: "warn",
+  BANNED: "danger",
 };
 
-const TIER_BADGE: Record<string, string> = {
-  FREE: "bg-cream-200 text-forest-600",
-  BASIC: "bg-sage-100 text-sage-700",
-  PRO: "bg-forest-100 text-forest-700",
-  PREMIUM: "bg-amber-100 text-amber-800",
-};
+type PendingAction =
+  | { kind: "verify" }
+  | { kind: "reject" }
+  | { kind: "resetVerification" }
+  | { kind: "suspend" }
+  | { kind: "ban" }
+  | { kind: "reactivate" };
 
-const USER_STATUS_BADGE: Record<string, string> = {
-  ACTIVE: "bg-forest-100 text-forest-700",
-  SUSPENDED: "bg-amber-100 text-amber-800",
-  BANNED: "bg-rose-100 text-rose-700",
-};
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString("en-CA", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-export default function AdminBrokerDetail() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const { id } = router.query;
+export default function AdminBrokerDetailPage() {
   const { t } = useTranslation("common");
+  const router = useRouter();
   const { toast } = useToast();
-  const [broker, setBroker] = useState<BrokerDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  // Per-action loading key. e.g. "verify" | "reject" | "pending" | "suspend" | "ban" | "reactivate"
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const { invalidate } = useAdminData();
+  const brokerId = typeof router.query.id === "string" ? router.query.id : null;
 
-  const fetchBroker = async () => {
-    try {
-      const res = await fetch(`/api/admin/brokers/${id}`);
-      if (res.ok) {
-        setBroker(await res.json());
-      } else {
-        setError("Broker not found");
+  const [state, ctl] = useDrawerResource<BrokerDetail>(
+    brokerId,
+    (id) => fetch(`/api/admin/brokers/${id}`).then(jsonOrThrow<BrokerDetail>),
+  );
+
+  const [pending, setPending] = useState<PendingAction | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const broker = state.state === "ready" ? state.data : null;
+
+  const runAction = useCallback(
+    async (action: PendingAction) => {
+      if (!broker) return;
+      setSaving(true);
+      try {
+        if (action.kind === "verify" || action.kind === "reject" || action.kind === "resetVerification") {
+          const verificationStatus =
+            action.kind === "verify"
+              ? "VERIFIED"
+              : action.kind === "reject"
+              ? "REJECTED"
+              : "PENDING";
+          const r = await fetch(`/api/admin/brokers/${broker.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ verificationStatus }),
+          });
+          if (!r.ok) {
+            const data = await r.json().catch(() => ({} as { error?: string }));
+            throw new Error(data.error || `HTTP ${r.status}`);
+          }
+        } else {
+          const status =
+            action.kind === "suspend" ? "SUSPENDED" : action.kind === "ban" ? "BANNED" : "ACTIVE";
+          const r = await fetch(`/api/admin/users/${broker.user.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          });
+          if (!r.ok) {
+            const data = await r.json().catch(() => ({} as { error?: string }));
+            throw new Error(data.error || `HTTP ${r.status}`);
+          }
+        }
+        toast(t("admin.brokerDetail.actionDone", "변경 완료"), "success");
+        ctl.refresh();
+        void invalidate();
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Failed", "error");
+      } finally {
+        setSaving(false);
+        setPending(null);
       }
-    } catch {
-      setError(t("admin.failedToLoadBroker", "Failed to load broker"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (status === "loading" || !id) return;
-    if (!session || session.user.role !== "ADMIN") return;
-    fetchBroker();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, status, router, id]);
-
-  // Label helper for toast success/error messages
-  const actionLabel = (key: string): string => {
-    switch (key) {
-      case "verify":
-        return t("admin.verify", "Verify");
-      case "reject":
-        return t("admin.reject", "Reject");
-      case "pending":
-        return t("admin.resetToPending", "Reset to Pending");
-      case "suspend":
-        return t("admin.suspendUser", "Suspend");
-      case "ban":
-        return t("admin.banUser", "Ban");
-      case "reactivate":
-        return t("admin.reactivate", "Reactivate");
-      default:
-        return key;
-    }
-  };
-
-  const handleAccountStatusChange = async (
-    newStatus: string,
-    actionKey: string,
-    options?: { confirm?: boolean }
-  ) => {
-    if (!broker) return;
-    if (options?.confirm) {
-      const label = actionLabel(actionKey);
-      const ok = window.confirm(
-        t("admin.confirmUserStatusChange", "Are you sure you want to {{action}} this user?").replace(
-          "{{action}}",
-          label
-        )
-      );
-      if (!ok) return;
-    }
-
-    setActionLoading(actionKey);
-
-    try {
-      const res = await fetch(`/api/admin/users/${broker.user.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (res.ok) {
-        await fetchBroker();
-        toast(
-          `${actionLabel(actionKey)} ${t("admin.succeededSuffix", "succeeded")}`,
-          "success"
-        );
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast(
-          data?.error ||
-            `${actionLabel(actionKey)} ${t("admin.failedSuffix", "failed")}`,
-          "error"
-        );
-      }
-    } catch (err) {
-      toast(
-        (err as Error)?.message ||
-          `${actionLabel(actionKey)} ${t("admin.failedSuffix", "failed")}`,
-        "error"
-      );
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleVerificationChange = async (
-    newStatus: string,
-    actionKey: string,
-    options?: { confirm?: boolean }
-  ) => {
-    if (!broker) return;
-    if (options?.confirm) {
-      const label = actionLabel(actionKey);
-      const ok = window.confirm(
-        t("admin.confirmVerificationChange", "Are you sure you want to {{action}} this broker?").replace(
-          "{{action}}",
-          label
-        )
-      );
-      if (!ok) return;
-    }
-
-    setActionLoading(actionKey);
-
-    try {
-      const res = await fetch(`/api/admin/brokers/${broker.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verificationStatus: newStatus }),
-      });
-
-      if (res.ok) {
-        await fetchBroker();
-        toast(
-          `${actionLabel(actionKey)} ${t("admin.succeededSuffix", "succeeded")}`,
-          "success"
-        );
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast(
-          data?.error ||
-            `${actionLabel(actionKey)} ${t("admin.failedSuffix", "failed")}`,
-          "error"
-        );
-      }
-    } catch (err) {
-      toast(
-        (err as Error)?.message ||
-          `${actionLabel(actionKey)} ${t("admin.failedSuffix", "failed")}`,
-        "error"
-      );
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  if (status === "loading" || loading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-body-sm">{t("admin.loadingBroker", "Loading broker...")}</p>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (error || !broker) {
-    return (
-      <AdminLayout>
-        <div className="max-w-3xl mx-auto px-4 py-10 text-center">
-          <p className="text-body-sm text-rose-600">{error || "Broker not found"}</p>
-          <Link href="/admin/brokers" className="btn-secondary mt-4 inline-block">
-            {t("admin.backToBrokers", "Back to Brokers")}
-          </Link>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (!session || session.user.role !== "ADMIN") return null;
+    },
+    [broker, ctl, invalidate, t, toast],
+  );
 
   return (
-    <AdminLayout>
-      <Head><title>{t("titles.adminBrokerDetail")}</title></Head>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <Link
-            href="/admin/brokers"
-            className="mb-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-            </svg>
-            {t("admin.backToBrokers", "Back to Brokers")}
-          </Link>
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <h1 className="heading-lg">{broker.user.name || broker.brokerageName}</h1>
-              <p className="font-mono text-xs text-forest-700/50 mt-1">User ID: {broker.user.publicId}</p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`inline-flex items-center rounded-full px-3 py-1.5 font-body text-xs font-semibold uppercase ${STATUS_BADGE[broker.verificationStatus]}`}>
-                {broker.verificationStatus}
-              </span>
-              <span className={`inline-flex items-center rounded-full px-3 py-1.5 font-body text-xs font-semibold uppercase ${TIER_BADGE[broker.subscriptionTier]}`}>
-                {broker.subscriptionTier}
-              </span>
-              <span className={`inline-flex items-center rounded-full px-3 py-1.5 font-body text-xs font-semibold uppercase ${USER_STATUS_BADGE[broker.user.status]}`}>
-                {broker.user.status}
-              </span>
-            </div>
-          </div>
+    <AdminShell
+      active="people"
+      pageTitle={t("admin.brokerDetail.pageTitle", "전문가 · mortly admin")}
+    >
+      {state.state === "loading" && (
+        <div className="p-10 text-center text-sm text-sage-500">
+          {t("common.loading", "로딩 중…")}
         </div>
+      )}
+      {state.state === "error" && (
+        <ADrawerError
+          title={t("admin.brokerDetail.errorTitle", "전문가를 불러올 수 없습니다")}
+          message={state.message}
+          onRetry={state.retry}
+        />
+      )}
+      {broker && (
+        <BrokerDetailBody
+          broker={broker}
+          saving={saving}
+          onRequestAction={setPending}
+        />
+      )}
 
-        {/* Profile Info */}
-        <div className="card-elevated mb-6 animate-fade-in-up stagger-1">
-          <h2 className="heading-sm mb-4">{t("admin.brokerProfile", "Broker Profile")}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div>
-              <p className="label-text">{t("admin.brokerage", "Brokerage")}</p>
-              <p className="font-body text-sm font-semibold text-forest-800">{broker.brokerageName}</p>
-            </div>
-            <div>
-              <p className="label-text">{t("admin.email", "Email")}</p>
-              <p className="font-body text-sm text-forest-800">{broker.user.email}</p>
-            </div>
-            <div>
-              <p className="label-text">{t("admin.licenseNumber", "License Number")}</p>
-              <p className="font-mono text-sm text-forest-800">{broker.licenseNumber}</p>
-            </div>
-            <div>
-              <p className="label-text">{t("broker.phone", "Phone")}</p>
-              <p className="font-body text-sm text-forest-800">{broker.phone || "—"}</p>
-            </div>
-            <div>
-              <p className="label-text">{t("admin.province", "Province")}</p>
-              <p className="font-body text-sm text-forest-800">{broker.province}</p>
-            </div>
-            <div>
-              <p className="label-text">{t("admin.category", "Category")}</p>
-              <p className="font-body text-sm text-forest-800">{broker.mortgageCategory}</p>
-            </div>
-            <div>
-              <p className="label-text">{t("admin.experience", "Experience")}</p>
-              <p className="font-body text-sm text-forest-800">
-                {broker.yearsExperience != null ? `${broker.yearsExperience} years` : "—"}
-              </p>
-            </div>
-            <div>
-              <p className="label-text">{t("admin.areasServed", "Areas Served")}</p>
-              <p className="font-body text-sm text-forest-800">{broker.areasServed || "—"}</p>
-            </div>
-            <div>
-              <p className="label-text">{t("admin.specialties", "Specialties")}</p>
-              <p className="font-body text-sm text-forest-800">{broker.specialties || "—"}</p>
-            </div>
-            <div>
-              <p className="label-text">{t("admin.memberSince", "Member Since")}</p>
-              <p className="font-body text-sm text-forest-800">{formatDate(broker.user.createdAt)}</p>
-            </div>
-          </div>
-
-          {broker.bio && (
-            <div className="mt-4 border-t border-cream-200 pt-4">
-              <p className="label-text">{t("admin.bio", "Bio")}</p>
-              <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-sm p-3">{broker.bio}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Stats & Credits */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 animate-fade-in-up stagger-2">
-          <div className="card-elevated text-center">
-            <p className="font-display text-2xl text-forest-800">{broker.responseCredits}</p>
-            <p className="text-body-sm">{t("admin.creditsRemaining", "Credits")}</p>
-          </div>
-          <div className="card-elevated text-center">
-            <p className="font-display text-2xl text-forest-800">{broker._count.conversations}</p>
-            <p className="text-body-sm">{t("admin.totalConvos", "Conversations")}</p>
-          </div>
-        </div>
-
-        {/* Verification Actions */}
-        <div className="card-elevated mb-6 animate-fade-in-up stagger-3">
-          <h2 className="heading-sm mb-4">{t("admin.verificationActions", "Verification Actions")}</h2>
-          <div className="flex items-center gap-3 flex-wrap">
-            {broker.verificationStatus !== "VERIFIED" && (
-              <button
-                onClick={() => handleVerificationChange("VERIFIED", "verify")}
-                disabled={actionLoading !== null}
-                className="btn-primary !rounded-sm disabled:opacity-50"
-              >
-                {actionLoading === "verify" ? "..." : t("admin.approve")}
-              </button>
-            )}
-            {broker.verificationStatus !== "REJECTED" && (
-              <button
-                onClick={() => handleVerificationChange("REJECTED", "reject", { confirm: true })}
-                disabled={actionLoading !== null}
-                className="inline-flex items-center justify-center rounded-sm bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
-              >
-                {actionLoading === "reject" ? "..." : t("admin.reject")}
-              </button>
-            )}
-            {broker.verificationStatus !== "PENDING" && (
-              <button
-                onClick={() => handleVerificationChange("PENDING", "pending", { confirm: true })}
-                disabled={actionLoading !== null}
-                className="btn-secondary !rounded-sm disabled:opacity-50"
-              >
-                {actionLoading === "pending" ? "..." : t("admin.resetToPending", "Reset to Pending")}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Account Actions */}
-        <div className="card-elevated mb-6 animate-fade-in-up stagger-3">
-          <h2 className="heading-sm mb-4">{t("admin.accountActions", "Account Actions")}</h2>
-          <div className="flex items-center gap-3 flex-wrap">
-            {broker.user.status === "ACTIVE" && (
-              <>
-                <button
-                  onClick={() => handleAccountStatusChange("SUSPENDED", "suspend", { confirm: true })}
-                  disabled={actionLoading !== null}
-                  className="inline-flex items-center justify-center rounded-sm bg-amber-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
-                >
-                  {actionLoading === "suspend" ? "..." : t("admin.suspendUser", "Suspend")}
-                </button>
-                <button
-                  onClick={() => handleAccountStatusChange("BANNED", "ban", { confirm: true })}
-                  disabled={actionLoading !== null}
-                  className="inline-flex items-center justify-center rounded-sm bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
-                >
-                  {actionLoading === "ban" ? "..." : t("admin.banUser", "Ban")}
-                </button>
-              </>
-            )}
-            {broker.user.status !== "ACTIVE" && (
-              <button
-                onClick={() => handleAccountStatusChange("ACTIVE", "reactivate")}
-                disabled={actionLoading !== null}
-                className="btn-primary !rounded-sm disabled:opacity-50"
-              >
-                {actionLoading === "reactivate" ? "..." : t("admin.reactivate", "Reactivate")}
-              </button>
-            )}
-          </div>
-          <p className="mt-2 font-body text-xs text-forest-700/50">
-            {t("admin.currentAccountStatus", "Current account status:")}{" "}
-            <span className={`font-semibold ${broker.user.status === "ACTIVE" ? "text-forest-600" : broker.user.status === "SUSPENDED" ? "text-amber-700" : "text-rose-600"}`}>
-              {broker.user.status}
-            </span>
-          </p>
-        </div>
-
-        {/* Recent Conversations */}
-        <div className="card-elevated mb-6 animate-fade-in-up stagger-5">
-          <h2 className="heading-sm mb-4">
-            {t("admin.recentConversations", "Recent Conversations")} ({broker._count.conversations})
-          </h2>
-          {broker.conversations.length === 0 ? (
-            <p className="text-body-sm">{t("admin.noConversationsYet", "No conversations yet.")}</p>
-          ) : (
-            <div className="space-y-2">
-              {broker.conversations.map((convo) => (
-                <div key={convo.id} className="flex items-center justify-between rounded-sm bg-cream-50 px-4 py-3">
-                  <div>
-                    <p className="font-body text-sm text-forest-800">
-                      {convo.borrower.name || convo.borrower.email} · {getRequestTitle(convo.request)}
-                    </p>
-                    <p className="font-body text-xs text-forest-700/50">
-                      <span className={convo.status === "ACTIVE" ? "text-forest-600" : "text-sage-500"}>
-                        {convo.status}
-                      </span>{" "}
-                      · {convo._count.messages} msgs · {formatDateTime(convo.updatedAt)}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/admin/conversations/${convo.id}`}
-                    className="font-body text-xs text-forest-600 hover:underline"
-                  >
-                    {t("admin.viewMessages", "Messages")}
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
-    </AdminLayout>
+      {pending && broker && (
+        <AConfirmDialog
+          open
+          onClose={() => setPending(null)}
+          tone={pending.kind === "reject" || pending.kind === "ban" ? "danger" : "default"}
+          title={confirmTitle(pending, t)}
+          description={confirmDescription(pending, broker, t)}
+          confirmLabel={confirmLabel(pending, t)}
+          onConfirm={() => runAction(pending)}
+          loading={saving}
+        />
+      )}
+    </AdminShell>
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale ?? "ko", ["common"], nextI18NextConfig)),
-  },
-});
+type TFn = ReturnType<typeof useTranslation>["t"];
+
+function confirmTitle(a: PendingAction, t: TFn): string {
+  switch (a.kind) {
+    case "verify":
+      return t("admin.brokerDetail.confirm.verify.title", "전문가 인증");
+    case "reject":
+      return t("admin.brokerDetail.confirm.reject.title", "인증 반려");
+    case "resetVerification":
+      return t("admin.brokerDetail.confirm.reset.title", "인증 대기 상태로 재설정");
+    case "suspend":
+      return t("admin.brokerDetail.confirm.suspend.title", "계정 정지");
+    case "ban":
+      return t("admin.brokerDetail.confirm.ban.title", "계정 차단");
+    case "reactivate":
+      return t("admin.brokerDetail.confirm.reactivate.title", "계정 재활성화");
+  }
+}
+
+function confirmDescription(a: PendingAction, broker: BrokerDetail, t: TFn): string {
+  const name = broker.user.name || broker.user.email;
+  switch (a.kind) {
+    case "verify":
+      return t(
+        "admin.brokerDetail.confirm.verify.body",
+        "{{name}}을(를) 인증 전문가로 등록합니다.",
+        { name },
+      );
+    case "reject":
+      return t(
+        "admin.brokerDetail.confirm.reject.body",
+        "{{name}}의 인증 요청을 반려합니다.",
+        { name },
+      );
+    case "resetVerification":
+      return t(
+        "admin.brokerDetail.confirm.reset.body",
+        "{{name}}의 인증을 대기 상태로 되돌립니다.",
+        { name },
+      );
+    case "suspend":
+      return t(
+        "admin.brokerDetail.confirm.suspend.body",
+        "{{name}}의 계정을 정지합니다.",
+        { name },
+      );
+    case "ban":
+      return t(
+        "admin.brokerDetail.confirm.ban.body",
+        "{{name}}의 계정을 차단합니다. 로그인이 불가능해집니다.",
+        { name },
+      );
+    case "reactivate":
+      return t(
+        "admin.brokerDetail.confirm.reactivate.body",
+        "{{name}}의 계정을 다시 활성화합니다.",
+        { name },
+      );
+  }
+}
+
+function confirmLabel(a: PendingAction, t: TFn): string {
+  switch (a.kind) {
+    case "verify":
+      return t("admin.brokerDetail.confirm.verify.confirm", "인증");
+    case "reject":
+      return t("admin.brokerDetail.confirm.reject.confirm", "반려");
+    case "resetVerification":
+      return t("admin.brokerDetail.confirm.reset.confirm", "대기로 재설정");
+    case "suspend":
+      return t("admin.brokerDetail.confirm.suspend.confirm", "정지");
+    case "ban":
+      return t("admin.brokerDetail.confirm.ban.confirm", "차단");
+    case "reactivate":
+      return t("admin.brokerDetail.confirm.reactivate.confirm", "재활성화");
+  }
+}
+
+function BrokerDetailBody({
+  broker,
+  saving,
+  onRequestAction,
+}: {
+  broker: BrokerDetail;
+  saving: boolean;
+  onRequestAction: (a: PendingAction) => void;
+}) {
+  const { t } = useTranslation("common");
+
+  const profilePairs: Array<[string, string]> = [
+    [t("admin.brokerDetail.field.brokerage", "브로커리지"), broker.brokerageName],
+    [t("admin.brokerDetail.field.email", "이메일"), broker.user.email],
+    [t("admin.brokerDetail.field.license", "라이선스"), broker.licenseNumber],
+    [t("admin.brokerDetail.field.phone", "전화"), broker.phone || "—"],
+    [t("admin.brokerDetail.field.province", "지역"), broker.province],
+    [
+      t("admin.brokerDetail.field.category", "분야"),
+      broker.mortgageCategory === "COMMERCIAL"
+        ? t("request.commercial", "상업용")
+        : t("request.residential", "주거용"),
+    ],
+    [
+      t("admin.brokerDetail.field.experience", "경력"),
+      broker.yearsExperience != null
+        ? t("admin.brokerDetail.years", "{{count}}년", { count: broker.yearsExperience })
+        : "—",
+    ],
+    [t("admin.brokerDetail.field.areas", "활동지역"), broker.areasServed || "—"],
+    [t("admin.brokerDetail.field.specialties", "전문분야"), broker.specialties || "—"],
+    [
+      t("admin.brokerDetail.field.joined", "가입일"),
+      formatAdminDate(broker.user.createdAt, "short"),
+    ],
+  ];
+
+  return (
+    <div className="px-7 pt-6 pb-10 max-w-5xl">
+      <Link
+        href={{ pathname: "/admin/people", query: { role: "BROKER" } }}
+        data-testid="broker-back-link"
+        className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.1em] uppercase text-sage-500 hover:text-forest-800 transition-colors mb-4"
+      >
+        ← {t("admin.brokerDetail.back", "전문가 목록으로")}
+      </Link>
+
+      <ASectionHead
+        label={t("admin.brokerDetail.eyebrow", "전문가 상세")}
+        title={broker.user.name || broker.brokerageName}
+        subtitle={
+          <span className="font-mono text-[11px] text-sage-500">
+            {broker.user.publicId} · {t("admin.brokerDetail.memberSince", "가입일")}{" "}
+            {formatAdminDate(broker.user.createdAt, "short")}
+          </span>
+        }
+        right={
+          <div className="flex items-center gap-1.5">
+            <ABadge tone={VERIFICATION_TONE[broker.verificationStatus]}>
+              {broker.verificationStatus}
+            </ABadge>
+            <ABadge tone={ACCOUNT_TONE[broker.user.status]}>{broker.user.status}</ABadge>
+            <ABadge tone="neutral">{broker.subscriptionTier}</ABadge>
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 mt-6">
+        <ACard pad={0}>
+          <div className="px-6 py-4 border-b border-cream-300">
+            <div className="font-display text-lg font-semibold text-forest-800">
+              {t("admin.brokerDetail.profileTitle", "프로필")}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 p-6">
+            {profilePairs.map(([k, v]) => (
+              <div key={k}>
+                <div className="font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em]">
+                  {k}
+                </div>
+                <div className="text-[13px] font-medium mt-0.5 text-forest-800 truncate">{v}</div>
+              </div>
+            ))}
+          </div>
+          {broker.bio && (
+            <div className="px-6 pb-6">
+              <div className="font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em] mb-1.5">
+                {t("admin.brokerDetail.field.bio", "자기소개")}
+              </div>
+              <div className="text-[13px] text-forest-700/80 italic leading-relaxed bg-cream-100 border border-cream-300 p-3 whitespace-pre-wrap">
+                &ldquo;{broker.bio}&rdquo;
+              </div>
+            </div>
+          )}
+        </ACard>
+
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-2 gap-3">
+            <ACard pad={0}>
+              <div className="px-5 py-4 text-center">
+                <div className="font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em]">
+                  {t("admin.brokerDetail.creditsLabel", "크레딧")}
+                </div>
+                <div className="font-display text-3xl font-semibold text-amber-600 mt-1">
+                  {broker.responseCredits}
+                </div>
+              </div>
+            </ACard>
+            <ACard pad={0}>
+              <div className="px-5 py-4 text-center">
+                <div className="font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em]">
+                  {t("admin.brokerDetail.convosLabel", "대화 수")}
+                </div>
+                <div className="font-display text-3xl font-semibold text-forest-800 mt-1">
+                  {broker._count.conversations}
+                </div>
+              </div>
+            </ACard>
+          </div>
+
+          <ACard pad={0}>
+            <div className="px-6 py-4 border-b border-cream-300">
+              <div className="font-display text-lg font-semibold text-forest-800">
+                {t("admin.brokerDetail.verificationTitle", "인증 조치")}
+              </div>
+            </div>
+            <div className="p-5 flex flex-wrap gap-2">
+              {broker.verificationStatus !== "VERIFIED" && (
+                <ABtn
+                  size="sm"
+                  variant="success"
+                  disabled={saving}
+                  onClick={() => onRequestAction({ kind: "verify" })}
+                  data-testid="broker-verify"
+                >
+                  ✓ {t("admin.brokerDetail.verify", "인증")}
+                </ABtn>
+              )}
+              {broker.verificationStatus !== "REJECTED" && (
+                <ABtn
+                  size="sm"
+                  variant="ghost"
+                  disabled={saving}
+                  onClick={() => onRequestAction({ kind: "reject" })}
+                  className="!text-error-700 !border-error-100"
+                  data-testid="broker-reject"
+                >
+                  ✕ {t("admin.brokerDetail.reject", "반려")}
+                </ABtn>
+              )}
+              {broker.verificationStatus !== "PENDING" && (
+                <ABtn
+                  size="sm"
+                  variant="ghost"
+                  disabled={saving}
+                  onClick={() => onRequestAction({ kind: "resetVerification" })}
+                  data-testid="broker-reset-verification"
+                >
+                  {t("admin.brokerDetail.resetPending", "대기로 재설정")}
+                </ABtn>
+              )}
+            </div>
+          </ACard>
+
+          <ACard pad={0}>
+            <div className="px-6 py-4 border-b border-cream-300">
+              <div className="font-display text-lg font-semibold text-forest-800">
+                {t("admin.brokerDetail.accountTitle", "계정 조치")}
+              </div>
+            </div>
+            <div className="p-5 flex flex-wrap gap-2">
+              {broker.user.status === "ACTIVE" && (
+                <>
+                  <ABtn
+                    size="sm"
+                    variant="ghost"
+                    disabled={saving}
+                    onClick={() => onRequestAction({ kind: "suspend" })}
+                    className="!text-warning-700 !border-warning-100"
+                    data-testid="broker-suspend"
+                  >
+                    {t("admin.brokerDetail.suspend", "정지")}
+                  </ABtn>
+                  <ABtn
+                    size="sm"
+                    variant="ghost"
+                    disabled={saving}
+                    onClick={() => onRequestAction({ kind: "ban" })}
+                    className="!text-error-700 !border-error-100"
+                    data-testid="broker-ban"
+                  >
+                    {t("admin.brokerDetail.ban", "차단")}
+                  </ABtn>
+                </>
+              )}
+              {broker.user.status !== "ACTIVE" && (
+                <ABtn
+                  size="sm"
+                  variant="success"
+                  disabled={saving}
+                  onClick={() => onRequestAction({ kind: "reactivate" })}
+                  data-testid="broker-reactivate"
+                >
+                  {t("admin.brokerDetail.reactivate", "재활성화")}
+                </ABtn>
+              )}
+            </div>
+          </ACard>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-500">
+            {t("admin.brokerDetail.recentConvos", "최근 대화")} · {broker._count.conversations}
+          </div>
+        </div>
+        {broker.conversations.length === 0 ? (
+          <div className="p-8 text-center text-sm text-sage-500 border border-dashed border-cream-300 bg-cream-50">
+            {t("admin.brokerDetail.noConvos", "대화가 없습니다.")}
+          </div>
+        ) : (
+          <div className="bg-cream-50 border border-cream-300">
+            {broker.conversations.map((c, i) => (
+              <Link
+                key={c.id}
+                href={`/admin/activity?id=${c.id}`}
+                className={`grid grid-cols-[1fr_auto_120px] items-center gap-3 px-5 py-3 hover:bg-cream-100 transition-colors ${
+                  i < broker.conversations.length - 1 ? "border-b border-cream-200" : ""
+                }`}
+              >
+                <div className="min-w-0">
+                  <div className="text-[13px] font-medium text-forest-800 truncate">
+                    {c.borrower.name || c.borrower.email}
+                  </div>
+                  <div className="font-mono text-[11px] text-sage-500 mt-0.5 truncate">
+                    {c._count.messages} {t("admin.brokerDetail.messages", "메시지")} ·{" "}
+                    {formatAdminDate(c.updatedAt, "relative")}
+                  </div>
+                </div>
+                <ABadge tone={c.status === "ACTIVE" ? "info" : "neutral"}>{c.status}</ABadge>
+                <span className="font-mono text-[11px] text-sage-500 text-right truncate">
+                  {c.request.province}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export const getServerSideProps = adminSSR();

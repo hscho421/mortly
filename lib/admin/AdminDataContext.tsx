@@ -60,7 +60,6 @@ interface StatsShape {
   pendingVerifications?: number;
   openReports?: number;
   requestsByStatus?: { pendingApproval?: number };
-  pendingApprovalList?: unknown[];
 }
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
@@ -78,8 +77,6 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     const pendingRequests =
       typeof data.requestsByStatus?.pendingApproval === "number"
         ? data.requestsByStatus.pendingApproval
-        : Array.isArray(data.pendingApprovalList)
-        ? data.pendingApprovalList.length
         : 0;
     const pendingVerifications = data.pendingVerifications ?? 0;
     const openReports = data.openReports ?? 0;

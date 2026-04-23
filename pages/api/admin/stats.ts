@@ -3,6 +3,9 @@ import { withAdmin } from "@/lib/admin/withAdmin";
 
 export default withAdmin(async (req, res) => {
   if (req.method === "GET") {
+    // Phase 7: dropped `pendingApprovalList` — the client never read the
+    // 10-row join it returned. Saves one LEFT JOIN per /stats poll (60s cycle
+    // across all open admin tabs).
     const [
       users,
       totalBorrowers,
@@ -14,7 +17,6 @@ export default withAdmin(async (req, res) => {
       openReports,
       activeConversations,
       totalConversations,
-      pendingApprovalList,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { role: "BORROWER" } }),
@@ -29,14 +31,6 @@ export default withAdmin(async (req, res) => {
       prisma.report.count({ where: { status: "OPEN" } }),
       prisma.conversation.count({ where: { status: "ACTIVE" } }),
       prisma.conversation.count(),
-      prisma.borrowerRequest.findMany({
-        where: { status: "PENDING_APPROVAL" },
-        include: {
-          borrower: { select: { name: true, email: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
     ]);
 
     // Build request counts by status from groupBy result
@@ -82,8 +76,6 @@ export default withAdmin(async (req, res) => {
       activeConversations,
       totalConversations,
       openReports,
-      // Pending approval queue
-      pendingApprovalList,
     });
   }
 

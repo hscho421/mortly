@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
+import { buildAdminActionCreate, MAX_REASON_LEN, validateText } from "@/lib/admin/audit";
 
 export default withAdmin(async (req, res, session) => {
   const { id } = req.query;
@@ -137,7 +138,11 @@ export default withAdmin(async (req, res, session) => {
       ACTIVE: "REACTIVATE_USER",
     };
 
-    const { reason } = req.body;
+    const reasonValidated = validateText(req.body?.reason, MAX_REASON_LEN, "reason");
+    if (reasonValidated && typeof reasonValidated === "object") {
+      return res.status(400).json({ error: reasonValidated.error });
+    }
+    const reason = reasonValidated;
 
     const [updated] = await prisma.$transaction([
       prisma.user.update({
@@ -151,16 +156,15 @@ export default withAdmin(async (req, res, session) => {
           status: true,
         },
       }),
-      prisma.adminAction.create({
-        data: {
-          adminId: session.user.id,
+      prisma.adminAction.create(
+        buildAdminActionCreate(req, session, {
           action: actionMap[status],
           targetType: "USER",
           targetId: user.publicId,
-          details: JSON.stringify({ previousStatus: user.status, newStatus: status }),
-          reason: reason || null,
-        },
-      }),
+          details: { previousStatus: user.status, newStatus: status },
+          reason,
+        }),
+      ),
     ]);
 
     return res.status(200).json(updated);
