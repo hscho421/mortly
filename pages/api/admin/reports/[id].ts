@@ -55,7 +55,8 @@ export default withAdmin(async (req, res, session) => {
     }
 
     if (status) {
-      const VALID_STATUSES = ["PENDING", "REVIEWING", "RESOLVED", "DISMISSED"];
+      // Must match Prisma's ReportStatus enum (see prisma/schema.prisma).
+      const VALID_STATUSES = ["OPEN", "REVIEWED", "RESOLVED", "DISMISSED"];
       if (!VALID_STATUSES.includes(status)) {
         return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` });
       }

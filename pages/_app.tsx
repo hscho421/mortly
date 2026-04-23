@@ -6,6 +6,7 @@ import { SessionProvider, useSession } from "next-auth/react";
 import { appWithTranslation, useTranslation } from "next-i18next";
 import { Analytics } from "@vercel/analytics/react";
 import { ToastProvider } from "@/components/Toast";
+import { AdminDataProvider } from "@/lib/admin/AdminDataContext";
 
 function ErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation("common");
@@ -97,6 +98,18 @@ function useServiceWorker() {
   }, []);
 }
 
+/**
+ * Mount AdminDataProvider only on /admin/* routes. This keeps the shared
+ * badge + inbox polling loop from running on public pages where it would be
+ * wasted work (and would 401 since the viewer isn't an admin).
+ */
+function AdminScope({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const isAdminRoute = router.pathname.startsWith("/admin");
+  if (!isAdminRoute) return <>{children}</>;
+  return <AdminDataProvider>{children}</AdminDataProvider>;
+}
+
 function App({
   Component,
   pageProps: { session, ...pageProps },
@@ -107,7 +120,9 @@ function App({
       <ToastProvider>
         <ErrorBoundary>
           <MaintenanceGate>
-            <Component {...pageProps} />
+            <AdminScope>
+              <Component {...pageProps} />
+            </AdminScope>
           </MaintenanceGate>
         </ErrorBoundary>
       </ToastProvider>

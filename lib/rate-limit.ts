@@ -50,6 +50,19 @@ export const verifyCodeLimiter = rateLimit({
   uniqueTokenPerInterval: 500,
 });
 
+/**
+ * Admin mutation limiter — caps destructive admin actions (status flips, credit
+ * adjusts, broker verification toggles) at a sane rate per admin to contain
+ * blast radius if an admin token leaks or an admin accidentally runs a loop.
+ *
+ * 30 mutations / minute / admin. Interactive admins will never hit this;
+ * automation abuse will.
+ */
+export const adminMutationLimiter = rateLimit({
+  interval: 60 * 1000,
+  uniqueTokenPerInterval: 500,
+});
+
 export function getClientIp(req: { headers: Record<string, string | string[] | undefined> }): string {
   const xff = req.headers["x-forwarded-for"];
   const ip = typeof xff === "string" ? xff.split(",")[0]?.trim() : undefined;

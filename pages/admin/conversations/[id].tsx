@@ -230,7 +230,7 @@ export default function AdminConversationDetail() {
             {conversation.status === "ACTIVE" && (
               <button
                 onClick={() => setShowCloseModal(true)}
-                className="inline-flex items-center justify-center rounded-xl bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-sm bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98]"
               >
                 {t("admin.closeConversation", "Close Conversation")}
               </button>
@@ -307,7 +307,7 @@ export default function AdminConversationDetail() {
                       type="button"
                       onClick={handleLoadOlderMessages}
                       disabled={loadingOlder}
-                      className="inline-flex items-center justify-center rounded-xl border border-cream-200 bg-white px-4 py-2 font-body text-xs font-semibold text-forest-700 transition-all hover:bg-cream-100 active:scale-[0.98] disabled:opacity-50"
+                      className="inline-flex items-center justify-center rounded-sm border border-cream-200 bg-white px-4 py-2 font-body text-xs font-semibold text-forest-700 transition-all hover:bg-cream-100 active:scale-[0.98] disabled:opacity-50"
                     >
                       {loadingOlder
                         ? t("admin.loadingOlderMessages", "Loading...")
@@ -325,7 +325,7 @@ export default function AdminConversationDetail() {
                   if (isAdmin) {
                     return (
                       <div key={msg.id} className="flex justify-center">
-                        <div className="max-w-[85%] rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-center">
+                        <div className="max-w-[85%] rounded-sm bg-amber-50 border border-amber-200 px-4 py-3 text-center">
                           <p className="font-body text-xs font-semibold text-amber-700 mb-1">
                             {msg.sender.name || "Admin"}
                           </p>
@@ -359,7 +359,7 @@ export default function AdminConversationDetail() {
 
                         {/* Bubble */}
                         <div
-                          className={`rounded-2xl px-4 py-2.5 shadow-sm ${
+                          className={`rounded-sm px-4 py-2.5 shadow-sm ${
                             isBorrower
                               ? "bg-white border border-cream-200 rounded-tl-md"
                               : "bg-forest-600 text-white rounded-tr-md"
@@ -390,10 +390,10 @@ export default function AdminConversationDetail() {
       {showCloseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm" onClick={() => setShowCloseModal(false)} />
-          <div className="relative w-full max-w-md animate-fade-in-up rounded-2xl bg-white p-8 shadow-2xl">
+          <div className="relative w-full max-w-md animate-fade-in-up rounded-sm bg-white p-8 shadow-2xl">
             <button
               onClick={() => setShowCloseModal(false)}
-              className="absolute right-4 top-4 rounded-lg p-1 text-sage-400 transition-colors hover:text-forest-700"
+              className="absolute right-4 top-4 rounded-sm p-1 text-sage-400 transition-colors hover:text-forest-700"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -432,7 +432,7 @@ export default function AdminConversationDetail() {
                 <button
                   onClick={handleClose}
                   disabled={actionLoading}
-                  className="flex-1 inline-flex items-center justify-center rounded-xl bg-rose-600 px-6 py-3 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center rounded-sm bg-rose-600 px-6 py-3 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
                 >
                   {actionLoading ? "..." : t("admin.confirmClose", "Close Conversation")}
                 </button>

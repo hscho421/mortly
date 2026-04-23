@@ -1,9 +1,12 @@
+/**
+ * Tiny SVG sparkline. Uses `currentColor` for the line stroke so callers
+ * control the color via Tailwind utility classes (e.g. `className="text-amber-500"`)
+ * instead of passing hex strings through the design-token boundary.
+ */
 interface ASparkProps {
   points: number[];
-  color?: string;
   width?: number;
   height?: number;
-  /** stroke width in SVG user units */
   stroke?: number;
   className?: string;
   /** dashed line for secondary series */
@@ -12,7 +15,6 @@ interface ASparkProps {
 
 export default function ASpark({
   points,
-  color = "#c49a3a",
   width = 140,
   height = 40,
   stroke = 1.5,
@@ -40,7 +42,7 @@ export default function ASpark({
       <path
         d={d}
         fill="none"
-        stroke={color}
+        stroke="currentColor"
         strokeWidth={stroke}
         strokeDasharray={dashed ? "3,3" : undefined}
       />

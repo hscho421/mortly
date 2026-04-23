@@ -357,7 +357,7 @@ export default function AdminBrokerDetail() {
           {broker.bio && (
             <div className="mt-4 border-t border-cream-200 pt-4">
               <p className="label-text">{t("admin.bio", "Bio")}</p>
-              <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-lg p-3">{broker.bio}</p>
+              <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-sm p-3">{broker.bio}</p>
             </div>
           )}
         </div>
@@ -382,7 +382,7 @@ export default function AdminBrokerDetail() {
               <button
                 onClick={() => handleVerificationChange("VERIFIED", "verify")}
                 disabled={actionLoading !== null}
-                className="btn-primary !rounded-lg disabled:opacity-50"
+                className="btn-primary !rounded-sm disabled:opacity-50"
               >
                 {actionLoading === "verify" ? "..." : t("admin.approve")}
               </button>
@@ -391,7 +391,7 @@ export default function AdminBrokerDetail() {
               <button
                 onClick={() => handleVerificationChange("REJECTED", "reject", { confirm: true })}
                 disabled={actionLoading !== null}
-                className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-sm bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
               >
                 {actionLoading === "reject" ? "..." : t("admin.reject")}
               </button>
@@ -400,7 +400,7 @@ export default function AdminBrokerDetail() {
               <button
                 onClick={() => handleVerificationChange("PENDING", "pending", { confirm: true })}
                 disabled={actionLoading !== null}
-                className="btn-secondary !rounded-lg disabled:opacity-50"
+                className="btn-secondary !rounded-sm disabled:opacity-50"
               >
                 {actionLoading === "pending" ? "..." : t("admin.resetToPending", "Reset to Pending")}
               </button>
@@ -417,14 +417,14 @@ export default function AdminBrokerDetail() {
                 <button
                   onClick={() => handleAccountStatusChange("SUSPENDED", "suspend", { confirm: true })}
                   disabled={actionLoading !== null}
-                  className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
+                  className="inline-flex items-center justify-center rounded-sm bg-amber-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
                 >
                   {actionLoading === "suspend" ? "..." : t("admin.suspendUser", "Suspend")}
                 </button>
                 <button
                   onClick={() => handleAccountStatusChange("BANNED", "ban", { confirm: true })}
                   disabled={actionLoading !== null}
-                  className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+                  className="inline-flex items-center justify-center rounded-sm bg-rose-600 px-5 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
                 >
                   {actionLoading === "ban" ? "..." : t("admin.banUser", "Ban")}
                 </button>
@@ -434,7 +434,7 @@ export default function AdminBrokerDetail() {
               <button
                 onClick={() => handleAccountStatusChange("ACTIVE", "reactivate")}
                 disabled={actionLoading !== null}
-                className="btn-primary !rounded-lg disabled:opacity-50"
+                className="btn-primary !rounded-sm disabled:opacity-50"
               >
                 {actionLoading === "reactivate" ? "..." : t("admin.reactivate", "Reactivate")}
               </button>
@@ -458,7 +458,7 @@ export default function AdminBrokerDetail() {
           ) : (
             <div className="space-y-2">
               {broker.conversations.map((convo) => (
-                <div key={convo.id} className="flex items-center justify-between rounded-lg bg-cream-50 px-4 py-3">
+                <div key={convo.id} className="flex items-center justify-between rounded-sm bg-cream-50 px-4 py-3">
                   <div>
                     <p className="font-body text-sm text-forest-800">
                       {convo.borrower.name || convo.borrower.email} · {getRequestTitle(convo.request)}

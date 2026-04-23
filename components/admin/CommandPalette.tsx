@@ -77,35 +77,37 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
     return () => clearTimeout(id);
   }, [query]);
 
-  // Fetch users when debounced query changes
+  // Fetch users when debounced query changes. AbortController ensures fast
+  // typers never see a late-arriving earlier result overwrite a later one.
   useEffect(() => {
     if (debounced.length === 0) {
       setUsers([]);
       return;
     }
-    let cancelled = false;
+    const ctl = new AbortController();
     setLoading(true);
     (async () => {
       try {
         const r = await fetch(
           `/api/admin/users?search=${encodeURIComponent(debounced)}&limit=5`,
+          { signal: ctl.signal },
         );
         if (!r.ok) {
-          if (!cancelled) setUsers([]);
+          setUsers([]);
           return;
         }
         const data = await r.json();
-        if (!cancelled) {
-          setUsers(Array.isArray(data.data) ? data.data : []);
-          setCursor(0);
-        }
+        setUsers(Array.isArray(data.data) ? data.data : []);
+        setCursor(0);
+      } catch (err: unknown) {
+        // AbortError is expected during rapid typing — swallow it.
+        if ((err as { name?: string })?.name === "AbortError") return;
+        setUsers([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!ctl.signal.aborted) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => ctl.abort();
   }, [debounced]);
 
   // Flat list of everything keyboard-navigable, in display order.

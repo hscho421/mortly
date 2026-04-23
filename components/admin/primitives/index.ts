@@ -10,3 +10,4 @@ export type { TabItem } from "./ATabs";
 export { default as FilterChip } from "./FilterChip";
 export { default as ASpark } from "./ASpark";
 export { default as AEmpty } from "./AEmpty";
+export { default as ADrawerError } from "./ADrawerError";

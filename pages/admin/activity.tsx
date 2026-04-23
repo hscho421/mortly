@@ -2,17 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
-import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import type { GetStaticProps } from "next";
+import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
 import {
   ABadge,
   ABtn,
   ASectionHead,
+  ADrawerError,
   FilterChip,
 } from "@/components/admin/primitives";
 import type { Tone } from "@/components/admin/primitives/ABadge";
 import { formatAge } from "@/lib/admin/inboxQueue";
+import { jsonOrThrow, useDrawerResource } from "@/lib/admin/useDrawerResource";
 
 /**
  * /admin/activity — unified feed of requests + conversations.
@@ -62,6 +63,7 @@ type ActivityItem =
 
 interface Paginated<T> {
   data: T[];
+  pagination?: { page: number; limit: number; total: number; totalPages: number };
 }
 
 /** Shape returned by GET /api/admin/requests/[publicId] — a subset we use. */
@@ -107,14 +109,46 @@ export default function AdminActivityPage() {
   const router = useRouter();
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [selectedConvId, setSelectedConvId] = useState<string | null>(null);
   const [selectedReqPublicId, setSelectedReqPublicId] = useState<string | null>(null);
 
-  // Drawer state for the selected conversation
-  const [drawerData, setDrawerData] = useState<null | {
-    conv: ConvoRow;
+  // URL-driven filters
+  const typeFilter: TypeFilter = (() => {
+    const q = router.query.type;
+    if (q === "REQ" || q === "CONV") return q;
+    return "ALL";
+  })();
+  const statusFilter: StatusFilter = (() => {
+    const q = router.query.status;
+    if (q === "ACTIVE" || q === "IN_PROGRESS" || q === "CLOSED" || q === "FLAGGED") return q;
+    return "ALL";
+  })();
+
+  const patchQuery = useCallback(
+    (patch: Record<string, string | null>) => {
+      const next: Record<string, string> = {};
+      for (const [k, v] of Object.entries(router.query)) {
+        if (typeof v === "string") next[k] = v;
+      }
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null) delete next[k];
+        else next[k] = v;
+      }
+      router.replace({ pathname: router.pathname, query: next }, undefined, {
+        shallow: true,
+        locale: router.locale,
+      });
+    },
+    [router],
+  );
+  const setTypeFilter = (v: TypeFilter) =>
+    patchQuery({ type: v === "ALL" ? null : v });
+  const setStatusFilter = (v: StatusFilter) =>
+    patchQuery({ status: v === "ALL" ? null : v });
+
+  // Drawer state via useDrawerResource — gives us idle/loading/error/ready
+  // branches so 404s render a real error panel instead of a stuck skeleton.
+  type ConvDrawerData = ConvoRow & {
     messages: Array<{
       id: string;
       body: string;
@@ -122,43 +156,63 @@ export default function AdminActivityPage() {
       senderId: string;
       sender: { id: string; name: string | null; email: string; role: string };
     }>;
-  }>(null);
+  };
 
-  // Drawer state for the selected request. Separate from conv state so the
-  // two drawers can coexist in the same right pane without stomping each other.
-  const [reqDrawerData, setReqDrawerData] = useState<null | RequestDetail>(null);
+  const [convDrawerState, convDrawerCtl] = useDrawerResource<ConvDrawerData>(
+    selectedConvId,
+    (id) => fetch(`/api/admin/conversations/${id}`).then(jsonOrThrow<ConvDrawerData>),
+  );
+  const [reqDrawerState, reqDrawerCtl] = useDrawerResource<RequestDetail>(
+    selectedReqPublicId,
+    (id) => fetch(`/api/admin/requests/${id}`).then(jsonOrThrow<RequestDetail>),
+  );
 
-  // Initial load
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
+  // Pagination — "Load more" appends the next page from each stream.
+  // `page` is 1-indexed and shared across both streams for simplicity.
+  const PAGE_SIZE = 25;
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchPage = useCallback(
+    async (targetPage: number, append: boolean) => {
+      const setStateLoading = append ? setLoadingMore : setLoading;
+      setStateLoading(true);
       try {
         const [reqRes, convRes] = await Promise.all([
-          fetch("/api/admin/requests?limit=25"),
-          fetch("/api/admin/conversations?limit=25"),
+          fetch(`/api/admin/requests?limit=${PAGE_SIZE}&page=${targetPage}`),
+          fetch(`/api/admin/conversations?limit=${PAGE_SIZE}&page=${targetPage}`),
         ]);
         const reqs: Paginated<RequestRow> = reqRes.ok ? await reqRes.json() : { data: [] };
         const convs: Paginated<ConvoRow> = convRes.ok ? await convRes.json() : { data: [] };
-        if (cancelled) return;
-        const merged: ActivityItem[] = [
+        const fresh: ActivityItem[] = [
           ...reqs.data.map<ActivityItem>((r) => ({ kind: "REQ", row: r })),
           ...convs.data.map<ActivityItem>((c) => ({ kind: "CONV", row: c })),
         ];
-        merged.sort((a, b) => {
-          const at = a.kind === "REQ" ? a.row.updatedAt : a.row.updatedAt;
-          const bt = b.kind === "REQ" ? b.row.updatedAt : b.row.updatedAt;
-          return bt.localeCompare(at);
-        });
-        setItems(merged);
+        fresh.sort((a, b) => b.row.updatedAt.localeCompare(a.row.updatedAt));
+        setItems((prev) => (append ? [...prev, ...fresh] : fresh));
+        // More available iff either stream reports more pages OR returned a full page.
+        const reqMore =
+          (reqs.pagination?.totalPages ?? 0) > targetPage || reqs.data.length === PAGE_SIZE;
+        const convMore =
+          (convs.pagination?.totalPages ?? 0) > targetPage || convs.data.length === PAGE_SIZE;
+        setHasMore(reqMore || convMore);
       } finally {
-        if (!cancelled) setLoading(false);
+        setStateLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    fetchPage(1, false);
+  }, [fetchPage]);
+
+  const loadMore = () => {
+    const next = page + 1;
+    setPage(next);
+    fetchPage(next, true);
+  };
 
   // Pick up ?id=<conversationId> and ?req=<publicId> deep links.
   // Selecting one clears the other so only one drawer is ever open.
@@ -182,46 +236,7 @@ export default function AdminActivityPage() {
     }
   }, [router.query.req, selectedReqPublicId]);
 
-  // Fetch drawer data when selection changes. Clear immediately so the old
-  // conversation's messages don't linger while the new fetch is in-flight.
-  useEffect(() => {
-    if (!selectedConvId) {
-      setDrawerData(null);
-      return;
-    }
-    setDrawerData(null); // reset before fetching → shows skeleton
-    let cancelled = false;
-    (async () => {
-      const r = await fetch(`/api/admin/conversations/${selectedConvId}`);
-      if (!r.ok || cancelled) return;
-      const data = await r.json();
-      if (cancelled) return;
-      setDrawerData({ conv: data, messages: data.messages || [] });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedConvId]);
-
-  // Fetch request detail (same reset-first-fetch-second pattern).
-  useEffect(() => {
-    if (!selectedReqPublicId) {
-      setReqDrawerData(null);
-      return;
-    }
-    setReqDrawerData(null);
-    let cancelled = false;
-    (async () => {
-      const r = await fetch(`/api/admin/requests/${selectedReqPublicId}`);
-      if (!r.ok || cancelled) return;
-      const data = (await r.json()) as RequestDetail;
-      if (cancelled) return;
-      setReqDrawerData(data);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedReqPublicId]);
+  // (drawer fetching lives in useDrawerResource above — no useEffects needed.)
 
   const openConversation = (conv: ConvoRow) => {
     setSelectedConvId(conv.id);
@@ -257,23 +272,23 @@ export default function AdminActivityPage() {
   };
 
   const adminCloseConversation = async () => {
-    if (!drawerData) return;
+    if (convDrawerState.state !== "ready") return;
+    const current = convDrawerState.data;
     const reason = window.prompt(
       t("admin.activity.closePrompt", "관리자 종료 사유 (선택):"),
       "",
     );
-    if (reason === null) return; // user cancelled
-    const r = await fetch(`/api/admin/conversations/${drawerData.conv.id}`, {
+    if (reason === null) return;
+    const r = await fetch(`/api/admin/conversations/${current.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "CLOSED", reason: reason || undefined }),
     });
     if (r.ok) {
-      // Refresh the drawer + mark item closed in the list
-      setDrawerData((prev) => (prev ? { ...prev, conv: { ...prev.conv, status: "CLOSED" } } : prev));
+      convDrawerCtl.setData({ ...current, status: "CLOSED" });
       setItems((prev) =>
         prev.map((it) =>
-          it.kind === "CONV" && it.row.id === drawerData.conv.id
+          it.kind === "CONV" && it.row.id === current.id
             ? { ...it, row: { ...it.row, status: "CLOSED" as const } }
             : it,
         ),
@@ -283,12 +298,6 @@ export default function AdminActivityPage() {
       window.alert(data.error || "Failed");
     }
   };
-
-  // Pick up ?type= for deep links
-  useEffect(() => {
-    const qtype = router.query.type;
-    if (qtype === "REQ" || qtype === "CONV") setTypeFilter(qtype);
-  }, [router.query.type]);
 
   const visible = useMemo(() => {
     let list = items;
@@ -316,7 +325,8 @@ export default function AdminActivityPage() {
   const drawerKey = selectedConvId || selectedReqPublicId || "drawer";
 
   const decideRequest = async (decision: "approve" | "reject") => {
-    if (!reqDrawerData) return;
+    if (reqDrawerState.state !== "ready") return;
+    const current = reqDrawerState.data;
     let reason: string | null | undefined;
     if (decision === "reject") {
       reason = window.prompt(t("admin.activity.reqRejectPrompt", "반려 사유 (선택):"), "");
@@ -326,7 +336,7 @@ export default function AdminActivityPage() {
       decision === "approve"
         ? { status: "OPEN" }
         : { status: "REJECTED", ...(reason ? { reason } : {}) };
-    const r = await fetch(`/api/admin/requests/${reqDrawerData.publicId}`, {
+    const r = await fetch(`/api/admin/requests/${current.publicId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -337,10 +347,10 @@ export default function AdminActivityPage() {
       return;
     }
     const updated = await r.json();
-    setReqDrawerData((prev) => (prev ? { ...prev, status: updated.status } : prev));
+    reqDrawerCtl.setData({ ...current, status: updated.status });
     setItems((prev) =>
       prev.map((it) =>
-        it.kind === "REQ" && it.row.publicId === reqDrawerData.publicId
+        it.kind === "REQ" && it.row.publicId === current.publicId
           ? { ...it, row: { ...it.row, status: updated.status } }
           : it,
       ),
@@ -384,20 +394,36 @@ export default function AdminActivityPage() {
                 {t("admin.activity.empty", "조건에 맞는 활동이 없습니다.")}
               </div>
             ) : (
-              visible.map((it) => (
-                <ActivityRow
-                  key={`${it.kind}-${it.row.id}`}
-                  item={it}
-                  selected={
-                    (it.kind === "CONV" && it.row.id === selectedConvId) ||
-                    (it.kind === "REQ" && it.row.publicId === selectedReqPublicId)
-                  }
-                  onOpen={() => {
-                    if (it.kind === "CONV") openConversation(it.row);
-                    else openRequest(it.row);
-                  }}
-                />
-              ))
+              <>
+                {visible.map((it) => (
+                  <ActivityRow
+                    key={`${it.kind}-${it.row.id}`}
+                    item={it}
+                    selected={
+                      (it.kind === "CONV" && it.row.id === selectedConvId) ||
+                      (it.kind === "REQ" && it.row.publicId === selectedReqPublicId)
+                    }
+                    onOpen={() => {
+                      if (it.kind === "CONV") openConversation(it.row);
+                      else openRequest(it.row);
+                    }}
+                  />
+                ))}
+                {hasMore && (
+                  <div className="py-4 text-center">
+                    <ABtn
+                      size="sm"
+                      variant="ghost"
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                    >
+                      {loadingMore
+                        ? t("common.loading", "로딩 중…")
+                        : t("admin.activity.loadMore", "더 불러오기")}
+                    </ABtn>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -408,19 +434,25 @@ export default function AdminActivityPage() {
             className="border-l border-cream-300 bg-cream-50 flex flex-col min-h-0"
           >
             {selectedConvId ? (
-              drawerData ? (
+              convDrawerState.state === "ready" ? (
                 <ConversationDrawer
-                  conv={drawerData.conv}
-                  messages={drawerData.messages}
+                  conv={convDrawerState.data}
+                  messages={convDrawerState.data.messages || []}
                   onClose={closeDrawer}
                   onAdminClose={adminCloseConversation}
+                />
+              ) : convDrawerState.state === "error" ? (
+                <ADrawerError
+                  title={t("admin.activity.drawer.errorTitle", "대화를 불러올 수 없습니다")}
+                  message={convDrawerState.message}
+                  onRetry={convDrawerState.retry}
                 />
               ) : (
                 <DrawerSkeleton />
               )
-            ) : reqDrawerData ? (
+            ) : reqDrawerState.state === "ready" ? (
               <RequestDrawer
-                detail={reqDrawerData}
+                detail={reqDrawerState.data}
                 onClose={closeDrawer}
                 onApprove={() => decideRequest("approve")}
                 onReject={() => decideRequest("reject")}
@@ -434,6 +466,12 @@ export default function AdminActivityPage() {
                     { shallow: true, locale: router.locale },
                   );
                 }}
+              />
+            ) : reqDrawerState.state === "error" ? (
+              <ADrawerError
+                title={t("admin.activity.reqDrawer.errorTitle", "요청을 불러올 수 없습니다")}
+                message={reqDrawerState.message}
+                onRetry={reqDrawerState.retry}
               />
             ) : (
               <DrawerSkeleton />
@@ -805,8 +843,4 @@ function formatHM(iso: string) {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-export const getStaticProps: GetStaticProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
-  },
-});
+export const getServerSideProps = adminSSR();

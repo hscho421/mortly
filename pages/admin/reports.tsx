@@ -2,27 +2,23 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
-import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import type { GetStaticProps } from "next";
+import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
 import {
   ABadge,
   ABtn,
+  ADrawerError,
   ASectionHead,
   FilterChip,
 } from "@/components/admin/primitives";
 import type { Tone } from "@/components/admin/primitives/ABadge";
 import { formatAge } from "@/lib/admin/inboxQueue";
+import { jsonOrThrow, useDrawerResource } from "@/lib/admin/useDrawerResource";
 
 /**
  * /admin/reports — two-pane. List on the left, investigation drawer on the right.
  * Filter chips above the list. Drawer holds reporter/target cards, report text,
- * admin notes textarea, and resolution actions.
- *
- * API constraint: the schema's ReportStatus enum is OPEN|REVIEWED|RESOLVED|DISMISSED
- * but the PUT /api/admin/reports/[id] handler only accepts PENDING|REVIEWING|RESOLVED|
- * DISMISSED. So we wire RESOLVED and DISMISSED; "REVIEWED" toggling is deferred
- * to a follow-up where the handler can be aligned with the schema.
+ * admin notes textarea, and resolution actions (mark reviewed / resolve / dismiss).
  */
 
 type StatusFilter = "OPEN" | "REVIEWED" | "RESOLVED" | "DISMISSED" | "ALL";
@@ -59,8 +55,6 @@ const STATUS_TONE: Record<ReportRow["status"], Tone> = {
 export default function AdminReportsPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const [status, setStatus] = useState<StatusFilter>("OPEN");
-  const [target, setTarget] = useState<TargetFilter>("ALL");
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [totalByStatus, setTotalByStatus] = useState({
     OPEN: 0,
@@ -70,10 +64,63 @@ export default function AdminReportsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<ReportDetail | null>(null);
   const [notesDraft, setNotesDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Drawer data via useDrawerResource — error branch replaces stuck skeleton.
+  const [detailState, detailCtl] = useDrawerResource<ReportDetail>(
+    selectedId,
+    (id) => fetch(`/api/admin/reports/${id}`).then(jsonOrThrow<ReportDetail>),
+  );
+  const detail = detailState.state === "ready" ? detailState.data : null;
+
+  // Reset notes draft when a newly loaded detail arrives
+  useEffect(() => {
+    if (detailState.state === "ready") {
+      setNotesDraft(detailState.data.adminNotes || "");
+    } else if (detailState.state === "idle") {
+      setNotesDraft("");
+    }
+  }, [detailState.state, detailState.state === "ready" ? detailState.data.id : null]);
+
+  // URL-driven filters
+  const status: StatusFilter = (() => {
+    const q = router.query.status;
+    if (q === "OPEN" || q === "REVIEWED" || q === "RESOLVED" || q === "DISMISSED" || q === "ALL") {
+      return q;
+    }
+    return "OPEN"; // default landing filter
+  })();
+  const target: TargetFilter = (() => {
+    const q = router.query.target;
+    if (q === "BROKER" || q === "REQUEST" || q === "CONVERSATION") return q;
+    return "ALL";
+  })();
+
+  const patchQuery = useCallback(
+    (patch: Record<string, string | null>) => {
+      const next: Record<string, string> = {};
+      for (const [k, v] of Object.entries(router.query)) {
+        if (typeof v === "string") next[k] = v;
+      }
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null) delete next[k];
+        else next[k] = v;
+      }
+      router.replace({ pathname: router.pathname, query: next }, undefined, {
+        shallow: true,
+        locale: router.locale,
+      });
+    },
+    [router],
+  );
+  const setStatus = (v: StatusFilter) =>
+    patchQuery({ status: v === "OPEN" ? null : v, id: null });
+  const setTarget = (v: TargetFilter) =>
+    patchQuery({ target: v === "ALL" ? null : v });
+
+  // Note: selectedId intentionally NOT in deps — selection changes shouldn't
+  // re-fetch the list. The list fetch only reacts to filter changes.
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ limit: "50" });
@@ -84,64 +131,30 @@ export default function AdminReportsPage() {
       if (!r.ok) return;
       const data = (await r.json()) as Paginated<ReportRow>;
       setRows(data.data);
-      if (data.data.length > 0 && !selectedId) {
-        setSelectedId(data.data[0].id);
-      } else if (data.data.length === 0) {
-        setSelectedId(null);
-      }
+      setSelectedId((prev) => {
+        if (data.data.length === 0) return null;
+        if (prev && data.data.some((x) => x.id === prev)) return prev;
+        return data.data[0].id;
+      });
     } finally {
       setLoading(false);
     }
-  }, [status, target, selectedId]);
+  }, [status, target]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Fetch counts for each status tab (one extra round-trip per tab isn't great;
-  // batched for simplicity — swap for a single /api/admin/reports/summary later).
-  useEffect(() => {
-    let cancelled = false;
-    const statuses: Array<ReportRow["status"]> = ["OPEN", "REVIEWED", "RESOLVED", "DISMISSED"];
-    Promise.all(
-      statuses.map((s) =>
-        fetch(`/api/admin/reports?status=${s}&limit=1`).then((r) =>
-          r.ok ? (r.json() as Promise<Paginated<ReportRow>>) : null,
-        ),
-      ),
-    ).then((results) => {
-      if (cancelled) return;
-      const next = { OPEN: 0, REVIEWED: 0, RESOLVED: 0, DISMISSED: 0 } as Record<ReportRow["status"], number>;
-      results.forEach((res, i) => {
-        if (res) next[statuses[i]] = res.pagination.total;
-      });
-      setTotalByStatus(next);
-    });
-    return () => {
-      cancelled = true;
-    };
+  // Fetch summary in a single round-trip.
+  const refreshSummary = useCallback(async () => {
+    const r = await fetch("/api/admin/reports/summary");
+    if (!r.ok) return;
+    const data = (await r.json()) as Record<ReportRow["status"], number>;
+    setTotalByStatus(data);
   }, []);
-
-  // Fetch detail when selection changes
   useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
-      setNotesDraft("");
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const r = await fetch(`/api/admin/reports/${selectedId}`);
-      if (!r.ok || cancelled) return;
-      const data = (await r.json()) as ReportDetail;
-      if (cancelled) return;
-      setDetail(data);
-      setNotesDraft(data.adminNotes || "");
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId]);
+    refreshSummary();
+  }, [refreshSummary]);
 
   // Deep-link support: ?id=<reportId> opens that report.
   useEffect(() => {
@@ -175,7 +188,8 @@ export default function AdminReportsPage() {
         const data = await r.json().catch(() => ({ error: "Failed" }));
         throw new Error(data.error || "Failed");
       }
-      await load();
+      await Promise.all([load(), refreshSummary()]);
+      detailCtl.refresh();
     } catch (err) {
       window.alert(err instanceof Error ? err.message : "Failed");
     } finally {
@@ -265,17 +279,27 @@ export default function AdminReportsPage() {
 
         {/* Drawer */}
         <div className="border-l border-cream-300 bg-cream-50 overflow-auto">
-          {detail ? (
+          {detailState.state === "ready" ? (
             <ReportDrawer
-              detail={detail}
+              detail={detailState.data}
               notesDraft={notesDraft}
               onNotesChange={setNotesDraft}
               onPersist={persist}
               saving={saving}
             />
+          ) : detailState.state === "error" ? (
+            <ADrawerError
+              title={t("admin.reports.drawer.errorTitle", "신고를 불러올 수 없습니다")}
+              message={detailState.message}
+              onRetry={detailState.retry}
+            />
+          ) : detailState.state === "loading" ? (
+            <div className="p-10 text-center text-sm text-sage-500">
+              {t("common.loading", "로딩 중…")}
+            </div>
           ) : (
             <div className="p-10 text-center text-sm text-sage-500">
-              {selectedId ? t("common.loading", "로딩 중…") : t("admin.reports.selectHint", "신고를 선택하면 세부 정보가 표시됩니다.")}
+              {t("admin.reports.selectHint", "신고를 선택하면 세부 정보가 표시됩니다.")}
             </div>
           )}
         </div>
@@ -390,6 +414,16 @@ function ReportDrawer({
           </ABtn>
         )}
         <div className="flex gap-2">
+          {detail.status !== "REVIEWED" && detail.status !== "RESOLVED" && detail.status !== "DISMISSED" && (
+            <ABtn
+              variant="ghost"
+              disabled={saving}
+              onClick={() => onPersist("REVIEWED")}
+              className="flex-1 justify-center"
+            >
+              {t("admin.reports.drawer.reviewed", "검토됨으로 표시")}
+            </ABtn>
+          )}
           {detail.status !== "DISMISSED" && (
             <ABtn
               variant="ghost"
@@ -400,22 +434,18 @@ function ReportDrawer({
               {t("admin.reports.drawer.dismiss", "기각")}
             </ABtn>
           )}
-          <ABtn
-            variant="subtle"
-            disabled={saving || notesDraft === (detail.adminNotes || "")}
-            onClick={() => onPersist(null)}
-            className="flex-1 justify-center"
-          >
-            {t("admin.reports.drawer.saveNotes", "메모만 저장")}
-          </ABtn>
         </div>
+        <ABtn
+          variant="subtle"
+          disabled={saving || notesDraft === (detail.adminNotes || "")}
+          onClick={() => onPersist(null)}
+          className="justify-center"
+        >
+          {t("admin.reports.drawer.saveNotes", "메모만 저장")}
+        </ABtn>
       </div>
     </div>
   );
 }
 
-export const getStaticProps: GetStaticProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
-  },
-});
+export const getServerSideProps = adminSSR();

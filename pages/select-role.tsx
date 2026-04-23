@@ -35,7 +35,7 @@ export default function SelectRolePage() {
         session.user.role === "BROKER"
           ? "/broker/dashboard"
           : session.user.role === "ADMIN"
-            ? "/admin/dashboard"
+            ? "/admin/inbox"
             : "/borrower/dashboard";
       router.replace(dest);
     }

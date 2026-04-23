@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "next-i18next";
-import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import type { GetStaticProps } from "next";
+import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
 import {
   ABadge,
@@ -9,8 +8,8 @@ import {
   ASectionHead,
   FilterChip,
 } from "@/components/admin/primitives";
+import { useRouter } from "next/router";
 import {
-  fetchInboxQueue,
   formatAge,
   isPriority,
   type InboxKind,
@@ -19,6 +18,8 @@ import {
   type InboxBrokerRow,
   type InboxReportRow,
 } from "@/lib/admin/inboxQueue";
+import { useAdminData } from "@/lib/admin/AdminDataContext";
+import UndoToast from "@/components/admin/UndoToast";
 
 /**
  * /admin/inbox — unified decision queue.
@@ -46,30 +47,21 @@ const KIND_META: Record<InboxKind, { tone: React.ComponentProps<typeof ABadge>["
 
 export default function AdminInboxPage() {
   const { t } = useTranslation("common");
-  const [rows, setRows] = useState<InboxRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { inboxRows, inboxLoaded, error, invalidate } = useAdminData();
+  const rows: InboxRow[] | null = inboxLoaded ? inboxRows : null;
   const [filter, setFilter] = useState<FilterKey>("ALL");
   const [cursor, setCursor] = useState(0);
   const [busy, setBusy] = useState(false);
 
-  // Initial load + poll every 60s (matches badge-fetch cadence).
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const data = await fetchInboxQueue();
-        if (!cancelled) setRows(data);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load queue");
-      }
-    };
-    load();
-    const id = setInterval(load, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
+  // Pending destructive action — shown as an UndoToast. If the 3s timer
+  // elapses without undo we commit via `applyDecision`. If the admin hits
+  // Esc or "실행 취소" we drop the pending action and nothing hits the API.
+  const [pending, setPending] = useState<null | { row: InboxRow; decision: "approve" | "reject" }>(null);
+
+  // Optimistic hide so approved/rejected rows disappear immediately even
+  // though the real API call is delayed by the undo grace period.
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 
   const counts = useMemo(() => {
     const out = { ALL: 0, REQ: 0, BRK: 0, REP: 0 } as Record<FilterKey, number>;
@@ -82,9 +74,11 @@ export default function AdminInboxPage() {
 
   const visibleRows = useMemo(() => {
     if (!rows) return [];
-    if (filter === "ALL") return rows;
-    return rows.filter((r) => r.kind === filter);
-  }, [rows, filter]);
+    const filtered = filter === "ALL" ? rows : rows.filter((r) => r.kind === filter);
+    // Hide rows that are in a pending-undo state; they'll re-appear if undone.
+    if (hiddenIds.size === 0) return filtered;
+    return filtered.filter((r) => !hiddenIds.has(`${r.kind}-${r.id}`));
+  }, [rows, filter, hiddenIds]);
 
   useEffect(() => {
     if (cursor >= visibleRows.length) setCursor(Math.max(0, visibleRows.length - 1));
@@ -92,8 +86,9 @@ export default function AdminInboxPage() {
 
   const selected = visibleRows[cursor];
 
-  // API dispatch — kind → PUT { status/verificationStatus }
-  const applyDecision = useCallback(
+  // API dispatch — kind → PUT { status/verificationStatus }.
+  // Called by the UndoToast *after* the 3s grace period, not directly by keyboard.
+  const commitDecision = useCallback(
     async (row: InboxRow, decision: "approve" | "reject") => {
       setBusy(true);
       try {
@@ -118,29 +113,54 @@ export default function AdminInboxPage() {
           const data = await r.json().catch(() => ({ error: "Failed" }));
           throw new Error(data.error || "Request failed");
         }
-        // Optimistic removal from queue — the row no longer matches the filter.
-        setRows((prev) => (prev ? prev.filter((x) => x.id !== row.id || x.kind !== row.kind) : prev));
+        // Refetch shared admin data → rail badges AND inbox queue both update.
+        await invalidate();
+        // Clear the hidden set for this row (it's gone from the refetched queue).
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(`${row.kind}-${row.id}`);
+          return next;
+        });
       } catch (err) {
         window.alert(err instanceof Error ? err.message : "Failed");
+        // Rollback the optimistic hide so the admin can see + retry.
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(`${row.kind}-${row.id}`);
+          return next;
+        });
       } finally {
         setBusy(false);
       }
     },
-    [],
+    [invalidate],
   );
 
-  // Keyboard navigation
+  /** Trigger an undoable decision — optimistically hides the row + shows the toast. */
+  const requestDecision = useCallback(
+    (row: InboxRow, decision: "approve" | "reject") => {
+      // If another undo is already in-flight, cancel it first (commit it silently)
+      // so we never queue two pending rows. Simplest behavior: refuse the new one.
+      if (pending) return;
+      setHiddenIds((prev) => new Set(prev).add(`${row.kind}-${row.id}`));
+      setPending({ row, decision });
+    },
+    [pending],
+  );
+
+  // Keyboard navigation. A/R schedule an undoable commit; no instant destructive fire.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Ignore when typing in a field
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      // Ignore when typing in a field or contentEditable element
+      const tgt = e.target as HTMLElement | null;
+      const tag = tgt?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tgt?.isContentEditable) return;
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        if (!selected || busy) return;
+        if (!selected || busy || pending) return;
         e.preventDefault();
-        applyDecision(selected, "approve").then(() => {
-          setCursor((c) => Math.min(c, Math.max(0, (visibleRows.length - 2))));
-        });
+        requestDecision(selected, "approve");
+        // Advance cursor so the next row becomes active after the optimistic hide.
+        setCursor((c) => Math.min(c, Math.max(0, visibleRows.length - 2)));
         return;
       }
       if (e.key === "j" || e.key === "ArrowDown") {
@@ -150,22 +170,22 @@ export default function AdminInboxPage() {
         e.preventDefault();
         setCursor((c) => Math.max(c - 1, 0));
       } else if (e.key === "a" || e.key === "A") {
-        if (!selected || busy) return;
+        if (!selected || busy || pending) return;
         e.preventDefault();
-        applyDecision(selected, "approve");
+        requestDecision(selected, "approve");
       } else if (e.key === "r" || e.key === "R") {
-        if (!selected || busy) return;
+        if (!selected || busy || pending) return;
         e.preventDefault();
-        applyDecision(selected, "reject");
+        requestDecision(selected, "reject");
       } else if (e.key === "e" || e.key === "E") {
         if (!selected) return;
         e.preventDefault();
-        openDetail(selected);
+        openDetail(selected, router);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selected, busy, applyDecision, visibleRows.length]);
+  }, [selected, busy, pending, requestDecision, visibleRows.length, router]);
 
   const filterChips: Array<{ key: FilterKey; label: string }> = [
     { key: "ALL", label: t("admin.inbox.filter.all", "전체") },
@@ -225,10 +245,21 @@ export default function AdminInboxPage() {
       {/* Queue + drawer */}
       <div className="grid grid-cols-[1fr_400px] gap-0 min-h-0 mt-1">
         <div className="px-7 pb-10">
-          {rows === null ? (
+          {error ? (
+            <div className="p-10 text-center">
+              <div className="text-3xl font-display text-error-700">!</div>
+              <div className="font-display text-lg font-semibold mt-2 text-forest-800">
+                {t("admin.inbox.loadError", "인박스를 불러올 수 없습니다")}
+              </div>
+              <div className="text-sm text-sage-500 mt-1 max-w-sm mx-auto">{error}</div>
+              <div className="mt-4">
+                <ABtn size="sm" variant="ghost" onClick={() => invalidate()}>
+                  {t("common.retry", "다시 시도")}
+                </ABtn>
+              </div>
+            </div>
+          ) : rows === null ? (
             <QueueLoading />
-          ) : error ? (
-            <div className="p-10 text-center text-sm text-error-700">{error}</div>
           ) : visibleRows.length === 0 ? (
             <div className="p-16 text-center text-sage-500 font-body">
               <div className="font-display text-xl text-forest-800 mb-1">
@@ -245,10 +276,11 @@ export default function AdminInboxPage() {
                 row={row}
                 index={i}
                 selected={cursor === i}
-                busy={busy}
+                busy={busy || Boolean(pending)}
                 onFocus={() => setCursor(i)}
-                onApprove={() => applyDecision(row, "approve")}
-                onReject={() => applyDecision(row, "reject")}
+                onApprove={() => requestDecision(row, "approve")}
+                onReject={() => requestDecision(row, "reject")}
+                onOpenDetail={() => openDetail(row, router)}
               />
             ))
           )}
@@ -261,7 +293,7 @@ export default function AdminInboxPage() {
         {/* Drawer — detail for the selected row */}
         <div className="border-l border-cream-300 bg-cream-50 overflow-auto">
           {selected ? (
-            <InboxDetail row={selected} busy={busy} onApprove={() => applyDecision(selected, "approve")} onReject={() => applyDecision(selected, "reject")} />
+            <InboxDetail row={selected} busy={busy || Boolean(pending)} onApprove={() => requestDecision(selected, "approve")} onReject={() => requestDecision(selected, "reject")} />
           ) : (
             <div className="p-10 text-center text-sage-500 text-sm">
               {t("admin.inbox.selectHint", "항목을 선택하면 상세 정보가 표시됩니다.")}
@@ -269,6 +301,31 @@ export default function AdminInboxPage() {
           )}
         </div>
       </div>
+
+      {pending && (
+        <UndoToast
+          key={`${pending.row.kind}-${pending.row.id}-${pending.decision}`}
+          label={
+            pending.decision === "approve"
+              ? t("admin.inbox.toast.approved", "승인됨: {{id}}", { id: pending.row.publicId })
+              : t("admin.inbox.toast.rejected", "반려됨: {{id}}", { id: pending.row.publicId })
+          }
+          onCommit={async () => {
+            const p = pending;
+            setPending(null);
+            if (p) await commitDecision(p.row, p.decision);
+          }}
+          onUndo={() => {
+            if (!pending) return;
+            setHiddenIds((prev) => {
+              const next = new Set(prev);
+              next.delete(`${pending.row.kind}-${pending.row.id}`);
+              return next;
+            });
+            setPending(null);
+          }}
+        />
+      )}
     </AdminShell>
   );
 }
@@ -283,6 +340,7 @@ function QueueRow({
   onFocus,
   onApprove,
   onReject,
+  onOpenDetail,
 }: {
   row: InboxRow;
   index: number;
@@ -291,6 +349,7 @@ function QueueRow({
   onFocus: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onOpenDetail: () => void;
 }) {
   const meta = KIND_META[row.kind];
   const priority = isPriority(row);
@@ -331,7 +390,7 @@ function QueueRow({
         <ABtn size="sm" variant="ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onReject(); }} className="!text-error-700 !border-error-100">
           ✕
         </ABtn>
-        <ABtn size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openDetail(row); }}>
+        <ABtn size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetail(); }}>
           ⋯
         </ABtn>
       </div>
@@ -584,20 +643,17 @@ function summarizeReport(r: InboxReportRow): RowSummary {
   };
 }
 
-function openDetail(row: InboxRow) {
+function openDetail(row: InboxRow, router: ReturnType<typeof import("next/router").useRouter>) {
   // REQ and REP don't have dedicated detail pages — they live as drawers on
   // Activity and Reports respectively. BRK has its own detail page.
+  // Use router.push (soft nav) so we don't lose queue state on back-button.
   if (row.kind === "REQ") {
-    window.location.href = `/admin/activity?req=${encodeURIComponent(row.publicId)}`;
+    router.push({ pathname: "/admin/activity", query: { req: row.publicId } });
   } else if (row.kind === "BRK") {
-    window.location.href = `/admin/brokers/${row.id}`;
+    router.push({ pathname: "/admin/brokers/[id]", query: { id: row.id } });
   } else {
-    window.location.href = `/admin/reports?id=${encodeURIComponent(row.id)}`;
+    router.push({ pathname: "/admin/reports", query: { id: row.id } });
   }
 }
 
-export const getStaticProps: GetStaticProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
-  },
-});
+export const getServerSideProps = adminSSR();

@@ -84,17 +84,30 @@ interface AdminReportRow {
 }
 
 export async function fetchInboxQueue(): Promise<InboxRow[]> {
-  const [reqRes, brkRes, repRes] = await Promise.all([
-    fetch("/api/admin/requests?status=PENDING_APPROVAL&limit=25"),
-    fetch("/api/admin/brokers?status=PENDING&limit=25"),
-    fetch("/api/admin/reports?status=OPEN&limit=25"),
-  ]);
+  const endpoints = [
+    "/api/admin/requests?status=PENDING_APPROVAL&limit=25",
+    "/api/admin/brokers?status=PENDING&limit=25",
+    "/api/admin/reports?status=OPEN&limit=25",
+  ] as const;
 
-  const [reqs, brks, reps] = await Promise.all([
-    reqRes.ok ? (reqRes.json() as Promise<Paginated<AdminRequestRow>>) : { data: [] as AdminRequestRow[] },
-    brkRes.ok ? (brkRes.json() as Promise<Paginated<AdminBrokerRow>>) : { data: [] as AdminBrokerRow[] },
-    repRes.ok ? (repRes.json() as Promise<Paginated<AdminReportRow>>) : { data: [] as AdminReportRow[] },
-  ]);
+  const [reqRes, brkRes, repRes] = await Promise.all(endpoints.map((u) => fetch(u)));
+
+  // Short-circuit loud: if any source is 4xx/5xx, fail the whole queue so the
+  // UI shows a real error instead of a confusing "empty" queue.
+  const failed = [reqRes, brkRes, repRes].findIndex((r) => !r.ok);
+  if (failed !== -1) {
+    const bad = [reqRes, brkRes, repRes][failed];
+    const body = await bad.text().catch(() => "");
+    throw new Error(
+      `inbox source ${endpoints[failed]} returned ${bad.status}${body ? ` · ${body.slice(0, 120)}` : ""}`,
+    );
+  }
+
+  const [reqs, brks, reps] = (await Promise.all([
+    reqRes.json(),
+    brkRes.json(),
+    repRes.json(),
+  ])) as [Paginated<AdminRequestRow>, Paginated<AdminBrokerRow>, Paginated<AdminReportRow>];
 
   const rows: InboxRow[] = [
     ...reqs.data.map<InboxRequestRow>((r) => ({ ...r, kind: "REQ" })),

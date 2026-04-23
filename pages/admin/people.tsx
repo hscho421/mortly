@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
-import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import type { GetStaticProps } from "next";
+import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
 import {
   AAvatar,
@@ -66,55 +65,113 @@ export default function AdminPeoplePage() {
   const router = useRouter();
   const [rows, setRows] = useState<PersonRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("ALL");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Pick up ?role= from URL so /admin/users → /admin/people?role=BORROWER
-  // and /admin/brokers → /admin/people?role=BROKER redirects land right.
+  // Bulk selection must not span filter changes — if a row is no longer in
+  // `rows` it shouldn't be in the selected set either, or the count lies.
   useEffect(() => {
+    setSelected((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(rows.map((r) => r.id));
+      const next = new Set<string>();
+      for (const id of prev) if (visible.has(id)) next.add(id);
+      return next.size === prev.size ? prev : next;
+    });
+  }, [rows]);
+
+  // URL-driven state — filters and page live in query params so copy/paste
+  // and browser back/forward work correctly.
+  const roleFilter: RoleFilter = (() => {
     const r = router.query.role;
     if (typeof r === "string" && ["BORROWER", "BROKER", "ADMIN"].includes(r)) {
-      setRoleFilter(r as RoleFilter);
+      return r as RoleFilter;
     }
-  }, [router.query.role]);
+    return "ALL";
+  })();
+  const statusFilter: StatusFilter = (() => {
+    const s = router.query.status;
+    if (typeof s === "string" && ["ACTIVE", "SUSPENDED", "BANNED"].includes(s)) {
+      return s as StatusFilter;
+    }
+    return "ALL";
+  })();
+  const search = typeof router.query.q === "string" ? router.query.q : "";
+  const page = (() => {
+    const p = parseInt((router.query.page as string) ?? "1", 10);
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  })();
 
+  const patchQuery = useCallback(
+    (patch: Record<string, string | null>) => {
+      const next: Record<string, string> = {};
+      for (const [k, v] of Object.entries(router.query)) {
+        if (typeof v === "string") next[k] = v;
+      }
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null) delete next[k];
+        else next[k] = v;
+      }
+      router.replace({ pathname: router.pathname, query: next }, undefined, {
+        shallow: true,
+        locale: router.locale,
+      });
+    },
+    [router],
+  );
+
+  const setRoleFilter = (r: RoleFilter) =>
+    patchQuery({ role: r === "ALL" ? null : r, page: null });
+  const setStatusFilter = (s: StatusFilter) =>
+    patchQuery({ status: s === "ALL" ? null : s, page: null });
+  const setPage = (p: number) => patchQuery({ page: p <= 1 ? null : String(p) });
+
+  // Abort in-flight request on filter/page churn so the latest response wins.
+  const abortRef = useRef<AbortController | null>(null);
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ctl = new AbortController();
+    abortRef.current = ctl;
     setLoading(true);
     try {
       const params = new URLSearchParams();
       params.set("limit", "25");
       params.set("page", String(page));
       if (roleFilter !== "ALL") params.set("role", roleFilter);
+      if (statusFilter !== "ALL") params.set("status", statusFilter);
       if (search.trim()) params.set("search", search.trim());
-      const r = await fetch(`/api/admin/users?${params.toString()}`);
+      const r = await fetch(`/api/admin/users?${params.toString()}`, {
+        signal: ctl.signal,
+      });
       if (r.ok) {
         const data = (await r.json()) as Paginated<PersonRow>;
-        let filtered = data.data;
-        if (statusFilter !== "ALL") filtered = filtered.filter((x) => x.status === statusFilter);
-        setRows(filtered);
+        setRows(data.data);
         setTotal(data.pagination.total);
       }
+    } catch (err: unknown) {
+      if ((err as { name?: string })?.name === "AbortError") return;
     } finally {
-      setLoading(false);
+      if (!ctl.signal.aborted) setLoading(false);
     }
   }, [page, roleFilter, statusFilter, search]);
 
   useEffect(() => {
     load();
+    return () => abortRef.current?.abort();
   }, [load]);
 
-  // Debounced search
-  const [searchInput, setSearchInput] = useState("");
+  // Debounced search — input state is local; commits to URL after 250ms.
+  const [searchInput, setSearchInput] = useState(search);
   useEffect(() => {
+    setSearchInput(search); // keep in sync when URL changes externally
+  }, [search]);
+  useEffect(() => {
+    if (searchInput === search) return;
     const id = setTimeout(() => {
-      setPage(1);
-      setSearch(searchInput);
+      patchQuery({ q: searchInput || null, page: null });
     }, 250);
     return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
   const pagesTotal = Math.max(1, Math.ceil(total / 25));
@@ -248,11 +305,14 @@ export default function AdminPeoplePage() {
         <div className="bg-cream-50 border border-cream-300">
           <div className="grid grid-cols-[36px_2.2fr_1fr_1.2fr_1fr_1fr_120px] gap-3.5 px-5 py-2.5 font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em] border-b border-cream-300 bg-cream-200/60">
             <span>
+              <label className="sr-only" htmlFor="admin-people-select-all">
+                {t("admin.people.col.selectAll", "전체 선택")}
+              </label>
               <input
+                id="admin-people-select-all"
                 type="checkbox"
-                readOnly
                 checked={rows.length > 0 && rows.every((r) => selected.has(r.id))}
-                onClick={toggleAllVisible}
+                onChange={toggleAllVisible}
               />
             </span>
             <span>{t("admin.people.col.user", "사용자")}</span>
@@ -287,10 +347,15 @@ export default function AdminPeoplePage() {
                   className={`grid grid-cols-[36px_2.2fr_1fr_1.2fr_1fr_1fr_120px] gap-3.5 px-5 py-3.5 items-center text-[13px] ${i < rows.length - 1 ? "border-b border-cream-200" : ""} ${checked ? "bg-amber-50" : ""}`}
                 >
                   <span>
+                    <label className="sr-only" htmlFor={`admin-people-select-${u.id}`}>
+                      {t("admin.people.col.selectRow", "{{name}} 선택", { name: u.name || u.email })}
+                    </label>
                     <input
+                      id={`admin-people-select-${u.id}`}
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleSelected(u.id)}
+                      aria-label={u.name || u.email}
                     />
                   </span>
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -338,7 +403,7 @@ export default function AdminPeoplePage() {
             <div className="flex gap-2">
               <button
                 disabled={page <= 1 || loading}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => setPage(Math.max(1, page - 1))}
                 className="disabled:opacity-40"
               >
                 ← {t("admin.people.prev", "이전")}
@@ -346,7 +411,7 @@ export default function AdminPeoplePage() {
               <span className="font-mono text-forest-800 font-semibold">{page}</span>
               <button
                 disabled={page >= pagesTotal || loading}
-                onClick={() => setPage((p) => Math.min(pagesTotal, p + 1))}
+                onClick={() => setPage(Math.min(pagesTotal, page + 1))}
                 className="disabled:opacity-40"
               >
                 {t("admin.people.next", "다음")} →
@@ -365,8 +430,4 @@ function formatYYYYMM(iso: string) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export const getStaticProps: GetStaticProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
-  },
-});
+export const getServerSideProps = adminSSR();

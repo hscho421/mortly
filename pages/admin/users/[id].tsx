@@ -313,7 +313,7 @@ export default function AdminUserDetail() {
                 <p className="font-mono text-sm text-forest-800">{user.publicId}</p>
                 <button
                   onClick={copyPublicId}
-                  className="inline-flex items-center rounded-md bg-cream-100 px-2 py-1 transition-colors hover:bg-cream-200"
+                  className="inline-flex items-center rounded-sm bg-cream-100 px-2 py-1 transition-colors hover:bg-cream-200"
                   title={t("admin.userDetail.copyId")}
                 >
                   {copiedId ? (
@@ -362,14 +362,14 @@ export default function AdminUserDetail() {
                         <button
                           onClick={() => handleStatusChange("SUSPENDED")}
                           disabled={actionLoading}
-                          className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
+                          className="inline-flex items-center justify-center rounded-sm bg-amber-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
                         >
                           {actionLoading ? "..." : t("admin.suspendUser")}
                         </button>
                         <button
                           onClick={() => handleStatusChange("BANNED")}
                           disabled={actionLoading}
-                          className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
+                          className="inline-flex items-center justify-center rounded-sm bg-rose-600 px-3 py-1.5 font-body text-xs font-semibold text-white transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50"
                         >
                           {actionLoading ? "..." : t("admin.banUser")}
                         </button>
@@ -379,7 +379,7 @@ export default function AdminUserDetail() {
                       <button
                         onClick={() => handleStatusChange("ACTIVE")}
                         disabled={actionLoading}
-                        className="btn-primary !px-3 !py-1.5 !text-xs !rounded-lg disabled:opacity-50"
+                        className="btn-primary !px-3 !py-1.5 !text-xs !rounded-sm disabled:opacity-50"
                       >
                         {actionLoading ? "..." : t("admin.reactivate")}
                       </button>
@@ -411,7 +411,7 @@ export default function AdminUserDetail() {
               <h2 className="heading-sm">{t("admin.userDetail.brokerDetails")}</h2>
               <Link
                 href={`/admin/brokers/${user.broker.id}`}
-                className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-lg"
+                className="btn-secondary !px-3 !py-1.5 !text-xs !rounded-sm"
               >
                 {t("admin.userDetail.viewBrokerProfile")}
               </Link>
@@ -465,7 +465,7 @@ export default function AdminUserDetail() {
             {user.broker.bio && (
               <div className="mt-4 border-t border-cream-200 pt-4">
                 <p className="label-text">{t("admin.bio")}</p>
-                <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-lg p-3">{user.broker.bio}</p>
+                <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-sm p-3">{user.broker.bio}</p>
               </div>
             )}
           </div>
@@ -595,15 +595,15 @@ export default function AdminUserDetail() {
         <div className="card-elevated animate-fade-in-up stagger-5">
           <h2 className="heading-sm mb-4">{t("admin.userDetail.activitySummary")}</h2>
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center rounded-lg bg-cream-50 p-4">
+            <div className="text-center rounded-sm bg-cream-50 p-4">
               <p className="font-display text-2xl text-forest-800">{user._count.borrowerRequests}</p>
               <p className="text-body-sm">{t("admin.requests")}</p>
             </div>
-            <div className="text-center rounded-lg bg-cream-50 p-4">
+            <div className="text-center rounded-sm bg-cream-50 p-4">
               <p className="font-display text-2xl text-forest-800">{user._count.conversations}</p>
               <p className="text-body-sm">{t("admin.conversations")}</p>
             </div>
-            <div className="text-center rounded-lg bg-cream-50 p-4">
+            <div className="text-center rounded-sm bg-cream-50 p-4">
               <p className="font-display text-2xl text-forest-800">{user._count.reports}</p>
               <p className="text-body-sm">{t("admin.reports")}</p>
             </div>
@@ -615,10 +615,10 @@ export default function AdminUserDetail() {
       {detailRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm" onClick={() => setDetailRequest(null)} />
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-fade-in-up rounded-2xl bg-white p-8 shadow-2xl">
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-fade-in-up rounded-sm bg-white p-8 shadow-2xl">
             <button
               onClick={() => setDetailRequest(null)}
-              className="absolute right-4 top-4 rounded-lg p-1 text-sage-400 transition-colors hover:text-forest-700"
+              className="absolute right-4 top-4 rounded-sm p-1 text-sage-400 transition-colors hover:text-forest-700"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -676,7 +676,7 @@ export default function AdminUserDetail() {
               {detailRequest.mortgageCategory === "RESIDENTIAL" && detailRequest.details && (() => {
                 const details = detailRequest.details as Record<string, any>;
                 return (
-                  <div className="rounded-lg bg-cream-50 p-4 space-y-3">
+                  <div className="rounded-sm bg-cream-50 p-4 space-y-3">
                     <p className="font-body text-xs font-semibold uppercase tracking-wide text-forest-600">
                       {t("request.residential")} {t("admin.details")}
                     </p>
@@ -735,7 +735,7 @@ export default function AdminUserDetail() {
               {detailRequest.mortgageCategory === "COMMERCIAL" && detailRequest.details && (() => {
                 const details = detailRequest.details as Record<string, any>;
                 return (
-                  <div className="rounded-lg bg-cream-50 p-4 space-y-3">
+                  <div className="rounded-sm bg-cream-50 p-4 space-y-3">
                     <p className="font-body text-xs font-semibold uppercase tracking-wide text-forest-600">
                       {t("request.commercial")} {t("admin.details")}
                     </p>
@@ -807,7 +807,7 @@ export default function AdminUserDetail() {
               {detailRequest.notes && (
                 <div>
                   <p className="label-text">{t("admin.borrowerNotes")}</p>
-                  <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-lg p-3">{detailRequest.notes}</p>
+                  <p className="font-body text-sm text-forest-700/80 bg-cream-50 rounded-sm p-3">{detailRequest.notes}</p>
                 </div>
               )}
             </div>
@@ -819,10 +819,10 @@ export default function AdminUserDetail() {
       {(chatConversation || chatLoading) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm" onClick={() => { if (!chatLoading) setChatConversation(null); }} />
-          <div className="relative w-full max-w-3xl max-h-[90vh] flex flex-col animate-fade-in-up rounded-2xl bg-white shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-3xl max-h-[90vh] flex flex-col animate-fade-in-up rounded-sm bg-white shadow-2xl overflow-hidden">
             <button
               onClick={() => setChatConversation(null)}
-              className="absolute right-4 top-4 z-10 rounded-lg p-1 text-sage-400 transition-colors hover:text-forest-700"
+              className="absolute right-4 top-4 z-10 rounded-sm p-1 text-sage-400 transition-colors hover:text-forest-700"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -885,7 +885,7 @@ export default function AdminUserDetail() {
                       if (isAdmin) {
                         return (
                           <div key={msg.id} className="flex justify-center">
-                            <div className="max-w-[85%] rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-center">
+                            <div className="max-w-[85%] rounded-sm bg-amber-50 border border-amber-200 px-4 py-3 text-center">
                               <p className="font-body text-xs font-semibold text-amber-700 mb-1">
                                 {msg.sender.name || t("admin.userDetail.adminLabel")}
                               </p>
@@ -907,7 +907,7 @@ export default function AdminUserDetail() {
                                 {msg.sender.name || msg.sender.email}
                               </span>
                             </div>
-                            <div className={`rounded-2xl px-4 py-2.5 shadow-sm ${
+                            <div className={`rounded-sm px-4 py-2.5 shadow-sm ${
                               isBorrower
                                 ? "bg-white border border-cream-200 rounded-tl-md"
                                 : "bg-forest-600 text-white rounded-tr-md"
@@ -932,7 +932,7 @@ export default function AdminUserDetail() {
                 <div className="px-8 py-4 border-t border-cream-200 flex justify-end">
                   <Link
                     href={`/admin/conversations/${chatConversation.id}`}
-                    className="btn-secondary !px-4 !py-2 !text-xs !rounded-lg"
+                    className="btn-secondary !px-4 !py-2 !text-xs !rounded-sm"
                     onClick={() => setChatConversation(null)}
                   >
                     {t("admin.userDetail.openFullConversation")}

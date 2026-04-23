@@ -11,7 +11,7 @@ import posthog from "posthog-js";
 const ROLE_REDIRECTS: Record<string, string> = {
   BORROWER: "/borrower/dashboard",
   BROKER: "/broker/dashboard",
-  ADMIN: "/admin/dashboard",
+  ADMIN: "/admin/inbox",
 };
 
 export default function LoginPage() {

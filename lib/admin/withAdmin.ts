@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { adminMutationLimiter } from "@/lib/rate-limit";
+
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const MUTATIONS_PER_MIN = 30;
 
 /**
  * Session shape as seen by an admin route handler.
@@ -66,6 +70,24 @@ export function withAdmin(
       if (role !== "ADMIN") {
         res.status(403).json({ error: "Admin access required" });
         return;
+      }
+
+      // Per-admin rate limit on destructive verbs. GET is unrestricted
+      // (read-heavy admin UIs poll frequently).
+      if (req.method && MUTATING_METHODS.has(req.method)) {
+        const adminId = (session.user as { id?: string } | undefined)?.id ?? "unknown";
+        const { success, remaining } = adminMutationLimiter.check(
+          MUTATIONS_PER_MIN,
+          `admin-mutate-${adminId}`,
+        );
+        if (!success) {
+          res.setHeader("Retry-After", "60");
+          res.status(429).json({
+            error: "Too many admin actions — slow down or contact another admin.",
+          });
+          return;
+        }
+        res.setHeader("X-RateLimit-Remaining", String(remaining));
       }
 
       await handler(req, res, session as AdminSession);

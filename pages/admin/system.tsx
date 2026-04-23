@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "next-i18next";
-import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import type { GetStaticProps } from "next";
+import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
 import {
   ABtn,
@@ -340,17 +339,27 @@ export default function AdminSystemPage() {
 
 function TrendsCard({ compact }: { compact?: boolean }) {
   const { t } = useTranslation("common");
-  // Deterministic synthetic series so the first render looks reasonable
-  // even before real telemetry is plumbed in.
+  // Deterministic synthetic series — clearly labeled as "예시" until a real
+  // /api/admin/stats/timeseries endpoint lands. Generating deterministically
+  // (no Math.random) so SSR matches the first client render.
   const req = genSeries(30, 8, 18);
   const conv = genSeries(30, 4, 12);
   const usr = genSeries(30, 2, 6);
+  const h = compact ? 96 : 144;
 
   return (
     <ACard>
       <div className="flex items-center justify-between mb-3">
-        <div className="font-display text-lg font-semibold text-forest-800">
-          {t("admin.system.trendsTitle", "30일 트렌드")}
+        <div className="flex items-center gap-2">
+          <div className="font-display text-lg font-semibold text-forest-800">
+            {t("admin.system.trendsTitle", "30일 트렌드")}
+          </div>
+          <span
+            className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-sm border border-cream-300 bg-cream-200 text-sage-500"
+            title={t("admin.system.trendsDemoHint", "실제 데이터가 아닌 예시입니다.")}
+          >
+            {t("admin.system.trendsDemoLabel", "예시")}
+          </span>
         </div>
         <div className="flex gap-3 font-mono text-[10px] text-sage-500">
           <span className="text-amber-600">● {t("admin.system.legend.requests", "요청")}</span>
@@ -359,14 +368,14 @@ function TrendsCard({ compact }: { compact?: boolean }) {
         </div>
       </div>
       <div className={`${compact ? "h-24" : "h-36"} relative`}>
-        <div className="absolute inset-0">
-          <ASpark points={req} color="#c49a3a" width={400} height={compact ? 96 : 144} stroke={2} className="w-full h-full" />
+        <div className="absolute inset-0 text-amber-500">
+          <ASpark points={req} width={400} height={h} stroke={2} className="w-full h-full" />
         </div>
-        <div className="absolute inset-0 opacity-70">
-          <ASpark points={conv} color="#1d4ed8" width={400} height={compact ? 96 : 144} stroke={1.5} className="w-full h-full" />
+        <div className="absolute inset-0 opacity-70 text-info-700">
+          <ASpark points={conv} width={400} height={h} stroke={1.5} className="w-full h-full" />
         </div>
-        <div className="absolute inset-0 opacity-60">
-          <ASpark points={usr} color="#576285" width={400} height={compact ? 96 : 144} stroke={1.5} dashed className="w-full h-full" />
+        <div className="absolute inset-0 opacity-60 text-sage-500">
+          <ASpark points={usr} width={400} height={h} stroke={1.5} dashed className="w-full h-full" />
         </div>
       </div>
     </ACard>
@@ -395,8 +404,4 @@ function formatTimeShort(iso: string) {
   return `${hh}:${mm}`;
 }
 
-export const getStaticProps: GetStaticProps = async ({ locale }) => ({
-  props: {
-    ...(await serverSideTranslations(locale ?? "ko", ["common"])),
-  },
-});
+export const getServerSideProps = adminSSR();

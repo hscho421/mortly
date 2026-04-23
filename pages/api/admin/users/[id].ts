@@ -8,9 +8,13 @@ export default withAdmin(async (req, res, session) => {
     return res.status(400).json({ error: "User ID is required" });
   }
 
+  // Accept both internal cuid and 9-digit publicId — matches the pattern
+  // used by /admin/brokers/[id] and /admin/conversations/[id].
+  const lookup = /^\d{9}$/.test(id) ? { publicId: id } : { id };
+
   if (req.method === "GET") {
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: lookup,
       select: {
         id: true,
         publicId: true,
@@ -112,7 +116,7 @@ export default withAdmin(async (req, res, session) => {
       return res.status(400).json({ error: "Invalid status. Use ACTIVE, SUSPENDED, or BANNED." });
     }
 
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await prisma.user.findUnique({ where: lookup });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -137,7 +141,7 @@ export default withAdmin(async (req, res, session) => {
 
     const [updated] = await prisma.$transaction([
       prisma.user.update({
-        where: { id },
+        where: { id: user.id },
         data: { status },
         select: {
           id: true,

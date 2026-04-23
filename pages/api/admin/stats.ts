@@ -57,7 +57,13 @@ export default withAdmin(async (req, res) => {
       total: totalRequests,
     };
 
-    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120");
+    // Private cache (per-admin) — 30s browser + 60s SWR on any CDN layer.
+    // Admins can have two tabs open and hit this endpoint without both
+    // tabs spawning an independent DB round-trip.
+    res.setHeader(
+      "Cache-Control",
+      "private, max-age=30, stale-while-revalidate=60",
+    );
     return res.status(200).json({
       // Users
       users,
