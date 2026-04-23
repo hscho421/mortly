@@ -26,6 +26,17 @@ const nextConfig = {
         destination: "/borrower/messages?id=:conversationId",
         permanent: true,
       },
+      // ── Admin IA migration (design_v3 → redesigned admin) ─────────
+      // Old: /admin/dashboard + per-entity list pages + /admin/settings
+      // New: /admin/inbox (default) + /admin/people + /admin/activity
+      //      + /admin/reports (redesigned) + /admin/system
+      { source: "/admin", destination: "/admin/inbox", permanent: false },
+      { source: "/admin/dashboard", destination: "/admin/inbox", permanent: false },
+      { source: "/admin/users", destination: "/admin/people?role=BORROWER", permanent: false },
+      { source: "/admin/brokers", destination: "/admin/people?role=BROKER", permanent: false },
+      { source: "/admin/requests", destination: "/admin/activity?type=REQ", permanent: false },
+      { source: "/admin/conversations", destination: "/admin/activity?type=CONV", permanent: false },
+      { source: "/admin/settings", destination: "/admin/system", permanent: false },
     ];
   },
   async rewrites() {
