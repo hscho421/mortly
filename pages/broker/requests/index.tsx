@@ -130,7 +130,7 @@ export default function BrokerRequestsPage() {
       <Layout>
         <Head><title>{t("titles.brokerBrowseRequests")}</title></Head>
         <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="card-elevated text-center py-16 animate-fade-in-up">
+          <div className="card-elevated text-center py-16">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
               <svg className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
@@ -165,7 +165,7 @@ export default function BrokerRequestsPage() {
     <Layout>
       <Head><title>{t("titles.brokerBrowseRequests")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-8 ">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="heading-lg">{t("broker.browseRequests")}</h1>
             {newCount > 0 ? (
@@ -186,7 +186,7 @@ export default function BrokerRequestsPage() {
         </div>
 
         {/* Filters */}
-        <div className="card-elevated mb-8 animate-fade-in-up stagger-1">
+        <div className="card-elevated mb-8">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="filterProvince" className="label-text">
@@ -225,7 +225,7 @@ export default function BrokerRequestsPage() {
 
         {/* Error */}
         {error && (
-          <div className="mb-6 rounded-xl bg-error-50 border border-error-500/20 p-4 animate-fade-in" role="alert">
+          <div className="mb-6 rounded-sm bg-error-50 border border-error-500/20 p-4 " role="alert">
             <p className="font-body text-sm text-error-700">{error}</p>
           </div>
         )}
@@ -239,7 +239,7 @@ export default function BrokerRequestsPage() {
 
         {/* Empty state */}
         {!isLoading && filteredRequests.length === 0 && (
-          <div className="card-elevated py-16 text-center animate-fade-in">
+          <div className="card-elevated py-16 text-center ">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cream-200">
               <svg className="h-6 w-6 text-sage-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -259,7 +259,7 @@ export default function BrokerRequestsPage() {
               return (
                 <div
                   key={req.id}
-                  className={`card animate-fade-in-up stagger-${Math.min(i + 2, 6)} ${
+                  className={`card ${
                     req.isNew ? "ring-2 ring-amber-300/50 bg-amber-50/30" : ""
                   }`}
                 >

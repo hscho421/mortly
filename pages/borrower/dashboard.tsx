@@ -9,6 +9,7 @@ import type { GetStaticProps } from "next";
 import Layout from "@/components/Layout";
 import StatusBadge from "@/components/StatusBadge";
 import { SkeletonDashboard } from "@/components/Skeleton";
+import { UBadge, UCard, Banner } from "@/components/ui";
 import { PRODUCT_LABEL_KEYS } from "@/lib/requestConfig";
 
 function formatDate(dateStr: string) {
@@ -84,12 +85,21 @@ export default function BorrowerDashboard() {
     return null;
   }
 
+  const activeCount = requests.filter(
+    (r) => r.status === "OPEN" || r.status === "IN_PROGRESS",
+  ).length;
+  const totalConvos = requests.reduce(
+    (sum, r) => sum + (r._count?.conversations ?? r.conversations?.length ?? 0),
+    0,
+  );
+  const completedCount = requests.filter((r) => r.status === "CLOSED").length;
+
   return (
     <Layout>
       <Head><title>{t("titles.borrowerDashboard")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header — editorial serif with name accent */}
-        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-fade-in">
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="eyebrow">— {t("nav.dashboard")}</div>
             <h1 className="heading-lg mt-3">
@@ -105,140 +115,124 @@ export default function BorrowerDashboard() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl bg-error-50 border border-error-500/20 p-4 animate-fade-in" role="alert">
-            <p className="font-body text-sm text-error-700">{error}</p>
-          </div>
+          <Banner
+            tone="danger"
+            title={error}
+            className="mb-6"
+          />
         )}
 
         {/* Stats row */}
-        {requests.length > 0 && (() => {
-          const activeCount = requests.filter((r) => r.status === "OPEN" || r.status === "IN_PROGRESS").length;
-          const totalConvos = requests.reduce((sum, r) => sum + (r._count?.conversations ?? r.conversations?.length ?? 0), 0);
-          return (
-            <div className="mb-10 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {[
-                { value: requests.length, label: t("borrowerDashboard.statTotal", "Total Requests") },
-                { value: activeCount, label: t("borrowerDashboard.statActive", "Active") },
-                { value: totalConvos, label: t("borrowerDashboard.statOffers", "Offers Received") },
-                { value: requests.filter((r) => r.status === "CLOSED").length, label: t("borrowerDashboard.statCompleted", "Completed") },
-              ].map((stat, i) => (
-                <div key={i} className={`card-stat animate-fade-in-up stagger-${i + 1}`}>
+        {requests.length > 0 && (
+          <div className="mb-10 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { value: requests.length, label: t("borrowerDashboard.statTotal", "Total Requests") },
+              { value: activeCount, label: t("borrowerDashboard.statActive", "Active") },
+              { value: totalConvos, label: t("borrowerDashboard.statOffers", "Offers Received") },
+              { value: completedCount, label: t("borrowerDashboard.statCompleted", "Completed") },
+            ].map((stat) => (
+              <UCard key={stat.label} pad={0}>
+                <div className="px-6 py-5">
                   <div className="mono-label">{stat.label}</div>
-                  <div className="mt-2 font-display font-semibold text-4xl text-forest-800 tracking-[-0.03em] leading-none">{stat.value}</div>
+                  <div className="mt-2 font-display font-semibold text-4xl text-forest-800 tracking-[-0.03em] leading-none">
+                    {stat.value}
+                  </div>
                 </div>
-              ))}
-            </div>
-          );
-        })()}
+              </UCard>
+            ))}
+          </div>
+        )}
 
         {/* Request list */}
         {requests.length === 0 ? (
-          <div className="card-elevated text-center py-16 animate-fade-in-up stagger-1">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-cream-200">
-              <svg
-                className="h-8 w-8 text-forest-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-                />
-              </svg>
+          <UCard pad={0}>
+            <div className="text-center py-16 px-6">
+              <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center border border-cream-300 bg-cream-200 text-forest-600 text-xl">
+                <span className="font-display">+</span>
+              </div>
+              <h2 className="heading-md mb-2">{t("borrowerDashboard.noRequests")}</h2>
+              <p className="text-body mb-6 max-w-md mx-auto">
+                {t("borrowerDashboard.noRequestsDesc")}
+              </p>
+              <Link href="/borrower/request/new" className="btn-amber">
+                {t("borrowerDashboard.createFirst")}
+              </Link>
             </div>
-            <h2 className="heading-md mb-2">{t("borrowerDashboard.noRequests")}</h2>
-            <p className="text-body mb-6 max-w-md mx-auto">
-              {t("borrowerDashboard.noRequestsDesc")}
-            </p>
-            <Link href="/borrower/request/new" className="btn-amber">
-              {t("borrowerDashboard.createFirst")}
-            </Link>
-          </div>
+          </UCard>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-            {requests.map((req, i) => {
-              const staggerClass =
-                i < 6 ? `stagger-${i + 1}` : "stagger-6";
+            {requests.map((req) => {
               const convoCount =
                 req._count?.conversations ?? req.conversations?.length ?? 0;
-
               const isDimmed = req.status === "EXPIRED" || req.status === "REJECTED";
-
               return (
                 <Link
                   key={req.id}
                   href={`/borrower/request/${req.publicId}`}
-                  className={`card-elevated group block transition-all animate-fade-in-up ${staggerClass} ${isDimmed ? "opacity-60" : "hover:shadow-lg hover:-translate-y-0.5"}`}
+                  className={`group block ${isDimmed ? "opacity-60" : ""}`}
                 >
-                  {/* Top row: type + status */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
-                      req.mortgageCategory === "COMMERCIAL"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-forest-100 text-forest-700"
-                    }`}>
-                      {req.mortgageCategory === "COMMERCIAL"
-                        ? t("request.commercial")
-                        : t("request.residential")}
-                    </span>
-                    <StatusBadge status={req.status} />
-                  </div>
+                  <UCard
+                    pad={0}
+                    className="transition-colors group-hover:border-forest-300"
+                  >
+                    <div className="p-6">
+                      {/* Top row: type + status */}
+                      <div className="flex items-center justify-between mb-3">
+                        <UBadge
+                          tone={req.mortgageCategory === "COMMERCIAL" ? "accent" : "info"}
+                        >
+                          {req.mortgageCategory === "COMMERCIAL"
+                            ? t("request.commercial")
+                            : t("request.residential")}
+                        </UBadge>
+                        <StatusBadge status={req.status} />
+                      </div>
 
-                  {/* Status notes */}
-                  {req.status === "PENDING_APPROVAL" && (
-                    <p className="font-body text-xs text-amber-600 mb-2">
-                      {t("request.pendingApprovalNote", "Your request is under review.")}
-                    </p>
-                  )}
-                  {req.status === "REJECTED" && (
-                    <p className="font-body text-xs text-rose-600 mb-2">
-                      {t("request.rejectedNote", "This request was not approved.")}
-                    </p>
-                  )}
+                      {/* Status notes */}
+                      {req.status === "PENDING_APPROVAL" && (
+                        <p className="font-body text-xs text-warning-700 mb-2">
+                          {t("request.pendingApprovalNote", "Your request is under review.")}
+                        </p>
+                      )}
+                      {req.status === "REJECTED" && (
+                        <p className="font-body text-xs text-error-700 mb-2">
+                          {t("request.rejectedNote", "This request was not approved.")}
+                        </p>
+                      )}
 
-                  {/* Location */}
-                  <h3 className="heading-sm mb-1 group-hover:text-forest-900 transition-colors">
-                    {req.city ? `${req.city}, ` : ""}
-                    {req.province || "--"}
-                  </h3>
+                      {/* Location */}
+                      <h3 className="heading-sm mb-1 group-hover:text-forest-900 transition-colors">
+                        {req.city ? `${req.city}, ` : ""}
+                        {req.province || "--"}
+                      </h3>
 
-                  {/* Product type pills */}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {(req.productTypes ?? []).map((pt) => (
-                      <span
-                        key={pt}
-                        className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-[11px] font-medium text-forest-700"
-                      >
-                        {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
-                      </span>
-                    ))}
-                  </div>
+                      {/* Product type chips */}
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {(req.productTypes ?? []).map((pt) => (
+                          <span
+                            key={pt}
+                            className="inline-flex items-center rounded-sm border border-cream-300 bg-cream-50 px-2 py-0.5 font-body text-[11px] font-medium text-forest-700"
+                          >
+                            {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
+                          </span>
+                        ))}
+                      </div>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t border-cream-200">
-                    <span className="text-body-sm">
-                      {formatDate(req.createdAt as unknown as string)}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 font-body text-xs font-medium text-forest-700">
-                      <svg
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
-                        />
-                      </svg>
-                      {convoCount} {convoCount !== 1 ? t("borrowerDashboard.responsesPlural", "responses") : t("borrowerDashboard.response", "response")}
-                    </span>
-                  </div>
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-3 border-t border-cream-200">
+                        <span className="text-body-sm">
+                          {formatDate(req.createdAt as unknown as string)}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 font-body text-xs font-medium text-forest-700">
+                          <span className="font-mono text-[13px] text-amber-600">↗</span>
+                          {convoCount}{" "}
+                          {convoCount !== 1
+                            ? t("borrowerDashboard.responsesPlural", "responses")
+                            : t("borrowerDashboard.response", "response")}
+                        </span>
+                      </div>
+                    </div>
+                  </UCard>
                 </Link>
               );
             })}

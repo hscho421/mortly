@@ -147,7 +147,7 @@ export default function BorrowerProfilePage() {
       <Head><title>{t("titles.borrowerProfile")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-8 ">
           <h1 className="heading-lg">{t("settings.title", "Account Settings")}</h1>
           <p className="text-body mt-2">
             {t("settings.subtitle", "Manage your profile and account preferences.")}
@@ -156,7 +156,7 @@ export default function BorrowerProfilePage() {
 
         {/* Account stats */}
         {profile && (
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8 animate-fade-in-up stagger-1">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
             <div className="card-elevated !p-3 sm:!p-5 text-center">
               <p className="heading-md text-amber-600">{profile._count.borrowerRequests}</p>
               <p className="text-body-sm mt-1">{t("settings.requests", "Requests")}</p>
@@ -169,17 +169,17 @@ export default function BorrowerProfilePage() {
         )}
 
         {/* Profile section */}
-        <div className="card-elevated mb-8 animate-fade-in-up stagger-2">
+        <div className="card-elevated mb-8">
           <h2 className="heading-sm mb-5">{t("settings.profileInfo", "Profile Information")}</h2>
 
           {error && (
-            <div className="mb-5 rounded-xl bg-error-50 border border-error-500/20 px-4 py-3 animate-fade-in" role="alert">
+            <div className="mb-5 rounded-sm bg-error-50 border border-error-500/20 px-4 py-3 " role="alert">
               <p className="font-body text-sm text-error-700">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mb-5 rounded-xl bg-forest-50 border border-forest-200 px-4 py-3 animate-fade-in">
+            <div className="mb-5 rounded-sm bg-forest-50 border border-forest-200 px-4 py-3 ">
               <div className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-forest-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -194,7 +194,7 @@ export default function BorrowerProfilePage() {
               <div>
                 <label className="label-text">{t("settings.userId", "User ID")}</label>
                 <div className="flex items-center gap-2">
-                  <p className="font-mono text-sm text-forest-800 bg-cream-100 rounded-lg px-3 py-2">
+                  <p className="font-mono text-sm text-forest-800 bg-cream-100 rounded-sm px-3 py-2">
                     {profile.publicId}
                   </p>
                   <p className="font-body text-xs text-sage-400">
@@ -255,17 +255,17 @@ export default function BorrowerProfilePage() {
         </div>
 
         {/* Change password section */}
-        <div className="card-elevated animate-fade-in-up stagger-3">
+        <div className="card-elevated">
           <h2 className="heading-sm mb-5">{t("settings.changePassword", "Change Password")}</h2>
 
           {passwordError && (
-            <div className="mb-5 rounded-xl bg-error-50 border border-error-500/20 px-4 py-3 animate-fade-in" role="alert">
+            <div className="mb-5 rounded-sm bg-error-50 border border-error-500/20 px-4 py-3 " role="alert">
               <p className="font-body text-sm text-error-700">{passwordError}</p>
             </div>
           )}
 
           {passwordSuccess && (
-            <div className="mb-5 rounded-xl bg-forest-50 border border-forest-200 px-4 py-3 animate-fade-in">
+            <div className="mb-5 rounded-sm bg-forest-50 border border-forest-200 px-4 py-3 ">
               <div className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-forest-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

@@ -68,7 +68,8 @@ describe("checkRateLimit (Phase 7: Vercel KV)", () => {
     const mod = await import("@/lib/rate-limit");
     await mod.checkRateLimit({ key: "admin-A", limit: 5, windowMs: 1000 });
     await mod.checkRateLimit({ key: "admin-B", limit: 5, windowMs: 1000 });
-    expect(kvMock.incr.mock.calls[0]?.[0]).toBe("rl:admin-A");
-    expect(kvMock.incr.mock.calls[1]?.[0]).toBe("rl:admin-B");
+    const calls = kvMock.incr.mock.calls as unknown as Array<[string]>;
+    expect(calls[0][0]).toBe("rl:admin-A");
+    expect(calls[1][0]).toBe("rl:admin-B");
   });
 });

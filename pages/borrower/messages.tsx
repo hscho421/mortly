@@ -373,7 +373,7 @@ export default function BorrowerMessagesPage() {
 
       {/* Confirmation dialog */}
       {showCloseConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-900/40 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-900/40 backdrop-blur-sm ">
           <div className="card-elevated !p-6 max-w-sm mx-4">
             <h3 className="heading-sm mb-2">{t("messages.closeConfirmTitle")}</h3>
             <p className="text-body-sm mb-6">
@@ -388,7 +388,7 @@ export default function BorrowerMessagesPage() {
               </button>
               <button
                 onClick={handleCloseConversation}
-                className="btn-primary !bg-red-600 hover:!bg-red-700"
+                className="btn-primary !bg-error-600 hover:!bg-error-700"
               >
                 {t("messages.close")}
               </button>
@@ -399,7 +399,7 @@ export default function BorrowerMessagesPage() {
 
       {/* Error toast */}
       {error && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-error-50 border border-error-500/20 px-5 py-3 shadow-lg animate-fade-in" role="alert">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-sm bg-error-50 border border-error-500/20 px-5 py-3 shadow-lg " role="alert">
           <p className="font-body text-sm text-error-700">
             {error}
             <button
@@ -413,7 +413,7 @@ export default function BorrowerMessagesPage() {
       )}
 
       <div
-        className="flex animate-fade-in h-[calc(100dvh-80px)]"
+        className="flex  h-[calc(100dvh-80px)]"
       >
         {/* ──────────────── LEFT PANEL ──────────────── */}
         <div
@@ -480,7 +480,7 @@ export default function BorrowerMessagesPage() {
                       <div className="relative w-10 h-10 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-sm font-display font-bold shrink-0">
                         {brokerName.charAt(0).toUpperCase()}
                         {hasUnread && (
-                          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 font-body text-[10px] font-bold text-white">
+                          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-error-500 px-1 font-body text-[10px] font-bold text-white">
                             {conv.unreadCount! > 9 ? "9+" : conv.unreadCount}
                           </span>
                         )}
@@ -572,7 +572,7 @@ export default function BorrowerMessagesPage() {
                   {/* Mobile back button */}
                   <button
                     onClick={() => setMobileShowChat(false)}
-                    className="md:hidden shrink-0 rounded-lg p-1.5 text-forest-600 hover:bg-cream-200 transition-colors"
+                    className="md:hidden shrink-0 rounded-sm p-1.5 text-forest-600 hover:bg-cream-200 transition-colors"
                     aria-label={t("chat.backToConversations")}
                   >
                     <svg
@@ -673,7 +673,7 @@ export default function BorrowerMessagesPage() {
                                 }`}
                               >
                                 <div
-                                  className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+                                  className={`max-w-[75%] rounded-sm px-4 py-3 ${
                                     isMine
                                       ? "bg-forest-800 text-cream-100"
                                       : "bg-white border border-cream-300 text-forest-800"
@@ -708,7 +708,7 @@ export default function BorrowerMessagesPage() {
               {/* Message input */}
               <div className="px-5 py-4 border-t border-cream-300 bg-cream-100 shrink-0">
                 {isClosed ? (
-                  <div className="rounded-xl bg-sage-50 border border-sage-200 p-3 text-center">
+                  <div className="rounded-sm bg-sage-50 border border-sage-200 p-3 text-center">
                     <p className="text-body-sm text-sage-500">
                       {t("messages.conversationClosed")}
                     </p>

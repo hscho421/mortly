@@ -146,7 +146,7 @@ export default function BrokerDashboardPage() {
         <Head><title>{t("titles.brokerDashboard")}</title></Head>
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-center">
-            <p className="text-body mb-4 text-red-600">{error}</p>
+            <p className="text-body mb-4 text-error-600">{error}</p>
             <button
               onClick={() => window.location.reload()}
               className="btn-primary"
@@ -172,7 +172,7 @@ export default function BrokerDashboardPage() {
   const verificationColors: Record<string, string> = {
     PENDING: "bg-amber-100 text-amber-800",
     VERIFIED: "bg-forest-100 text-forest-800",
-    REJECTED: "bg-red-100 text-red-800",
+    REJECTED: "bg-error-100 text-error-800",
   };
 
   const statCards = [
@@ -264,7 +264,7 @@ export default function BrokerDashboardPage() {
       <Head><title>{t("titles.brokerDashboard")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-fade-in">
+        <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ">
           <div>
             <div className="eyebrow">— {t("broker.dashboard")}</div>
             <h1 className="heading-lg mt-3">
@@ -292,7 +292,7 @@ export default function BrokerDashboardPage() {
 
         {/* Verified congratulations banner */}
         {showVerifiedBanner && (
-          <div className="mb-8 rounded-2xl bg-forest-50 border border-forest-300 p-5 animate-fade-in-up relative">
+          <div className="mb-8 rounded-sm bg-forest-50 border border-forest-300 p-5 relative">
             <button
               onClick={() => setShowVerifiedBanner(false)}
               className="absolute top-4 right-4 text-forest-400 hover:text-forest-600 transition-colors"
@@ -320,7 +320,7 @@ export default function BrokerDashboardPage() {
 
         {/* Verification pending banner */}
         {verificationStatus === "PENDING" && (
-          <div className="mb-8 rounded-2xl bg-amber-50 border border-amber-200 p-5 animate-fade-in">
+          <div className="mb-8 rounded-sm bg-amber-50 border border-amber-200 p-5 ">
             <div className="flex items-start gap-3">
               <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.999L13.732 4.001c-.77-1.333-2.694-1.333-3.464 0L3.34 16.001C2.57 17.334 3.532 19 5.072 19z" />
@@ -337,7 +337,7 @@ export default function BrokerDashboardPage() {
 
         {/* Free plan banner */}
         {verificationStatus === "VERIFIED" && subscriptionTier === "FREE" && (
-          <div className="mb-8 rounded-2xl bg-forest-50 border border-forest-200 p-5 animate-fade-in">
+          <div className="mb-8 rounded-sm bg-forest-50 border border-forest-200 p-5 ">
             <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-forest-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,7 +362,7 @@ export default function BrokerDashboardPage() {
           {statCards.map((stat, i) => (
             <div
               key={stat.label}
-              className={`card-stat animate-fade-in-up stagger-${i + 1} ${
+              className={`card-stat ${
                 stat.accent ? "!border-amber-300 !bg-amber-50/50" : ""
               }`}
             >
@@ -386,15 +386,15 @@ export default function BrokerDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <h2 className="heading-md mb-5 animate-fade-in stagger-5">{t("broker.quickActions")}</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in-up stagger-6">
+        <h2 className="heading-md mb-5 ">{t("broker.quickActions")}</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {quickActions.map((action) => (
             <Link
               key={action.href}
               href={action.href}
               className="card group flex items-center gap-4 px-6 py-5"
             >
-              <div className={`rounded-xl p-3 ${action.colorBg} ${action.colorText} transition-colors ${action.colorHover}`}>
+              <div className={`rounded-sm p-3 ${action.colorBg} ${action.colorText} transition-colors ${action.colorHover}`}>
                 {action.icon}
               </div>
               <span className="font-body text-sm font-semibold text-forest-800">{action.label}</span>

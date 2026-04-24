@@ -22,7 +22,8 @@ describe("notifyAdminsOfNewAdmin", () => {
       createdBy: { id: "u1", name: "Alice", email: "alice@x.com" },
     });
     expect(resendSend).toHaveBeenCalledTimes(3);
-    const tos = resendSend.mock.calls.map((c) => (c[0] as { to: string }).to);
+    const calls = resendSend.mock.calls as unknown as Array<[{ to: string }]>;
+    const tos = calls.map((c) => c[0].to);
     expect(tos.sort()).toEqual(["a@x.com", "b@x.com", "c@x.com"]);
   });
 
@@ -41,10 +42,10 @@ describe("notifyAdminsOfNewAdmin", () => {
       newAdmin: { name: "Jane Smith", email: "jane@x.com", publicId: "555555555" },
       createdBy: { id: "u", name: "Alice", email: "alice@x.com" },
     });
-    const payload = resendSend.mock.calls[0][0] as {
-      subject: string;
-      html: string;
-    };
+    const calls = resendSend.mock.calls as unknown as Array<
+      [{ subject: string; html: string }]
+    >;
+    const payload = calls[0][0];
     expect(payload.subject).toContain("Jane Smith");
     expect(payload.html).toContain("Jane Smith");
     expect(payload.html).toContain("jane@x.com");
@@ -62,7 +63,8 @@ describe("notifyAdminsOfNewAdmin", () => {
       },
       createdBy: { id: "u", name: null, email: "c@x.com" },
     });
-    const payload = resendSend.mock.calls[0][0] as { html: string };
+    const calls = resendSend.mock.calls as unknown as Array<[{ html: string }]>;
+    const payload = calls[0][0];
     expect(payload.html).not.toContain("<script>alert");
     expect(payload.html).toContain("&lt;script&gt;");
   });

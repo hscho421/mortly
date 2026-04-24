@@ -163,14 +163,14 @@ export default function BrokerProfilePage() {
   const verificationColors: Record<string, string> = {
     PENDING: "bg-amber-100 text-amber-800",
     VERIFIED: "bg-forest-100 text-forest-800",
-    REJECTED: "bg-red-100 text-red-800",
+    REJECTED: "bg-error-100 text-error-800",
   };
 
   return (
     <Layout>
       <Head><title>{t("titles.brokerProfile")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center justify-between animate-fade-in">
+        <div className="mb-8 flex items-center justify-between ">
           <div>
             <h1 className="heading-lg">{t("broker.editProfile")}</h1>
             <p className="text-body mt-2">
@@ -189,13 +189,13 @@ export default function BrokerProfilePage() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl bg-error-50 border border-error-500/20 p-4 animate-fade-in" role="alert">
+          <div className="mb-6 rounded-sm bg-error-50 border border-error-500/20 p-4 " role="alert">
             <p className="font-body text-sm text-error-700">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 rounded-xl bg-forest-50 border border-forest-200 p-4 animate-fade-in">
+          <div className="mb-6 rounded-sm bg-forest-50 border border-forest-200 p-4 ">
             <div className="flex items-center gap-2">
               <svg className="h-4 w-4 text-forest-600" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -205,12 +205,12 @@ export default function BrokerProfilePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="card-elevated space-y-6 animate-fade-in-up">
+        <form onSubmit={handleSubmit} className="card-elevated space-y-6">
           {brokerUser && (
             <div>
               <label className="label-text">{t("settings.userId", "User ID")}</label>
               <div className="flex items-center gap-2">
-                <p className="font-mono text-sm text-forest-800 bg-cream-100 rounded-lg px-3 py-2">
+                <p className="font-mono text-sm text-forest-800 bg-cream-100 rounded-sm px-3 py-2">
                   {brokerUser.publicId}
                 </p>
                 <p className="font-body text-xs text-sage-400">
@@ -323,7 +323,7 @@ export default function BrokerProfilePage() {
                     onClick={() =>
                       setForm((prev) => ({ ...prev, mortgageCategory: cat }))
                     }
-                    className={`rounded-xl border-2 px-3 py-3 text-center font-body text-sm font-medium transition-all ${
+                    className={`rounded-sm border-2 px-3 py-3 text-center font-body text-sm font-medium transition-all ${
                       isSelected
                         ? "border-forest-600 bg-forest-50 text-forest-800"
                         : "border-cream-200 bg-white text-sage-500 hover:border-forest-300 hover:bg-cream-50"

@@ -133,7 +133,7 @@ export default function BrokerRequestDetailPage() {
       <Layout>
         <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="rounded-xl bg-error-50 border border-error-500/20 p-4" role="alert">
+          <div className="rounded-sm bg-error-50 border border-error-500/20 p-4" role="alert">
             <p className="font-body text-sm text-error-700">{error || t("misc.requestNotFound")}</p>
           </div>
           <Link
@@ -163,7 +163,7 @@ export default function BrokerRequestDetailPage() {
   return (
     <Layout>
       <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8 animate-fade-in">
+      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8 ">
         <Link
           href="/broker/requests"
           className="mb-8 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
@@ -174,7 +174,7 @@ export default function BrokerRequestDetailPage() {
           {t("request.backToRequests")}
         </Link>
 
-        <div className="card-elevated animate-fade-in-up">
+        <div className="card-elevated">
           {/* Header badges */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
@@ -229,11 +229,11 @@ export default function BrokerRequestDetailPage() {
                   const d = request.details as CommercialDetails | null;
                   return d ? (
                     <>
-                      <div className="rounded-xl bg-cream-100 p-4">
+                      <div className="rounded-sm bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.businessType")}</h3>
                         <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.businessType || t("request.notSpecified")}</p>
                       </div>
-                      <div className="rounded-xl bg-cream-100 p-4 col-span-full">
+                      <div className="rounded-sm bg-cream-100 p-4 col-span-full">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50 mb-2">{t("request.corporateFinancials")}</h3>
                         {typeof d.corporateAnnualIncome === "object" ? (
                           <table className="w-full text-sm">
@@ -258,7 +258,7 @@ export default function BrokerRequestDetailPage() {
                           <p className="font-body text-sm text-forest-800">{t("request.notSpecified")}</p>
                         )}
                       </div>
-                      <div className="rounded-xl bg-cream-100 p-4">
+                      <div className="rounded-sm bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.ownerNetIncome")}</h3>
                         <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.ownerNetIncome ? `$${d.ownerNetIncome}` : t("request.notSpecified")}</p>
                       </div>
@@ -272,7 +272,7 @@ export default function BrokerRequestDetailPage() {
                   const d = request.details as ResidentialDetails | null;
                   return d ? (
                     <>
-                      <div className="rounded-xl bg-cream-100 p-4">
+                      <div className="rounded-sm bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.purposeOfUse")}</h3>
                         <p className="mt-1 font-body text-sm font-medium text-forest-800">
                           {Array.isArray(d.purposeOfUse)
@@ -280,14 +280,14 @@ export default function BrokerRequestDetailPage() {
                             : d.purposeOfUse === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")}
                         </p>
                       </div>
-                      <div className="rounded-xl bg-cream-100 p-4">
+                      <div className="rounded-sm bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.incomeType")}</h3>
                         <p className="mt-1 font-body text-sm font-medium text-forest-800">
                           {(d.incomeTypes ?? []).map((it) => t(INCOME_TYPE_LABEL_KEYS[it] ?? it)).join(", ")}
                           {d.incomeTypeOther ? ` (${d.incomeTypeOther})` : ""}
                         </p>
                       </div>
-                      <div className="rounded-xl bg-cream-100 p-4">
+                      <div className="rounded-sm bg-cream-100 p-4">
                         <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50 mb-2">{t("request.annualIncome")}</h3>
                         {typeof d.annualIncome === "object" && d.annualIncome ? (
                           <table className="w-full text-sm">
@@ -316,7 +316,7 @@ export default function BrokerRequestDetailPage() {
               </>
             )}
             {request.desiredTimeline && (
-              <div className="rounded-xl bg-cream-100 p-4">
+              <div className="rounded-sm bg-cream-100 p-4">
                 <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.desiredTimeline")}</h3>
                 <p className="mt-1 font-body text-sm font-medium text-forest-800">{t(TIMELINE_LABEL_KEYS[request.desiredTimeline] || request.desiredTimeline)}</p>
               </div>
@@ -324,7 +324,7 @@ export default function BrokerRequestDetailPage() {
           </div>
 
           {request.notes && (
-            <div className="mb-8 rounded-xl bg-cream-100 p-5">
+            <div className="mb-8 rounded-sm bg-cream-100 p-5">
               <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.additionalNotes")}</h3>
               <p className="mt-2 font-body text-sm text-forest-800 whitespace-pre-wrap">{request.notes}</p>
             </div>
@@ -332,7 +332,7 @@ export default function BrokerRequestDetailPage() {
 
           {/* CTA */}
           {hasResponded ? (
-            <div className="rounded-xl bg-forest-50 border border-forest-200 p-5">
+            <div className="rounded-sm bg-forest-50 border border-forest-200 p-5">
               <div className="flex items-center gap-3">
                 <div className="rounded-full bg-forest-200 p-1.5">
                   <svg className="h-4 w-4 text-forest-700" fill="currentColor" viewBox="0 0 20 20">
@@ -350,7 +350,7 @@ export default function BrokerRequestDetailPage() {
               </div>
             </div>
           ) : (brokerTier === "BASIC" || brokerTier === "PRO") && brokerCredits === 0 ? (
-            <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
+            <div className="rounded-sm border-2 border-amber-300 bg-amber-50 p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-200">

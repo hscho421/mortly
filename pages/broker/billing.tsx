@@ -322,14 +322,14 @@ export default function BrokerBillingPage() {
     <Layout>
       <Head><title>{t("titles.brokerBilling")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-10 animate-fade-in">
+        <div className="mb-10 ">
           <h1 className="heading-lg">{t("broker.billingTitle")}</h1>
           <p className="text-body mt-2">{t("broker.billingSubtitle")}</p>
         </div>
 
         {/* Success banner */}
         {successMessage && (
-          <div className="mb-6 animate-fade-in rounded-2xl border-2 border-forest-300 bg-forest-50 p-4">
+          <div className="mb-6  rounded-sm border-2 border-forest-300 bg-forest-50 p-4">
             <div className="flex items-center gap-3">
               <svg className="h-5 w-5 text-forest-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -341,18 +341,18 @@ export default function BrokerBillingPage() {
 
         {/* Payment failed banner */}
         {subscription?.status === "PAST_DUE" && (
-          <div className="mb-6 animate-fade-in rounded-2xl border-2 border-rose-300 bg-rose-50 p-4">
+          <div className="mb-6  rounded-sm border-2 border-error-300 bg-error-50 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <svg className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg className="h-5 w-5 text-error-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                 </svg>
-                <p className="font-body text-sm font-medium text-rose-700">{t("broker.paymentFailed")}</p>
+                <p className="font-body text-sm font-medium text-error-700">{t("broker.paymentFailed")}</p>
               </div>
               <button
                 onClick={handleManageSubscription}
                 disabled={actionLoading === "portal"}
-                className="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2 font-body text-sm font-semibold text-white transition-all hover:bg-rose-700 disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-sm bg-error-600 px-4 py-2 font-body text-sm font-semibold text-white transition-all hover:bg-error-700 disabled:opacity-50"
               >
                 {t("broker.updatePayment")}
               </button>
@@ -362,7 +362,7 @@ export default function BrokerBillingPage() {
 
         {/* Cancelling banner */}
         {subscription?.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
-          <div className="mb-6 animate-fade-in rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+          <div className="mb-6  rounded-sm border-2 border-amber-300 bg-amber-50 p-4">
             <div className="flex items-center gap-3">
               <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -382,7 +382,7 @@ export default function BrokerBillingPage() {
 
         {/* Pending downgrade banner */}
         {subscription?.pendingTier && subscription.currentPeriodEnd && (
-          <div className="mb-6 animate-fade-in rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+          <div className="mb-6  rounded-sm border-2 border-amber-300 bg-amber-50 p-4">
             <div className="flex items-center gap-3">
               <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -401,7 +401,7 @@ export default function BrokerBillingPage() {
         )}
 
         {/* Current plan summary */}
-        <div className="card-elevated mb-10 animate-fade-in-up stagger-1">
+        <div className="card-elevated mb-10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="heading-sm">{t("broker.currentPlan")}</h2>
@@ -412,7 +412,7 @@ export default function BrokerBillingPage() {
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("broker.responseCredits")}</p>
-                <p className={`font-display text-3xl tracking-tight ${responseCredits === 0 ? "text-red-600" : "text-amber-700"}`}>
+                <p className={`font-display text-3xl tracking-tight ${responseCredits === 0 ? "text-error-600" : "text-amber-700"}`}>
                   {currentTier === "PREMIUM" ? t("broker.unlimited", "Unlimited") : responseCredits}
                 </p>
               </div>
@@ -430,12 +430,12 @@ export default function BrokerBillingPage() {
         </div>
 
         {/* Plan comparison */}
-        <h2 className="heading-md mb-6 animate-fade-in stagger-2">{t("broker.choosePlan")}</h2>
+        <h2 className="heading-md mb-6 ">{t("broker.choosePlan")}</h2>
         <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan, i) => (
             <div
               key={plan.tier}
-              className={`relative card-elevated flex flex-col animate-fade-in-up stagger-${Math.min(i + 3, 6)} ${
+              className={`relative card-elevated flex flex-col ${
                 plan.highlighted
                   ? "border-amber-400 ring-2 ring-amber-400"
                   : ""
@@ -453,7 +453,7 @@ export default function BrokerBillingPage() {
                     <span className="font-body text-lg line-through text-sage-400">
                       {plan.originalPrice}
                     </span>
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold font-body bg-rose-500 text-white">
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold font-body bg-error-500 text-white">
                       {plan.discount} OFF
                     </span>
                   </div>
@@ -529,14 +529,14 @@ export default function BrokerBillingPage() {
             </div>
           ))}
         </div>
-        <p className="mt-8 mb-16 text-sm text-forest-700/60 font-body text-center animate-fade-in-up">
+        <p className="mt-8 mb-16 text-sm text-forest-700/60 font-body text-center">
           {t("pricing.creditExplanation")}
         </p>
 
         {/* Billing history */}
-        <h2 className="heading-md mb-5 animate-fade-in">{t("broker.billingHistory")}</h2>
+        <h2 className="heading-md mb-5 ">{t("broker.billingHistory")}</h2>
         {invoices.length > 0 ? (
-          <div className="card-elevated !p-0 animate-fade-in-up overflow-x-auto">
+          <div className="card-elevated !p-0 overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b-2 border-cream-300">
@@ -578,7 +578,7 @@ export default function BrokerBillingPage() {
             </table>
           </div>
         ) : (
-          <div className="card-elevated py-16 text-center animate-fade-in-up">
+          <div className="card-elevated py-16 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cream-200">
               <svg className="h-6 w-6 text-sage-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
@@ -599,7 +599,7 @@ export default function BrokerBillingPage() {
             className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm"
             onClick={() => !actionLoading && setDowngradeTarget(null)}
           />
-          <div className="relative mx-4 w-full max-w-md animate-fade-in-up rounded-2xl bg-white p-8 shadow-xl">
+          <div className="relative mx-4 w-full max-w-md rounded-sm bg-white p-8 shadow-xl">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
               <svg className="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
@@ -620,7 +620,7 @@ export default function BrokerBillingPage() {
               <button
                 onClick={() => executePlanChange(downgradeTarget)}
                 disabled={!!actionLoading}
-                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-2 rounded-sm bg-amber-500 px-4 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {actionLoading === downgradeTarget && (
                   <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">

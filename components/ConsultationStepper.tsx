@@ -124,7 +124,7 @@ export default function ConsultationStepper({
   ];
 
   return (
-    <div className="card-elevated mb-8 animate-fade-in-up">
+    <div className="card-elevated mb-8">
       {/* Desktop: horizontal */}
       <div className="hidden sm:flex items-start">
         {steps.map((step, i) => (

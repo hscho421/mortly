@@ -337,7 +337,7 @@ export default function BrokerMessagesPage() {
       )}
 
       <div
-        className="flex animate-fade-in h-[calc(100dvh-80px)]"
+        className="flex  h-[calc(100dvh-80px)]"
       >
         {/* Left panel - Conversation list */}
         <div
@@ -367,7 +367,7 @@ export default function BrokerMessagesPage() {
 
             {!loadingList && conversations.length === 0 && (
               <div className="px-5 py-16 text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-cream-200">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-sm bg-cream-200">
                   <svg
                     className="h-7 w-7 text-sage-500"
                     fill="none"
@@ -415,7 +415,7 @@ export default function BrokerMessagesPage() {
                       <div className="relative shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-display font-bold text-sm">
                         {(conv.borrower?.name || "B")[0].toUpperCase()}
                         {hasUnread && (
-                          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 font-body text-[10px] font-bold text-white">
+                          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-error-500 px-1 font-body text-[10px] font-bold text-white">
                             {conv.unreadCount! > 9 ? "9+" : conv.unreadCount}
                           </span>
                         )}
@@ -472,7 +472,7 @@ export default function BrokerMessagesPage() {
             /* No conversation selected */
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center px-6">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cream-200">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-sm bg-cream-200">
                   <svg
                     className="h-8 w-8 text-sage-400"
                     fill="none"
@@ -505,7 +505,7 @@ export default function BrokerMessagesPage() {
                       setActiveConversation(null);
                       setMessages([]);
                     }}
-                    className="md:hidden shrink-0 rounded-lg p-1.5 text-forest-600 transition-colors hover:bg-cream-200"
+                    className="md:hidden shrink-0 rounded-sm p-1.5 text-forest-600 transition-colors hover:bg-cream-200"
                     aria-label={t("chat.backToConversations")}
                   >
                     <svg
@@ -595,7 +595,7 @@ export default function BrokerMessagesPage() {
                                 className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                               >
                                 <div
-                                  className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+                                  className={`max-w-[75%] rounded-sm px-4 py-3 ${
                                     isMine
                                       ? "bg-forest-800 text-cream-100"
                                       : "bg-white border border-cream-300 text-forest-800"
@@ -625,7 +625,7 @@ export default function BrokerMessagesPage() {
 
               {/* Error */}
               {error && (
-                <div className="shrink-0 mx-5 mb-3 rounded-xl bg-error-50 border border-error-500/20 p-3 text-sm font-body text-error-700" role="alert">
+                <div className="shrink-0 mx-5 mb-3 rounded-sm bg-error-50 border border-error-500/20 p-3 text-sm font-body text-error-700" role="alert">
                   {error}
                   <button
                     onClick={() => setError("")}
