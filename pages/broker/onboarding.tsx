@@ -2,7 +2,8 @@ import { useState, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Layout from "@/components/Layout";
+import BrokerShell from "@/components/broker/BrokerShell";
+import { useBrokerData } from "@/components/broker/BrokerDataContext";
 import { SkeletonForm } from "@/components/Skeleton";
 import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
@@ -29,6 +30,7 @@ export default function BrokerOnboardingPage() {
   const router = useRouter();
   const { t } = useTranslation("common");
   const { toast } = useToast();
+  const { refresh: refreshBrokerData } = useBrokerData();
 
   const [form, setForm] = useState<CreateBrokerProfileInput>({
     brokerageName: "",
@@ -46,19 +48,15 @@ export default function BrokerOnboardingPage() {
 
   if (status === "loading") {
     return (
-      <Layout>
+      <BrokerShell active="profile" pageTitle={t("titles.brokerOnboarding")} skipProfileGate>
         <Head><title>{t("titles.brokerOnboarding")}</title></Head>
         <SkeletonForm />
-      </Layout>
+      </BrokerShell>
     );
   }
 
-  if (!session || session.user.role !== "BROKER") {
-    if (typeof window !== "undefined") {
-      router.push("/login", undefined, { locale: router.locale });
-    }
-    return null;
-  }
+  // Auth gate handled by <BrokerShell> upstream.
+  if (!session || session.user.role !== "BROKER") return null;
 
   const formatPhone = (raw: string): string => {
     const digits = raw.replace(/\D/g, "").slice(0, 10);
@@ -105,6 +103,10 @@ export default function BrokerOnboardingPage() {
         mortgage_category: form.mortgageCategory,
       });
       toast(t("broker.onboardingSuccess"), "success");
+      // Refresh the shell's profile cache before navigating; otherwise the
+      // dashboard would render the "Complete your profile" banner for up to
+      // 30s (the polling interval) until the next counter sweep.
+      await refreshBrokerData();
       router.push("/broker/dashboard", undefined, { locale: router.locale });
     } catch (err) {
       posthog.captureException(err);
@@ -114,12 +116,12 @@ export default function BrokerOnboardingPage() {
   };
 
   return (
-    <Layout>
+    <BrokerShell active="profile" pageTitle={t("titles.brokerOnboarding")} skipProfileGate>
       <Head><title>{t("titles.brokerOnboarding")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-10 text-center animate-fade-in">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-forest-100">
+        <div className="mb-10 text-center ">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-sm bg-forest-100">
             <svg className="h-8 w-8 text-forest-700" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
             </svg>
@@ -131,12 +133,12 @@ export default function BrokerOnboardingPage() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl bg-error-50 border border-error-500/20 p-4 animate-fade-in" role="alert">
+          <div className="mb-6 rounded-sm bg-error-50 border border-error-500/20 p-4 " role="alert">
             <p className="font-body text-sm text-error-700">{error}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="card-elevated space-y-6 animate-fade-in-up">
+        <form onSubmit={handleSubmit} className="card-elevated space-y-6">
           <div>
             <label htmlFor="brokerageName" className="label-text">
               {t("broker.brokerageName")} <span className="text-amber-600">*</span>
@@ -230,7 +232,7 @@ export default function BrokerOnboardingPage() {
                     onClick={() =>
                       setForm((prev) => ({ ...prev, mortgageCategory: cat }))
                     }
-                    className={`rounded-xl border-2 px-3 py-3 text-center font-body text-sm font-medium transition-all ${
+                    className={`rounded-sm border-2 px-3 py-3 text-center font-body text-sm font-medium transition-all ${
                       isSelected
                         ? "border-forest-600 bg-forest-50 text-forest-800"
                         : "border-cream-200 bg-white text-sage-500 hover:border-forest-300 hover:bg-cream-50"
@@ -316,7 +318,7 @@ export default function BrokerOnboardingPage() {
           </button>
         </form>
       </div>
-    </Layout>
+    </BrokerShell>
   );
 }
 

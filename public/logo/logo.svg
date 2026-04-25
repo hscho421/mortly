@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  mortly wordmark — editorial Outfit semibold with an italic amber period.
+
+  This is the SVG version of the inline wordmark used throughout the app
+  (Navbar, Footer, BrokerShell, BorrowerShell). The italic period is the
+  brand signature.
+
+  ── Customize ──
+  • Word color: change `fill` on the first <tspan> (currently #0F1729 / forest-800).
+  • Period color: change `fill` on the second <tspan> (currently #C49A3A / amber-500).
+  • Word text: replace the literal "mortly" between <tspan>…</tspan>.
+  • Tracking: adjust `letter-spacing` (currently -0.03em).
+  • Font weight: 400–700 are valid Outfit weights; 600 is canonical.
+  • Dark backgrounds: swap fill="#0F1729" to fill="#F8F7F4" (cream-100).
+  • Theming via CSS: replace `fill="#0F1729"` with `fill="currentColor"` and
+    the wordmark inherits the parent text color (period stays amber).
+
+  ── Font dependency ──
+  Requires the Outfit typeface (Google Fonts; already loaded by the app).
+  Falls back to the system sans-serif if Outfit isn't available. For raster
+  export (PNG, OG image), install Outfit locally first or convert text to
+  outlines in your design tool of choice.
+
+  ── Sizing ──
+  ViewBox is 200×80; render at any size via width/height attributes or CSS.
+  Aspect ratio is preserved automatically.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 200 80"
+     fill="none"
+     role="img"
+     aria-label="mortly">
+  <text
+    x="0"
+    y="58"
+    font-family="'Outfit', 'Inter', system-ui, -apple-system, sans-serif"
+    font-weight="600"
+    font-size="64"
+    letter-spacing="-0.03em">
+    <tspan fill="#0F1729">mortly</tspan><tspan fill="#C49A3A" font-style="italic">.</tspan>
+  </text>
+</svg>

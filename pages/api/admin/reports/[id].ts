@@ -1,5 +1,10 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
+import {
+  buildAdminActionCreate,
+  MAX_NOTES_LEN,
+  validateText,
+} from "@/lib/admin/audit";
 
 export default withAdmin(async (req, res, session) => {
   const { id } = req.query;
@@ -55,7 +60,8 @@ export default withAdmin(async (req, res, session) => {
     }
 
     if (status) {
-      const VALID_STATUSES = ["PENDING", "REVIEWING", "RESOLVED", "DISMISSED"];
+      // Must match Prisma's ReportStatus enum (see prisma/schema.prisma).
+      const VALID_STATUSES = ["OPEN", "REVIEWED", "RESOLVED", "DISMISSED"];
       if (!VALID_STATUSES.includes(status)) {
         return res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` });
       }
@@ -71,9 +77,14 @@ export default withAdmin(async (req, res, session) => {
 
     const previousStatus = report.status;
 
+    const notesValidated = validateText(adminNotes, MAX_NOTES_LEN, "adminNotes");
+    if (notesValidated && typeof notesValidated === "object") {
+      return res.status(400).json({ error: notesValidated.error });
+    }
+
     const updateData: Record<string, unknown> = {};
     if (status) updateData.status = status;
-    if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+    if (adminNotes !== undefined) updateData.adminNotes = notesValidated;
     if (status === "RESOLVED" || status === "DISMISSED") {
       updateData.resolvedAt = new Date();
     }
@@ -85,21 +96,25 @@ export default withAdmin(async (req, res, session) => {
 
     // Log admin action when status changes
     if (status && status !== previousStatus) {
-      await prisma.adminAction.create({
-        data: {
-          adminId: session.user.id,
-          action: status === "RESOLVED" ? "RESOLVE_REPORT" : status === "DISMISSED" ? "DISMISS_REPORT" : "UPDATE_REPORT",
+      await prisma.adminAction.create(
+        buildAdminActionCreate(req, session, {
+          action:
+            status === "RESOLVED"
+              ? "RESOLVE_REPORT"
+              : status === "DISMISSED"
+              ? "DISMISS_REPORT"
+              : "UPDATE_REPORT",
           targetType: "REPORT",
           targetId: id,
-          details: JSON.stringify({
+          details: {
             previousStatus,
             newStatus: status,
             reportTargetType: report.targetType,
             reportTargetId: report.targetId,
-          }),
-          reason: adminNotes || null,
-        },
-      });
+          },
+          reason: notesValidated,
+        }),
+      );
     }
 
     return res.status(200).json(updated);

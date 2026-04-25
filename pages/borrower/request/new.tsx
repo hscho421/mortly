@@ -1,15 +1,20 @@
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import Head from "next/head";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import Layout from "@/components/Layout";
+import BorrowerShell from "@/components/borrower/BorrowerShell";
+import { useBorrowerData } from "@/components/borrower/BorrowerDataContext";
+import RequestFormLayout from "@/components/borrower/RequestFormLayout";
+import { AppTopbar, Btn } from "@/components/broker/ui";
 import { SkeletonForm } from "@/components/Skeleton";
-import RequestForm from "@/components/RequestForm";
+import RequestForm, {
+  type RequestFormSnapshot,
+} from "@/components/RequestForm";
 import type { CreateRequestInput } from "@/types";
 import posthog from "posthog-js";
-import { useEffect } from "react";
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({
   props: {
@@ -21,27 +26,29 @@ export default function NewRequestPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
+  const { refresh: refreshBorrowerData } = useBorrowerData();
+  const [snapshot, setSnapshot] = useState<RequestFormSnapshot | null>(null);
 
-  if (status === "loading") {
-    return (
-      <Layout>
-        <SkeletonForm />
-      </Layout>
-    );
-  }
-
-  if (!session || session.user.role !== "BORROWER") {
-    if (typeof window !== "undefined") {
-      router.push("/login", undefined, { locale: router.locale });
-    }
-    return null;
-  }
-
+  // Warn on accidental tab close mid-form. Hook order must stay stable, so
+  // it sits above any conditional return.
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, []);
+
+  if (status === "loading") {
+    return (
+      <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerNewRequest")}>
+        <SkeletonForm />
+      </BorrowerShell>
+    );
+  }
+
+  // Auth gate handled by <BorrowerShell> upstream.
+  if (!session || session.user.role !== "BORROWER") return null;
 
   const handleSubmit = async (data: CreateRequestInput) => {
     const res = await fetch("/api/requests", {
@@ -60,20 +67,57 @@ export default function NewRequestPage() {
       mortgage_category: data.mortgageCategory,
       province: data.province,
     });
+    // Invalidate the cached borrower lists so the dashboard sees the new
+    // request immediately (without waiting for the 30s context poll).
+    refreshBorrowerData().catch(() => {
+      // best-effort
+    });
     router.push(`/borrower/request/${created.publicId}`);
   };
 
-  return (
-    <Layout>
-      <Head><title>{t("titles.borrowerNewRequest")}</title></Head>
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="heading-lg">{t("request.newRequestTitle")}</h1>
-        </div>
+  const step = snapshot?.step ?? 1;
+  const totalSteps = snapshot?.totalSteps ?? 3;
 
-        <RequestForm onSubmit={handleSubmit} />
-      </div>
-    </Layout>
+  return (
+    <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerNewRequest")}>
+      <Head>
+        <title>{t("titles.borrowerNewRequest")}</title>
+      </Head>
+
+      <AppTopbar
+        eyebrow={
+          <>
+            {t("request.stepLabel", "STEP {{n}} / {{total}}", {
+              n: step,
+              total: totalSteps,
+            })}
+          </>
+        }
+        title={t("request.newRequestTitle")}
+        actions={
+          <Btn
+            as="a"
+            href="/borrower/dashboard"
+            size="sm"
+            variant="ghost"
+          >
+            {t("request.cancel", "Cancel")}
+          </Btn>
+        }
+      />
+
+      <RequestFormLayout
+        step={step}
+        totalSteps={totalSteps}
+        form={snapshot?.form ?? null}
+        goToStep={snapshot?.goToStep}
+      >
+        <RequestForm
+          onSubmit={handleSubmit}
+          hideStepper
+          onStateChange={setSnapshot}
+        />
+      </RequestFormLayout>
+    </BorrowerShell>
   );
 }

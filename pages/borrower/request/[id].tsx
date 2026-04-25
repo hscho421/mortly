@@ -7,7 +7,8 @@ import Head from "next/head";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
-import Layout from "@/components/Layout";
+import BorrowerShell from "@/components/borrower/BorrowerShell";
+import { useBorrowerData } from "@/components/borrower/BorrowerDataContext";
 import { SkeletonRequestDetail } from "@/components/Skeleton";
 import StatusBadge from "@/components/StatusBadge";
 import ConsultationStepper from "@/components/ConsultationStepper";
@@ -52,6 +53,7 @@ export default function RequestDetail() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { data: session, status: authStatus } = useSession();
+  const { refresh: refreshBorrowerData } = useBorrowerData();
   const { id } = router.query;
 
   const [request, setRequest] = useState<RequestData>(null);
@@ -86,13 +88,11 @@ export default function RequestDetail() {
   }, [id, router, t]);
 
   useEffect(() => {
+    // Auth gate handled by <BorrowerShell> upstream — only fetch when ready.
     if (authStatus === "loading") return;
-    if (!session) {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session) return;
     fetchRequest();
-  }, [authStatus, session, fetchRequest, router]);
+  }, [authStatus, session, fetchRequest]);
 
   async function handleEdit(data: CreateRequestInput) {
     const res = await fetch(`/api/requests/${request.publicId}`, {
@@ -127,6 +127,9 @@ export default function RequestDetail() {
         throw new Error(data.error || t("errors.failedToDeleteRequest"));
       }
 
+      // Invalidate cached requests so the dashboard doesn't render the now-
+      // deleted item until the next 30s context poll.
+      await refreshBorrowerData();
       router.push("/borrower/dashboard", undefined, { locale: router.locale });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
@@ -137,9 +140,9 @@ export default function RequestDetail() {
 
   if (loading || !request) {
     return (
-      <Layout>
+      <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerRequestDetail")}>
         <SkeletonRequestDetail />
-      </Layout>
+      </BorrowerShell>
     );
   }
 
@@ -161,9 +164,9 @@ export default function RequestDetail() {
     : t("request.residentialRequest");
 
   return (
-    <Layout>
+    <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerRequestDetail")}>
       <Head><title>{t("titles.borrowerRequestDetail")}</title></Head>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ">
         <Link
           href="/borrower/dashboard"
           className="mb-8 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
@@ -176,20 +179,20 @@ export default function RequestDetail() {
 
         {/* Success message */}
         {successMsg && (
-          <div className="mb-6 rounded-2xl bg-forest-50 border border-forest-200 p-4 text-sm text-forest-700 font-body animate-fade-in">
+          <div className="mb-6 rounded-sm bg-forest-50 border border-forest-200 p-4 text-sm text-forest-700 font-body ">
             {successMsg}
           </div>
         )}
 
         {/* Error message */}
         {error && (
-          <div className="mb-6 rounded-2xl bg-error-50 border border-error-500/20 p-4 text-sm text-error-700 font-body animate-fade-in" role="alert">
+          <div className="mb-6 rounded-sm bg-error-50 border border-error-500/20 p-4 text-sm text-error-700 font-body " role="alert">
             {error}
           </div>
         )}
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-fade-in-up stagger-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="heading-lg">{pageTitle}</h1>
@@ -211,7 +214,7 @@ export default function RequestDetail() {
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-body font-medium text-error-600 hover:bg-red-50 hover:border-red-400 transition-all duration-200"
+                  className="rounded-sm border border-error-300 bg-white px-4 py-2 text-sm font-body font-medium text-error-600 hover:bg-error-50 hover:border-error-400 transition-all duration-200"
                 >
                   {t("request.delete")}
                 </button>
@@ -228,16 +231,16 @@ export default function RequestDetail() {
 
         {/* Rejection banner */}
         {request.status === "REJECTED" && (
-          <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 p-6 animate-fade-in-up stagger-2">
+          <div className="mb-8 rounded-sm border border-error-200 bg-error-50 p-6">
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-rose-100">
-                <svg className="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-error-100">
+                <svg className="h-4 w-4 text-error-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-body text-sm font-semibold text-rose-700">{t("request.rejectedTitle", "Request Not Approved")}</h3>
-                <p className="mt-1 font-body text-sm text-rose-600">
+                <h3 className="font-body text-sm font-semibold text-error-700">{t("request.rejectedTitle", "Request Not Approved")}</h3>
+                <p className="mt-1 font-body text-sm text-error-600">
                   {request.rejectionReason || t("request.rejectedNote", "This request was not approved.")}
                 </p>
               </div>
@@ -247,7 +250,7 @@ export default function RequestDetail() {
 
         {/* Pending approval banner */}
         {request.status === "PENDING_APPROVAL" && (
-          <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 animate-fade-in-up stagger-2">
+          <div className="mb-8 rounded-sm border border-amber-200 bg-amber-50 p-6">
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
                 <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -276,7 +279,7 @@ export default function RequestDetail() {
         )}
 
         {/* Broker messages card */}
-        <div className="card-elevated mb-8 animate-fade-in-up stagger-2">
+        <div className="card-elevated mb-8">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-body-sm">{t("request.brokerMessages")}</p>
@@ -301,7 +304,7 @@ export default function RequestDetail() {
 
         {/* Request details - edit mode or read-only */}
         {isEditing ? (
-          <div className="animate-fade-in-up stagger-3">
+          <div className="">
             <RequestForm
               initialValues={editInitialValues}
               onSubmit={handleEdit}
@@ -318,7 +321,7 @@ export default function RequestDetail() {
           </div>
         ) : (
           /* Read-only details */
-          <div className="card-elevated animate-fade-in-up stagger-3">
+          <div className="card-elevated">
             <div className="pb-4 mb-2 border-b divider">
               <h2 className="heading-md">{t("request.requestDetails")}</h2>
             </div>
@@ -328,8 +331,8 @@ export default function RequestDetail() {
 
         {/* Delete confirmation modal */}
         {showDeleteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6 animate-fade-in-up">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 ">
+            <div className="bg-white rounded-sm shadow-xl max-w-md w-full mx-4 p-6">
               <h3 className="heading-md mb-2">{t("request.delete")}</h3>
               <p className="text-body-sm mb-6">{t("request.deleteConfirm")}</p>
               <div className="flex items-center gap-3 justify-end">
@@ -343,7 +346,7 @@ export default function RequestDetail() {
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="rounded-xl bg-red-600 px-6 py-2.5 text-sm font-body font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-sm bg-error-600 px-6 py-2.5 text-sm font-body font-medium text-white hover:bg-error-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {deleting ? t("request.deleting") : t("request.delete")}
                 </button>
@@ -352,7 +355,7 @@ export default function RequestDetail() {
           </div>
         )}
       </div>
-    </Layout>
+    </BorrowerShell>
   );
 }
 

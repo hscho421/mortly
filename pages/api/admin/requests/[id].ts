@@ -1,5 +1,10 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
+import {
+  buildAdminActionCreate,
+  MAX_REASON_LEN,
+  validateText,
+} from "@/lib/admin/audit";
 
 export default withAdmin(async (req, res, session) => {
   const { id: publicId } = req.query;
@@ -57,6 +62,11 @@ export default withAdmin(async (req, res, session) => {
       return res.status(400).json({ error: "Invalid status" });
     }
 
+    const reasonValidated = validateText(reason, MAX_REASON_LEN, "reason");
+    if (reasonValidated && typeof reasonValidated === "object") {
+      return res.status(400).json({ error: reasonValidated.error });
+    }
+
     const request = await prisma.borrowerRequest.findUnique({
       where: lookup,
     });
@@ -69,8 +79,8 @@ export default withAdmin(async (req, res, session) => {
 
     // Build update data — handle rejectionReason for REJECTED status
     const updateData: Record<string, unknown> = { status };
-    if (status === "REJECTED" && reason) {
-      updateData.rejectionReason = reason;
+    if (status === "REJECTED" && reasonValidated) {
+      updateData.rejectionReason = reasonValidated;
     }
     if (status === "OPEN" && previousStatus === "REJECTED") {
       updateData.rejectionReason = null;
@@ -124,22 +134,25 @@ export default withAdmin(async (req, res, session) => {
     }
 
     // Log the admin action
-    await prisma.adminAction.create({
-      data: {
-        adminId: session.user.id,
+    await prisma.adminAction.create(
+      buildAdminActionCreate(req, session, {
         action: actionType,
         targetType: "REQUEST",
         targetId: request.publicId,
-        details: JSON.stringify({ previousStatus, newStatus: status }),
-        reason: reason || null,
-      },
-    });
+        details: { previousStatus, newStatus: status },
+        reason: reasonValidated,
+      }),
+    );
 
     return res.status(200).json(updated);
   }
 
   if (req.method === "DELETE") {
     const { reason } = req.body || {};
+    const reasonValidated = validateText(reason, MAX_REASON_LEN, "reason");
+    if (reasonValidated && typeof reasonValidated === "object") {
+      return res.status(400).json({ error: reasonValidated.error });
+    }
 
     const request = await prisma.borrowerRequest.findUnique({
       where: lookup,
@@ -172,21 +185,20 @@ export default withAdmin(async (req, res, session) => {
     });
 
     // Log the admin action
-    await prisma.adminAction.create({
-      data: {
-        adminId: session.user.id,
+    await prisma.adminAction.create(
+      buildAdminActionCreate(req, session, {
         action: "DELETE_REQUEST",
         targetType: "REQUEST",
         targetId: request.publicId,
-        details: JSON.stringify({
+        details: {
           mortgageCategory: request.mortgageCategory,
           productTypes: request.productTypes,
           province: request.province,
           borrowerId: request.borrowerId,
-        }),
-        reason: reason || null,
-      },
-    });
+        },
+        reason: reasonValidated,
+      }),
+    );
 
     return res.status(200).json({ success: true });
   }

@@ -6,6 +6,9 @@ import { SessionProvider, useSession } from "next-auth/react";
 import { appWithTranslation, useTranslation } from "next-i18next";
 import { Analytics } from "@vercel/analytics/react";
 import { ToastProvider } from "@/components/Toast";
+import { AdminDataProvider } from "@/lib/admin/AdminDataContext";
+import { BrokerDataProvider } from "@/components/broker/BrokerDataContext";
+import { BorrowerDataProvider } from "@/components/borrower/BorrowerDataContext";
 
 function ErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation("common");
@@ -65,11 +68,14 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isAdmin = session?.user?.role === "ADMIN";
-  const isAdminRoute = router.pathname.startsWith("/admin");
   const isAuthRoute = router.pathname.startsWith("/login") || router.pathname.startsWith("/signup");
   const isApiRoute = router.pathname.startsWith("/api");
 
-  if (checked && maintenance && !isAdmin && !isAdminRoute && !isAuthRoute && !isApiRoute) {
+  // Maintenance gate applies to everything except API (server logic stays open)
+  // and the auth routes (needed so admins can sign in during maintenance).
+  // Admins bypass it regardless of route — including /admin/* so they can
+  // finish fixing whatever triggered maintenance mode.
+  if (checked && maintenance && !isAdmin && !isAuthRoute && !isApiRoute) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-cream-50 px-4">
         <div className="card-elevated max-w-lg text-center">
@@ -97,6 +103,39 @@ function useServiceWorker() {
   }, []);
 }
 
+/**
+ * Mount AdminDataProvider only on /admin/* routes. This keeps the shared
+ * badge + inbox polling loop from running on public pages where it would be
+ * wasted work (and would 401 since the viewer isn't an admin).
+ */
+function AdminScope({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const isAdminRoute = router.pathname.startsWith("/admin");
+  if (!isAdminRoute) return <>{children}</>;
+  return <AdminDataProvider>{children}</AdminDataProvider>;
+}
+
+/**
+ * Mount BrokerDataProvider only on /broker/* routes — mirrors AdminScope.
+ * Keeps the broker-specific polling loop out of public and admin pages.
+ */
+function BrokerScope({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const isBrokerRoute = router.pathname.startsWith("/broker");
+  if (!isBrokerRoute) return <>{children}</>;
+  return <BrokerDataProvider>{children}</BrokerDataProvider>;
+}
+
+/**
+ * Mount BorrowerDataProvider only on /borrower/* routes — mirrors BrokerScope.
+ */
+function BorrowerScope({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const isBorrowerRoute = router.pathname.startsWith("/borrower");
+  if (!isBorrowerRoute) return <>{children}</>;
+  return <BorrowerDataProvider>{children}</BorrowerDataProvider>;
+}
+
 function App({
   Component,
   pageProps: { session, ...pageProps },
@@ -107,7 +146,13 @@ function App({
       <ToastProvider>
         <ErrorBoundary>
           <MaintenanceGate>
-            <Component {...pageProps} />
+            <AdminScope>
+              <BrokerScope>
+                <BorrowerScope>
+                  <Component {...pageProps} />
+                </BorrowerScope>
+              </BrokerScope>
+            </AdminScope>
           </MaintenanceGate>
         </ErrorBoundary>
       </ToastProvider>

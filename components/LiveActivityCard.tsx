@@ -6,70 +6,63 @@ export default function LiveActivityCard({ request }: { request: LiveRequest }) 
   const { t } = useTranslation("common");
   const isCommercial = request.mortgageCategory === "COMMERCIAL";
 
+  const statusLabel =
+    request.status === "OPEN"
+      ? t("home.live.seekingBroker")
+      : request.status === "IN_PROGRESS"
+        ? t("home.live.inProgress")
+        : t("home.live.completed");
+
+  const statusTone =
+    request.status === "IN_PROGRESS"
+      ? { dot: "bg-amber-500", text: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" }
+      : request.status === "OPEN"
+        ? { dot: "bg-forest-600", text: "text-forest-700", bg: "bg-cream-100", border: "border-cream-300" }
+        : { dot: "bg-sage-400", text: "text-sage-600", bg: "bg-cream-100", border: "border-cream-300" };
+
   return (
-    <div className="flex-shrink-0 w-72 rounded-2xl border border-cream-300 bg-white p-5 shadow-md transition-transform hover:scale-[1.03]">
-      {/* Header: icon + category */}
-      <div className="flex items-center gap-2.5 mb-3">
-        <div
-          className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-            isCommercial
-              ? "bg-amber-50 text-amber-600"
-              : "bg-forest-50 text-forest-600"
-          }`}
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            {isCommercial ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-            )}
-          </svg>
+    <div className="flex-shrink-0 w-72 rounded-sm border border-cream-300 bg-cream-50 p-5 transition-colors hover:border-amber-400">
+      {/* Status row — mono eyebrow with live dot */}
+      <div className="flex items-center justify-between mb-4">
+        <div className={`inline-flex items-center gap-1.5 rounded-sm border ${statusTone.border} ${statusTone.bg} px-2 py-0.5`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${statusTone.dot} ${request.status !== "CLOSED" ? "animate-pulse" : ""}`} />
+          <span className={`font-mono text-[10px] uppercase tracking-[0.12em] font-semibold ${statusTone.text}`}>
+            {statusLabel}
+          </span>
         </div>
-        <span
-          className={`font-body text-xs font-semibold ${
-            isCommercial ? "text-amber-700" : "text-forest-700"
-          }`}
-        >
+        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-sage-500">
           {isCommercial ? t("request.commercial") : t("request.residential")}
         </span>
       </div>
 
-      {/* Product pills */}
-      <div className="flex flex-wrap gap-1 mb-3">
-        {request.productTypes.map((pt) => (
-          <span
+      {/* Product types — serif display, stacked */}
+      <div className="mb-4">
+        {request.productTypes.map((pt, i) => (
+          <div
             key={pt}
-            className="inline-flex items-center rounded-full bg-cream-200 px-2.5 py-1 font-body text-xs font-medium text-forest-700"
+            className="font-display font-semibold text-forest-800 text-lg leading-snug tracking-tight"
           >
-            {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
-          </span>
+            {i === 0 ? (
+              <>{t(PRODUCT_LABEL_KEYS[pt] ?? pt)}</>
+            ) : (
+              <span className="text-forest-800/70">{t(PRODUCT_LABEL_KEYS[pt] ?? pt)}</span>
+            )}
+          </div>
         ))}
       </div>
 
-      {/* Location */}
-      <p className="font-body text-sm text-sage-600 mb-3">
-        {request.city ? `${request.city}, ` : ""}
-        {request.province}
-      </p>
-
-      {/* Status */}
-      <div className="flex items-center gap-1.5">
-        <span
-          className={`h-2 w-2 rounded-full ${
-            request.status === "OPEN"
-              ? "bg-emerald-500 animate-pulse"
-              : request.status === "IN_PROGRESS"
-                ? "bg-amber-500 animate-pulse"
-                : "bg-sage-400"
-          }`}
-        />
-        <span className="font-body text-xs font-medium text-forest-700">
-          {request.status === "OPEN"
-            ? t("home.live.seekingBroker")
-            : request.status === "IN_PROGRESS"
-              ? t("home.live.inProgress")
-              : t("home.live.completed")}
-        </span>
+      {/* Location — mono */}
+      <div className="pt-3 border-t border-cream-300">
+        <div className="flex items-center gap-1.5">
+          <svg className="h-3 w-3 text-sage-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+          </svg>
+          <span className="font-mono text-[11px] tracking-[0.05em] text-sage-600">
+            {request.city ? `${request.city}, ` : ""}
+            {request.province}
+          </span>
+        </div>
       </div>
     </div>
   );

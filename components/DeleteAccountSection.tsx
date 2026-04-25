@@ -45,8 +45,8 @@ export default function DeleteAccountSection() {
   return (
     <>
       {/* Section card — visually separated from other settings */}
-      <div className="card-elevated mt-8 border-2 border-rose-100 bg-rose-50/30">
-        <h2 className="heading-sm mb-2 text-rose-700">{t("settings.dangerZone")}</h2>
+      <div className="card-elevated mt-8 border-2 border-error-100 bg-error-50/30">
+        <h2 className="heading-sm mb-2 text-error-700">{t("settings.dangerZone")}</h2>
         <p className="text-body-sm text-sage-500 mb-5">
           {t("settings.deleteAccountDesc")}
         </p>
@@ -54,12 +54,12 @@ export default function DeleteAccountSection() {
           type="button"
           onClick={() => setStage("first")}
           disabled={deleting}
-          className="rounded-full border border-rose-300 bg-white px-5 py-2 font-body text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-full border border-error-300 bg-white px-5 py-2 font-body text-sm font-semibold text-error-700 transition-colors hover:bg-error-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {t("settings.deleteAccount")}
         </button>
         {error ? (
-          <p className="mt-3 text-body-sm text-rose-600">{error}</p>
+          <p className="mt-3 text-body-sm text-error-600">{error}</p>
         ) : null}
       </div>
 
@@ -123,7 +123,7 @@ function ConfirmModal({
       onClick={() => (deleting ? undefined : onCancel())}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+        className="w-full max-w-md rounded-sm bg-white p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="heading-sm mb-2">{title}</h3>
@@ -141,7 +141,7 @@ function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={deleting}
-            className="rounded-full bg-rose-600 px-5 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full bg-error-600 px-5 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {confirmLabel}
           </button>

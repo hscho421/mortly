@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
+import { buildAdminActionCreate, MAX_REASON_LEN, validateText } from "@/lib/admin/audit";
 
 export default withAdmin(async (req, res, session) => {
   const { id } = req.query;
@@ -8,9 +9,13 @@ export default withAdmin(async (req, res, session) => {
     return res.status(400).json({ error: "User ID is required" });
   }
 
+  // Accept both internal cuid and 9-digit publicId — matches the pattern
+  // used by /admin/brokers/[id] and /admin/conversations/[id].
+  const lookup = /^\d{9}$/.test(id) ? { publicId: id } : { id };
+
   if (req.method === "GET") {
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: lookup,
       select: {
         id: true,
         publicId: true,
@@ -112,7 +117,7 @@ export default withAdmin(async (req, res, session) => {
       return res.status(400).json({ error: "Invalid status. Use ACTIVE, SUSPENDED, or BANNED." });
     }
 
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await prisma.user.findUnique({ where: lookup });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -133,11 +138,15 @@ export default withAdmin(async (req, res, session) => {
       ACTIVE: "REACTIVATE_USER",
     };
 
-    const { reason } = req.body;
+    const reasonValidated = validateText(req.body?.reason, MAX_REASON_LEN, "reason");
+    if (reasonValidated && typeof reasonValidated === "object") {
+      return res.status(400).json({ error: reasonValidated.error });
+    }
+    const reason = reasonValidated;
 
     const [updated] = await prisma.$transaction([
       prisma.user.update({
-        where: { id },
+        where: { id: user.id },
         data: { status },
         select: {
           id: true,
@@ -147,16 +156,15 @@ export default withAdmin(async (req, res, session) => {
           status: true,
         },
       }),
-      prisma.adminAction.create({
-        data: {
-          adminId: session.user.id,
+      prisma.adminAction.create(
+        buildAdminActionCreate(req, session, {
           action: actionMap[status],
           targetType: "USER",
           targetId: user.publicId,
-          details: JSON.stringify({ previousStatus: user.status, newStatus: status }),
-          reason: reason || null,
-        },
-      }),
+          details: { previousStatus: user.status, newStatus: status },
+          reason,
+        }),
+      ),
     ]);
 
     return res.status(200).json(updated);

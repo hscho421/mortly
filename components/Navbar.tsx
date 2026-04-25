@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSession, signOut } from "next-auth/react";
 import { useTranslation } from "next-i18next";
+import BrandMark from "./BrandMark";
 
 interface Notice {
   id: string;
@@ -106,7 +107,7 @@ export default function Navbar() {
     session?.user?.role === "BROKER"
       ? "/broker/dashboard"
       : session?.user?.role === "ADMIN"
-        ? "/admin/dashboard"
+        ? "/admin/inbox"
         : "/borrower/dashboard";
 
   const profileHref =
@@ -133,66 +134,65 @@ export default function Navbar() {
   return (
     <>
     <nav
-      className={`sticky top-0 z-50 transition-all duration-500 ${
+      className={`sticky top-0 z-50 transition-all duration-300 border-b ${
         scrolled
-          ? "bg-cream-100/80 backdrop-blur-xl shadow-[0_1px_0_0_rgba(0,0,0,0.04)]"
-          : "bg-cream-100"
+          ? "bg-cream-100/90 backdrop-blur-xl border-cream-300"
+          : "bg-cream-100 border-transparent"
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center group">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo/grey_logo.svg" alt="mortly" className="h-6" />
-          </Link>
+          {/* Logo — canonical mark, edit /public/logo/logo.svg to change */}
+          <BrandMark href="/" className="h-7 w-auto" />
 
-          {/* Desktop center links */}
+          {/* Desktop center links — editorial: flat text links with amber underline for active */}
           {navLinks.length > 0 && (
-            <div className="hidden items-center md:flex">
-              <div className="flex items-center rounded-full bg-cream-300/50 px-1 py-1">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`relative flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-body text-[13px] font-medium transition-all duration-200 ${
-                      isActive(link.href) || (link.href === messagesHref && isMessagesActive)
-                        ? "bg-white text-forest-800 shadow-sm"
-                        : "text-forest-600/70 hover:text-forest-800"
-                    }`}
-                  >
-                    {link.label}
-                    {"badge" in link && (link as { badge?: number }).badge ? (
-                      <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 font-body text-[10px] font-bold text-white">
-                        {(link as { badge: number }).badge > 9 ? "9+" : (link as { badge: number }).badge}
-                      </span>
-                    ) : null}
-                  </Link>
-                ))}
-              </div>
+            <div className="hidden items-center gap-6 md:flex">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`relative flex items-center gap-1.5 font-body text-[13px] transition-colors duration-200 ${
+                    isActive(link.href) || (link.href === messagesHref && isMessagesActive)
+                      ? "text-forest-800 font-medium"
+                      : "text-forest-600/70 hover:text-forest-800"
+                  }`}
+                >
+                  {(isActive(link.href) || (link.href === messagesHref && isMessagesActive)) && (
+                    <span className="absolute -bottom-[21px] left-0 right-0 h-[2px] bg-amber-500" />
+                  )}
+                  {link.label}
+                  {"badge" in link && (link as { badge?: number }).badge ? (
+                    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-sm bg-amber-500 px-1 font-mono text-[10px] font-bold text-white">
+                      {(link as { badge: number }).badge > 9 ? "9+" : (link as { badge: number }).badge}
+                    </span>
+                  ) : null}
+                </Link>
+              ))}
             </div>
           )}
 
           {/* Desktop right section */}
           <div className="hidden items-center gap-1 md:flex">
-            {/* Language switcher */}
-            <div className="flex items-center rounded-full bg-cream-300/50 p-0.5 mr-2">
+            {/* Language switcher — mono KO · EN toggle */}
+            <div className="flex items-center gap-2 mr-3 font-mono text-[11px] tracking-[0.12em]">
               <button
                 onClick={() => switchLocale("ko")}
-                className={`rounded-full px-2 py-1 font-body text-[11px] font-semibold tracking-wide transition-all duration-200 ${
+                className={`transition-colors duration-200 ${
                   router.locale === "ko"
-                    ? "bg-forest-800 text-cream-100 shadow-sm"
-                    : "text-forest-500 hover:text-forest-700"
+                    ? "text-forest-800 font-semibold"
+                    : "text-sage-400 hover:text-forest-700"
                 }`}
               >
                 KO
               </button>
+              <span className="text-sage-300">·</span>
               <button
                 onClick={() => switchLocale("en")}
-                className={`rounded-full px-2 py-1 font-body text-[11px] font-semibold tracking-wide transition-all duration-200 ${
+                className={`transition-colors duration-200 ${
                   router.locale === "en"
-                    ? "bg-forest-800 text-cream-100 shadow-sm"
-                    : "text-forest-500 hover:text-forest-700"
+                    ? "text-forest-800 font-semibold"
+                    : "text-sage-400 hover:text-forest-700"
                 }`}
               >
                 EN
@@ -206,9 +206,9 @@ export default function Navbar() {
                   <div className="relative" ref={noticeRef}>
                     <button
                       onClick={() => setNoticeOpen(!noticeOpen)}
-                      className={`group relative rounded-lg p-2 transition-all duration-200 ${
+                      className={`group relative rounded-sm p-2 transition-all duration-200 ${
                         noticeOpen
-                          ? "bg-forest-100 text-forest-800"
+                          ? "bg-cream-200 text-forest-800"
                           : "text-forest-500 hover:bg-cream-200 hover:text-forest-700"
                       }`}
                       title={t("nav.notifications", "Notifications")}
@@ -218,7 +218,7 @@ export default function Navbar() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                       </svg>
                       {unreadCount > 0 && (
-                        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 font-body text-[10px] font-bold text-white">
+                        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-sm bg-amber-500 px-1 font-mono text-[10px] font-bold text-white">
                           {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                       )}
@@ -230,7 +230,7 @@ export default function Navbar() {
                         role="menu"
                         aria-label={t("nav.notifications", "Notifications")}
                         onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Escape") setNoticeOpen(false); }}
-                        className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-white shadow-xl ring-1 ring-forest-900/5 animate-fade-in overflow-hidden z-50"
+                        className="absolute right-0 top-full mt-2 w-80 rounded-sm bg-cream-50 shadow-xl ring-1 ring-cream-300 animate-fade-in overflow-hidden z-50"
                       >
                         <div className="px-4 py-3 border-b border-cream-200">
                           <p className="font-body text-sm font-semibold text-forest-800">
@@ -283,9 +283,9 @@ export default function Navbar() {
 
                 <Link
                   href={profileHref}
-                  className={`group relative rounded-lg p-2 transition-all duration-200 ${
+                  className={`group relative rounded-sm p-2 transition-all duration-200 ${
                     isProfileActive
-                      ? "bg-forest-100 text-forest-800"
+                      ? "bg-cream-200 text-forest-800"
                       : "text-forest-500 hover:bg-cream-200 hover:text-forest-700"
                   }`}
                   title={t("nav.settings", "Settings")}
@@ -301,7 +301,7 @@ export default function Navbar() {
 
                 <button
                   onClick={() => setShowLogoutConfirm(true)}
-                  className="rounded-lg p-2 text-forest-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
+                  className="rounded-sm p-2 text-forest-500 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
                   title={t("nav.signOut")}
                   aria-label={t("nav.signOut")}
                 >
@@ -311,12 +311,18 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Link
                   href="/login"
-                  className="rounded-lg px-2.5 py-2 font-body text-[12px] font-medium text-forest-500/70 transition-all duration-200 hover:text-forest-700"
+                  className="font-body text-[13px] font-medium text-forest-700 transition-colors duration-200 hover:text-forest-900"
                 >
                   {t("nav.signIn")}
+                </Link>
+                <Link
+                  href="/signup"
+                  className="rounded-sm bg-amber-500 px-4 py-2 font-body text-[13px] font-semibold text-white transition-colors duration-200 hover:bg-amber-600"
+                >
+                  {t("nav.getStarted")}
                 </Link>
               </div>
             )}
@@ -347,17 +353,17 @@ export default function Navbar() {
           mobileOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="border-t border-cream-200 bg-cream-50/80 backdrop-blur-xl px-4 pb-5 pt-3">
+        <div className="border-t border-cream-300 bg-cream-100 px-4 pb-5 pt-3">
           <div className="space-y-0.5">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center rounded-lg px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
+                className={`flex items-center rounded-sm px-3 py-2.5 font-body text-[13px] transition-all duration-200 ${
                   isActive(link.href)
-                    ? "bg-white text-forest-800 shadow-sm"
-                    : "text-forest-600/70 hover:bg-white/60 hover:text-forest-800"
+                    ? "bg-cream-200 text-forest-800 font-medium border-l-2 border-amber-500"
+                    : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
                 }`}
               >
                 {link.label}
@@ -368,21 +374,22 @@ export default function Navbar() {
           <div className="my-3 h-px bg-cream-200" />
 
           {/* Mobile language switcher */}
-          <div className="flex items-center gap-1 px-3 py-1.5">
-            <span className="text-[11px] font-body text-forest-500/60 font-medium tracking-wide uppercase mr-2">{t("misc.language")}</span>
-            <div className="flex items-center rounded-full bg-cream-200/80 p-0.5">
+          <div className="flex items-center gap-3 px-3 py-1.5">
+            <span className="mono-label">{t("misc.language")}</span>
+            <div className="flex items-center gap-2 font-mono text-[11px] tracking-[0.12em]">
               <button
                 onClick={() => { switchLocale("ko"); setMobileOpen(false); }}
-                className={`rounded-full px-2.5 py-1 font-body text-[11px] font-semibold transition-all duration-200 ${
-                  router.locale === "ko" ? "bg-forest-800 text-cream-100 shadow-sm" : "text-forest-500"
+                className={`transition-colors duration-200 ${
+                  router.locale === "ko" ? "text-forest-800 font-semibold" : "text-sage-400"
                 }`}
               >
                 KO
               </button>
+              <span className="text-sage-300">·</span>
               <button
                 onClick={() => { switchLocale("en"); setMobileOpen(false); }}
-                className={`rounded-full px-2.5 py-1 font-body text-[11px] font-semibold transition-all duration-200 ${
-                  router.locale === "en" ? "bg-forest-800 text-cream-100 shadow-sm" : "text-forest-500"
+                className={`transition-colors duration-200 ${
+                  router.locale === "en" ? "text-forest-800 font-semibold" : "text-sage-400"
                 }`}
               >
                 EN
@@ -397,10 +404,10 @@ export default function Navbar() {
               <Link
                 href={dashboardHref}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
+                className={`flex items-center gap-3 rounded-sm px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
                   isActive(dashboardHref)
-                    ? "bg-white text-forest-800 shadow-sm"
-                    : "text-forest-600/70 hover:bg-white/60 hover:text-forest-800"
+                    ? "bg-cream-200 text-forest-800 border-l-2 border-amber-500"
+                    : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
                 }`}
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
@@ -413,10 +420,10 @@ export default function Navbar() {
                 <Link
                   href={messagesHref}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-3 rounded-sm px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
                     isMessagesActive
-                      ? "bg-white text-forest-800 shadow-sm"
-                      : "text-forest-600/70 hover:bg-white/60 hover:text-forest-800"
+                      ? "bg-cream-200 text-forest-800 border-l-2 border-amber-500"
+                      : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
                   }`}
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
@@ -424,7 +431,7 @@ export default function Navbar() {
                   </svg>
                   {role === "BROKER" ? t("broker.messages") : t("nav.messages")}
                   {unreadMessages > 0 && (
-                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 font-body text-[10px] font-bold text-white">
+                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-sm bg-amber-500 px-1.5 font-mono text-[10px] font-bold text-white">
                       {unreadMessages > 9 ? "9+" : unreadMessages}
                     </span>
                   )}
@@ -435,14 +442,14 @@ export default function Navbar() {
               {showUserLinks && (
                 <button
                   onClick={() => { setMobileOpen(false); setNoticeOpen(!noticeOpen); }}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-body text-[13px] font-medium text-forest-600/70 transition-all duration-200 hover:bg-white/60 hover:text-forest-800"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-body text-[13px] font-medium text-forest-600/70 transition-all duration-200 hover:bg-cream-200 hover:text-forest-800"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                   </svg>
                   {t("nav.notifications", "Notifications")}
                   {unreadCount > 0 && (
-                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 font-body text-[10px] font-bold text-white">
+                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-sm bg-amber-500 px-1.5 font-mono text-[10px] font-bold text-white">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -452,10 +459,10 @@ export default function Navbar() {
               <Link
                 href={profileHref}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
+                className={`flex items-center gap-3 rounded-sm px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
                   isProfileActive
-                    ? "bg-white text-forest-800 shadow-sm"
-                    : "text-forest-600/70 hover:bg-white/60 hover:text-forest-800"
+                    ? "bg-cream-200 text-forest-800 border-l-2 border-amber-500"
+                    : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
                 }`}
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
@@ -485,9 +492,16 @@ export default function Navbar() {
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}
-                className="block rounded-lg px-3 py-2 text-center font-body text-[12px] font-medium text-forest-500/70 transition-all hover:text-forest-700"
+                className="block rounded-sm px-3 py-2.5 text-center font-body text-[13px] font-medium text-forest-700 transition-all hover:bg-cream-200"
               >
                 {t("nav.signIn")}
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-sm bg-amber-500 px-3 py-2.5 text-center font-body text-[13px] font-semibold text-white transition-all hover:bg-amber-600"
+              >
+                {t("nav.getStarted")}
               </Link>
             </div>
           )}
@@ -503,7 +517,7 @@ export default function Navbar() {
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated animate-scale-in"
+        className="relative w-full max-w-sm rounded-sm bg-cream-50 border border-cream-300 p-6 shadow-xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="heading-sm mb-2">{t("nav.logoutConfirmTitle")}</h3>
@@ -511,16 +525,22 @@ export default function Navbar() {
         <div className="flex gap-3">
           <button
             onClick={() => setShowLogoutConfirm(false)}
-            className="flex-1 rounded-lg border border-cream-300 px-4 py-2.5 font-body text-sm font-medium text-forest-700 transition-all duration-200 hover:bg-cream-100 hover:border-cream-400"
+            className="flex-1 rounded-sm border border-cream-300 px-4 py-2.5 font-body text-sm font-medium text-forest-700 transition-all duration-200 hover:bg-cream-200"
           >
             {t("nav.logoutCancel")}
           </button>
           <button
             onClick={async () => {
               setShowLogoutConfirm(false);
-              await signOut({ callbackUrl: "/" });
+              // Redirect to /login (not /). The homepage renders this same
+              // Navbar, which reads useSession(); the client session cache
+              // can briefly return the stale pre-logout session before the
+              // post-signOut refetch lands, painting authed nav links for
+              // ~100-500ms. /login has no session-dependent chrome, so the
+              // transition is clean.
+              await signOut({ callbackUrl: "/login" });
             }}
-            className="flex-1 rounded-lg bg-red-500 px-4 py-2.5 font-body text-sm font-medium text-white transition-all duration-200 hover:bg-red-600 hover:shadow-md"
+            className="flex-1 rounded-sm bg-red-500 px-4 py-2.5 font-body text-sm font-medium text-white transition-all duration-200 hover:bg-red-600"
           >
             {t("nav.logoutConfirm")}
           </button>

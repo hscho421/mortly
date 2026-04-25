@@ -142,86 +142,75 @@ export default function Pricing() {
     <Layout>
       <SEO title={t("meta.pricingTitle")} description={t("meta.pricingDesc")} />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-forest-800 via-forest-900 to-forest-800" />
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_30%,_theme(colors.amber.400),_transparent_50%)]" />
-        <div className="relative section-padding max-w-3xl mx-auto text-center">
-          <span className="animate-fade-in-up opacity-0 stagger-1 inline-block font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-400 mb-6">
-            {t("pricing.badge")}
-          </span>
-          <h1 className="animate-fade-in-up opacity-0 stagger-2 font-display text-4xl sm:text-5xl lg:text-6xl tracking-tight text-cream-100 leading-[1.1]">
+      {/* Hero — editorial cream with serif */}
+      <section className="bg-cream-100 border-b border-cream-300">
+        <div className="relative max-w-5xl mx-auto px-4 py-20 sm:px-6 lg:px-8 lg:py-24 text-center">
+          <div className="eyebrow animate-fade-in-up opacity-0 stagger-1">— {t("pricing.badge")}</div>
+          <h1 className="animate-fade-in-up opacity-0 stagger-2 mt-4 heading-lg">
             {t("pricing.title")}
           </h1>
-          <p className="animate-fade-in-up opacity-0 stagger-3 mt-6 text-lg text-cream-300/70 leading-relaxed font-body">
-            {t("pricing.subtitle")} <br />
-            {t("pricing.subtitle2")}
+          <p className="animate-fade-in-up opacity-0 stagger-3 mt-6 text-base sm:text-lg text-forest-700/70 leading-relaxed font-body max-w-2xl mx-auto">
+            {t("pricing.subtitle")} {t("pricing.subtitle2")}
           </p>
-          
         </div>
       </section>
 
       {/* Pricing Cards */}
-      <section className="section-padding bg-cream-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="bg-cream-100 py-16 lg:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {tiers.map((tier, index) => (
               <div
                 key={tier.name}
-                className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)} rounded-2xl p-8 flex flex-col transition-all duration-300 ${
+                className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)} rounded-sm p-7 flex flex-col transition-all duration-200 relative border bg-cream-50 ${
                   tier.featured
-                    ? "bg-forest-800 text-cream-100 ring-2 ring-amber-400 relative scale-[1.02] min-h-[480px]"
-                    : "card-elevated min-h-[480px]"
+                    ? "border-amber-500 border-2"
+                    : "border-cream-300"
                 }`}
               >
                 {tier.featured && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-forest-900 text-xs font-bold rounded-full uppercase tracking-wider font-body">
+                  <div className="mb-4 self-start badge-accent">
                     {t("pricing.mostPopular")}
                   </div>
                 )}
-                <h3 className={`font-body text-sm font-semibold uppercase tracking-wider ${tier.featured ? "text-amber-400" : "text-sage-500"}`}>
+                <h3 className="mono-label">
                   {tier.name}
                 </h3>
-                <div className="mt-4">
+                <div className="mt-3">
                   {tier.originalPrice && (
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`font-body text-lg line-through ${tier.featured ? "text-cream-300/40" : "text-sage-400"}`}>
+                      <span className="font-body text-sm line-through text-sage-400">
                         {tier.originalPrice}
                       </span>
-                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold font-body bg-rose-500 text-white">
+                      <span className="inline-block px-1.5 py-0.5 rounded-sm text-[10px] font-bold font-mono bg-red-50 text-red-600 border border-red-100">
                         {tier.discount} {t("misc.off")}
                       </span>
                     </div>
                   )}
                   <div className="flex items-baseline gap-1">
-                    <span className={`font-display text-4xl sm:text-5xl ${tier.featured ? "text-cream-100" : "text-forest-800"}`}>
+                    <span className="font-display font-semibold text-4xl sm:text-5xl tracking-[-0.03em] text-forest-800">
                       {tier.price}
                     </span>
-                    <span className={`font-body text-sm ${tier.featured ? "text-cream-300/60" : "text-sage-400"}`}>
+                    <span className="font-body text-sm text-sage-400">
                       {tier.period}
                     </span>
                   </div>
                 </div>
-                <p className={`mt-3 text-sm font-body ${tier.featured ? "text-cream-300/70" : "text-forest-700/60"}`}>
+                <p className="mt-3 text-sm font-body text-forest-700/70 leading-relaxed">
                   {tier.description}
                 </p>
 
-                <ul className="mt-8 space-y-3 flex-1">
+                <div className="h-px bg-cream-300 my-6" />
+
+                <ul className="space-y-2.5 flex-1">
                   {Object.entries(tier.features).map(([key, value]) => {
                     if (typeof value === "boolean" && !value) return null;
                     const row = comparisonRows.find((r) => r.key === key);
                     const displayValue = typeof value === "boolean" ? row?.label : `${row?.label}: ${value}`;
                     return (
-                      <li key={key} className="flex items-start gap-2.5 text-sm font-body">
-                        <svg
-                          className={`w-5 h-5 flex-shrink-0 mt-0.5 ${tier.featured ? "text-amber-400" : "text-forest-500"}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className={tier.featured ? "text-cream-200" : "text-forest-700/80"}>{displayValue}</span>
+                      <li key={key} className="flex items-start gap-2.5 text-[13px] font-body">
+                        <span className="font-mono text-amber-600 leading-6">✓</span>
+                        <span className="text-forest-700">{displayValue}</span>
                       </li>
                     );
                   })}
@@ -229,55 +218,53 @@ export default function Pricing() {
 
                 <button
                   onClick={goToBilling}
-                  className={`mt-8 block text-center w-full py-3.5 rounded-lg font-semibold text-sm transition-all duration-300 font-body ${
+                  className={`mt-6 block text-center w-full py-3 rounded-sm font-semibold text-sm transition-all duration-200 font-body ${
                     tier.featured
-                      ? "bg-amber-400 text-forest-900 hover:bg-amber-300"
+                      ? "bg-amber-500 text-white hover:bg-amber-600"
                       : "bg-forest-800 text-cream-100 hover:bg-forest-700"
                   }`}
                 >
-                  {tier.cta}
+                  {tier.cta} →
                 </button>
               </div>
             ))}
           </div>
-          <p className="mt-8 text-sm text-forest-700/60 font-body text-center animate-fade-in-up opacity-0 stagger-5">
+          <p className="mt-10 text-sm text-forest-700/60 font-body text-center animate-fade-in-up opacity-0 stagger-5 max-w-3xl mx-auto">
             {t("pricing.creditExplanation")}
           </p>
         </div>
       </section>
 
       {/* Comparison Table */}
-      <section className="section-padding bg-cream-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12 animate-fade-in-up opacity-0">
-            <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              {t("pricing.compareBadge")}
-            </span>
-            <h2 className="heading-lg">{t("pricing.compareTitle")}</h2>
-            <p className="text-body mt-3">{t("pricing.compareSubtitle")}</p>
+      <section className="bg-cream-50 border-y border-cream-300 py-16 lg:py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 animate-fade-in-up opacity-0">
+            <div className="eyebrow">— {t("pricing.compareBadge")}</div>
+            <h2 className="heading-lg mt-4">{t("pricing.compareTitle")}</h2>
+            <p className="text-body mt-3 max-w-2xl">{t("pricing.compareSubtitle")}</p>
           </div>
 
-          <div className="animate-fade-in-up opacity-0 stagger-2 overflow-x-auto card-elevated !p-0">
+          <div className="animate-fade-in-up opacity-0 stagger-2 overflow-x-auto rounded-sm border border-cream-300 bg-cream-50">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b-2 border-cream-300">
-                  <th className="py-4 sm:py-5 pl-4 sm:pl-6 pr-3 sm:pr-4 text-xs sm:text-sm font-semibold text-forest-800 min-w-[120px] font-body">{t("pricing.feature")}</th>
+                <tr className="border-b border-cream-300 bg-cream-100">
+                  <th className="py-4 pl-6 pr-4 mono-label min-w-[140px]">{t("pricing.feature")}</th>
                   {tiers.map((tier) => (
-                    <th key={tier.name} className="py-5 px-4 text-center">
-                      <span className={`text-sm font-semibold font-body ${tier.featured ? "text-forest-800" : "text-forest-700"}`}>
+                    <th key={tier.name} className="py-4 px-4 text-center">
+                      <span className="font-body text-sm font-semibold text-forest-800">
                         {tier.name}
                       </span>
                       {tier.featured && (
-                        <span className="block text-xs text-amber-600 font-body mt-0.5">{t("pricing.recommended")}</span>
+                        <span className="block text-[10px] text-amber-600 font-mono mt-1 uppercase tracking-[0.1em]">{t("pricing.recommended")}</span>
                       )}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {comparisonRows.map((row, index) => (
-                  <tr key={row.key} className={`border-b border-cream-200 ${index % 2 === 0 ? "bg-cream-50/50" : ""}`}>
-                    <td className="py-3 sm:py-4 pl-4 sm:pl-6 pr-3 sm:pr-4 text-xs sm:text-sm text-forest-700/80 font-body">{row.label}</td>
+                {comparisonRows.map((row) => (
+                  <tr key={row.key} className="border-b border-cream-200 last:border-0">
+                    <td className="py-4 pl-6 pr-4 text-sm text-forest-700 font-body">{row.label}</td>
                     {tiers.map((tier) => (
                       <td key={tier.name} className="py-4 px-4 text-center">
                         <CellValue value={tier.features[row.key as keyof typeof tier.features]} />
@@ -292,23 +279,24 @@ export default function Pricing() {
       </section>
 
       {/* FAQ */}
-      <section className="section-padding bg-cream-100">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16 animate-fade-in-up opacity-0">
-            <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
-              {t("pricing.faqBadge")}
-            </span>
-            <h2 className="heading-lg">{t("pricing.faqTitle")}</h2>
+      <section className="bg-cream-100 py-16 lg:py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 animate-fade-in-up opacity-0">
+            <div className="eyebrow">— {t("pricing.faqBadge")}</div>
+            <h2 className="heading-lg mt-4">{t("pricing.faqTitle")}</h2>
           </div>
 
-          <div className="space-y-0">
+          <div>
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)} border-b border-cream-300 py-8 first:pt-0 last:border-0`}
+                className={`animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)} grid grid-cols-[40px_1fr] gap-5 border-t border-cream-300 py-6 first:border-t-0 first:pt-0`}
               >
-                <h3 className="heading-sm mb-3">{faq.q}</h3>
-                <p className="text-body">{faq.a}</p>
+                <div className="font-mono text-xs text-sage-500 pt-1">0{index + 1}</div>
+                <div>
+                  <h3 className="font-body text-base font-semibold text-forest-800 leading-snug">{faq.q}</h3>
+                  <p className="text-body-sm mt-2">{faq.a}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -316,21 +304,20 @@ export default function Pricing() {
       </section>
 
       {/* CTA */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-forest-800" />
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_50%,_theme(colors.amber.400),_transparent_50%)]" />
-        <div className="relative section-padding max-w-3xl mx-auto text-center">
-          <h2 className="animate-fade-in-up opacity-0 font-display text-3xl sm:text-4xl lg:text-5xl tracking-tight text-cream-100">
+      <section className="bg-forest-800 text-cream-100">
+        <div className="max-w-5xl mx-auto px-4 py-16 lg:py-20 sm:px-6 lg:px-8 text-center">
+          <div className="eyebrow-dark">— {t("nav.getStarted")}</div>
+          <h2 className="animate-fade-in-up opacity-0 mt-4 font-display font-semibold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-cream-100">
             {t("pricing.ctaTitle")}
           </h2>
-          <p className="animate-fade-in-up opacity-0 stagger-1 mt-6 text-lg text-cream-300/70 font-body">
+          <p className="animate-fade-in-up opacity-0 stagger-1 mt-5 text-base sm:text-lg text-cream-200/70 font-body">
             {t("pricing.ctaSubtitle")}
           </p>
           <Link
             href="/for-brokers"
-            className="animate-fade-in-up opacity-0 stagger-2 btn-amber mt-10 px-10 py-4 text-base"
+            className="animate-fade-in-up opacity-0 stagger-2 inline-flex items-center justify-center gap-2 mt-8 rounded-sm bg-amber-500 px-8 py-3.5 font-body text-[15px] font-semibold text-white transition-all duration-200 hover:bg-amber-600"
           >
-            {t("pricing.startFreeTrial")}
+            {t("pricing.startFreeTrial")} →
           </Link>
         </div>
       </section>

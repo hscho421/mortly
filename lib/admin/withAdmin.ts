@@ -1,6 +1,35 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const MUTATIONS_PER_MIN = 30;
+
+/**
+ * CSRF gate. For mutating methods we require an `Origin` (or `Referer`)
+ * header whose host matches the request host. This blocks cross-origin
+ * browser-issued POST/PUT/PATCH/DELETE — the CSRF threat — while permitting
+ * same-origin fetches made by the admin UI.
+ *
+ * Same-host comparison covers sub-path and port differences correctly
+ * because `URL(...).host` includes the port. Tooling without an `Origin`
+ * header (curl, some CI scripts) is rejected; tooling that sends an
+ * explicit `Origin: https://<host>` is allowed.
+ */
+function sameOriginOk(req: NextApiRequest): boolean {
+  const origin = req.headers.origin;
+  const referer = req.headers.referer;
+  const host = req.headers.host;
+  if (!host) return false;
+  const source = typeof origin === "string" && origin.length > 0 ? origin : typeof referer === "string" ? referer : "";
+  if (!source) return false;
+  try {
+    return new URL(source).host === host;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Session shape as seen by an admin route handler.
@@ -66,6 +95,30 @@ export function withAdmin(
       if (role !== "ADMIN") {
         res.status(403).json({ error: "Admin access required" });
         return;
+      }
+
+      // CSRF + rate limit on destructive verbs. GET is unrestricted
+      // (read-heavy admin UIs poll frequently).
+      if (req.method && MUTATING_METHODS.has(req.method)) {
+        if (!sameOriginOk(req)) {
+          res.status(403).json({ error: "Cross-origin request rejected" });
+          return;
+        }
+
+        const adminId = (session.user as { id?: string } | undefined)?.id ?? "unknown";
+        const { success, remaining } = await checkRateLimit({
+          key: `admin-mutate-${adminId}`,
+          limit: MUTATIONS_PER_MIN,
+          windowMs: 60_000,
+        });
+        if (!success) {
+          res.setHeader("Retry-After", "60");
+          res.status(429).json({
+            error: "Too many admin actions — slow down or contact another admin.",
+          });
+          return;
+        }
+        res.setHeader("X-RateLimit-Remaining", String(remaining));
       }
 
       await handler(req, res, session as AdminSession);

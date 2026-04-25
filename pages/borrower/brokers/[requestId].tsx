@@ -6,7 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
-import Layout from "@/components/Layout";
+import BorrowerShell from "@/components/borrower/BorrowerShell";
 import { SkeletonBrokerList } from "@/components/Skeleton";
 import ReportButton from "@/components/ReportButton";
 
@@ -65,7 +65,7 @@ export default function BrokerComparison() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { requestId } = router.query;
-  const { data: session, status: authStatus } = useSession();
+  const { status: authStatus } = useSession();
 
   const [conversations, setConversations] = useState<ConversationBroker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,28 +87,26 @@ export default function BrokerComparison() {
   }, [requestId, t]);
 
   useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    // Auth gate handled by <BorrowerShell> upstream — only fetch when ready.
+    if (authStatus === "unauthenticated") return;
     fetchConversations();
-  }, [authStatus, router, fetchConversations]);
+  }, [authStatus, fetchConversations]);
 
   const sorted = sortConversations(conversations, sort);
 
   if (authStatus === "loading" || loading) {
     return (
-      <Layout>
+      <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerBrokers")}>
         <SkeletonBrokerList />
-      </Layout>
+      </BorrowerShell>
     );
   }
 
   return (
-    <Layout>
+    <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerBrokers")}>
       <Head><title>{t("titles.borrowerBrokers")}</title></Head>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
-        <div className="mb-8 animate-fade-in-up stagger-1">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ">
+        <div className="mb-8">
           <h1 className="heading-lg mb-2">
             {t("brokerIntros.title")}
           </h1>
@@ -118,18 +116,18 @@ export default function BrokerComparison() {
         </div>
 
         {/* Disclaimer */}
-        <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm font-body text-amber-800 animate-fade-in-up stagger-2">
+        <div className="mb-6 rounded-sm bg-amber-50 border border-amber-200 p-4 text-sm font-body text-amber-800">
           {t("brokerIntros.disclaimer")}
         </div>
 
         {error && (
-          <div className="mb-6 rounded-2xl bg-error-50 border border-error-500/20 p-4 text-sm font-body text-error-700" role="alert">
+          <div className="mb-6 rounded-sm bg-error-50 border border-error-500/20 p-4 text-sm font-body text-error-700" role="alert">
             {error}
           </div>
         )}
 
         {/* Sort controls */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6 animate-fade-in-up stagger-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6">
           <span className="text-body-sm">{t("brokerIntros.sortBy")}</span>
           {(
             [
@@ -140,7 +138,7 @@ export default function BrokerComparison() {
             <button
               key={value}
               onClick={() => setSort(value)}
-              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-body font-medium rounded-xl transition-all duration-200 min-h-[44px] ${
+              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-body font-medium rounded-sm transition-all duration-200 min-h-[44px] ${
                 sort === value
                   ? "bg-forest-800 text-cream-100 shadow-md shadow-forest-800/20"
                   : "bg-cream-200 text-forest-700 hover:bg-cream-300"
@@ -153,7 +151,7 @@ export default function BrokerComparison() {
 
         {/* Broker cards */}
         {sorted.length === 0 ? (
-          <div className="text-center py-16 animate-fade-in-up stagger-4">
+          <div className="text-center py-16">
             <p className="heading-sm text-sage-400 mb-2">{t("brokerIntros.noIntros")}</p>
             <p className="text-body-sm text-sage-400">
               {t("brokerIntros.noIntrosDesc")}
@@ -161,14 +159,14 @@ export default function BrokerComparison() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
-            {sorted.map((conv, index) => {
+            {sorted.map((conv) => {
               const broker = conv.broker;
 
               return (
                 <div
                   key={conv.id}
-                  className={`card-elevated hover:shadow-xl hover:shadow-forest-800/5 transition-all duration-300 animate-fade-in-up ${
-                    index < 6 ? `stagger-${index + 1}` : ""
+                  className={`card-elevated hover:shadow-xl hover:shadow-forest-800/5 transition-all duration-300 ${
+                    ""
                   }`}
                 >
                   {/* Broker header */}
@@ -251,6 +249,6 @@ export default function BrokerComparison() {
           </div>
         )}
       </div>
-    </Layout>
+    </BorrowerShell>
   );
 }

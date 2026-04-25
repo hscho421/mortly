@@ -9,7 +9,7 @@ export default withAdmin(async (req, res) => {
     const where = buildSearchWhere<Record<string, unknown>>({
       search: req.query.search,
       searchFields: ["name", "email"],
-      filters: { role: req.query.role },
+      filters: { role: req.query.role, status: req.query.status },
       publicIdField: "publicId",
     });
 

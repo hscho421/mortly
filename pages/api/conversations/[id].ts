@@ -64,7 +64,19 @@ export default async function handler(
             select: { id: true, publicId: true, name: true },
           },
           request: {
-            select: { id: true, publicId: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
+            select: {
+              id: true,
+              publicId: true,
+              province: true,
+              city: true,
+              status: true,
+              mortgageCategory: true,
+              productTypes: true,
+              desiredTimeline: true,
+              details: true,
+              notes: true,
+              createdAt: true,
+            },
           },
         },
       });
@@ -93,6 +105,30 @@ export default async function handler(
             ? { borrowerLastReadAt: new Date() }
             : { brokerLastReadAt: new Date() },
         });
+      }
+
+      // L2 hardening: when the viewer is the broker side, only return the
+      // rich request fields (notes, details, desiredTimeline, createdAt) if
+      // their verification status is currently VERIFIED. A broker whose
+      // status was revoked AFTER the conversation started keeps thread
+      // access (so support hand-off doesn't break ongoing chats) but no
+      // longer sees the borrower's financial details.
+      const viewerIsBroker = conversation.broker.userId === session.user.id;
+      if (viewerIsBroker && conversation.broker.verificationStatus !== "VERIFIED") {
+        const safeRequest = conversation.request
+          ? {
+              id: conversation.request.id,
+              publicId: conversation.request.publicId,
+              province: conversation.request.province,
+              city: conversation.request.city,
+              status: conversation.request.status,
+              mortgageCategory: conversation.request.mortgageCategory,
+              productTypes: conversation.request.productTypes,
+            }
+          : conversation.request;
+        return res
+          .status(200)
+          .json({ ...conversation, request: safeRequest, hasMore });
       }
 
       return res.status(200).json({ ...conversation, hasMore });

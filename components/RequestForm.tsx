@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useCallback, useEffect, useState, FormEvent } from "react";
 import { useTranslation } from "next-i18next";
 import type { CreateRequestInput, ResidentialDetails, CommercialDetails } from "@/types";
 import {
@@ -26,11 +26,28 @@ const PROVINCES = [
   "Yukon",
 ];
 
+/**
+ * Snapshot emitted by RequestForm whenever its internal state changes.
+ * Consumed by parents that render the new 3-column layout (left rail with
+ * step nav + right live summary). The form remains the single source of
+ * truth for state — parents only read.
+ */
+export interface RequestFormSnapshot {
+  step: number;
+  totalSteps: number;
+  form: CreateRequestInput;
+  goToStep: (n: number) => void;
+}
+
 interface RequestFormProps {
   initialValues?: CreateRequestInput;
   onSubmit: (data: CreateRequestInput) => Promise<void>;
   submitLabel?: string;
   submittingLabel?: string;
+  /** Hide the inline progress stepper (use when the parent owns the rail). */
+  hideStepper?: boolean;
+  /** Fired on every state change so a parent can render a live summary. */
+  onStateChange?: (snapshot: RequestFormSnapshot) => void;
 }
 
 function getYearOptions(): string[] {
@@ -56,6 +73,8 @@ export default function RequestForm({
   onSubmit,
   submitLabel,
   submittingLabel,
+  hideStepper = false,
+  onStateChange,
 }: RequestFormProps) {
   const { t } = useTranslation("common");
 
@@ -213,6 +232,22 @@ export default function RequestForm({
     if (step > 1) setStep(step - 1);
   }
 
+  // Stable callback so parents can wire it into the left rail without
+  // causing re-renders in the form.
+  const goToStep = useCallback((n: number) => {
+    if (n >= 1 && n <= totalSteps) setStep(n);
+  }, []);
+
+  // Emit snapshot whenever step or form changes. Parents (e.g. the new
+  // request flow's left rail + right summary) read from this rather than
+  // owning the state themselves — keeps the form's complex state surface
+  // intact while exposing what the surrounding layout needs.
+  useEffect(() => {
+    if (!onStateChange) return;
+    onStateChange({ step, totalSteps, form, goToStep });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, form]);
+
   // ── Submit ──────────────────────────────────────────────────
 
   async function handleSubmit(e: FormEvent) {
@@ -254,19 +289,19 @@ export default function RequestForm({
 
   // ── Required marker ────────────────────────────────────────
 
-  const required = <span className="text-rose-500 ml-0.5">*</span>;
+  const required = <span className="text-error-500 ml-0.5">*</span>;
 
   // ── Styling helpers ─────────────────────────────────────────
 
   const categoryCardClass = (active: boolean) =>
-    `relative flex-1 cursor-pointer rounded-2xl border-2 p-5 sm:p-6 transition-all duration-200 ${
+    `relative flex-1 cursor-pointer rounded-sm border-2 p-5 sm:p-6 transition-all duration-200 ${
       active
         ? "border-forest-600 bg-forest-50 shadow-md"
         : "border-cream-200 bg-white hover:border-forest-300 hover:bg-cream-50"
     }`;
 
   const checkboxClass = (checked: boolean) =>
-    `flex items-center gap-3 cursor-pointer rounded-xl border px-4 py-3 transition-all duration-200 ${
+    `flex items-center gap-3 cursor-pointer rounded-sm border px-4 py-3 transition-all duration-200 ${
       checked
         ? "border-forest-600 bg-forest-50"
         : "border-cream-200 bg-white hover:border-forest-300"
@@ -293,12 +328,13 @@ export default function RequestForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {error && (
-        <div className="rounded-xl bg-error-50 border border-error-500/20 px-4 py-3 animate-fade-in" role="alert">
+        <div className="rounded-sm bg-error-50 border border-error-500/20 px-4 py-3 " role="alert">
           <p className="font-body text-sm text-error-700">{error}</p>
         </div>
       )}
 
       {/* ── Progress Stepper ──────────────────────────────── */}
+      {!hideStepper && (
       <div className="flex items-center gap-2">
         {stepLabels.map((label, i) => {
           const stepNum = i + 1;
@@ -342,10 +378,11 @@ export default function RequestForm({
           );
         })}
       </div>
+      )}
 
       {/* ── Step 1: Basics ────────────────────────────────── */}
       {step === 1 && (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 ">
           {/* Category */}
           <div className="card-elevated">
             <h2 className="heading-sm mb-2">{t("request.categoryQuestion")}</h2>
@@ -355,7 +392,7 @@ export default function RequestForm({
                 onClick={() => setCategory("RESIDENTIAL")}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isResidential ? "bg-forest-600 text-white" : "bg-cream-200 text-sage-500"}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-sm ${isResidential ? "bg-forest-600 text-white" : "bg-cream-200 text-sage-500"}`}>
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
                     </svg>
@@ -372,7 +409,7 @@ export default function RequestForm({
                 onClick={() => setCategory("COMMERCIAL")}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isCommercial ? "bg-forest-600 text-white" : "bg-cream-200 text-sage-500"}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-sm ${isCommercial ? "bg-forest-600 text-white" : "bg-cream-200 text-sage-500"}`}>
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
                     </svg>
@@ -428,9 +465,9 @@ export default function RequestForm({
 
       {/* ── Step 2: Details ───────────────────────────────── */}
       {step === 2 && (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 ">
           {/* Privacy reminder */}
-          <div className="rounded-xl border border-forest-200 bg-forest-50 px-4 py-3 flex items-start gap-3">
+          <div className="rounded-sm border border-forest-200 bg-forest-50 px-4 py-3 flex items-start gap-3">
             <svg className="h-5 w-5 text-forest-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
             </svg>
@@ -523,7 +560,7 @@ export default function RequestForm({
                 </div>
 
                 {((details as ResidentialDetails).incomeTypes || []).includes("OTHER") && (
-                  <div className="mt-3 animate-fade-in">
+                  <div className="mt-3 ">
                     <input
                       type="text"
                       value={(details as ResidentialDetails).incomeTypeOther || ""}
@@ -547,7 +584,7 @@ export default function RequestForm({
                     { year: incomeYear1, setYear: setIncomeYear1, otherYear: incomeYear2, label: t("request.currentYear") },
                     { year: incomeYear2, setYear: setIncomeYear2, otherYear: incomeYear1, label: t("request.priorYear") },
                   ] as const).map(({ year, setYear, otherYear, label }, idx) => (
-                    <div key={idx} className="rounded-xl border border-cream-200 bg-white p-4">
+                    <div key={idx} className="rounded-sm border border-cream-200 bg-white p-4">
                       <p className="font-body text-xs font-medium text-sage-600 mb-1">{label}</p>
                       <select
                         value={year}
@@ -607,7 +644,7 @@ export default function RequestForm({
                     { year: corpYear1, setYear: setCorpYear1, otherYear: corpYear2 },
                     { year: corpYear2, setYear: setCorpYear2, otherYear: corpYear1 },
                   ] as const).map(({ year, setYear, otherYear }, idx) => (
-                    <div key={idx} className="rounded-xl border border-cream-200 bg-white p-4">
+                    <div key={idx} className="rounded-sm border border-cream-200 bg-white p-4">
                       <select
                         value={year}
                         onChange={(e) => changeCommercialYear(year, e.target.value, setYear)}
@@ -719,7 +756,7 @@ export default function RequestForm({
 
       {/* ── Step 3: Review & Submit ───────────────────────── */}
       {step === 3 && (
-        <div className="space-y-8 animate-fade-in">
+        <div className="space-y-8 ">
           {/* Review summary */}
           <div className="card-elevated">
             <div className="flex items-center justify-between mb-6">
@@ -800,7 +837,7 @@ export default function RequestForm({
           </div>
 
           {/* Privacy reminder */}
-          <div className="flex items-start gap-3 rounded-xl bg-forest-50 border border-forest-200 p-4">
+          <div className="flex items-start gap-3 rounded-sm bg-forest-50 border border-forest-200 p-4">
             <svg className="w-5 h-5 text-forest-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>

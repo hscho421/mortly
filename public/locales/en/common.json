@@ -403,7 +403,29 @@
     "brokerDisclaimerBody": "Mortly is a marketplace platform that connects those exploring mortgage options with mortgage professionals.\nConsultation requests listed here are submitted directly by clients. Mortly does not guarantee the accuracy or completeness of any request details.",
     "brokerDisclaimerAccept": "I Understand"
   },
+  "borrower": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "messages": "Messages",
+      "profile": "Profile"
+    },
+    "tagline": "BORROWER",
+    "openNav": "Open navigation",
+    "closeNav": "Close navigation"
+  },
   "broker": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "requests": "Requests",
+      "messages": "Conversations",
+      "profile": "My Profile",
+      "billing": "Credits · Billing"
+    },
+    "tagline": "BROKER",
+    "completeProfilePrompt": "Complete your broker profile to access the marketplace.",
+    "goToOnboarding": "Finish onboarding →",
+    "openNav": "Open navigation",
+    "closeNav": "Close navigation",
     "dashboard": "Dashboard",
     "welcome": "Welcome back, {{name}}",
     "openRequests": "Open Requests",

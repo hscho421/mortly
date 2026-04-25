@@ -43,7 +43,7 @@ export default function RequestCard({ request }: RequestCardProps) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
-          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-colors ${
+          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-sm transition-colors ${
             isCommercial
               ? "bg-amber-50 text-amber-600 group-hover:bg-amber-100"
               : "bg-forest-50 text-forest-600 group-hover:bg-forest-100"

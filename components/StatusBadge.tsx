@@ -1,34 +1,48 @@
 import React from "react";
 import { useTranslation } from "next-i18next";
+import { UBadge, type Tone } from "@/components/ui";
 
 interface StatusBadgeProps {
   status: string;
   variant?: string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  OPEN: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  VERIFIED: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  RESOLVED: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  IN_PROGRESS: "bg-sky-50 text-sky-700 ring-sky-600/20",
-  PENDING: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  PENDING_APPROVAL: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  NOT_SURE: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  CLOSED: "bg-cream-300/50 text-forest-600 ring-cream-400/30",
-  EXPIRED: "bg-cream-300/50 text-forest-600 ring-cream-400/30",
-  CANCELLED: "bg-cream-300/50 text-forest-600 ring-cream-400/30",
-  DISMISSED: "bg-cream-300/50 text-forest-600 ring-cream-400/30",
-  REJECTED: "bg-rose-50 text-rose-700 ring-rose-600/20",
-  REVIEWED: "bg-violet-50 text-violet-700 ring-violet-600/20",
+/**
+ * Public-side status badge — maps a raw status string to a semantic tone
+ * and renders through the shared UBadge primitive. Previously used the
+ * rose/sky/emerald/violet legacy palette via a hand-rolled classList; this
+ * version routes everything through the design system's tone tokens so
+ * palette changes are one edit in `tones.ts`.
+ */
+
+const STATUS_TONE: Record<string, Tone> = {
+  OPEN: "success",
+  ACTIVE: "success",
+  VERIFIED: "success",
+  RESOLVED: "success",
+
+  IN_PROGRESS: "info",
+  REVIEWED: "info",
+
+  PENDING: "warn",
+  PENDING_APPROVAL: "warn",
+  NOT_SURE: "warn",
+
+  CLOSED: "neutral",
+  EXPIRED: "neutral",
+  CANCELLED: "neutral",
+  DISMISSED: "neutral",
+
+  REJECTED: "danger",
 };
 
-const VARIANT_COLORS: Record<string, string> = {
-  success: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  warning: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  error: "bg-rose-50 text-rose-700 ring-rose-600/20",
-  info: "bg-sky-50 text-sky-700 ring-sky-600/20",
-  neutral: "bg-cream-300/50 text-forest-600 ring-cream-400/30",
+const VARIANT_TONE: Record<string, Tone> = {
+  success: "success",
+  warning: "warn",
+  error: "danger",
+  info: "info",
+  neutral: "neutral",
+  accent: "accent",
 };
 
 const STATUS_LABEL_KEYS: Record<string, string> = {
@@ -50,18 +64,11 @@ const STATUS_LABEL_KEYS: Record<string, string> = {
 
 export default function StatusBadge({ status, variant }: StatusBadgeProps) {
   const { t } = useTranslation("common");
-  const colorClass =
-    (variant && VARIANT_COLORS[variant]) ||
-    STATUS_COLORS[status] ||
-    "bg-cream-300/50 text-forest-600 ring-cream-400/30";
+  const tone: Tone =
+    (variant && VARIANT_TONE[variant]) || STATUS_TONE[status] || "neutral";
+  const label = STATUS_LABEL_KEYS[status]
+    ? t(STATUS_LABEL_KEYS[status])
+    : status.replace(/_/g, " ");
 
-  const label = STATUS_LABEL_KEYS[status] ? t(STATUS_LABEL_KEYS[status]) : status.replace(/_/g, " ");
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 font-body text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset ${colorClass}`}
-    >
-      {label}
-    </span>
-  );
+  return <UBadge tone={tone}>{label}</UBadge>;
 }
