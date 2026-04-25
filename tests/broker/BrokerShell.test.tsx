@@ -128,8 +128,8 @@ describe("BrokerShell", () => {
 
   it("shows brand mark and broker identity once profile resolves", async () => {
     renderShell();
-    await waitFor(() => expect(screen.getByText("Jihoon")).toBeInTheDocument());
-    expect(screen.getByText("Prime Mortgage")).toBeInTheDocument();
+    expect(await screen.findByText("Jihoon")).toBeInTheDocument();
+    expect(await screen.findByText("Prime Mortgage")).toBeInTheDocument();
   });
 
   it("renders counter badges from the data context", async () => {

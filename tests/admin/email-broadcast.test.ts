@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Stub Resend so we can observe what the broadcast helper sends.
+// Using a plain class (not vi.fn().mockImplementation) so vi.restoreAllMocks()
+// in tests/setup.ts can't strip the constructor's return shape between tests.
 const resendSend = vi.fn(async () => ({ id: "rsnd_abc" }));
 vi.mock("resend", () => ({
-  Resend: vi.fn().mockImplementation(() => ({
-    emails: { send: resendSend },
-  })),
+  Resend: class {
+    emails = { send: resendSend };
+  },
 }));
 
 import { notifyAdminsOfNewAdmin } from "@/lib/email";
