@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Layout from "@/components/Layout";
+import BrokerShell from "@/components/broker/BrokerShell";
 import { SkeletonProfile } from "@/components/Skeleton";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import type { CreateBrokerProfileInput } from "@/types";
@@ -107,10 +107,10 @@ export default function BrokerProfilePage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <Layout>
+      <BrokerShell active="profile" pageTitle={t("titles.brokerProfile")}>
         <Head><title>{t("titles.brokerProfile")}</title></Head>
         <SkeletonProfile />
-      </Layout>
+      </BrokerShell>
     );
   }
 
@@ -167,7 +167,7 @@ export default function BrokerProfilePage() {
   };
 
   return (
-    <Layout>
+    <BrokerShell active="profile" pageTitle={t("titles.brokerProfile")}>
       <Head><title>{t("titles.brokerProfile")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between ">
@@ -408,7 +408,7 @@ export default function BrokerProfilePage() {
         {/* Account deletion — Apple App Store guideline 5.1.1(v) */}
         <DeleteAccountSection />
       </div>
-    </Layout>
+    </BrokerShell>
   );
 }
 

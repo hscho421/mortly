@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSession, signOut } from "next-auth/react";
 import { useTranslation } from "next-i18next";
+import BrandMark from "./BrandMark";
 
 interface Notice {
   id: string;
@@ -141,12 +142,8 @@ export default function Navbar() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo — editorial serif brand mark */}
-          <Link href="/" className="flex items-baseline group">
-            <span className="font-display text-2xl font-normal tracking-[-0.03em] text-forest-800">
-              mortly<span className="italic text-amber-500">.</span>
-            </span>
-          </Link>
+          {/* Logo — canonical mark, edit /public/logo/logo.svg to change */}
+          <BrandMark href="/" className="h-7 w-auto" />
 
           {/* Desktop center links — editorial: flat text links with amber underline for active */}
           {navLinks.length > 0 && (
@@ -535,7 +532,13 @@ export default function Navbar() {
           <button
             onClick={async () => {
               setShowLogoutConfirm(false);
-              await signOut({ callbackUrl: "/" });
+              // Redirect to /login (not /). The homepage renders this same
+              // Navbar, which reads useSession(); the client session cache
+              // can briefly return the stale pre-logout session before the
+              // post-signOut refetch lands, painting authed nav links for
+              // ~100-500ms. /login has no session-dependent chrome, so the
+              // transition is clean.
+              await signOut({ callbackUrl: "/login" });
             }}
             className="flex-1 rounded-sm bg-red-500 px-4 py-2.5 font-body text-sm font-medium text-white transition-all duration-200 hover:bg-red-600"
           >

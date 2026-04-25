@@ -7,7 +7,7 @@ import Head from "next/head";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
-import Layout from "@/components/Layout";
+import BorrowerShell from "@/components/borrower/BorrowerShell";
 import { SkeletonRequestDetail } from "@/components/Skeleton";
 import StatusBadge from "@/components/StatusBadge";
 import ConsultationStepper from "@/components/ConsultationStepper";
@@ -137,9 +137,9 @@ export default function RequestDetail() {
 
   if (loading || !request) {
     return (
-      <Layout>
+      <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerRequestDetail")}>
         <SkeletonRequestDetail />
-      </Layout>
+      </BorrowerShell>
     );
   }
 
@@ -161,7 +161,7 @@ export default function RequestDetail() {
     : t("request.residentialRequest");
 
   return (
-    <Layout>
+    <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerRequestDetail")}>
       <Head><title>{t("titles.borrowerRequestDetail")}</title></Head>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ">
         <Link
@@ -352,7 +352,7 @@ export default function RequestDetail() {
           </div>
         )}
       </div>
-    </Layout>
+    </BorrowerShell>
   );
 }
 

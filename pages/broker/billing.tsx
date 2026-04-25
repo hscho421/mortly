@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Layout from "@/components/Layout";
+import BrokerShell from "@/components/broker/BrokerShell";
 import { SkeletonBilling } from "@/components/Skeleton";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -304,10 +304,10 @@ export default function BrokerBillingPage() {
 
   if (status === "loading" || isLoadingProfile) {
     return (
-      <Layout>
+      <BrokerShell active="billing" pageTitle={t("titles.brokerBilling")}>
         <Head><title>{t("titles.brokerBilling")}</title></Head>
         <SkeletonBilling />
-      </Layout>
+      </BrokerShell>
     );
   }
 
@@ -319,7 +319,7 @@ export default function BrokerBillingPage() {
   }
 
   return (
-    <Layout>
+    <BrokerShell active="billing" pageTitle={t("titles.brokerBilling")}>
       <Head><title>{t("titles.brokerBilling")}</title></Head>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-10 ">
@@ -634,7 +634,7 @@ export default function BrokerBillingPage() {
           </div>
         </div>
       )}
-    </Layout>
+    </BrokerShell>
   );
 }
 

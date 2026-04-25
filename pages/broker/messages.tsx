@@ -2,14 +2,20 @@ import { useState, useEffect, useRef, useCallback, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Navbar from "@/components/Navbar";
-import { SkeletonChat } from "@/components/Skeleton";
+import BrokerShell from "@/components/broker/BrokerShell";
+import RequestContextPanel from "@/components/broker/RequestContextPanel";
+import {
+  ConversationListSkeleton,
+  ThreadSkeleton,
+  RequestContextSkeleton,
+} from "@/components/broker/MessagesSkeletons";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
 import { supabase } from "@/lib/supabase";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { getRequestTitle } from "@/lib/requestConfig";
+import type { ResidentialDetails, CommercialDetails } from "@/types";
 
 interface ConversationListItem {
   id: string;
@@ -26,7 +32,19 @@ interface ConversationListItem {
     user: { id: string; publicId?: string; name: string | null };
   };
   borrower: { id: string; name: string | null };
-  request: { id: string; province: string; mortgageCategory?: string | null };
+  request: {
+    id: string;
+    publicId?: string | null;
+    province: string;
+    city?: string | null;
+    status?: string | null;
+    mortgageCategory?: string | null;
+    productTypes?: string[] | null;
+    desiredTimeline?: string | null;
+    details?: ResidentialDetails | CommercialDetails | null;
+    notes?: string | null;
+    createdAt?: string | null;
+  };
 }
 
 interface FullMessage {
@@ -86,6 +104,17 @@ export default function BrokerMessagesPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
+  const [contextOpen, setContextOpen] = useState(false);
+
+  // Escape closes the context panel drawer on tablet/mobile.
+  useEffect(() => {
+    if (!contextOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setContextOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [contextOpen]);
 
   const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(activeConvId);
 
@@ -296,17 +325,11 @@ export default function BrokerMessagesPage() {
     }
   }
 
-  if (authStatus === "loading") {
-    return (
-      <>
-        <Head><title>{t("titles.brokerMessages")}</title></Head>
-        <Navbar />
-        <SkeletonChat />
-      </>
-    );
-  }
-
-  if (!session || session.user.role !== "BROKER") {
+  // Auth-loading is handled upstream by BrokerShell, which renders its own
+  // neutral loading screen. Here we just guard against rendering the page
+  // body when a non-broker viewer has slipped through (e.g. during the brief
+  // moment the shell is redirecting).
+  if (authStatus === "loading" || !session || session.user.role !== "BROKER") {
     return null;
   }
 
@@ -327,9 +350,8 @@ export default function BrokerMessagesPage() {
   const isClosed = activeConversation?.status === "CLOSED";
 
   return (
-    <>
+    <BrokerShell active="messages" pageTitle={t("titles.brokerMessages")}>
       <Head><title>{t("titles.brokerMessages")}</title></Head>
-      <Navbar />
 
       {/* Chat disclaimer */}
       {disclaimerNeeded && activeConvId && (
@@ -337,7 +359,7 @@ export default function BrokerMessagesPage() {
       )}
 
       <div
-        className="flex  h-[calc(100dvh-80px)]"
+        className="flex h-full"
       >
         {/* Left panel - Conversation list */}
         <div
@@ -359,11 +381,7 @@ export default function BrokerMessagesPage() {
 
           {/* Conversation items */}
           <div className="flex-1 overflow-y-auto">
-            {loadingList && (
-              <div className="flex items-center justify-center py-16">
-                <p className="text-body-sm">Loading conversations...</p>
-              </div>
-            )}
+            {loadingList && <ConversationListSkeleton />}
 
             {!loadingList && conversations.length === 0 && (
               <div className="px-5 py-16 text-center">
@@ -554,16 +572,38 @@ export default function BrokerMessagesPage() {
                       {activeConversation.status}
                     </span>
                   )}
+
+                  {/* Context-panel toggle — visible below lg where the panel
+                      isn't always mounted in the layout. */}
+                  <button
+                    type="button"
+                    onClick={() => setContextOpen((v) => !v)}
+                    aria-expanded={contextOpen}
+                    aria-controls="broker-request-context"
+                    className="shrink-0 rounded-sm border border-cream-300 bg-cream-50 p-1.5 text-forest-700 transition-colors hover:bg-cream-200 lg:hidden"
+                    title={t("broker.requestContext", "Request context")}
+                    aria-label={t("broker.requestContext", "Request context")}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.8}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11.25 4.5h1.5m-1.5 4.5h1.5m-1.5 4.5h1.5M5.25 19.5h13.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H5.25A1.5 1.5 0 0 0 3.75 6v12a1.5 1.5 0 0 0 1.5 1.5Z"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
               {/* Messages area */}
               <div className="flex-1 overflow-y-auto px-5 py-4">
-                {loadingChat && (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-body-sm">Loading messages...</p>
-                  </div>
-                )}
+                {loadingChat && <ThreadSkeleton />}
 
                 {!loadingChat && messages.length === 0 && (
                   <div className="flex items-center justify-center h-full">
@@ -707,8 +747,46 @@ export default function BrokerMessagesPage() {
             </>
           )}
         </div>
+
+        {/* Right context panel — always mounted on lg+ as a third column.
+            Shows a skeleton while the active conversation is loading so the
+            pane never flashes empty between selection and data arrival. */}
+        <div
+          id="broker-request-context"
+          className="hidden w-80 shrink-0 lg:block"
+        >
+          {activeConvId && loadingChat ? (
+            <RequestContextSkeleton />
+          ) : (
+            <RequestContextPanel
+              request={activeConversation?.request ?? null}
+            />
+          )}
+        </div>
+
+        {/* Tablet / mobile drawer — only mounted while open */}
+        {contextOpen && activeConvId && (
+          <>
+            <button
+              type="button"
+              aria-label={t("common.close", "Close")}
+              onClick={() => setContextOpen(false)}
+              className="fixed inset-0 z-40 bg-forest-900/40 backdrop-blur-sm lg:hidden"
+            />
+            <div className="fixed inset-y-0 right-0 z-50 w-[min(100vw,360px)] lg:hidden">
+              {loadingChat ? (
+                <RequestContextSkeleton />
+              ) : (
+                <RequestContextPanel
+                  request={activeConversation?.request ?? null}
+                  onClose={() => setContextOpen(false)}
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
-    </>
+    </BrokerShell>
   );
 }
 

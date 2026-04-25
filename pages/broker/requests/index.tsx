@@ -1,18 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
-import Layout from "@/components/Layout";
-import { SkeletonRequestList } from "@/components/Skeleton";
+import BrokerShell from "@/components/broker/BrokerShell";
+import {
+  AppTopbar,
+  Badge,
+  Btn,
+  Card,
+  EmptyState,
+  Eyebrow,
+} from "@/components/broker/ui";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import { PRODUCT_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
-import StatusBadge from "@/components/StatusBadge";
+import {
+  PRODUCT_LABEL_KEYS,
+  TIMELINE_LABEL_KEYS,
+} from "@/lib/requestConfig";
 
 const PROVINCES = [
-  "",
   "Alberta",
   "British Columbia",
   "Manitoba",
@@ -25,12 +33,38 @@ const PROVINCES = [
   "Saskatchewan",
 ];
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+interface BrokerRequest {
+  id: string;
+  publicId: string;
+  province: string;
+  city?: string | null;
+  status: string;
+  createdAt: string;
+  mortgageCategory?: string | null;
+  productTypes?: string[] | null;
+  desiredTimeline?: string | null;
+  conversations?: { broker?: { userId: string } }[];
+  _count?: { conversations?: number };
+  /** True if this broker hasn't marked this request as seen yet. */
+  isNew?: boolean;
+}
+
+type CategoryFilter = "" | "RESIDENTIAL" | "COMMERCIAL";
+
+function relativeTime(dateStr: string, locale: string) {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const m = Math.max(0, Math.floor((now - then) / 60_000));
+  if (m < 1) return locale === "ko" ? "방금" : "just now";
+  if (m < 60) return locale === "ko" ? `${m}분 전` : `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return locale === "ko" ? `${h}시간 전` : `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return locale === "ko" ? `${d}일 전` : `${d}d`;
+  return new Date(dateStr).toLocaleDateString(
+    locale === "ko" ? "ko-KR" : "en-CA",
+    { month: "short", day: "numeric" },
+  );
 }
 
 export default function BrokerRequestsPage() {
@@ -38,307 +72,524 @@ export default function BrokerRequestsPage() {
   const router = useRouter();
   const { t } = useTranslation("common");
 
-  interface BrokerRequest {
-    id: string;
-    publicId: string;
-    province: string;
-    city?: string | null;
-    status: string;
-    createdAt: string | Date;
-    mortgageCategory?: string | null;
-    productTypes?: string[] | null;
-    desiredTimeline?: string | null;
-    conversations?: { broker?: { userId: string } }[];
-    _count?: { conversations?: number };
-    /** True if this broker hasn't marked this request as seen yet. */
-    isNew?: boolean;
-  }
-
   const [requests, setRequests] = useState<BrokerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<"" | "NOT_VERIFIED" | "LOAD_FAILED">("");
   const [newCount, setNewCount] = useState(0);
 
-  const [filterProvince, setFilterProvince] = useState("");
-  const [filterMortgageCategory, setFilterMortgageCategory] = useState("");
+  const [filterProvince, setFilterProvince] = useState<string>("");
+  const [filterCategory, setFilterCategory] = useState<CategoryFilter>("");
+  const [onlyUnresponded, setOnlyUnresponded] = useState(true);
 
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!session || session.user.role !== "BROKER") {
-      router.push("/login", undefined, { locale: router.locale });
-      return;
-    }
+  const fetchRequests = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams();
+      if (filterProvince) params.set("province", filterProvince);
+      if (filterCategory) params.set("mortgageCategory", filterCategory);
 
-    const fetchRequests = async () => {
-      setIsLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (filterProvince) params.set("province", filterProvince);
-        if (filterMortgageCategory) params.set("mortgageCategory", filterMortgageCategory);
-
-        const res = await fetch(`/api/requests?${params.toString()}`);
-        if (res.status === 403) {
-          setError("NOT_VERIFIED");
-          return;
-        }
-        if (!res.ok) throw new Error(t("broker.failedToFetchRequests"));
-        const json = await res.json();
-        setRequests(json.data ?? json);
-        if (typeof json.newCount === "number") {
-          setNewCount(json.newCount);
-        }
-      } catch {
-        setError(t("broker.failedToLoadRequests"));
-      } finally {
-        setIsLoading(false);
+      const res = await fetch(`/api/requests?${params.toString()}`);
+      if (res.status === 403) {
+        setError("NOT_VERIFIED");
+        return;
       }
-    };
+      if (!res.ok) {
+        setError("LOAD_FAILED");
+        return;
+      }
+      const json = await res.json();
+      setRequests((json.data ?? json) as BrokerRequest[]);
+      if (typeof json.newCount === "number") setNewCount(json.newCount);
+    } catch {
+      setError("LOAD_FAILED");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [filterProvince, filterCategory]);
 
-    fetchRequests();
-  }, [session, status, router, filterProvince, filterMortgageCategory]);
-
-  // Mark requests as seen when the broker navigates away from this page.
-  // The `newCount` badge stays visible during the visit; the backend timestamp
-  // updates on unmount so the next visit reflects only genuinely new requests.
   useEffect(() => {
-    if (!session || session.user.role !== "BROKER") return;
+    if (status !== "authenticated") return;
+    fetchRequests();
+  }, [status, fetchRequests]);
+
+  // Mark requests as seen on unmount so the gold "new" dots clear next visit.
+  useEffect(() => {
+    if (status !== "authenticated") return;
     return () => {
-      fetch("/api/brokers/mark-requests-seen", { method: "POST" }).catch(
-        () => {
-          // Best-effort — stale count on next load isn't a hard failure
-        },
-      );
+      fetch("/api/brokers/mark-requests-seen", { method: "POST" }).catch(() => {
+        // best-effort
+      });
     };
-  }, [session]);
+  }, [status]);
+
+  const filteredRequests = useMemo(() => {
+    if (!onlyUnresponded) return requests;
+    const brokerUserId = session?.user?.id;
+    return requests.filter(
+      (req) =>
+        !req.conversations?.some(
+          (conv) => conv.broker?.userId === brokerUserId,
+        ),
+    );
+  }, [requests, onlyUnresponded, session?.user?.id]);
 
   if (status === "loading") {
     return (
-      <Layout>
-        <Head><title>{t("titles.brokerBrowseRequests")}</title></Head>
-        <SkeletonRequestList />
-      </Layout>
+      <BrokerShell active="requests" pageTitle={t("titles.brokerBrowseRequests")}>
+        <Head>
+          <title>{t("titles.brokerBrowseRequests")}</title>
+        </Head>
+        <RequestsSkeleton />
+      </BrokerShell>
     );
   }
 
-  if (!session || session.user.role !== "BROKER") {
-    return null;
-  }
-
-  // Show verification required message
   if (error === "NOT_VERIFIED") {
     return (
-      <Layout>
-        <Head><title>{t("titles.brokerBrowseRequests")}</title></Head>
-        <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="card-elevated text-center py-16">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-              <svg className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+      <BrokerShell active="requests" pageTitle={t("titles.brokerBrowseRequests")}>
+        <Head>
+          <title>{t("titles.brokerBrowseRequests")}</title>
+        </Head>
+        <AppTopbar
+          eyebrow={t("broker.requestsEyebrow", "상담 요청")}
+          title={t("broker.browseRequests")}
+        />
+        <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
+          <Card padding="lg" className="text-center">
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-sm bg-amber-100">
+              <svg
+                className="h-7 w-7 text-amber-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+                />
               </svg>
             </div>
-            <h2 className="heading-md mb-2">{t("broker.verificationRequired", "Verification Required")}</h2>
-            <p className="text-body mb-4 max-w-md mx-auto">
-              {t("broker.verificationRequiredDesc", "Your broker profile must be verified before you can browse borrower requests. Please wait for admin approval.")}
+            <div className="font-display text-2xl font-semibold text-forest-800">
+              {t("broker.verificationRequired", "Verification Required")}
+            </div>
+            <p className="mx-auto mt-3 max-w-md font-body text-[14px] text-forest-700/80">
+              {t(
+                "broker.verificationRequiredDesc",
+                "Your broker profile must be verified before you can browse borrower requests. Please wait for admin approval.",
+              )}
             </p>
-            <p className="text-body-sm text-sage-500 mb-2 max-w-md mx-auto">
+            <p className="mx-auto mt-2 max-w-md font-body text-[12px] text-sage-500">
               {t("broker.verificationTimeline")}
             </p>
-            <p className="text-body-sm text-sage-500 mb-6 max-w-md mx-auto">
-              {t("broker.contactSupport")} <a href="mailto:support@mortly.ca" className="text-forest-700 underline hover:text-forest-900">support@mortly.ca</a>
+            <p className="mx-auto mb-6 mt-1 max-w-md font-body text-[12px] text-sage-500">
+              {t("broker.contactSupport")}{" "}
+              <a
+                href="mailto:support@mortly.ca"
+                className="text-forest-700 underline hover:text-forest-900"
+              >
+                support@mortly.ca
+              </a>
             </p>
-            <Link href="/broker/dashboard" className="btn-primary">
+            <Btn as="a" href="/broker/dashboard">
               {t("nav.dashboard")}
-            </Link>
-          </div>
+            </Btn>
+          </Card>
         </div>
-      </Layout>
+      </BrokerShell>
     );
   }
 
-  // Filter out requests the broker has already responded to
-  const brokerId = session.user.id;
-  const filteredRequests = requests.filter(
-    (req) => !req.conversations?.some((conv: { broker?: { userId: string } }) => conv.broker?.userId === brokerId)
-  );
+  const locale = router.locale === "ko" ? "ko" : "en";
 
   return (
-    <Layout>
-      <Head><title>{t("titles.brokerBrowseRequests")}</title></Head>
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-8 ">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="heading-lg">{t("broker.browseRequests")}</h1>
+    <BrokerShell active="requests" pageTitle={t("titles.brokerBrowseRequests")}>
+      <Head>
+        <title>{t("titles.brokerBrowseRequests")}</title>
+      </Head>
+
+      <AppTopbar
+        eyebrow={
+          <>
             {newCount > 0 ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 font-body text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-300/50">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-                <span>{newCount}</span>
-                <span>{t("browse.newSuffix", { defaultValue: "new" })}</span>
-              </span>
+              <>
+                <span className="text-amber-500">●</span>{" "}
+                {t("broker.newCount", "{{count}} new", { count: newCount })}
+              </>
             ) : (
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 font-body text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                {t("browse.allCaughtUp", { defaultValue: "All caught up" })}
-              </span>
+              t("browse.allCaughtUp", "All caught up")
             )}
-          </div>
-          <p className="text-body mt-2">
-            {t("broker.requestsSubtitle")}
-          </p>
-        </div>
+          </>
+        }
+        title={t("broker.browseRequests")}
+        actions={
+          <Btn size="sm" variant="ghost" onClick={() => fetchRequests()}>
+            {t("common.refresh", "Refresh")}
+          </Btn>
+        }
+      />
 
-        {/* Filters */}
-        <div className="card-elevated mb-8">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div>
-              <label htmlFor="filterProvince" className="label-text">
-                {t("request.province")}
-              </label>
-              <select
-                id="filterProvince"
-                value={filterProvince}
-                onChange={(e) => setFilterProvince(e.target.value)}
-                className="input-field"
-              >
-                {PROVINCES.map((p) => (
-                  <option key={p} value={p}>
-                    {p || t("broker.allProvinces")}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="filterMortgageCategory" className="label-text">
-                {t("broker.categoryFilter")}
-              </label>
-              <select
-                id="filterMortgageCategory"
-                value={filterMortgageCategory}
-                onChange={(e) => setFilterMortgageCategory(e.target.value)}
-                className="input-field"
-              >
-                <option value="">{t("broker.allTypes")}</option>
-                <option value="RESIDENTIAL">{t("request.residential")}</option>
-                <option value="COMMERCIAL">{t("request.commercial")}</option>
-              </select>
-            </div>
-          </div>
-        </div>
+      {/* Filter chip bar */}
+      <FilterBar
+        province={filterProvince}
+        setProvince={setFilterProvince}
+        category={filterCategory}
+        setCategory={setFilterCategory}
+        onlyUnresponded={onlyUnresponded}
+        setOnlyUnresponded={setOnlyUnresponded}
+      />
 
-        {/* Error */}
-        {error && (
-          <div className="mb-6 rounded-sm bg-error-50 border border-error-500/20 p-4 " role="alert">
-            <p className="font-body text-sm text-error-700">{error}</p>
+      <div className="px-5 py-6 sm:px-8 sm:py-8">
+        {error === "LOAD_FAILED" && (
+          <div
+            role="alert"
+            className="mb-4 rounded-sm border border-error-100 bg-error-50 px-4 py-3 font-body text-[13px] text-error-700"
+          >
+            {t("broker.failedToLoadRequests")}
           </div>
         )}
 
-        {/* Loading */}
-        {isLoading && (
-          <div className="flex justify-center py-16">
-            <p className="text-body-sm">{t("broker.loadingRequests")}</p>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!isLoading && filteredRequests.length === 0 && (
-          <div className="card-elevated py-16 text-center ">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cream-200">
-              <svg className="h-6 w-6 text-sage-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-              </svg>
-            </div>
-            <p className="font-body text-sm font-medium text-forest-700">{t("broker.noMatchingRequests")}</p>
-            <p className="text-body-sm mt-1">
-              {t("broker.noMatchingRequestsDesc")}
-            </p>
-          </div>
-        )}
-
-        {/* Request cards */}
-        {!isLoading && filteredRequests.length > 0 && (
-          <div className="space-y-4">
-            {filteredRequests.map((req, i) => {
-              return (
-                <div
-                  key={req.id}
-                  className={`card ${
-                    req.isNew ? "ring-2 ring-amber-300/50 bg-amber-50/30" : ""
-                  }`}
+        {isLoading ? (
+          <RequestsSkeleton />
+        ) : filteredRequests.length === 0 ? (
+          <EmptyState
+            title={t("broker.noMatchingRequests")}
+            body={t("broker.noMatchingRequestsDesc")}
+            cta={
+              onlyUnresponded ? (
+                <Btn
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setOnlyUnresponded(false)}
                 >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex-1">
-                      <div className="mb-3 flex flex-wrap items-center gap-2">
-                        {req.isNew && (
-                          <span
-                            className="h-2 w-2 rounded-full bg-amber-400"
-                            aria-label="New"
-                          />
-                        )}
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
-                          req.mortgageCategory === "COMMERCIAL"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-forest-100 text-forest-700"
-                        }`}>
-                          {req.mortgageCategory === "COMMERCIAL"
-                            ? t("request.commercial")
-                            : t("request.residential")}
-                        </span>
-                        <StatusBadge status={req.status} />
-                        <span className="font-body text-xs text-forest-700/50">
-                          {t("broker.posted")} {formatDate(req.createdAt as unknown as string)}
-                        </span>
-                      </div>
+                  {t(
+                    "broker.includeResponded",
+                    "Include requests I've responded to",
+                  )}
+                </Btn>
+              ) : null
+            }
+          />
+        ) : (
+          <>
+            {/* Desktop: dense table */}
+            <Card padding="none" className="hidden overflow-hidden md:block">
+              <div
+                role="row"
+                className="grid grid-cols-[110px_1.5fr_1fr_1fr_0.8fr_0.7fr_140px] gap-3 border-b border-cream-300 bg-cream-100 px-5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-sage-500"
+              >
+                <span>{t("broker.col.id", "ID")}</span>
+                <span>{t("broker.col.type", "Type")}</span>
+                <span>{t("broker.col.region", "Region")}</span>
+                <span>{t("broker.col.timeline", "Timeline")}</span>
+                <span>{t("broker.col.responses", "Responses")}</span>
+                <span>{t("broker.col.posted", "Posted")}</span>
+                <span />
+              </div>
+              <ul>
+                {filteredRequests.map((req) => (
+                  <RequestRow key={req.id} req={req} locale={locale} t={t} />
+                ))}
+              </ul>
+            </Card>
 
-                      <h3 className="heading-sm">
-                        {`${req.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} — ${req.city ? `${req.city}, ` : ""}${req.province}`}
-                      </h3>
-
-                      {/* Product pills */}
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {(req.productTypes ?? []).map((pt) => (
-                          <span
-                            key={pt}
-                            className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-xs font-medium text-forest-700"
-                          >
-                            {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
-                        {req.desiredTimeline && (
-                          <div>
-                            <span className="font-body text-xs font-medium text-forest-700/50">{t("request.desiredTimeline")}</span>
-                            <p className="font-body text-sm text-forest-800">{t(TIMELINE_LABEL_KEYS[req.desiredTimeline!] || req.desiredTimeline!)}</p>
-                          </div>
-                        )}
-                        <div>
-                          <span className="font-body text-xs font-medium text-forest-700/50">{t("broker.responses")}</span>
-                          <p className="font-body text-sm text-forest-800">{req._count?.conversations ?? 0}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-col gap-2">
-                      <Link
-                        href={`/broker/requests/${req.publicId}`}
-                        className="btn-secondary text-center text-xs px-4 py-2"
-                      >
-                        {t("broker.viewDetails")}
-                      </Link>
-                      <Link
-                        href={`/broker/requests/${req.publicId}`}
-                        className="btn-primary text-center text-xs px-4 py-2"
-                      >
-                        {t("broker.respondToRequest")}
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+            {/* Mobile: card stack */}
+            <ul className="space-y-3 md:hidden">
+              {filteredRequests.map((req) => (
+                <RequestCardMobile
+                  key={req.id}
+                  req={req}
+                  locale={locale}
+                  t={t}
+                />
+              ))}
+            </ul>
+          </>
         )}
       </div>
-    </Layout>
+    </BrokerShell>
+  );
+
+  // Re-imported only to keep PROVINCES usable inside FilterBar via closure.
+  // `PROVINCES` already imported at module top.
+  void PROVINCES;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Filter bar — chip-style filters mounted below the topbar.
+// Sticky so it stays in view while scrolling the list.
+// ──────────────────────────────────────────────────────────────
+function FilterBar({
+  province,
+  setProvince,
+  category,
+  setCategory,
+  onlyUnresponded,
+  setOnlyUnresponded,
+}: {
+  province: string;
+  setProvince: (v: string) => void;
+  category: CategoryFilter;
+  setCategory: (v: CategoryFilter) => void;
+  onlyUnresponded: boolean;
+  setOnlyUnresponded: (v: boolean) => void;
+}) {
+  const { t } = useTranslation("common");
+  return (
+    <div className="sticky top-[73px] z-10 flex flex-wrap items-center gap-2 border-b border-cream-300 bg-cream-50 px-5 py-3 sm:px-8">
+      <ChipSelect
+        value={province}
+        onChange={setProvince}
+        label={province || t("broker.allProvinces")}
+        options={[
+          { value: "", label: t("broker.allProvinces") },
+          ...PROVINCES.map((p) => ({ value: p, label: p })),
+        ]}
+      />
+      <ChipSelect
+        value={category}
+        onChange={(v) => setCategory(v as CategoryFilter)}
+        label={
+          category === "COMMERCIAL"
+            ? t("request.commercial")
+            : category === "RESIDENTIAL"
+              ? t("request.residential")
+              : t("broker.allTypes")
+        }
+        options={[
+          { value: "", label: t("broker.allTypes") },
+          { value: "RESIDENTIAL", label: t("request.residential") },
+          { value: "COMMERCIAL", label: t("request.commercial") },
+        ]}
+      />
+      <button
+        type="button"
+        onClick={() => setOnlyUnresponded(!onlyUnresponded)}
+        aria-pressed={onlyUnresponded}
+        className={`rounded-sm border px-3 py-1.5 font-body text-[12px] transition-colors ${
+          onlyUnresponded
+            ? "border-amber-500 bg-amber-50 text-amber-700"
+            : "border-cream-300 bg-cream-50 text-forest-700/80 hover:bg-cream-200"
+        }`}
+      >
+        {t("broker.onlyUnresponded", "Only unresponded")}
+      </button>
+    </div>
   );
 }
+
+function ChipSelect({
+  value,
+  onChange,
+  label,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <label className="relative inline-flex cursor-pointer items-center gap-1 rounded-sm border border-cream-300 bg-cream-50 px-3 py-1.5 font-body text-[12px] text-forest-700/80 transition-colors hover:bg-cream-200">
+      {label}
+      <svg
+        className="h-3 w-3 text-sage-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+        stroke="currentColor"
+        aria-hidden
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="m19.5 8.25-7.5 7.5-7.5-7.5"
+        />
+      </svg>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 cursor-pointer opacity-0"
+        aria-label={label}
+      >
+        {options.map((o) => (
+          <option key={o.value || "__all"} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Rows
+// ──────────────────────────────────────────────────────────────
+import type { TFunction } from "i18next";
+type Translator = TFunction<"common">;
+
+function typeLabel(
+  req: BrokerRequest,
+  t: Translator,
+): string {
+  const cat =
+    req.mortgageCategory === "COMMERCIAL"
+      ? t("request.commercial")
+      : t("request.residential");
+  const first = (req.productTypes ?? [])[0];
+  const prod = first ? t(PRODUCT_LABEL_KEYS[first] ?? first) : "";
+  return prod ? `${cat} · ${prod}` : cat;
+}
+
+function RequestRow({
+  req,
+  locale,
+  t,
+}: {
+  req: BrokerRequest;
+  locale: string;
+  t: Translator;
+}) {
+  const region = req.city ? `${req.city}, ${req.province}` : req.province;
+  const responses = req._count?.conversations ?? 0;
+  return (
+    <li>
+      <Link
+        href={`/broker/requests/${req.publicId}`}
+        className="group grid grid-cols-[110px_1.5fr_1fr_1fr_0.8fr_0.7fr_140px] items-center gap-3 border-b border-cream-200 px-5 py-3.5 transition-colors last:border-b-0 hover:bg-cream-100"
+      >
+        <span className="flex items-center gap-1.5 font-mono text-[11px] text-sage-500">
+          {req.isNew && (
+            <span
+              aria-label="New"
+              className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
+            />
+          )}
+          #{req.publicId}
+        </span>
+        <span className="truncate font-body text-[13px] font-semibold text-forest-800">
+          {typeLabel(req, t)}
+        </span>
+        <span className="truncate font-body text-[13px] text-forest-700/80">
+          {region}
+        </span>
+        <span className="font-body text-[12px] text-forest-700/70">
+          {req.desiredTimeline
+            ? t(TIMELINE_LABEL_KEYS[req.desiredTimeline] ?? req.desiredTimeline)
+            : "—"}
+        </span>
+        <span className="font-mono text-[12px] text-forest-700">
+          {responses > 0
+            ? `${responses}`
+            : <span className="font-semibold text-success-700">{t("broker.openForResponse", "Open")}</span>}
+        </span>
+        <span className="font-mono text-[11px] text-sage-500">
+          {relativeTime(req.createdAt, locale)}
+        </span>
+        <span className="inline-flex items-center justify-end gap-1 font-mono text-[11px] font-semibold text-forest-700 transition-colors group-hover:text-amber-600">
+          {t("broker.respond", "상담 시작")} →
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+function RequestCardMobile({
+  req,
+  locale,
+  t,
+}: {
+  req: BrokerRequest;
+  locale: string;
+  t: Translator;
+}) {
+  const region = req.city ? `${req.city}, ${req.province}` : req.province;
+  const responses = req._count?.conversations ?? 0;
+  const label =
+    req.mortgageCategory === "COMMERCIAL"
+      ? t("request.commercial")
+      : t("request.residential");
+  return (
+    <li>
+      <Link
+        href={`/broker/requests/${req.publicId}`}
+        className={`block rounded-sm border bg-cream-50 px-4 py-3.5 transition-colors hover:bg-cream-100 ${
+          req.isNew ? "border-amber-200" : "border-cream-300"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 font-mono text-[11px] text-sage-500">
+            {req.isNew && (
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+            )}
+            #{req.publicId}
+          </span>
+          <Badge
+            tone={req.mortgageCategory === "COMMERCIAL" ? "accent" : "neutral"}
+          >
+            {label}
+          </Badge>
+        </div>
+        <div className="mt-1.5 font-body text-[14px] font-semibold text-forest-800">
+          {typeLabel(req, t)}
+        </div>
+        <div className="font-body text-[12px] text-forest-700/80">{region}</div>
+        <div className="mt-2 flex items-center justify-between font-mono text-[11px] text-sage-500">
+          <span>
+            {req.desiredTimeline
+              ? t(TIMELINE_LABEL_KEYS[req.desiredTimeline] ?? req.desiredTimeline)
+              : "—"}
+            {" · "}
+            {relativeTime(req.createdAt, locale)}
+          </span>
+          <span className="font-semibold text-forest-700">
+            {responses > 0
+              ? `${responses} ${t("broker.responsesSuffix", "responses")}`
+              : t("broker.openForResponse", "Open")}
+          </span>
+        </div>
+      </Link>
+    </li>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────
+// Skeleton — matches row cadence to avoid layout shift.
+// ──────────────────────────────────────────────────────────────
+function RequestsSkeleton() {
+  return (
+    <div className="px-5 py-6 sm:px-8 sm:py-8">
+      <div className="hidden overflow-hidden rounded-sm border border-cream-300 bg-cream-50 md:block">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="grid grid-cols-[110px_1.5fr_1fr_1fr_0.8fr_0.7fr_140px] gap-3 border-b border-cream-200 px-5 py-4 last:border-b-0"
+          >
+            {[...Array(7)].map((__, j) => (
+              <span
+                key={j}
+                className="h-3 animate-pulse rounded-sm bg-cream-200"
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <ul className="space-y-3 md:hidden">
+        {[...Array(4)].map((_, i) => (
+          <li
+            key={i}
+            className="h-24 animate-pulse rounded-sm border border-cream-300 bg-cream-50"
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Eyebrow is imported but only used above — silence unused lint.
+void Eyebrow;
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({
   props: {

@@ -403,7 +403,29 @@
     "brokerDisclaimerBody": "Mortly는 모기지를 알아보시는 분과 모기지 전문가를 연결하는 마켓플레이스 플랫폼입니다.\n이곳에서 이루어지는 상담요청은 고객들이 직접 작성한 것이며, mortly는 그 상담요청 내용에 대해서 어떠한 보증도 하지 않습니다.",
     "brokerDisclaimerAccept": "이해했습니다."
   },
+  "borrower": {
+    "nav": {
+      "dashboard": "대시보드",
+      "messages": "메시지",
+      "profile": "프로필"
+    },
+    "tagline": "신청인",
+    "openNav": "내비게이션 열기",
+    "closeNav": "내비게이션 닫기"
+  },
   "broker": {
+    "nav": {
+      "dashboard": "대시보드",
+      "requests": "상담 요청",
+      "messages": "대화",
+      "profile": "내 프로필",
+      "billing": "크레딧·결제"
+    },
+    "tagline": "전문가",
+    "completeProfilePrompt": "전문가 프로필을 완성해야 상담 마켓플레이스를 이용할 수 있습니다.",
+    "goToOnboarding": "온보딩 완료하기 →",
+    "openNav": "내비게이션 열기",
+    "closeNav": "내비게이션 닫기",
     "dashboard": "대시보드",
     "welcome": "다시 오신 것을 환영합니다, {{name}}님",
     "openRequests": "상담 요청",

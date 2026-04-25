@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useCallback, useEffect, useState, FormEvent } from "react";
 import { useTranslation } from "next-i18next";
 import type { CreateRequestInput, ResidentialDetails, CommercialDetails } from "@/types";
 import {
@@ -26,11 +26,28 @@ const PROVINCES = [
   "Yukon",
 ];
 
+/**
+ * Snapshot emitted by RequestForm whenever its internal state changes.
+ * Consumed by parents that render the new 3-column layout (left rail with
+ * step nav + right live summary). The form remains the single source of
+ * truth for state — parents only read.
+ */
+export interface RequestFormSnapshot {
+  step: number;
+  totalSteps: number;
+  form: CreateRequestInput;
+  goToStep: (n: number) => void;
+}
+
 interface RequestFormProps {
   initialValues?: CreateRequestInput;
   onSubmit: (data: CreateRequestInput) => Promise<void>;
   submitLabel?: string;
   submittingLabel?: string;
+  /** Hide the inline progress stepper (use when the parent owns the rail). */
+  hideStepper?: boolean;
+  /** Fired on every state change so a parent can render a live summary. */
+  onStateChange?: (snapshot: RequestFormSnapshot) => void;
 }
 
 function getYearOptions(): string[] {
@@ -56,6 +73,8 @@ export default function RequestForm({
   onSubmit,
   submitLabel,
   submittingLabel,
+  hideStepper = false,
+  onStateChange,
 }: RequestFormProps) {
   const { t } = useTranslation("common");
 
@@ -213,6 +232,22 @@ export default function RequestForm({
     if (step > 1) setStep(step - 1);
   }
 
+  // Stable callback so parents can wire it into the left rail without
+  // causing re-renders in the form.
+  const goToStep = useCallback((n: number) => {
+    if (n >= 1 && n <= totalSteps) setStep(n);
+  }, []);
+
+  // Emit snapshot whenever step or form changes. Parents (e.g. the new
+  // request flow's left rail + right summary) read from this rather than
+  // owning the state themselves — keeps the form's complex state surface
+  // intact while exposing what the surrounding layout needs.
+  useEffect(() => {
+    if (!onStateChange) return;
+    onStateChange({ step, totalSteps, form, goToStep });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, form]);
+
   // ── Submit ──────────────────────────────────────────────────
 
   async function handleSubmit(e: FormEvent) {
@@ -299,6 +334,7 @@ export default function RequestForm({
       )}
 
       {/* ── Progress Stepper ──────────────────────────────── */}
+      {!hideStepper && (
       <div className="flex items-center gap-2">
         {stepLabels.map((label, i) => {
           const stepNum = i + 1;
@@ -342,6 +378,7 @@ export default function RequestForm({
           );
         })}
       </div>
+      )}
 
       {/* ── Step 1: Basics ────────────────────────────────── */}
       {step === 1 && (

@@ -12,7 +12,13 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { getRequestTitle } from "@/lib/requestConfig";
-import Navbar from "@/components/Navbar";
+import BorrowerShell from "@/components/borrower/BorrowerShell";
+import RequestContextPanel from "@/components/broker/RequestContextPanel";
+import {
+  ConversationListSkeleton,
+  ThreadSkeleton,
+  RequestContextSkeleton,
+} from "@/components/broker/MessagesSkeletons";
 import { SkeletonChat } from "@/components/Skeleton";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
 import { supabase } from "@/lib/supabase";
@@ -36,7 +42,17 @@ interface ConversationListItem {
     user: { id: string; publicId?: string; name: string | null };
   };
   borrower: { id: string; name: string | null };
-  request: { id: string; province: string; mortgageCategory?: string | null };
+  request: {
+    id: string;
+    publicId?: string | null;
+    province: string;
+    city?: string | null;
+    status?: string | null;
+    mortgageCategory?: string | null;
+    productTypes?: string[] | null;
+    desiredTimeline?: string | null;
+    notes?: string | null;
+  };
 }
 
 /* ────────────────────────────────────────────── */
@@ -100,6 +116,17 @@ export default function BorrowerMessagesPage() {
   const [error, setError] = useState("");
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
+
+  // Escape closes the right context panel drawer on tablet/mobile.
+  useEffect(() => {
+    if (!contextOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setContextOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [contextOpen]);
 
   const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(activeId);
 
@@ -333,12 +360,25 @@ export default function BorrowerMessagesPage() {
   /* ---- loading / auth states ---- */
   if (authStatus === "loading" || listLoading) {
     return (
-      <>
-        <Navbar />
-        <SkeletonChat />
-      </>
+      <BorrowerShell active="messages" pageTitle={t("titles.borrowerMessages")}>
+        <div className="flex h-full">
+          <div className="w-full md:w-80 lg:w-96 shrink-0 border-r border-cream-300 bg-cream-100">
+            <div className="px-5 py-4 border-b border-cream-300">
+              <h1 className="heading-md">{t("messages.title")}</h1>
+            </div>
+            <ConversationListSkeleton />
+          </div>
+          <div className="hidden flex-1 md:block" />
+          <div className="hidden w-80 shrink-0 lg:block">
+            <RequestContextSkeleton />
+          </div>
+        </div>
+      </BorrowerShell>
     );
   }
+  // Keep the import alive — `SkeletonChat` was the legacy full-page skeleton.
+  // The composed skeletons above replace it; remove on the Phase 4 cleanup pass.
+  void SkeletonChat;
 
   if (!session) return null;
 
@@ -362,9 +402,8 @@ export default function BorrowerMessagesPage() {
   /* ────────────────────────────────────────────── */
 
   return (
-    <>
+    <BorrowerShell active="messages" pageTitle={t("titles.borrowerMessages")}>
       <Head><title>{t("titles.borrowerMessages")}</title></Head>
-      <Navbar />
 
       {/* Chat disclaimer */}
       {disclaimerNeeded && activeId && (
@@ -412,9 +451,8 @@ export default function BorrowerMessagesPage() {
         </div>
       )}
 
-      <div
-        className="flex  h-[calc(100dvh-80px)]"
-      >
+      <div className="flex h-full">
+
         {/* ──────────────── LEFT PANEL ──────────────── */}
         <div
           className={`w-full md:w-80 lg:w-96 border-r border-cream-300 bg-cream-100 flex flex-col shrink-0 ${
@@ -561,8 +599,8 @@ export default function BorrowerMessagesPage() {
               </p>
             </div>
           ) : chatLoading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-body-sm">{t("chat.loadingConversation")}</p>
+            <div className="flex-1 overflow-y-auto">
+              <ThreadSkeleton />
             </div>
           ) : conversation ? (
             <>
@@ -638,6 +676,31 @@ export default function BorrowerMessagesPage() {
                       {t("messages.closed")}
                     </span>
                   )}
+
+                  {/* Right context-panel toggle (visible below lg). */}
+                  <button
+                    type="button"
+                    onClick={() => setContextOpen((v) => !v)}
+                    aria-expanded={contextOpen}
+                    aria-controls="borrower-request-context"
+                    className="shrink-0 rounded-sm border border-cream-300 bg-cream-50 p-1.5 text-forest-700 transition-colors hover:bg-cream-200 lg:hidden"
+                    title={t("borrower.requestContext", "Request context")}
+                    aria-label={t("borrower.requestContext", "Request context")}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.8}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11.25 4.5h1.5m-1.5 4.5h1.5m-1.5 4.5h1.5M5.25 19.5h13.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H5.25A1.5 1.5 0 0 0 3.75 6v12a1.5 1.5 0 0 0 1.5 1.5Z"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
@@ -736,7 +799,45 @@ export default function BorrowerMessagesPage() {
             </>
           ) : null}
         </div>
+
+        {/* Right context panel — always mounted on lg+ */}
+        <div
+          id="borrower-request-context"
+          className="hidden w-80 shrink-0 lg:block"
+        >
+          {activeId && chatLoading ? (
+            <RequestContextSkeleton />
+          ) : (
+            <RequestContextPanel
+              request={conversation?.request ?? null}
+              viewFullHrefPrefix="/borrower/request"
+            />
+          )}
+        </div>
+
+        {/* Tablet / mobile drawer — only mounted while open */}
+        {contextOpen && activeId && (
+          <>
+            <button
+              type="button"
+              aria-label={t("common.close", "Close")}
+              onClick={() => setContextOpen(false)}
+              className="fixed inset-0 z-40 bg-forest-900/40 backdrop-blur-sm lg:hidden"
+            />
+            <div className="fixed inset-y-0 right-0 z-50 w-[min(100vw,360px)] lg:hidden">
+              {chatLoading ? (
+                <RequestContextSkeleton />
+              ) : (
+                <RequestContextPanel
+                  request={conversation?.request ?? null}
+                  viewFullHrefPrefix="/borrower/request"
+                  onClose={() => setContextOpen(false)}
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
-    </>
+    </BorrowerShell>
   );
 }

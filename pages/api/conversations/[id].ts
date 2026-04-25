@@ -64,7 +64,19 @@ export default async function handler(
             select: { id: true, publicId: true, name: true },
           },
           request: {
-            select: { id: true, publicId: true, province: true, city: true, status: true, mortgageCategory: true, productTypes: true },
+            select: {
+              id: true,
+              publicId: true,
+              province: true,
+              city: true,
+              status: true,
+              mortgageCategory: true,
+              productTypes: true,
+              desiredTimeline: true,
+              details: true,
+              notes: true,
+              createdAt: true,
+            },
           },
         },
       });

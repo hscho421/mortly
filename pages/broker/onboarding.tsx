@@ -2,7 +2,7 @@ import { useState, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Layout from "@/components/Layout";
+import BrokerShell from "@/components/broker/BrokerShell";
 import { SkeletonForm } from "@/components/Skeleton";
 import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
@@ -46,10 +46,10 @@ export default function BrokerOnboardingPage() {
 
   if (status === "loading") {
     return (
-      <Layout>
+      <BrokerShell active="profile" pageTitle={t("titles.brokerOnboarding")} skipProfileGate>
         <Head><title>{t("titles.brokerOnboarding")}</title></Head>
         <SkeletonForm />
-      </Layout>
+      </BrokerShell>
     );
   }
 
@@ -114,7 +114,7 @@ export default function BrokerOnboardingPage() {
   };
 
   return (
-    <Layout>
+    <BrokerShell active="profile" pageTitle={t("titles.brokerOnboarding")} skipProfileGate>
       <Head><title>{t("titles.brokerOnboarding")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
         {/* Header */}
@@ -316,7 +316,7 @@ export default function BrokerOnboardingPage() {
           </button>
         </form>
       </div>
-    </Layout>
+    </BrokerShell>
   );
 }
 

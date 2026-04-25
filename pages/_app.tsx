@@ -7,6 +7,8 @@ import { appWithTranslation, useTranslation } from "next-i18next";
 import { Analytics } from "@vercel/analytics/react";
 import { ToastProvider } from "@/components/Toast";
 import { AdminDataProvider } from "@/lib/admin/AdminDataContext";
+import { BrokerDataProvider } from "@/components/broker/BrokerDataContext";
+import { BorrowerDataProvider } from "@/components/borrower/BorrowerDataContext";
 
 function ErrorFallback({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation("common");
@@ -113,6 +115,27 @@ function AdminScope({ children }: { children: React.ReactNode }) {
   return <AdminDataProvider>{children}</AdminDataProvider>;
 }
 
+/**
+ * Mount BrokerDataProvider only on /broker/* routes — mirrors AdminScope.
+ * Keeps the broker-specific polling loop out of public and admin pages.
+ */
+function BrokerScope({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const isBrokerRoute = router.pathname.startsWith("/broker");
+  if (!isBrokerRoute) return <>{children}</>;
+  return <BrokerDataProvider>{children}</BrokerDataProvider>;
+}
+
+/**
+ * Mount BorrowerDataProvider only on /borrower/* routes — mirrors BrokerScope.
+ */
+function BorrowerScope({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const isBorrowerRoute = router.pathname.startsWith("/borrower");
+  if (!isBorrowerRoute) return <>{children}</>;
+  return <BorrowerDataProvider>{children}</BorrowerDataProvider>;
+}
+
 function App({
   Component,
   pageProps: { session, ...pageProps },
@@ -124,7 +147,11 @@ function App({
         <ErrorBoundary>
           <MaintenanceGate>
             <AdminScope>
-              <Component {...pageProps} />
+              <BrokerScope>
+                <BorrowerScope>
+                  <Component {...pageProps} />
+                </BorrowerScope>
+              </BrokerScope>
             </AdminScope>
           </MaintenanceGate>
         </ErrorBoundary>

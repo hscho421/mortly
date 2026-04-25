@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "next-i18next";
+import BrandMark from "./BrandMark";
 
 export default function Footer() {
   const { data: session } = useSession();
@@ -11,11 +12,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           {/* Brand */}
           <div>
-            <Link href="/" className="inline-flex items-baseline">
-              <span className="font-display text-3xl font-normal tracking-[-0.03em] text-forest-800">
-                mortly<span className="italic text-amber-500">.</span>
-              </span>
-            </Link>
+            <BrandMark href="/" className="h-9 w-auto" />
             <p className="mt-4 max-w-xs font-body text-sm leading-relaxed text-forest-700/70 whitespace-pre-line">
               {t("footer.tagline")}
             </p>

@@ -6,7 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetServerSideProps } from "next";
-import Layout from "@/components/Layout";
+import BorrowerShell from "@/components/borrower/BorrowerShell";
 import { SkeletonBrokerList } from "@/components/Skeleton";
 import ReportButton from "@/components/ReportButton";
 
@@ -98,14 +98,14 @@ export default function BrokerComparison() {
 
   if (authStatus === "loading" || loading) {
     return (
-      <Layout>
+      <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerBrokers")}>
         <SkeletonBrokerList />
-      </Layout>
+      </BorrowerShell>
     );
   }
 
   return (
-    <Layout>
+    <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerBrokers")}>
       <Head><title>{t("titles.borrowerBrokers")}</title></Head>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ">
         <div className="mb-8">
@@ -251,6 +251,6 @@ export default function BrokerComparison() {
           </div>
         )}
       </div>
-    </Layout>
+    </BorrowerShell>
   );
 }

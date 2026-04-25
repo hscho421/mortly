@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Layout from "@/components/Layout";
+import BorrowerShell from "@/components/borrower/BorrowerShell";
 import { SkeletonProfile } from "@/components/Skeleton";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import { useTranslation } from "next-i18next";
@@ -134,16 +134,16 @@ export default function BorrowerProfilePage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <Layout>
+      <BorrowerShell active="profile" pageTitle={t("titles.borrowerProfile")}>
         <SkeletonProfile />
-      </Layout>
+      </BorrowerShell>
     );
   }
 
   if (!session || session.user.role !== "BORROWER") return null;
 
   return (
-    <Layout>
+    <BorrowerShell active="profile" pageTitle={t("titles.borrowerProfile")}>
       <Head><title>{t("titles.borrowerProfile")}</title></Head>
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Header */}
@@ -334,7 +334,7 @@ export default function BorrowerProfilePage() {
         {/* Account deletion — Apple App Store guideline 5.1.1(v) */}
         <DeleteAccountSection />
       </div>
-    </Layout>
+    </BorrowerShell>
   );
 }
 

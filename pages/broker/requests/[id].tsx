@@ -3,16 +3,30 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
-import Layout from "@/components/Layout";
+import BrokerShell from "@/components/broker/BrokerShell";
+import { useBrokerData } from "@/components/broker/BrokerDataContext";
+import {
+  AppTopbar,
+  Badge,
+  Btn,
+  Card,
+  Eyebrow,
+} from "@/components/broker/ui";
 import { SkeletonRequestDetail } from "@/components/Skeleton";
 import ReportButton from "@/components/ReportButton";
-import type { ResidentialDetails, CommercialDetails } from "@/types";
+import {
+  ResidentialBlocks,
+  CommercialBlocks,
+} from "@/components/broker/RequestDetailBlocks";
 import { useTranslation } from "next-i18next";
 import posthog from "posthog-js";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetStaticProps, GetStaticPaths } from "next";
-import { PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
+import {
+  PRODUCT_LABEL_KEYS,
+  TIMELINE_LABEL_KEYS,
+} from "@/lib/requestConfig";
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-CA", {
@@ -22,27 +36,35 @@ function formatDate(dateStr: string): string {
   });
 }
 
+function relativeTime(dateStr: string, locale: string) {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const m = Math.max(0, Math.floor((now - then) / 60_000));
+  if (m < 1) return locale === "ko" ? "방금" : "just now";
+  if (m < 60) return locale === "ko" ? `${m}분 전` : `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return locale === "ko" ? `${h}시간 전` : `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return locale === "ko" ? `${d}일 전` : `${d}d ago`;
+  return formatDate(dateStr);
+}
+
 export default function BrokerRequestDetailPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { id } = router.query;
   const { t } = useTranslation("common");
+  const { profile } = useBrokerData();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [request, setRequest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [brokerCredits, setBrokerCredits] = useState<number | null>(null);
-  const [brokerTier, setBrokerTier] = useState("");
-  const [brokerProfileId, setBrokerProfileId] = useState("");
   const [isStartingChat, setIsStartingChat] = useState(false);
 
   useEffect(() => {
     if (status === "loading" || !id) return;
-    if (!session || session.user.role !== "BROKER") {
-      router.push("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "BROKER") return;
 
     const fetchRequest = async () => {
       setIsLoading(true);
@@ -58,31 +80,17 @@ export default function BrokerRequestDetailPage() {
       }
     };
 
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch("/api/brokers/profile");
-        if (res.ok) {
-          const data = await res.json();
-          setBrokerCredits(data.responseCredits ?? 0);
-          setBrokerTier(data.subscriptionTier || "");
-          setBrokerProfileId(data.id || "");
-        }
-      } catch {
-        // ignore
-      }
-    };
-
     fetchRequest();
-    fetchProfile();
 
     // Mark this single request as seen so the gold "new" dot clears from the
     // browse list. Fire-and-forget — UI doesn't depend on the response.
     fetch(`/api/brokers/requests/${encodeURIComponent(id as string)}/mark-seen`, {
       method: "POST",
     }).catch(() => {
-      // Best-effort — stale dot on next load isn't a hard failure
+      // best-effort
     });
-  }, [session, status, router, id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, id]);
 
   async function handleStartConversation() {
     if (!request || isStartingChat) return;
@@ -107,7 +115,9 @@ export default function BrokerRequestDetailPage() {
       posthog.capture("broker_conversation_started", {
         request_id: request.publicId,
       });
-      router.push(`/broker/messages?id=${conversation.id}`, undefined, { locale: router.locale });
+      router.push(`/broker/messages?id=${conversation.id}`, undefined, {
+        locale: router.locale,
+      });
     } catch (err) {
       posthog.captureException(err);
       setError(t("common.unexpectedError"));
@@ -117,268 +127,322 @@ export default function BrokerRequestDetailPage() {
 
   if (status === "loading" || isLoading) {
     return (
-      <Layout>
-        <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
+      <BrokerShell active="requests" pageTitle={t("titles.brokerRequestDetail")}>
+        <Head>
+          <title>{t("titles.brokerRequestDetail")}</title>
+        </Head>
         <SkeletonRequestDetail />
-      </Layout>
+      </BrokerShell>
     );
-  }
-
-  if (!session || session.user.role !== "BROKER") {
-    return null;
   }
 
   if (error || !request) {
     return (
-      <Layout>
-        <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
-        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="rounded-sm bg-error-50 border border-error-500/20 p-4" role="alert">
-            <p className="font-body text-sm text-error-700">{error || t("misc.requestNotFound")}</p>
-          </div>
-          <Link
-            href="/broker/requests"
-            className="mt-4 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-          >
-            &larr; {t("broker.backToRequests")}
-          </Link>
+      <BrokerShell active="requests" pageTitle={t("titles.brokerRequestDetail")}>
+        <Head>
+          <title>{t("titles.brokerRequestDetail")}</title>
+        </Head>
+        <AppTopbar
+          eyebrow={t("broker.requestsEyebrow", "상담 요청")}
+          title={t("misc.requestNotFound")}
+          actions={
+            <Btn as="a" href="/broker/requests" variant="ghost" size="sm">
+              ← {t("broker.backToRequests")}
+            </Btn>
+          }
+        />
+        <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
+          <Card padding="lg">
+            <p role="alert" className="font-body text-sm text-error-700">
+              {error || t("misc.requestNotFound")}
+            </p>
+          </Card>
         </div>
-      </Layout>
+      </BrokerShell>
     );
   }
 
-  // Check if this broker already has a conversation for this request
-  const hasConversation = (request.conversations ?? []).some(
-    (conv: { brokerId: string }) => conv.brokerId === brokerProfileId
-  );
-  const hasResponded = hasConversation;
+  const locale = router.locale === "ko" ? "ko" : "en";
+  const brokerTier = profile?.subscriptionTier ?? "BASIC";
+  const brokerCredits = profile?.responseCredits ?? 0;
+  const brokerProfileId = profile?.id ?? "";
+  const unlimited = brokerTier === "PREMIUM";
 
-  const statusColors: Record<string, string> = {
-    OPEN: "bg-forest-100 text-forest-700",
-    IN_PROGRESS: "bg-amber-100 text-amber-700",
-    EXPIRED: "bg-sage-100 text-sage-600",
-    CLOSED: "bg-sage-100 text-sage-700",
-  };
+  const hasResponded = (request.conversations ?? []).some(
+    (conv: { brokerId: string }) => conv.brokerId === brokerProfileId,
+  );
+
+  const categoryLabel =
+    request.mortgageCategory === "COMMERCIAL"
+      ? t("request.commercial")
+      : t("request.residential");
+  const region = request.city
+    ? `${request.city}, ${request.province}`
+    : request.province;
+  const firstProduct = (request.productTypes ?? [])[0];
+  const responses = request._count?.conversations ?? 0;
 
   return (
-    <Layout>
-      <Head><title>{t("titles.brokerRequestDetail")}</title></Head>
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8 ">
-        <Link
-          href="/broker/requests"
-          className="mb-8 inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-          {t("request.backToRequests")}
-        </Link>
+    <BrokerShell active="requests" pageTitle={t("titles.brokerRequestDetail")}>
+      <Head>
+        <title>{t("titles.brokerRequestDetail")}</title>
+      </Head>
 
-        <div className="card-elevated">
-          {/* Header badges */}
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
-              request.mortgageCategory === "COMMERCIAL"
-                ? "bg-amber-100 text-amber-800"
-                : "bg-forest-100 text-forest-700"
-            }`}>
-              {request.mortgageCategory === "COMMERCIAL"
-                ? t("request.commercial")
-                : t("request.residential")}
-            </span>
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${statusColors[request.status] || "bg-sage-100 text-sage-700"}`}>
-              {t(`statusLabel.${request.status}`, request.status as string)}
-            </span>
-          </div>
-
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="heading-lg mb-2">
-              {`${request.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")} — ${request.city ? `${request.city}, ` : ""}${request.province}`}
-            </h1>
+      <AppTopbar
+        eyebrow={
+          <>
+            <span className="font-mono">#{request.publicId}</span>
+            <span> · </span>
+            {relativeTime(request.createdAt as string, locale)}
+          </>
+        }
+        title={
+          <>
+            {categoryLabel}{" "}
+            <span className="text-sage-400">·</span>{" "}
+            <span className="italic text-amber-600">{region}</span>
+          </>
+        }
+        actions={
+          <>
+            <Btn as="a" href="/broker/requests" variant="ghost" size="sm">
+              ← {t("broker.backToRequests")}
+            </Btn>
             <ReportButton targetType="REQUEST" targetId={request.publicId} />
-          </div>
-          <p className="text-body-sm mb-8">
-            {t("misc.posted", { date: formatDate(request.createdAt as unknown as string) })} &middot;{" "}
-            {t("misc.brokerResponses", { count: request._count?.conversations ?? 0 })}
-          </p>
+          </>
+        }
+      />
 
-          <hr className="divider mb-8" />
+      <div className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-10">
+        {/* Overview card — editorial header echoing the reference's tile. */}
+        <Card padding="lg" className="mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              tone={
+                request.mortgageCategory === "COMMERCIAL"
+                  ? "accent"
+                  : "neutral"
+              }
+            >
+              {categoryLabel}
+              {firstProduct
+                ? ` · ${t(PRODUCT_LABEL_KEYS[firstProduct] ?? firstProduct)}`
+                : ""}
+            </Badge>
+            <Badge tone={request.status === "OPEN" ? "success" : "neutral"}>
+              {t(`statusLabel.${request.status}`, request.status as string)}
+            </Badge>
+            <span className="ml-auto font-mono text-[11px] text-sage-500">
+              {t("misc.brokerResponses", {
+                count: responses,
+              })}
+            </span>
+          </div>
 
           {/* Product pills */}
-          <div className="mb-6">
-            <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50 mb-3">
-              {t("request.selectProducts")}
-            </h3>
-            <div className="flex flex-wrap gap-2">
+          {(request.productTypes ?? []).length > 1 && (
+            <div className="mt-4 flex flex-wrap gap-1.5">
               {(request.productTypes ?? []).map((pt: string) => (
                 <span
                   key={pt}
-                  className="inline-flex items-center rounded-full bg-cream-200 px-3 py-1 font-body text-sm font-medium text-forest-700"
+                  className="inline-flex items-center rounded-sm border border-cream-300 bg-cream-100 px-2.5 py-1 font-body text-[12px] text-forest-700"
                 >
                   {t(PRODUCT_LABEL_KEYS[pt] ?? pt)}
                 </span>
               ))}
             </div>
-          </div>
+          )}
 
-          {/* Category-specific details */}
-          <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-            {request.mortgageCategory === "COMMERCIAL" ? (
-              <>
-                {(() => {
-                  const d = request.details as CommercialDetails | null;
-                  return d ? (
-                    <>
-                      <div className="rounded-sm bg-cream-100 p-4">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.businessType")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.businessType || t("request.notSpecified")}</p>
-                      </div>
-                      <div className="rounded-sm bg-cream-100 p-4 col-span-full">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50 mb-2">{t("request.corporateFinancials")}</h3>
-                        {typeof d.corporateAnnualIncome === "object" ? (
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-cream-200">
-                                <th className="font-body font-medium text-sage-500 text-left py-1 pr-4">{t("request.selectYear")}</th>
-                                <th className="font-body font-medium text-sage-500 text-right py-1 px-4">{t("request.corpIncome")}</th>
-                                <th className="font-body font-medium text-sage-500 text-right py-1 pl-4">{t("request.corpExpenses")}</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Object.keys(d.corporateAnnualIncome || {}).sort().reverse().map((year) => (
-                                <tr key={year} className="border-b border-cream-100 last:border-0">
-                                  <td className="font-body text-forest-800 py-1.5 pr-4">{year}</td>
-                                  <td className="font-body font-medium text-forest-800 text-right py-1.5 px-4">${(d.corporateAnnualIncome as Record<string, string>)[year] || "—"}</td>
-                                  <td className="font-body font-medium text-forest-800 text-right py-1.5 pl-4">${((d.corporateAnnualExpenses as Record<string, string>) || {})[year] || "—"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        ) : (
-                          <p className="font-body text-sm text-forest-800">{t("request.notSpecified")}</p>
-                        )}
-                      </div>
-                      <div className="rounded-sm bg-cream-100 p-4">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.ownerNetIncome")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">{d.ownerNetIncome ? `$${d.ownerNetIncome}` : t("request.notSpecified")}</p>
-                      </div>
-                    </>
-                  ) : null;
-                })()}
-              </>
-            ) : (
-              <>
-                {(() => {
-                  const d = request.details as ResidentialDetails | null;
-                  return d ? (
-                    <>
-                      <div className="rounded-sm bg-cream-100 p-4">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.purposeOfUse")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">
-                          {Array.isArray(d.purposeOfUse)
-                            ? d.purposeOfUse.map((v) => v === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")).join(", ")
-                            : d.purposeOfUse === "OWNER_OCCUPIED" ? t("request.ownerOccupied") : t("request.rental")}
-                        </p>
-                      </div>
-                      <div className="rounded-sm bg-cream-100 p-4">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.incomeType")}</h3>
-                        <p className="mt-1 font-body text-sm font-medium text-forest-800">
-                          {(d.incomeTypes ?? []).map((it) => t(INCOME_TYPE_LABEL_KEYS[it] ?? it)).join(", ")}
-                          {d.incomeTypeOther ? ` (${d.incomeTypeOther})` : ""}
-                        </p>
-                      </div>
-                      <div className="rounded-sm bg-cream-100 p-4">
-                        <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50 mb-2">{t("request.annualIncome")}</h3>
-                        {typeof d.annualIncome === "object" && d.annualIncome ? (
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-cream-200">
-                                <th className="font-body font-medium text-sage-500 text-left py-1 pr-4">{t("request.selectYear")}</th>
-                                <th className="font-body font-medium text-sage-500 text-right py-1">{t("request.annualIncome")}</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Object.entries(d.annualIncome).sort(([a], [b]) => b.localeCompare(a)).map(([year, amount]) => (
-                                <tr key={year} className="border-b border-cream-100 last:border-0">
-                                  <td className="font-body text-forest-800 py-1.5 pr-4">{year}</td>
-                                  <td className="font-body font-medium text-forest-800 text-right py-1.5">${amount || "—"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        ) : (
-                          <p className="mt-1 font-body text-sm font-medium text-forest-800">{(d.annualIncome as unknown as string) || t("request.notSpecified")}</p>
-                        )}
-                      </div>
-                    </>
-                  ) : null;
-                })()}
-              </>
+          {/* Key fact strip */}
+          <div className="mt-6 grid grid-cols-2 gap-4 border-t border-cream-300 pt-4 sm:grid-cols-4">
+            <FactCell
+              label={t("request.province")}
+              value={request.province}
+            />
+            {request.city && (
+              <FactCell
+                label={t("request.city", "도시")}
+                value={request.city}
+              />
             )}
             {request.desiredTimeline && (
-              <div className="rounded-sm bg-cream-100 p-4">
-                <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.desiredTimeline")}</h3>
-                <p className="mt-1 font-body text-sm font-medium text-forest-800">{t(TIMELINE_LABEL_KEYS[request.desiredTimeline] || request.desiredTimeline)}</p>
-              </div>
+              <FactCell
+                label={t("request.desiredTimeline")}
+                value={t(
+                  TIMELINE_LABEL_KEYS[request.desiredTimeline] ??
+                    request.desiredTimeline,
+                )}
+              />
             )}
+            <FactCell
+              label={t("broker.posted")}
+              value={formatDate(request.createdAt as string)}
+            />
           </div>
 
+          {/* Client notes */}
           {request.notes && (
-            <div className="mb-8 rounded-sm bg-cream-100 p-5">
-              <h3 className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("request.additionalNotes")}</h3>
-              <p className="mt-2 font-body text-sm text-forest-800 whitespace-pre-wrap">{request.notes}</p>
+            <div className="mt-5 rounded-sm border border-cream-300 bg-cream-100 p-4">
+              <Eyebrow>{t("request.additionalNotes")}</Eyebrow>
+              <p className="mt-2 whitespace-pre-wrap font-body text-[14px] leading-relaxed text-forest-800">
+                {request.notes}
+              </p>
             </div>
           )}
+        </Card>
 
-          {/* CTA */}
-          {hasResponded ? (
-            <div className="rounded-sm bg-forest-50 border border-forest-200 p-5">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-forest-200 p-1.5">
-                  <svg className="h-4 w-4 text-forest-700" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        {/* Category-specific details */}
+        <Card padding="lg" className="mb-6">
+          <Eyebrow>{t("broker.detailsEyebrow", "상세 정보")}</Eyebrow>
+          <h2 className="mt-1 font-display text-xl font-semibold text-forest-800">
+            {t("broker.requestDetailsTitle", "Request details")}
+          </h2>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {request.mortgageCategory === "COMMERCIAL" ? (
+              <CommercialBlocks details={request.details} t={t} />
+            ) : (
+              <ResidentialBlocks details={request.details} t={t} />
+            )}
+          </div>
+        </Card>
+
+        {/* CTA card */}
+        {hasResponded ? (
+          <Card padding="lg" className="flex items-center justify-between gap-3 border-success-100 bg-success-50">
+            <div className="flex items-center gap-3">
+              <svg
+                className="h-5 w-5 text-success-700"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="font-body text-sm font-medium text-success-700">
+                {t("broker.alreadyMessaged")}
+              </p>
+            </div>
+            <Btn as="a" href="/broker/messages" size="sm" variant="ghost">
+              {t("broker.goToMessages")}
+            </Btn>
+          </Card>
+        ) : (brokerTier === "BASIC" || brokerTier === "PRO") &&
+          brokerCredits === 0 ? (
+          <Card padding="lg" className="border-warning-100 bg-warning-50">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-warning-100">
+                  <svg
+                    className="h-4 w-4 text-warning-700"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+                    />
                   </svg>
                 </div>
-                <div className="flex flex-1 items-center justify-between">
-                  <p className="font-body text-sm font-medium text-forest-800">
-                    {t("broker.alreadyMessaged")}
-                  </p>
-                  <Link href="/broker/messages" className="btn-secondary !py-2 !px-4 !text-xs">
-                    {t("broker.goToMessages")}
-                  </Link>
-                </div>
+                <p className="font-body text-sm font-medium text-forest-800">
+                  {t("credits.noCreditsMessage")}
+                </p>
+              </div>
+              <Btn as="a" href="/broker/billing" size="sm">
+                {t("credits.upgradePlan")}
+              </Btn>
+            </div>
+          </Card>
+        ) : (
+          <Card padding="lg">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <Eyebrow>{t("broker.respondEyebrow", "응답하기")}</Eyebrow>
+                <h3 className="mt-1 font-display text-lg font-semibold text-forest-800">
+                  {t(
+                    "broker.startDirectThread",
+                    "Start a direct conversation",
+                  )}
+                </h3>
+                <p className="mt-1 font-body text-[13px] text-sage-500">
+                  {unlimited
+                    ? t(
+                        "broker.unlimitedPlanRespond",
+                        "PREMIUM plan · unlimited responses.",
+                      )
+                    : t(
+                        "broker.creditWillBeDeducted",
+                        "1 credit will be used. {{remaining}} remaining.",
+                        { remaining: brokerCredits },
+                      )}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Btn
+                  as="a"
+                  href="/broker/requests"
+                  variant="ghost"
+                  size="md"
+                >
+                  {t("broker.backToList", "목록으로")}
+                </Btn>
+                <Btn
+                  onClick={handleStartConversation}
+                  disabled={isStartingChat}
+                  size="md"
+                >
+                  {isStartingChat
+                    ? t("broker.startingChat")
+                    : t("broker.respond", "상담 시작")}{" "}
+                  →
+                </Btn>
               </div>
             </div>
-          ) : (brokerTier === "BASIC" || brokerTier === "PRO") && brokerCredits === 0 ? (
-            <div className="rounded-sm border-2 border-amber-300 bg-amber-50 p-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-200">
-                    <svg className="h-4 w-4 text-amber-700" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-                    </svg>
-                  </div>
-                  <p className="font-body text-sm font-medium text-forest-800">{t("credits.noCreditsMessage")}</p>
-                </div>
-                <Link href="/broker/billing" className="btn-amber shrink-0 text-center">
-                  {t("credits.upgradePlan")}
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={handleStartConversation}
-              disabled={isStartingChat}
-              className="btn-primary w-full sm:w-auto text-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isStartingChat ? t("broker.startingChat") : t("broker.sendMessage")}
-            </button>
-          )}
-        </div>
+            {error && (
+              <p
+                role="alert"
+                className="mt-3 rounded-sm border border-error-100 bg-error-50 px-3 py-2 font-body text-[13px] text-error-700"
+              >
+                {error}
+              </p>
+            )}
+          </Card>
+        )}
       </div>
-    </Layout>
+    </BrokerShell>
   );
 }
+
+// ──────────────────────────────────────────────────────────────
+// FactCell · small labeled value block used in the overview grid.
+// ──────────────────────────────────────────────────────────────
+function FactCell({
+  label,
+  value,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-sage-500">
+        {label}
+      </div>
+      <div className="mt-1 font-body text-[13px] font-semibold text-forest-800">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+// No need for standalone Link now — re-export to avoid unused-import lint.
+void Link;
 
 export const getStaticPaths: GetStaticPaths = async () => ({
   paths: [],
