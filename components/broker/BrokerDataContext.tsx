@@ -53,9 +53,58 @@ export interface BrokerCounters {
   activeConversations: number;
 }
 
+/**
+ * Lightweight conversation shape exposed to consumers (sidebar badge counts,
+ * dashboard recent-activity widget). Pages that need the full Message[] array
+ * still call `/api/conversations/[id]` directly — that data isn't cached here
+ * because it's per-conversation and frequently updated via Realtime.
+ */
+export interface BrokerCachedConversation {
+  id: string;
+  publicId?: string;
+  status: string;
+  updatedAt: string;
+  unreadCount?: number;
+  messages: { body: string; createdAt: string; senderId: string }[];
+  broker?: {
+    id?: string;
+    brokerageName?: string;
+    user?: { id?: string; name?: string | null };
+  };
+  borrower: { id: string; name: string | null };
+  request: {
+    id: string;
+    publicId?: string | null;
+    province: string;
+    city?: string | null;
+    status?: string | null;
+    mortgageCategory?: string | null;
+    productTypes?: string[] | null;
+  };
+}
+
+export interface BrokerCachedRequest {
+  id: string;
+  publicId: string;
+  province: string;
+  city?: string | null;
+  status: string;
+  createdAt: string;
+  mortgageCategory?: string | null;
+  productTypes?: string[] | null;
+  desiredTimeline?: string | null;
+  isNew?: boolean;
+  conversations?: { broker?: { userId: string } }[];
+  _count?: { conversations?: number };
+}
+
 interface BrokerDataContextValue {
   profile: BrokerProfile | null;
   counters: BrokerCounters;
+  /** Recent open requests for sidebar+dashboard widgets. Up to 5. */
+  recentRequests: BrokerCachedRequest[];
+  /** All conversations (no pagination — list is small per broker). */
+  conversations: BrokerCachedConversation[];
   loaded: boolean;
   /** True once profile resolved (even if null/404). */
   profileChecked: boolean;
@@ -71,6 +120,8 @@ const DEFAULT_COUNTERS: BrokerCounters = {
 const BrokerDataContext = createContext<BrokerDataContextValue>({
   profile: null,
   counters: DEFAULT_COUNTERS,
+  recentRequests: [],
+  conversations: [],
   loaded: false,
   profileChecked: false,
   refresh: async () => {},
@@ -87,6 +138,8 @@ export function BrokerDataProvider({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const [profile, setProfile] = useState<BrokerProfile | null>(null);
   const [counters, setCounters] = useState<BrokerCounters>(DEFAULT_COUNTERS);
+  const [recentRequests, setRecentRequests] = useState<BrokerCachedRequest[]>([]);
+  const [conversations, setConversations] = useState<BrokerCachedConversation[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [profileChecked, setProfileChecked] = useState(false);
   const redirectedRef = useRef(false);
@@ -121,34 +174,41 @@ export function BrokerDataProvider({ children }: { children: React.ReactNode }) 
 
   const fetchCounters = useCallback(async () => {
     try {
-      // Request counters are cheap — use the list endpoint with limit=1 so we
-      // only pay for metadata (total + newCount). Response includes the
-      // top-of-page data payload, which we discard.
+      // Bumped to limit=5 (was limit=1) so this single fetch serves both the
+      // sidebar badge AND the dashboard's "new requests" widget. The cost
+      // delta vs limit=1 is negligible and it deduplicates the dashboard's
+      // previously-separate /api/requests call.
       const [reqRes, unreadRes, convosRes] = await Promise.all([
-        fetch("/api/requests?limit=1"),
+        fetch("/api/requests?limit=5"),
         fetch("/api/messages/unread"),
         fetch("/api/conversations"),
       ]);
-      const next: BrokerCounters = { ...DEFAULT_COUNTERS };
+      const nextCounters: BrokerCounters = { ...DEFAULT_COUNTERS };
       if (reqRes.ok) {
         const json = await reqRes.json();
-        next.newRequests = typeof json.newCount === "number" ? json.newCount : 0;
+        nextCounters.newRequests =
+          typeof json.newCount === "number" ? json.newCount : 0;
+        const data = (json.data ?? []) as BrokerCachedRequest[];
+        setRecentRequests(data);
       }
       if (unreadRes.ok) {
         const json = await unreadRes.json();
-        next.unreadMessages = typeof json.unread === "number" ? json.unread : 0;
+        nextCounters.unreadMessages =
+          typeof json.unread === "number" ? json.unread : 0;
       }
       if (convosRes.ok) {
         const json = await convosRes.json();
         if (Array.isArray(json)) {
-          next.activeConversations = json.filter(
-            (c: { status: string }) => c.status === "ACTIVE",
+          const list = json as BrokerCachedConversation[];
+          nextCounters.activeConversations = list.filter(
+            (c) => c.status === "ACTIVE",
           ).length;
+          setConversations(list);
         }
       }
-      setCounters(next);
+      setCounters(nextCounters);
     } catch {
-      // keep previous counters
+      // keep previous counters / lists
     }
   }, []);
 
@@ -189,8 +249,16 @@ export function BrokerDataProvider({ children }: { children: React.ReactNode }) 
   }, [session, status, fetchProfile, fetchCounters]);
 
   const value = useMemo<BrokerDataContextValue>(
-    () => ({ profile, counters, loaded, profileChecked, refresh }),
-    [profile, counters, loaded, profileChecked, refresh],
+    () => ({
+      profile,
+      counters,
+      recentRequests,
+      conversations,
+      loaded,
+      profileChecked,
+      refresh,
+    }),
+    [profile, counters, recentRequests, conversations, loaded, profileChecked, refresh],
   );
 
   return (

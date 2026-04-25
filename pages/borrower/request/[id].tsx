@@ -8,6 +8,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import BorrowerShell from "@/components/borrower/BorrowerShell";
+import { useBorrowerData } from "@/components/borrower/BorrowerDataContext";
 import { SkeletonRequestDetail } from "@/components/Skeleton";
 import StatusBadge from "@/components/StatusBadge";
 import ConsultationStepper from "@/components/ConsultationStepper";
@@ -52,6 +53,7 @@ export default function RequestDetail() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { data: session, status: authStatus } = useSession();
+  const { refresh: refreshBorrowerData } = useBorrowerData();
   const { id } = router.query;
 
   const [request, setRequest] = useState<RequestData>(null);
@@ -86,13 +88,11 @@ export default function RequestDetail() {
   }, [id, router, t]);
 
   useEffect(() => {
+    // Auth gate handled by <BorrowerShell> upstream — only fetch when ready.
     if (authStatus === "loading") return;
-    if (!session) {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session) return;
     fetchRequest();
-  }, [authStatus, session, fetchRequest, router]);
+  }, [authStatus, session, fetchRequest]);
 
   async function handleEdit(data: CreateRequestInput) {
     const res = await fetch(`/api/requests/${request.publicId}`, {
@@ -127,6 +127,9 @@ export default function RequestDetail() {
         throw new Error(data.error || t("errors.failedToDeleteRequest"));
       }
 
+      // Invalidate cached requests so the dashboard doesn't render the now-
+      // deleted item until the next 30s context poll.
+      await refreshBorrowerData();
       router.push("/borrower/dashboard", undefined, { locale: router.locale });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));

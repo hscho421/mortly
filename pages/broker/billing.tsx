@@ -311,12 +311,9 @@ export default function BrokerBillingPage() {
     );
   }
 
-  if (!session || session.user.role !== "BROKER") {
-    if (typeof window !== "undefined") {
-      router.push("/login", undefined, { locale: router.locale });
-    }
-    return null;
-  }
+  // Auth gate is handled by <BrokerShell> upstream (see BrokerShell.tsx).
+  // Render nothing if the role check fails so the body never paints.
+  if (!session || session.user.role !== "BROKER") return null;
 
   return (
     <BrokerShell active="billing" pageTitle={t("titles.brokerBilling")}>
@@ -432,7 +429,7 @@ export default function BrokerBillingPage() {
         {/* Plan comparison */}
         <h2 className="heading-md mb-6 ">{t("broker.choosePlan")}</h2>
         <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {plans.map((plan, i) => (
+          {plans.map((plan) => (
             <div
               key={plan.tier}
               className={`relative card-elevated flex flex-col ${

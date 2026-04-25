@@ -10,7 +10,6 @@ import {
   Btn,
   Card,
   EmptyState,
-  Eyebrow,
 } from "@/components/broker/ui";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -587,9 +586,6 @@ function RequestsSkeleton() {
     </div>
   );
 }
-
-// Eyebrow is imported but only used above — silence unused lint.
-void Eyebrow;
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({
   props: {

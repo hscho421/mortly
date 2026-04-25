@@ -19,7 +19,6 @@ import {
   ThreadSkeleton,
   RequestContextSkeleton,
 } from "@/components/broker/MessagesSkeletons";
-import { SkeletonChat } from "@/components/Skeleton";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
 import { supabase } from "@/lib/supabase";
 import type { ConversationWithParticipants } from "@/types";
@@ -133,12 +132,7 @@ export default function BorrowerMessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSelectingRef = useRef(false);
 
-  /* ---- auth guard ---- */
-  useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.replace("/login", undefined, { locale: router.locale });
-    }
-  }, [authStatus, router]);
+  /* ---- auth gate handled by <BorrowerShell> upstream ---- */
 
   /* ---- scroll helper ---- */
   const scrollToBottom = useCallback(() => {
@@ -376,9 +370,6 @@ export default function BorrowerMessagesPage() {
       </BorrowerShell>
     );
   }
-  // Keep the import alive — `SkeletonChat` was the legacy full-page skeleton.
-  // The composed skeletons above replace it; remove on the Phase 4 cleanup pass.
-  void SkeletonChat;
 
   if (!session) return null;
 

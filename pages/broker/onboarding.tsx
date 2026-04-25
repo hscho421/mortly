@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import BrokerShell from "@/components/broker/BrokerShell";
+import { useBrokerData } from "@/components/broker/BrokerDataContext";
 import { SkeletonForm } from "@/components/Skeleton";
 import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
@@ -29,6 +30,7 @@ export default function BrokerOnboardingPage() {
   const router = useRouter();
   const { t } = useTranslation("common");
   const { toast } = useToast();
+  const { refresh: refreshBrokerData } = useBrokerData();
 
   const [form, setForm] = useState<CreateBrokerProfileInput>({
     brokerageName: "",
@@ -53,12 +55,8 @@ export default function BrokerOnboardingPage() {
     );
   }
 
-  if (!session || session.user.role !== "BROKER") {
-    if (typeof window !== "undefined") {
-      router.push("/login", undefined, { locale: router.locale });
-    }
-    return null;
-  }
+  // Auth gate handled by <BrokerShell> upstream.
+  if (!session || session.user.role !== "BROKER") return null;
 
   const formatPhone = (raw: string): string => {
     const digits = raw.replace(/\D/g, "").slice(0, 10);
@@ -105,6 +103,10 @@ export default function BrokerOnboardingPage() {
         mortgage_category: form.mortgageCategory,
       });
       toast(t("broker.onboardingSuccess"), "success");
+      // Refresh the shell's profile cache before navigating; otherwise the
+      // dashboard would render the "Complete your profile" banner for up to
+      // 30s (the polling interval) until the next counter sweep.
+      await refreshBrokerData();
       router.push("/broker/dashboard", undefined, { locale: router.locale });
     } catch (err) {
       posthog.captureException(err);

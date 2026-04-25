@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
@@ -23,30 +23,6 @@ import {
   TIMELINE_LABEL_KEYS,
   getRequestTitle,
 } from "@/lib/requestConfig";
-
-interface BrokerRequest {
-  id: string;
-  publicId: string;
-  mortgageCategory: "RESIDENTIAL" | "COMMERCIAL" | null;
-  productTypes?: string[] | null;
-  province: string;
-  city?: string | null;
-  desiredTimeline?: string | null;
-  createdAt: string;
-  isNew?: boolean;
-  _count?: { conversations: number };
-}
-
-interface DashboardConversation {
-  id: string;
-  publicId?: string;
-  status: string;
-  updatedAt: string;
-  unreadCount?: number;
-  messages: { body: string; createdAt: string; senderId: string }[];
-  borrower: { id: string; name: string | null };
-  request: { id: string; province: string; mortgageCategory?: string | null };
-}
 
 function relativeTime(date: string, locale: string) {
   const now = Date.now();
@@ -74,15 +50,26 @@ function firstName(fullName: string | null | undefined, fallback: string) {
 export default function BrokerDashboardPage() {
   const router = useRouter();
   const { t } = useTranslation("common");
-  const { profile, profileChecked, counters } = useBrokerData();
-
-  const [recentRequests, setRecentRequests] = useState<BrokerRequest[]>([]);
-  const [recentConversations, setRecentConversations] = useState<
-    DashboardConversation[]
-  >([]);
-  const [loadingLists, setLoadingLists] = useState(true);
-  const [listError, setListError] = useState<string | null>(null);
+  const {
+    profile,
+    profileChecked,
+    counters,
+    recentRequests: contextRequests,
+    conversations: contextConversations,
+    loaded: contextLoaded,
+  } = useBrokerData();
   const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
+
+  // The dashboard reads its lists straight from BrokerDataContext to avoid
+  // double-fetching the same endpoints every mount. `loadingLists` mirrors
+  // the context's load state so we keep the existing skeleton-vs-data UX.
+  const loadingLists = !contextLoaded;
+  const recentRequests = contextRequests;
+  const recentConversations = useMemo(
+    () =>
+      contextConversations.filter((c) => c.status === "ACTIVE").slice(0, 3),
+    [contextConversations],
+  );
 
   // One-time congrats banner. localStorage can be unavailable (private mode,
   // jsdom harness); treat access as best-effort.
@@ -98,45 +85,6 @@ export default function BrokerDashboardPage() {
       // no-op — storage may be disabled
     }
   }, [profile?.id, profile?.verificationStatus]);
-
-  // Dashboard-specific lists: top 5 requests + top 3 active conversations.
-  // `t` intentionally omitted — it's a stable reference in production but the
-  // test harness recreates it every render, which would flap the effect.
-  useEffect(() => {
-    if (!profileChecked || !profile) return;
-    let cancelled = false;
-    (async () => {
-      setLoadingLists(true);
-      setListError(null);
-      try {
-        const [reqRes, convRes] = await Promise.all([
-          fetch("/api/requests?limit=5"),
-          fetch("/api/conversations"),
-        ]);
-        if (cancelled) return;
-        if (reqRes.ok) {
-          const json = await reqRes.json();
-          setRecentRequests((json.data ?? []) as BrokerRequest[]);
-        } else if (reqRes.status !== 403) {
-          setListError("error");
-        }
-        if (convRes.ok) {
-          const convs = (await convRes.json()) as DashboardConversation[];
-          setRecentConversations(
-            convs.filter((c) => c.status === "ACTIVE").slice(0, 3),
-          );
-        }
-      } catch {
-        if (!cancelled) setListError("error");
-      } finally {
-        if (!cancelled) setLoadingLists(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileChecked, profile?.id]);
 
   if (!profileChecked) {
     return (
@@ -347,14 +295,6 @@ export default function BrokerDashboardPage() {
                   {t("broker.seeAll", "모두 보기")} →
                 </Link>
               </div>
-              {listError && (
-                <div
-                  role="alert"
-                  className="border-b border-error-100 bg-error-50 px-5 py-3 text-[13px] text-error-700"
-                >
-                  {t("broker.failedToFetchRequests")}
-                </div>
-              )}
               {loadingLists ? (
                 <div className="px-5 py-10 text-center font-body text-[13px] text-sage-500">
                   {t("broker.loadingRequests")}

@@ -42,11 +42,9 @@ export default function BorrowerProfilePage() {
   const [passwordSuccess, setPasswordSuccess] = useState("");
 
   useEffect(() => {
+    // Auth gate handled by <BorrowerShell> upstream — only fetch when ready.
     if (status === "loading") return;
-    if (!session || session.user.role !== "BORROWER") {
-      router.push("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "BORROWER") return;
 
     const fetchProfile = async () => {
       setIsLoading(true);

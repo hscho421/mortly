@@ -45,9 +45,49 @@ export interface BorrowerCounters {
   totalResponses: number;
 }
 
+/** Cached request shape for dashboard widgets. Mirrors `/api/requests` GET. */
+export interface BorrowerCachedRequest {
+  id: string;
+  publicId: string;
+  province: string;
+  city?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+  mortgageCategory?: string | null;
+  productTypes?: string[] | null;
+  desiredTimeline?: string | null;
+  conversations?: { id: string; broker?: { userId: string } }[];
+  _count?: { conversations?: number };
+}
+
+/** Cached conversation shape — same as `/api/conversations` list response. */
+export interface BorrowerCachedConversation {
+  id: string;
+  status: string;
+  updatedAt: string;
+  unreadCount?: number;
+  messages: { body: string; createdAt: string; senderId: string }[];
+  broker?: {
+    id?: string;
+    brokerageName?: string;
+    user?: { id?: string; name?: string | null };
+  } | null;
+  request?: {
+    id: string;
+    publicId?: string | null;
+    province?: string | null;
+    mortgageCategory?: string | null;
+  } | null;
+}
+
 interface BorrowerDataContextValue {
   profile: BorrowerProfile | null;
   counters: BorrowerCounters;
+  /** All borrower requests (no pagination — list is small). */
+  requests: BorrowerCachedRequest[];
+  /** All borrower conversations. */
+  conversations: BorrowerCachedConversation[];
   loaded: boolean;
   profileChecked: boolean;
   refresh: () => Promise<void>;
@@ -63,6 +103,8 @@ const DEFAULT_COUNTERS: BorrowerCounters = {
 const BorrowerDataContext = createContext<BorrowerDataContextValue>({
   profile: null,
   counters: DEFAULT_COUNTERS,
+  requests: [],
+  conversations: [],
   loaded: false,
   profileChecked: false,
   refresh: async () => {},
@@ -78,6 +120,8 @@ export function BorrowerDataProvider({ children }: { children: React.ReactNode }
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState<BorrowerProfile | null>(null);
   const [counters, setCounters] = useState<BorrowerCounters>(DEFAULT_COUNTERS);
+  const [requests, setRequests] = useState<BorrowerCachedRequest[]>([]);
+  const [conversations, setConversations] = useState<BorrowerCachedConversation[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [profileChecked, setProfileChecked] = useState(false);
 
@@ -98,43 +142,44 @@ export function BorrowerDataProvider({ children }: { children: React.ReactNode }
 
   const fetchCounters = useCallback(async () => {
     try {
+      // Single set of fetches for both sidebar counters AND dashboard
+      // widgets — pages read from `requests` / `conversations` here rather
+      // than firing duplicate API calls of their own.
       const [reqRes, unreadRes, convRes] = await Promise.all([
         fetch("/api/requests"),
         fetch("/api/messages/unread"),
         fetch("/api/conversations"),
       ]);
-      const next: BorrowerCounters = { ...DEFAULT_COUNTERS };
+      const nextCounters: BorrowerCounters = { ...DEFAULT_COUNTERS };
       if (reqRes.ok) {
         const json = await reqRes.json();
-        const list = (json.data ?? json) as Array<{
-          status: string;
-          _count?: { conversations?: number };
-          conversations?: unknown[];
-        }>;
-        next.activeRequests = list.filter(
+        const list = (json.data ?? json) as BorrowerCachedRequest[];
+        nextCounters.activeRequests = list.filter(
           (r) => r.status === "OPEN" || r.status === "IN_PROGRESS",
         ).length;
-        next.totalResponses = list.reduce(
+        nextCounters.totalResponses = list.reduce(
           (sum, r) =>
             sum +
             (r._count?.conversations ?? r.conversations?.length ?? 0),
           0,
         );
+        setRequests(list);
       }
       if (unreadRes.ok) {
         const json = await unreadRes.json();
-        next.unreadMessages =
+        nextCounters.unreadMessages =
           typeof json.unread === "number" ? json.unread : 0;
       }
       if (convRes.ok) {
-        const list = (await convRes.json()) as Array<{ status: string }>;
-        next.activeConversations = list.filter(
+        const list = (await convRes.json()) as BorrowerCachedConversation[];
+        nextCounters.activeConversations = list.filter(
           (c) => c.status === "ACTIVE",
         ).length;
+        setConversations(list);
       }
-      setCounters(next);
+      setCounters(nextCounters);
     } catch {
-      // keep previous counters
+      // keep previous counters / lists
     }
   }, []);
 
@@ -173,8 +218,16 @@ export function BorrowerDataProvider({ children }: { children: React.ReactNode }
   }, [session, status, fetchProfile, fetchCounters]);
 
   const value = useMemo<BorrowerDataContextValue>(
-    () => ({ profile, counters, loaded, profileChecked, refresh }),
-    [profile, counters, loaded, profileChecked, refresh],
+    () => ({
+      profile,
+      counters,
+      requests,
+      conversations,
+      loaded,
+      profileChecked,
+      refresh,
+    }),
+    [profile, counters, requests, conversations, loaded, profileChecked, refresh],
   );
 
   return (

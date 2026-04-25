@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -6,7 +6,10 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import BorrowerShell from "@/components/borrower/BorrowerShell";
-import { useBorrowerData } from "@/components/borrower/BorrowerDataContext";
+import {
+  useBorrowerData,
+  type BorrowerCachedRequest,
+} from "@/components/borrower/BorrowerDataContext";
 import {
   AppTopbar,
   Badge,
@@ -25,39 +28,10 @@ import {
   getRequestTitle,
 } from "@/lib/requestConfig";
 
-interface DashboardRequest {
-  id: string;
-  publicId: string;
-  province: string;
-  city?: string | null;
-  status: string;
-  createdAt: string;
-  updatedAt?: string;
-  mortgageCategory?: string | null;
-  productTypes?: string[] | null;
-  desiredTimeline?: string | null;
-  conversations?: { id: string; broker?: { userId: string } }[];
-  _count?: { conversations?: number };
-}
-
-interface DashboardConversation {
-  id: string;
-  status: string;
-  updatedAt: string;
-  unreadCount?: number;
-  messages: { body: string; createdAt: string; senderId: string }[];
-  broker?: {
-    id?: string;
-    brokerageName?: string;
-    user?: { id?: string; name?: string | null };
-  } | null;
-  request?: {
-    id: string;
-    publicId?: string | null;
-    province?: string | null;
-    mortgageCategory?: string | null;
-  } | null;
-}
+// Re-export the cached request type under the page-local name so the helper
+// components below can keep using it without churn. Conversation type is
+// imported directly via context where needed.
+type DashboardRequest = BorrowerCachedRequest;
 
 function relativeTime(date: string, locale: string) {
   const now = Date.now();
@@ -83,43 +57,19 @@ function firstName(fullName: string | null | undefined, fallback: string) {
 export default function BorrowerDashboard() {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const { profile } = useBorrowerData();
+  const {
+    profile,
+    requests,
+    conversations,
+    loaded: contextLoaded,
+  } = useBorrowerData();
 
-  const [requests, setRequests] = useState<DashboardRequest[]>([]);
-  const [conversations, setConversations] = useState<DashboardConversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [reqRes, convRes] = await Promise.all([
-          fetch("/api/requests"),
-          fetch("/api/conversations"),
-        ]);
-        if (cancelled) return;
-        if (reqRes.ok) {
-          const json = await reqRes.json();
-          setRequests((json.data ?? json) as DashboardRequest[]);
-        } else {
-          setError("LOAD_FAILED");
-        }
-        if (convRes.ok) {
-          setConversations((await convRes.json()) as DashboardConversation[]);
-        }
-      } catch {
-        if (!cancelled) setError("LOAD_FAILED");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Page reads requests + conversations directly from BorrowerDataContext —
+  // no separate fetch — so the dashboard inherits whatever the context's
+  // 30s poll has cached. Mutation flows (request create / edit / delete)
+  // call `refresh()` on the context before navigating here.
+  const loading = !contextLoaded;
+  const error: string | null = null;
 
   const locale = router.locale === "ko" ? "ko" : "en";
 

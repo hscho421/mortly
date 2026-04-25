@@ -125,13 +125,7 @@ export default function BrokerMessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, []);
 
-  // Auth guard
-  useEffect(() => {
-    if (authStatus === "loading") return;
-    if (!session || session.user.role !== "BROKER") {
-      router.push("/login", undefined, { locale: router.locale });
-    }
-  }, [session, authStatus, router]);
+  // Auth gate handled by <BrokerShell> upstream — no per-page redirect.
 
   // Fetch conversation list
   const fetchConversations = useCallback(async () => {

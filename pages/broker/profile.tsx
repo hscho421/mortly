@@ -69,11 +69,9 @@ export default function BrokerProfilePage() {
   };
 
   useEffect(() => {
+    // Auth gate handled by <BrokerShell> upstream — only fetch when ready.
     if (status === "loading") return;
-    if (!session || session.user.role !== "BROKER") {
-      router.push("/login", undefined, { locale: router.locale });
-      return;
-    }
+    if (!session || session.user.role !== "BROKER") return;
 
     const fetchProfile = async () => {
       setIsLoading(true);

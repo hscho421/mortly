@@ -6,6 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import BorrowerShell from "@/components/borrower/BorrowerShell";
+import { useBorrowerData } from "@/components/borrower/BorrowerDataContext";
 import RequestFormLayout from "@/components/borrower/RequestFormLayout";
 import { AppTopbar, Btn } from "@/components/broker/ui";
 import { SkeletonForm } from "@/components/Skeleton";
@@ -25,6 +26,7 @@ export default function NewRequestPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
+  const { refresh: refreshBorrowerData } = useBorrowerData();
   const [snapshot, setSnapshot] = useState<RequestFormSnapshot | null>(null);
 
   // Warn on accidental tab close mid-form. Hook order must stay stable, so
@@ -45,12 +47,8 @@ export default function NewRequestPage() {
     );
   }
 
-  if (!session || session.user.role !== "BORROWER") {
-    if (typeof window !== "undefined") {
-      router.push("/login", undefined, { locale: router.locale });
-    }
-    return null;
-  }
+  // Auth gate handled by <BorrowerShell> upstream.
+  if (!session || session.user.role !== "BORROWER") return null;
 
   const handleSubmit = async (data: CreateRequestInput) => {
     const res = await fetch("/api/requests", {
@@ -68,6 +66,11 @@ export default function NewRequestPage() {
     posthog.capture("loan_request_submitted", {
       mortgage_category: data.mortgageCategory,
       province: data.province,
+    });
+    // Invalidate the cached borrower lists so the dashboard sees the new
+    // request immediately (without waiting for the 30s context poll).
+    refreshBorrowerData().catch(() => {
+      // best-effort
     });
     router.push(`/borrower/request/${created.publicId}`);
   };

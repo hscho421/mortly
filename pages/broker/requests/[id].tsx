@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Link from "next/link";
 import BrokerShell from "@/components/broker/BrokerShell";
 import { useBrokerData } from "@/components/broker/BrokerDataContext";
 import {
@@ -54,7 +53,7 @@ export default function BrokerRequestDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { t } = useTranslation("common");
-  const { profile } = useBrokerData();
+  const { profile, refresh: refreshBrokerData } = useBrokerData();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [request, setRequest] = useState<any>(null);
@@ -114,6 +113,13 @@ export default function BrokerRequestDetailPage() {
       const conversation = await res.json();
       posthog.capture("broker_conversation_started", {
         request_id: request.publicId,
+      });
+      // Refresh shell context so the topbar credit chip and sidebar
+      // counters reflect the post-deduction state without waiting for the
+      // 30s poll. Fire-and-forget; the navigation below doesn't depend on
+      // it resolving.
+      refreshBrokerData().catch(() => {
+        // best-effort
       });
       router.push(`/broker/messages?id=${conversation.id}`, undefined, {
         locale: router.locale,
@@ -440,9 +446,6 @@ function FactCell({
     </div>
   );
 }
-
-// No need for standalone Link now — re-export to avoid unused-import lint.
-void Link;
 
 export const getStaticPaths: GetStaticPaths = async () => ({
   paths: [],

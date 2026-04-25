@@ -65,7 +65,7 @@ export default function BrokerComparison() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const { requestId } = router.query;
-  const { data: session, status: authStatus } = useSession();
+  const { status: authStatus } = useSession();
 
   const [conversations, setConversations] = useState<ConversationBroker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,12 +87,10 @@ export default function BrokerComparison() {
   }, [requestId, t]);
 
   useEffect(() => {
-    if (authStatus === "unauthenticated") {
-      router.replace("/login", undefined, { locale: router.locale });
-      return;
-    }
+    // Auth gate handled by <BorrowerShell> upstream — only fetch when ready.
+    if (authStatus === "unauthenticated") return;
     fetchConversations();
-  }, [authStatus, router, fetchConversations]);
+  }, [authStatus, fetchConversations]);
 
   const sorted = sortConversations(conversations, sort);
 
@@ -161,7 +159,7 @@ export default function BrokerComparison() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
-            {sorted.map((conv, index) => {
+            {sorted.map((conv) => {
               const broker = conv.broker;
 
               return (
