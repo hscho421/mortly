@@ -12,8 +12,10 @@
  * decrement EXACTLY as many times as there are successful creates — never
  * more, never less, never into negative.
  *
- * Opt-in via TEST_DATABASE_URL. Silently skipped otherwise so `npm test`
- * stays fast and offline.
+ * Opt-in via TEST_DATABASE_URL. In CI we REQUIRE it — `CI=true` without
+ * TEST_DATABASE_URL is a hard fail, since the credit race is the only thing
+ * standing between us and broker double-spend in production. Local dev can
+ * still skip by running `npm run test:concurrency` with the env unset.
  *
  * Precondition: run `npm run seed:mock` against the test DB first — we
  * reuse `seed-e2e-broker@mortly.test`'s broker row.
@@ -23,6 +25,15 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { PrismaClient } from "@prisma/client";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
+if (!TEST_DATABASE_URL && process.env.CI === "true") {
+  // Fail the whole suite in CI when the concurrency env is missing — this
+  // test catches the credit-race regression and was previously a silent skip
+  // (false confidence). Local dev can still run `npm test` without the env
+  // and just lose this one suite.
+  throw new Error(
+    "TEST_DATABASE_URL is required in CI. Concurrency tests cannot silently skip — they're the only coverage for credit double-spend.",
+  );
+}
 const describeIfDb = TEST_DATABASE_URL ? describe : describe.skip;
 
 describeIfDb("Real-DB concurrency — credit deduction never double-spends", () => {

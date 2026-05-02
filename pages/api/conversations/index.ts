@@ -26,19 +26,32 @@ export default withAuth(async (req, res, session) => {
 
       // ── Block filtering ──
       // Hide conversations where the OTHER party has been blocked by this user,
-      // or the OTHER party has blocked this user. Block is symmetric for visibility.
-      // Apple guideline 1.2 compliance.
-      const blockedUserIds = new Set<string>([
-        ...(await prisma.userBlock.findMany({
-          where: { blockerId: session.user.id },
-          select: { blockedId: true },
-        })).map((b) => b.blockedId),
-        ...(await prisma.userBlock.findMany({
-          where: { blockedId: session.user.id },
-          select: { blockerId: true },
-        })).map((b) => b.blockerId),
-      ]);
+      // OR the OTHER party has blocked this user. Block is symmetric for visibility
+      // (Apple guideline 1.2). Single capped query — was previously two
+      // sequential unbounded findManys which loaded 2N rows for N blocks.
+      const blocks = await prisma.userBlock.findMany({
+        where: {
+          OR: [
+            { blockerId: session.user.id },
+            { blockedId: session.user.id },
+          ],
+        },
+        select: { blockerId: true, blockedId: true },
+        take: 5000,
+      });
+      const userId = session.user.id;
+      const blockedUserIds = new Set<string>();
+      for (const b of blocks) {
+        if (b.blockerId !== userId) blockedUserIds.add(b.blockerId);
+        if (b.blockedId !== userId) blockedUserIds.add(b.blockedId);
+      }
 
+      // Bounded by `take` — previously unbounded, which meant power users
+      // (500+ conversations) loaded everything on every refresh AND built a
+      // 500-clause OR for the unread-count groupBy. Page size matches the
+      // mobile chat list.
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
       const conversations = await prisma.conversation.findMany({
         where,
         select: {
@@ -72,10 +85,11 @@ export default withAuth(async (req, res, session) => {
           },
         },
         orderBy: { updatedAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
       });
 
-      // Compute unread counts in a single batched query
-      const userId = session.user.id;
+      // Compute unread counts in a single batched query (userId already in scope)
 
       // Build per-conversation OR conditions (same pattern as /api/messages/unread)
       const orConditions = conversations.map((c: { id: string; borrowerLastReadAt: Date | null; brokerLastReadAt: Date | null }) => {
@@ -285,9 +299,15 @@ export default withAuth(async (req, res, session) => {
           await tx.message.create({
             data: { conversationId: conv.id, senderId: session.user.id, body: message },
           });
+          // Bump brokerMsgCount in the same transaction — the spam guard in
+          // /api/messages reads this denormalized counter, and counter drift
+          // between Conversation row and Message rows would defeat the guard.
           await tx.conversation.update({
             where: { id: conv.id },
-            data: { updatedAt: new Date() },
+            data: {
+              updatedAt: new Date(),
+              brokerMsgCount: { increment: 1 },
+            },
           });
         }
 

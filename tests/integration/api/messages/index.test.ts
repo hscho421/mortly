@@ -36,11 +36,24 @@ const convoWithParticipants = {
 describe("POST /api/messages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    prismaMock.conversation.findUnique.mockResolvedValue(convoWithParticipants as never);
+    // First findUnique: participant lookup. Second findUnique: counters
+    // (broker spam-guard reads denormalized brokerMsgCount/borrowerMsgCount).
+    // Tests that need to trigger the cap override the SECOND call below.
+    prismaMock.conversation.findUnique
+      .mockResolvedValueOnce(convoWithParticipants as never)
+      .mockResolvedValueOnce({ brokerMsgCount: 0, borrowerMsgCount: 0 } as never)
+      // Default subsequent calls (for tests that don't trigger guard).
+      .mockResolvedValue(convoWithParticipants as never);
     prismaMock.userBlock.findFirst.mockResolvedValue(null);
-    prismaMock.message.groupBy.mockResolvedValue([] as never);
     prismaMock.message.create.mockResolvedValue(makeMessage());
     prismaMock.conversation.update.mockResolvedValue(makeConversation());
+    // Message creation now goes through $transaction in the handler.
+    prismaMock.$transaction.mockImplementation(async (fn) => {
+      if (typeof fn === "function") {
+        return fn(prismaMock);
+      }
+      return Promise.resolve(fn);
+    });
   });
 
   it("rejects unauthenticated", async () => {
@@ -119,9 +132,11 @@ describe("POST /api/messages", () => {
 
   it("broker hitting 3-message cap before borrower replies → 429", async () => {
     setSession(brokerSession());
-    prismaMock.message.groupBy.mockResolvedValue([
-      { senderId: "user_broker_1", _count: { _all: 3 } },
-    ] as never);
+    // Re-stub the second findUnique (counters) to simulate the cap state.
+    prismaMock.conversation.findUnique
+      .mockReset()
+      .mockResolvedValueOnce(convoWithParticipants as never)
+      .mockResolvedValueOnce({ brokerMsgCount: 3, borrowerMsgCount: 0 } as never);
 
     const { req, res } = makeReqRes({
       method: "POST",
@@ -135,9 +150,10 @@ describe("POST /api/messages", () => {
 
   it("broker within cap sends successfully", async () => {
     setSession(brokerSession());
-    prismaMock.message.groupBy.mockResolvedValue([
-      { senderId: "user_broker_1", _count: { _all: 2 } },
-    ] as never);
+    prismaMock.conversation.findUnique
+      .mockReset()
+      .mockResolvedValueOnce(convoWithParticipants as never)
+      .mockResolvedValueOnce({ brokerMsgCount: 2, borrowerMsgCount: 0 } as never);
 
     const { req, res } = makeReqRes({
       method: "POST",
@@ -149,10 +165,10 @@ describe("POST /api/messages", () => {
 
   it("broker cap doesn't apply once borrower has engaged", async () => {
     setSession(brokerSession());
-    prismaMock.message.groupBy.mockResolvedValue([
-      { senderId: "user_broker_1", _count: { _all: 10 } },
-      { senderId: "user_borrower_1", _count: { _all: 1 } },
-    ] as never);
+    prismaMock.conversation.findUnique
+      .mockReset()
+      .mockResolvedValueOnce(convoWithParticipants as never)
+      .mockResolvedValueOnce({ brokerMsgCount: 10, borrowerMsgCount: 1 } as never);
 
     const { req, res } = makeReqRes({
       method: "POST",

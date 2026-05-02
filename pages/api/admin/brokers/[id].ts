@@ -10,12 +10,20 @@ export default withAdmin(async (req, res, session) => {
   if (req.method === "GET") {
     // Support lookup by user publicId (9-digit) or broker internal id
     const isPublicId = /^\d{9}$/.test(id);
+    // Switched conversations sub-query from `include` to `select` — the
+    // previous shape pulled every Conversation column (including borrower
+    // financial details that the admin detail page doesn't render). For a
+    // broker with 20 active threads that's ~50KB extra per page load.
     const brokerInclude = {
         user: {
           select: { id: true, publicId: true, name: true, email: true, status: true, createdAt: true },
         },
         conversations: {
-          include: {
+          select: {
+            id: true,
+            publicId: true,
+            status: true,
+            updatedAt: true,
             borrower: { select: { id: true, name: true, email: true } },
             request: { select: { id: true, province: true, mortgageCategory: true, productTypes: true } },
             _count: { select: { messages: true } },

@@ -158,7 +158,7 @@ function AdminShellChrome({
   children: ReactNode;
 }) {
   const { t } = useTranslation("common");
-  const { badges, badgesLoaded } = useAdminData();
+  const { badges, badgesLoaded, error } = useAdminData();
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-cream-100 text-forest-800">
@@ -238,6 +238,18 @@ function AdminShellChrome({
             </span>
           </div>
         </div>
+
+        {/* Persistent error banner — surfaces backend failures so admins
+            don't act on stale badges. Previously errors were console-only. */}
+        {error ? (
+          <div
+            role="status"
+            className="border-b border-error-200 bg-error-50 px-6 py-2 text-body-sm text-error-700"
+          >
+            {t("admin.dataStale", "Some data may be out of date — ")}
+            <span className="font-mono text-xs">{error}</span>
+          </div>
+        ) : null}
 
         <div className="flex-1 overflow-auto min-h-0">{children}</div>
       </div>

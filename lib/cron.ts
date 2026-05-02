@@ -1,4 +1,4 @@
-import type { NextApiRequest } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { timingSafeEqual } from "crypto";
 
 /**
@@ -36,3 +36,39 @@ export function verifyCronRequest(req: NextApiRequest): boolean {
 
   return process.env.ALLOW_NONVERCEL_CRON === "1";
 }
+
+/**
+ * Higher-order wrapper for cron handlers. Centralizes:
+ *   1. Method allowlist (GET + POST — Vercel sends GET).
+ *   2. Auth gate via verifyCronRequest.
+ *   3. Generic 500 try/catch so handlers don't need their own boilerplate.
+ *
+ * Usage:
+ *   export default withCron(async (req, res) => { ... });
+ */
+export type CronHandler = (
+  req: NextApiRequest,
+  res: NextApiResponse,
+) => Promise<void | NextApiResponse>;
+
+export function withCron(handler: CronHandler) {
+  return async function wrapped(req: NextApiRequest, res: NextApiResponse): Promise<void> {
+    if (req.method !== "GET" && req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+    if (!verifyCronRequest(req)) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    try {
+      await handler(req, res);
+    } catch (err) {
+      console.error("Cron handler error:", req.url, err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Internal server error" });
+      }
+    }
+  };
+}
+

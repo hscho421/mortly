@@ -43,6 +43,12 @@ export default withAdmin(async (req, res, session) => {
             // not on User.conversations (which is the borrower-side relation).
             // Surface them here so the admin user-detail page can render
             // conversations for broker users.
+            //
+            // _count.conversations was dropped — it triggered a full join over
+            // the broker's entire conversation history just to compute a number.
+            // For a broker with 5K conversations the page would OOM. Frontend
+            // can render "10 most recent" without a total count, or hit a
+            // separate paged endpoint when the user clicks "view all".
             conversations: {
               take: 10,
               orderBy: { updatedAt: "desc" },
@@ -57,7 +63,6 @@ export default withAdmin(async (req, res, session) => {
                 request: { select: { id: true, province: true, mortgageCategory: true } },
               },
             },
-            _count: { select: { conversations: true } },
           },
         },
         borrowerRequests: {

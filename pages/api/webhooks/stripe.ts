@@ -113,10 +113,36 @@ export default async function handler(
     }
   } catch (err) {
     console.error(`Webhook handler error for ${event.type}:`, err);
-    // Roll back the ledger entry so Stripe retries deliver the event again
-    // and we get a chance to reprocess. Not strictly required (Stripe will
-    // retry on a 5xx anyway), but this keeps the ledger honest.
-    await prisma.processedStripeEvent.delete({ where: { eventId: event.id } }).catch(() => {});
+    // Roll back the ledger so Stripe's retry isn't short-circuited as a
+    // duplicate. If the rollback ALSO fails (KV outage, DB blip), surface it
+    // loudly — silently swallowing means Stripe retries see the ledger row
+    // and 200, dropping the event entirely. Logging + observability event so
+    // it's noisy in metrics; we still return 500 to trigger Stripe's retry.
+    try {
+      await prisma.processedStripeEvent.delete({ where: { eventId: event.id } });
+    } catch (rollbackErr) {
+      console.error(
+        "[stripe-webhook] CRITICAL: ledger rollback failed for event",
+        event.id,
+        rollbackErr,
+      );
+      try {
+        getPostHogClient().capture({
+          distinctId: "system",
+          event: "webhook_ledger_rollback_failed",
+          properties: {
+            stripe_event_id: event.id,
+            stripe_event_type: event.type,
+            error: rollbackErr instanceof Error ? rollbackErr.message : String(rollbackErr),
+          },
+        });
+      } catch {
+        // PostHog itself can fail — at this point we've done all we can
+        // without paging a human. The handler already logged; Stripe still
+        // gets a 500 and will retry. Worst case: the duplicate-protection
+        // ledger entry blocks the retry, which is a known support ticket.
+      }
+    }
     return res.status(500).json({ error: "Webhook handler failed" });
   }
 
@@ -285,19 +311,30 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   if (!subscription) return;
 
-  await prisma.subscription.update({
-    where: { stripeSubscriptionId },
-    data: { status: "PAST_DUE" },
-  });
+  // Strip the broker's paid-tier credits as soon as payment fails — the
+  // previous behavior left credits intact through Stripe's full grace
+  // period (~3 weeks), so past-due brokers kept messaging clients while
+  // their subscription was being non-paid. Reset to FREE immediately.
+  // Successful retry → handleInvoicePaid re-grants the paid-tier credits.
+  const freeCredits = await getCreditsForTier("FREE");
 
-  if (subscription) {
-    const posthog = getPostHogClient();
-    posthog.capture({
-      distinctId: subscription.broker.id,
-      event: "subscription_payment_failed",
-      properties: { tier: subscription.tier, broker_id: subscription.broker.id },
-    });
-  }
+  await prisma.$transaction([
+    prisma.subscription.update({
+      where: { stripeSubscriptionId },
+      data: { status: "PAST_DUE" },
+    }),
+    prisma.broker.update({
+      where: { id: subscription.broker.id },
+      data: { responseCredits: freeCredits },
+    }),
+  ]);
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: subscription.broker.id,
+    event: "subscription_payment_failed",
+    properties: { tier: subscription.tier, broker_id: subscription.broker.id },
+  });
 }
 
 async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {

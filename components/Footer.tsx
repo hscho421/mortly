@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "next-i18next";
 import BrandMark from "./BrandMark";
+import { getDashboardPath } from "@/lib/getDashboardPath";
 
 export default function Footer() {
   const { data: session } = useSession();
@@ -67,15 +68,7 @@ export default function Footer() {
                 </h4>
                 <nav className="flex flex-col gap-3">
                   <Link
-                    href={
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      (session.user as any).role === "ADMIN"
-                        ? "/admin"
-                        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          (session.user as any).role === "BROKER"
-                          ? "/broker/dashboard"
-                          : "/borrower/dashboard"
-                    }
+                    href={getDashboardPath(session.user.role)}
                     className="font-body text-sm text-forest-700/80 transition-colors hover:text-amber-600"
                   >
                     {t("nav.dashboard")}

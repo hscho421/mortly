@@ -24,12 +24,23 @@ export default withAdmin(async (req, res) => {
     const [conversations, total] = await Promise.all([
       prisma.conversation.findMany({
         where,
-        include: {
+        // Switched from `include` (full record) to `select` (subset) — the
+        // previous response shipped ~5KB/row of unused broker/user fields
+        // (preferences, passwordHash absent but other columns present),
+        // adding ~500KB to a 100-item page.
+        select: {
+          id: true,
+          publicId: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
           borrower: {
             select: { id: true, name: true, email: true, status: true },
           },
           broker: {
-            include: {
+            select: {
+              id: true,
+              brokerageName: true,
               user: { select: { id: true, name: true, email: true, status: true } },
             },
           },

@@ -118,11 +118,12 @@ describe("Stripe webhook — out-of-order delivery", () => {
   });
 
   it("payment_failed → paid (transient decline recovery): final state is ACTIVE", async () => {
-    // Sequence: card declined → retry succeeds. We fire both events; final
-    // subscription status must be ACTIVE and credits restored on the paid leg.
+    // Sequence: card declined → retry succeeds. payment_failed now resets
+    // credits to FREE (hard-cut, not soft grace period); the successful
+    // retry's invoice.paid restores them. Final state: ACTIVE, paid credits.
     const sub = events.subscription({ tier: "BASIC" });
 
-    // 1. payment_failed
+    // 1. payment_failed → status PAST_DUE + credits → FREE in one transaction
     stripeMock.webhooks.constructEvent.mockReturnValueOnce({
       type: "invoice.payment_failed",
       data: { object: events.invoicePaid({ billingReason: "subscription_cycle" }) },
@@ -131,17 +132,16 @@ describe("Stripe webhook — out-of-order delivery", () => {
       ...makeSubscription(),
       broker: { id: "broker_1" },
     } as never);
-    prismaMock.subscription.update.mockResolvedValueOnce(
-      makeSubscription({ status: "PAST_DUE" })
-    );
+    prismaMock.$transaction.mockResolvedValueOnce([
+      makeSubscription({ status: "PAST_DUE" }),
+      { id: "broker_1", responseCredits: 0 },
+    ] as never);
 
     {
       const { req, res } = postWebhook({});
       await handler(req, res);
       expect(res.statusCode).toBe(200);
-      const updateArgs = prismaMock.subscription.update.mock.calls[0][0];
-      expect(updateArgs.data).toEqual({ status: "PAST_DUE" });
-      expect(prismaMock.broker.update).not.toHaveBeenCalled(); // soft failure
+      expect(prismaMock.$transaction).toHaveBeenCalledOnce();
     }
 
     // 2. invoice.paid (retry succeeded)

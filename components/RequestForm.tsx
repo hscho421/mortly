@@ -78,8 +78,25 @@ export default function RequestForm({
 }: RequestFormProps) {
   const { t } = useTranslation("common");
 
-  const [form, setForm] = useState<CreateRequestInput>(
-    initialValues || {
+  // sessionStorage-backed form state. Lost-on-refresh was a real complaint —
+  // borrowers would fill 2 steps, accidentally refresh, and lose everything.
+  // We rehydrate on mount from the same key, then clear on successful submit.
+  // Only used in CREATE mode (no `initialValues`); EDIT mode pulls from server.
+  const STORAGE_KEY = "mortly:request-form-draft";
+  const [form, setForm] = useState<CreateRequestInput>(() => {
+    if (initialValues) return initialValues;
+    if (typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as CreateRequestInput;
+          if (parsed && typeof parsed === "object") return parsed;
+        }
+      } catch {
+        // Ignore — corrupt JSON, quota errors, etc. Fall through to defaults.
+      }
+    }
+    return {
       mortgageCategory: "RESIDENTIAL",
       productTypes: [],
       province: "",
@@ -87,8 +104,34 @@ export default function RequestForm({
       details: { ...DEFAULT_RESIDENTIAL_DETAILS },
       desiredTimeline: "",
       notes: "",
-    }
-  );
+    };
+  });
+
+  // Persist on every change. Debounced via requestIdleCallback (or microtask
+  // fallback) to keep typing snappy — sessionStorage writes can stall on
+  // mobile Safari with a backed-up event loop.
+  useEffect(() => {
+    if (initialValues) return; // EDIT mode: don't write the draft slot
+    if (typeof window === "undefined") return;
+    const write = () => {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(form));
+      } catch {
+        // Quota / privacy mode — silent. Worst case: refresh = data loss.
+      }
+    };
+    const handle =
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(write)
+        : (setTimeout(write, 0) as unknown as number);
+    return () => {
+      if (typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(handle as number);
+      } else {
+        clearTimeout(handle as unknown as ReturnType<typeof setTimeout>);
+      }
+    };
+  }, [form, initialValues]);
   const [step, setStep] = useState(1);
   const totalSteps = 3;
   const [submitting, setSubmitting] = useState(false);
@@ -280,6 +323,16 @@ export default function RequestForm({
     setSubmitting(true);
     try {
       await onSubmit(form);
+      // Successful submit → clear the draft so a future "new request" starts
+      // empty. Keep the draft on error so the borrower doesn't lose the
+      // input they have to retry with.
+      if (!initialValues && typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(STORAGE_KEY);
+        } catch {
+          // Ignore; cosmetic cleanup.
+        }
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
     } finally {

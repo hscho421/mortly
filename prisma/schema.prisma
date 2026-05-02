@@ -114,6 +114,10 @@ model BorrowerRequest {
   @@index([borrowerId])
   @@index([borrowerId, status])
   @@index([status, createdAt])
+  // Standalone status index — admin tabs and broker browse marketplace
+  // filter by status alone; the (status, createdAt) composite isn't optimal
+  // for a pure equality lookup with no order. Cheap to add, big win at scale.
+  @@index([status])
   @@map("borrower_requests")
 }
 
@@ -174,6 +178,12 @@ model Conversation {
   updatedAt          DateTime           @updatedAt
   borrowerLastReadAt DateTime?          @map("borrower_last_read_at")
   brokerLastReadAt   DateTime?          @map("broker_last_read_at")
+  // Denormalized message counters — avoid running a `groupBy` over the full
+  // message history on every send (the spam-guard previously did this and
+  // got expensive on long threads). Maintained in the same transaction as
+  // message create.
+  brokerMsgCount     Int                @default(0) @map("broker_msg_count")
+  borrowerMsgCount   Int                @default(0) @map("borrower_msg_count")
   borrower           User               @relation(fields: [borrowerId], references: [id])
   broker             Broker             @relation(fields: [brokerId], references: [id])
   request            BorrowerRequest    @relation(fields: [requestId], references: [id])
@@ -192,7 +202,10 @@ model Message {
   id             String       @id @default(cuid())
   conversationId String
   senderId       String
-  body           String
+  // 5000-char cap enforced at DB level — app-level check in /api/messages
+  // is the primary guard, but the DB constraint is belt-and-suspenders so a
+  // bypass (refactor mistake, future endpoint) can't store a 1GB TEXT row.
+  body           String       @db.VarChar(5000)
   // True when an admin or cron created the row on behalf of the participants
   // (e.g. "[Admin] This conversation has been closed"). Rendering layer must
   // pull the system marker from THIS column, never from a body-text prefix —
@@ -239,21 +252,31 @@ model Subscription {
 }
 
 model Report {
-  id         String       @id @default(cuid())
+  id         String           @id @default(cuid())
   reporterId String
-  targetType String
+  // Was previously a free-form String — different code paths wrote
+  // case-mixed values ("BROKER" vs "broker"), creating orphaned reports
+  // that admin filters couldn't surface. Locked to an enum at the DB level.
+  targetType ReportTargetType
   targetId   String
   reason     String
-  status     ReportStatus @default(OPEN)
+  status     ReportStatus     @default(OPEN)
   adminNotes String?
   resolvedAt DateTime?
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  reporter   User         @relation(fields: [reporterId], references: [id])
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  reporter   User             @relation(fields: [reporterId], references: [id])
 
   @@index([status, createdAt])
   @@index([reporterId, targetType, targetId])
   @@map("reports")
+}
+
+enum ReportTargetType {
+  BROKER
+  REQUEST
+  CONVERSATION
+  USER
 }
 
 enum Role {
@@ -310,6 +333,11 @@ model AdminNotice {
   subject   String
   body      String
   read      Boolean  @default(false)
+  // Optional idempotency key — callers wanting at-most-once delivery
+  // (webhook-driven notices, retry-prone flows) supply a stable key. Race-safe
+  // upsert pattern: if the same key arrives twice, the second insert no-ops
+  // via the unique constraint instead of duplicating the user-visible notice.
+  dedupeKey String?  @unique @map("dedupe_key")
   createdAt DateTime @default(now()) @map("created_at")
   admin     User     @relation("adminNoticesSent", fields: [adminId], references: [id])
   user      User     @relation("adminNoticesReceived", fields: [userId], references: [id])

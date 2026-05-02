@@ -139,6 +139,18 @@ export default withAdmin(async (req, res) => {
 
   await Promise.all(batchQueries);
 
+  // Surface incomplete resolution loudly. Missing entries → the report row
+  // shows a raw cuid in the admin UI (frontend formats it weirdly), and
+  // historically meant the target was deleted. Logging here gives ops a
+  // signal to investigate orphaned reports without paging through everything.
+  const totalCuidIds = Object.values(idsByType).reduce((acc, arr) => acc + arr.length, 0);
+  if (publicIdMap.size < totalCuidIds) {
+    const missing = totalCuidIds - publicIdMap.size;
+    console.warn(
+      `[admin/queue] ${missing}/${totalCuidIds} cuid targets did not resolve to publicIds — likely deleted entities`,
+    );
+  }
+
   type BrokerRow = typeof rawBrokers[number];
   type ReportRow = typeof rawReports[number];
   type RequestRow = typeof rawRequests[number];

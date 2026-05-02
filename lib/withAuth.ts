@@ -92,7 +92,15 @@ export function withAuth(handler: AuthHandler, opts: WithAuthOptions = {}) {
           });
           if (!success) {
             res.setHeader("Retry-After", "60");
-            res.status(429).json({ error: "Too many requests — slow down" });
+            // Include method + url so server logs / observability show what
+            // path the user was hammering. Generic "too many requests" wasn't
+            // actionable when triaging support tickets.
+            console.warn(
+              `[withAuth] rate limit exceeded: bucket=${bucket} ${req.method} ${req.url} user=${session.user.id}`,
+            );
+            res.status(429).json({
+              error: `Too many requests — slow down (${req.method} ${req.url})`,
+            });
             return;
           }
           res.setHeader("X-RateLimit-Remaining", String(remaining));

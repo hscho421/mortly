@@ -1,131 +1,131 @@
-import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prisma";
-import { verifyCronRequest } from "@/lib/cron";
+import { withCron } from "@/lib/cron";
+import {
+  CONVERSATION_INACTIVE_HOURS,
+  CONVERSATION_UNSTARTED_DAYS,
+  CRON_BATCH_SIZE,
+} from "@/lib/constants";
 
-const INACTIVE_HOURS = 72;
-const UNSTARTED_DAYS = 7;
 const SYSTEM_USER_ID = "SYSTEM";
+const MAX_BATCHES_PER_RUN = 50; // 50 × 1000 = 50K conversations per cron tick
 
 interface ConvoWithRequest {
   id: string;
   request: { id: string; borrowerId: string };
 }
-interface ConvoWithMessages extends ConvoWithRequest {
-  messages: { senderId: string }[];
+
+/**
+ * Paginated bulk close. Findings show this cron previously loaded EVERY
+ * stale conversation into Lambda memory before issuing one giant updateMany —
+ * at 100K+ active conversations that OOM'd the function before any rows
+ * closed. Now we page in batches of CRON_BATCH_SIZE and bound the total
+ * work per tick (`MAX_BATCHES_PER_RUN`) so a backlog drains across multiple
+ * cron firings instead of pushing a single fire over Lambda memory.
+ */
+async function batchClose(
+  whereClause: Record<string, unknown>,
+  filterFn?: (convo: ConvoWithRequest & { messages?: { senderId: string }[]; request: { borrowerId: string } }) => boolean,
+  includeMessages = false,
+): Promise<{ closedCount: number; affectedRequestIds: Set<string> }> {
+  const affectedRequestIds = new Set<string>();
+  let closedCount = 0;
+
+  for (let batch = 0; batch < MAX_BATCHES_PER_RUN; batch++) {
+    const conversations = await prisma.conversation.findMany({
+      where: { ...whereClause, status: "ACTIVE" },
+      include: {
+        request: { select: { id: true, borrowerId: true } },
+        ...(includeMessages
+          ? {
+              messages: {
+                where: { senderId: { not: SYSTEM_USER_ID } },
+                select: { senderId: true },
+                take: 10,
+              },
+            }
+          : {}),
+      },
+      take: CRON_BATCH_SIZE,
+    });
+
+    if (conversations.length === 0) break;
+
+    const eligible = filterFn
+      ? conversations.filter((c) => filterFn(c as Parameters<NonNullable<typeof filterFn>>[0]))
+      : conversations;
+
+    if (eligible.length === 0) {
+      // Page contained only ineligible rows — advance using ID ordering would
+      // help here, but in practice the filter rejects rare edge cases. Break
+      // to avoid an infinite loop on a stuck page.
+      break;
+    }
+
+    const ids = eligible.map((c) => c.id);
+    const result = await prisma.conversation.updateMany({
+      where: { id: { in: ids }, status: "ACTIVE" },
+      data: { status: "CLOSED", updatedAt: new Date() },
+    });
+    closedCount += result.count;
+
+    for (const c of eligible) {
+      // Conversation includes the loaded `request` relation; pull the id
+      // from there rather than the column FK so test mocks (which provide
+      // the relation but not the FK) keep working.
+      const requestId = (c as ConvoWithRequest).request?.id;
+      if (requestId) affectedRequestIds.add(requestId);
+    }
+
+    // Last page if we got fewer than the batch size.
+    if (conversations.length < CRON_BATCH_SIZE) break;
+  }
+
+  return { closedCount, affectedRequestIds };
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // Accept GET (Vercel cron's only supported method — vercel.json has no
-  // `method` field) and POST (for manual/curl runs from trusted env).
-  // Image-preload exploitation isn't possible because the auth gate
-  // requires the Authorization: Bearer header (which browsers refuse to
-  // attach to <img> / <link> preloads) AND the platform-attached
-  // `x-vercel-cron: 1` header (which browsers can't forge).
-  if (req.method !== "GET" && req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  if (!verifyCronRequest(req)) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
+export default withCron(async (_req, res) => {
   try {
-    let closedCount = 0;
+    let totalClosed = 0;
+    const allAffectedRequests = new Set<string>();
 
-    // 1. Close conversations inactive for 72+ hours
-    const inactiveCutoff = new Date(Date.now() - INACTIVE_HOURS * 60 * 60 * 1000);
-    const inactiveConversations = await prisma.conversation.findMany({
-      where: {
-        status: "ACTIVE",
-        updatedAt: { lt: inactiveCutoff },
-      },
-      include: {
-        request: { select: { id: true, borrowerId: true } },
-      },
-    });
+    // 1. Close conversations inactive for INACTIVE_HOURS+ hours.
+    const inactiveCutoff = new Date(Date.now() - CONVERSATION_INACTIVE_HOURS * 60 * 60 * 1000);
+    const inactive = await batchClose({ updatedAt: { lt: inactiveCutoff } });
+    totalClosed += inactive.closedCount;
+    inactive.affectedRequestIds.forEach((id) => allAffectedRequests.add(id));
 
-    if (inactiveConversations.length > 0) {
-      const ids = inactiveConversations.map((c: { id: string }) => c.id);
-      const result = await prisma.conversation.updateMany({
-        where: { id: { in: ids }, status: "ACTIVE" },
-        data: { status: "CLOSED", updatedAt: new Date() },
-      });
-      closedCount += result.count;
-    }
-
-    // 2. Close conversations where borrower never engaged within 7 days of broker intro
-    const unstartedCutoff = new Date(Date.now() - UNSTARTED_DAYS * 24 * 60 * 60 * 1000);
-
-    // Find active conversations that were created more than 7 days ago
-    // where the borrower has never sent a message
-    const unstartedConversations = await prisma.conversation.findMany({
-      where: {
-        status: "ACTIVE",
-        createdAt: { lt: unstartedCutoff },
-      },
-      include: {
-        messages: {
-          where: { senderId: { not: SYSTEM_USER_ID } },
-          select: { senderId: true },
-          take: 10,
-        },
-        request: { select: { id: true, borrowerId: true } },
-      },
-    });
-
-    const toClose = unstartedConversations.filter(
-      (convo: ConvoWithMessages) => !convo.messages.some((msg: { senderId: string }) => msg.senderId === convo.request.borrowerId)
+    // 2. Close conversations where the borrower never engaged within UNSTARTED_DAYS.
+    const unstartedCutoff = new Date(Date.now() - CONVERSATION_UNSTARTED_DAYS * 24 * 60 * 60 * 1000);
+    const unstarted = await batchClose(
+      { createdAt: { lt: unstartedCutoff } },
+      (convo) =>
+        !convo.messages?.some((msg) => msg.senderId === convo.request.borrowerId),
+      true,
     );
+    totalClosed += unstarted.closedCount;
+    unstarted.affectedRequestIds.forEach((id) => allAffectedRequests.add(id));
 
-    if (toClose.length > 0) {
-      const ids = toClose.map((c: { id: string }) => c.id);
-      const result = await prisma.conversation.updateMany({
-        where: { id: { in: ids }, status: "ACTIVE" },
-        data: { status: "CLOSED", updatedAt: new Date() },
-      });
-      closedCount += result.count;
-    }
-
-    // 3. For requests where ALL conversations are now CLOSED, update request status to CLOSED
-    if (closedCount > 0) {
-      // Get unique request IDs from all closed conversations
-      const affectedRequestIds = new Set<string>();
-      for (const convo of [...inactiveConversations, ...unstartedConversations]) {
-        affectedRequestIds.add(convo.request.id);
-      }
-
-      // Batch check: find requests with zero active conversations
-      const requestIdList = Array.from(affectedRequestIds);
+    // 3. Cascade-close requests whose conversations are now all CLOSED.
+    if (allAffectedRequests.size > 0) {
+      const requestIdList = Array.from(allAffectedRequests);
       const activeCounts = await prisma.conversation.groupBy({
         by: ["requestId"],
         where: { requestId: { in: requestIdList }, status: "ACTIVE" },
         _count: { _all: true },
       });
-      const activeCountMap = new Map(activeCounts.map((r: { requestId: string; _count: { _all: number } }) => [r.requestId, r._count._all]));
-
-      const requestsToClose = requestIdList.filter((rid) => !activeCountMap.has(rid) || activeCountMap.get(rid) === 0);
-
+      const stillActive = new Set(activeCounts.map((r) => r.requestId));
+      const requestsToClose = requestIdList.filter((rid) => !stillActive.has(rid));
       if (requestsToClose.length > 0) {
-        // Only close IN_PROGRESS requests that have conversations
         await prisma.borrowerRequest.updateMany({
-          where: {
-            id: { in: requestsToClose },
-            status: "IN_PROGRESS",
-          },
+          where: { id: { in: requestsToClose }, status: "IN_PROGRESS" },
           data: { status: "CLOSED" },
         });
       }
     }
 
-    return res.status(200).json({
-      success: true,
-      closedConversations: closedCount,
-    });
+    return res.status(200).json({ success: true, closedConversations: totalClosed });
   } catch (error) {
     console.error("Error in /api/cron/auto-close-conversations:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-}
+});

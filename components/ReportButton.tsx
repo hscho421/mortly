@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "next-i18next";
 
 interface ReportButtonProps {
@@ -12,6 +12,24 @@ export default function ReportButton({ targetType, targetId }: ReportButtonProps
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  // Track the auto-close timeout so we can cancel it if the user closes the
+  // modal manually (or if the component unmounts) — the previous code left
+  // the timer running and triggered a "set state on unmounted component"
+  // warning, plus a phantom close on any modal a user reopened within 2s.
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    };
+  }, []);
+
+  const cancelAutoClose = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
 
   const handleSubmit = async () => {
     if (!reason.trim()) return;
@@ -28,9 +46,11 @@ export default function ReportButton({ targetType, targetId }: ReportButtonProps
       if (res.status === 201) {
         setFeedback({ type: "success", message: t("report.success") });
         setReason("");
-        setTimeout(() => {
+        cancelAutoClose();
+        closeTimeoutRef.current = setTimeout(() => {
           setIsOpen(false);
           setFeedback(null);
+          closeTimeoutRef.current = null;
         }, 2000);
       } else if (res.status === 409) {
         setFeedback({ type: "error", message: t("report.duplicate") });
@@ -76,6 +96,7 @@ export default function ReportButton({ targetType, targetId }: ReportButtonProps
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
+              cancelAutoClose();
               setIsOpen(false);
               setFeedback(null);
             }

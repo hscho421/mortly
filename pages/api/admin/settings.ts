@@ -63,7 +63,7 @@ export default withAdmin(async (req, res, session) => {
       },
     });
 
-    invalidateSettingsCache();
+    await invalidateSettingsCache();
 
     const settings = await prisma.systemSetting.findMany();
     const map: Record<string, string> = {};

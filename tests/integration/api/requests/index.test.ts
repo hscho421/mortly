@@ -171,7 +171,7 @@ describe("GET /api/requests", () => {
     expect(res.statusCode).toBe(403);
   });
 
-  it("verified broker sees OPEN requests with newCount", async () => {
+  it("verified broker sees OPEN requests with newCount + hasMyConversation flag", async () => {
     setSession(brokerSession());
     prismaMock.broker.findUnique.mockResolvedValue(makeBroker());
     prismaMock.borrowerRequest.findMany.mockResolvedValue([
@@ -181,15 +181,26 @@ describe("GET /api/requests", () => {
     prismaMock.borrowerRequest.count
       .mockResolvedValueOnce(2) // total
       .mockResolvedValueOnce(1); // newCount
+    // New: handler runs a separate scoped query for "which of these requests
+    // already have a conversation with this broker?" — replaces the deeply
+    // nested conversations include that pulled 50 rows per request.
+    prismaMock.conversation.findMany.mockResolvedValue([
+      { requestId: "req_1" }, // first request: broker has chatted
+    ] as never);
 
     const { req, res } = makeReqRes({ method: "GET" });
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
-    const body = jsonBody<{ data: Array<{ isNew: boolean }>; newCount: number }>(res);
+    const body = jsonBody<{
+      data: Array<{ isNew: boolean; hasMyConversation: boolean }>;
+      newCount: number;
+    }>(res);
     expect(body.data[0].isNew).toBe(true);
     expect(body.data[1].isNew).toBe(false);
     expect(body.newCount).toBe(1);
+    expect(body.data[0].hasMyConversation).toBe(true);
+    expect(body.data[1].hasMyConversation).toBe(false);
 
     const where = prismaMock.borrowerRequest.findMany.mock.calls[0][0].where;
     expect(where.status).toBe("OPEN");

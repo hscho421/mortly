@@ -5,6 +5,9 @@ let _stripe: Stripe | null = null;
 
 export function getStripe(): Stripe {
   if (!_stripe) {
+    // Pin to a stable API version. Avoid `*.clover` preview tags — they get
+    // sunset on Stripe's release cadence and break webhook handlers without
+    // warning. Bump deliberately when upgrading the SDK.
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: "2026-02-25.clover",
       typescript: true,

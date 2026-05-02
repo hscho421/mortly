@@ -10,8 +10,15 @@ import { AdminDataProvider } from "@/lib/admin/AdminDataContext";
 import { BrokerDataProvider } from "@/components/broker/BrokerDataContext";
 import { BorrowerDataProvider } from "@/components/borrower/BorrowerDataContext";
 
-function ErrorFallback({ onRetry }: { onRetry: () => void }) {
+function ErrorFallback({
+  onRetry,
+  error,
+}: {
+  onRetry: () => void;
+  error: Error | null;
+}) {
   const { t } = useTranslation("common");
+  const isDev = process.env.NODE_ENV === "development";
   return (
     <div className="flex min-h-screen items-center justify-center bg-cream-50 px-4">
       <div className="card-elevated max-w-lg text-center">
@@ -20,6 +27,15 @@ function ErrorFallback({ onRetry }: { onRetry: () => void }) {
         <button onClick={onRetry} className="btn-primary">
           {t("common.tryAgain")}
         </button>
+        {/* Dev-only: surface the actual error so developers can debug
+            without opening the network tab. Stripped from production. */}
+        {isDev && error ? (
+          <pre className="mt-4 max-h-64 overflow-auto rounded bg-red-50 p-3 text-left text-xs text-red-900">
+            {error.name}: {error.message}
+            {"\n\n"}
+            {error.stack}
+          </pre>
+        ) : null}
       </div>
     </div>
   );
@@ -27,15 +43,15 @@ function ErrorFallback({ onRetry }: { onRetry: () => void }) {
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean }
+  { hasError: boolean; error: Error | null }
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -45,7 +61,10 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <ErrorFallback onRetry={() => this.setState({ hasError: false })} />
+        <ErrorFallback
+          error={this.state.error}
+          onRetry={() => this.setState({ hasError: false, error: null })}
+        />
       );
     }
     return this.props.children;

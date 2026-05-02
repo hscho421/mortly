@@ -284,15 +284,30 @@ export default function BorrowerMessagesPage() {
   function selectConversation(id: string) {
     setActiveId(id);
     setMobileShowChat(true);
-    // Optimistically clear unread count before API call
+    // Snapshot the previous unread count so we can roll back if the fetch
+    // fails. The previous behavior cleared optimistically without rollback —
+    // a fetch error left the badge at 0 even though messages never loaded,
+    // hiding the failure from the user.
+    const prevUnread = conversations.find((c) => c.id === id)?.unreadCount ?? 0;
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
     );
     isSelectingRef.current = true;
-    fetchActiveConversation(id).then(() => {
-      isSelectingRef.current = false;
-      window.dispatchEvent(new Event("refresh-unread"));
-    });
+    fetchActiveConversation(id)
+      .then(() => {
+        window.dispatchEvent(new Event("refresh-unread"));
+      })
+      .catch(() => {
+        // Restore the badge so the user knows there's still unread activity
+        // they couldn't see. The error is also surfaced via setError inside
+        // fetchActiveConversation.
+        setConversations((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, unreadCount: prevUnread } : c))
+        );
+      })
+      .finally(() => {
+        isSelectingRef.current = false;
+      });
   }
 
   /* ---- send message ---- */
@@ -401,9 +416,10 @@ export default function BorrowerMessagesPage() {
         <ChatDisclaimer conversationId={activeId} onAccept={acceptDisclaimer} />
       )}
 
-      {/* Confirmation dialog */}
+      {/* Confirmation dialog — z-60 so it stacks above the context drawer
+          (z-50). Both at z-50 had undefined render order if both were open. */}
       {showCloseConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-900/40 backdrop-blur-sm ">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-forest-900/40 backdrop-blur-sm ">
           <div className="card-elevated !p-6 max-w-sm mx-4">
             <h3 className="heading-sm mb-2">{t("messages.closeConfirmTitle")}</h3>
             <p className="text-body-sm mb-6">

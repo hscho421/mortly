@@ -56,18 +56,12 @@ export default withAuth(async (req, res, session) => {
         prisma.borrowerRequest.findMany({
           where,
           include: {
-            _count: {
-              select: { conversations: true },
-            },
-            conversations: {
-              select: {
-                brokerId: true,
-                broker: { select: { userId: true } },
-              },
-              take: 50,
-            },
-            // When viewing as broker, eager-load whether THIS broker has a seen
-            // record for each listed request. One row max (composite PK enforces it).
+            _count: { select: { conversations: true } },
+            // brokerSeens: cheap (composite PK + take:1, indexed). Keeps the
+            // "new request" dot indicator efficient. Other relations are
+            // intentionally NOT included — the previous take:50 conversations
+            // include pulled 1000 rows per page (50 × pageSize 20) just to
+            // know whether THIS broker had a conversation with each request.
             ...(brokerId
               ? {
                   brokerSeens: {
@@ -90,6 +84,24 @@ export default withAuth(async (req, res, session) => {
           : Promise.resolve(0),
       ]);
 
+      // Replacement for the dropped nested conversations include: a single
+      // scoped query that tells us which of the page's requests already have
+      // a conversation involving THIS broker. O(pageSize) rows, indexed by
+      // (requestId, brokerId) unique key. Borrower view skips this entirely.
+      const myConversationRequestIds = brokerId
+        ? new Set(
+            (
+              await prisma.conversation.findMany({
+                where: {
+                  brokerId,
+                  requestId: { in: requests.map((r) => r.id) },
+                },
+                select: { requestId: true },
+              })
+            ).map((c) => c.requestId),
+          )
+        : null;
+
       // For brokers, translate the eager-loaded relation into a flat boolean
       // so the frontend doesn't need to know about the join table.
       const enrichedRequests =
@@ -97,7 +109,11 @@ export default withAuth(async (req, res, session) => {
           ? requests.map((r) => {
               const seens = (r as { brokerSeens?: unknown[] }).brokerSeens ?? [];
               const { brokerSeens: _omit, ...rest } = r as Record<string, unknown>;
-              return { ...rest, isNew: seens.length === 0 };
+              return {
+                ...rest,
+                isNew: seens.length === 0,
+                hasMyConversation: myConversationRequestIds?.has(r.id) ?? false,
+              };
             })
           : requests;
 
@@ -164,7 +180,7 @@ export default withAuth(async (req, res, session) => {
       }
 
       // ── Enforce max active requests ──────────────────────────
-      const maxRequests = await getSettingInt("max_requests_per_user") || 10;
+      const maxRequests = await getSettingInt("max_requests_per_user");
       const activeCount = await prisma.borrowerRequest.count({
         where: {
           borrowerId: session.user.id,

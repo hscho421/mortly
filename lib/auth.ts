@@ -7,6 +7,26 @@ import prisma from "./prisma";
 import { generatePublicId } from "./publicId";
 import { CURRENT_LEGAL_VERSION, createLegalAcceptanceMetadata } from "./legal";
 import { normalizeEmail } from "./normalizeEmail";
+import { SESSION_DB_CACHE_TTL_MS } from "./constants";
+
+/**
+ * Per-user session-revalidation cache. The session callback fires on every
+ * SSR page render and every getSession() round-trip — without caching it
+ * was hitting Postgres on each request. 5s TTL keeps the revocation lag
+ * acceptable while reducing DB reads ~99% for active users.
+ *
+ * Lives in module scope (per-lambda). Across-instance staleness is bounded
+ * by the same 5s window. Acceptable for revocation: when an admin suspends
+ * a user, the longest the user can keep using their JWT is 5s.
+ */
+interface SessionDbCacheEntry {
+  tokenVersion: number;
+  status: import("@prisma/client").UserStatus;
+  role: import("@prisma/client").Role;
+  publicId: string;
+  expiresAt: number;
+}
+const sessionDbCache = new Map<string, SessionDbCacheEntry>();
 
 /**
  * Bump a user's `tokenVersion`. Every existing JWT for the user becomes
@@ -22,6 +42,10 @@ export async function revokeUserSessions(userId: string): Promise<void> {
     where: { id: userId },
     data: { tokenVersion: { increment: 1 } },
   });
+  // Drop the local session-revalidation cache so this lambda picks up the
+  // bump on the next session read. Other warm lambdas converge within the
+  // 5s TTL window — acceptable revocation lag.
+  sessionDbCache.delete(userId);
 }
 
 export function createAuthOptions(acceptedLegalVersion?: string | null): NextAuthOptions {
@@ -213,15 +237,37 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
         const userId = token.id as string | undefined;
         if (!userId) return session;
 
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId },
-          select: {
-            tokenVersion: true,
-            status: true,
-            role: true,
-            publicId: true,
-          },
-        });
+        // 5s per-user cache. Without it the SSR session callback hits Postgres
+        // on every page render, which dominates DB load for active users.
+        const now = Date.now();
+        const cached = sessionDbCache.get(userId);
+        let dbUser: SessionDbCacheEntry | null;
+        if (cached && cached.expiresAt > now) {
+          dbUser = cached;
+        } else {
+          const fresh = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+              tokenVersion: true,
+              status: true,
+              role: true,
+              publicId: true,
+            },
+          });
+          if (fresh) {
+            const entry: SessionDbCacheEntry = {
+              tokenVersion: fresh.tokenVersion,
+              status: fresh.status,
+              role: fresh.role,
+              publicId: fresh.publicId,
+              expiresAt: now + SESSION_DB_CACHE_TTL_MS,
+            };
+            sessionDbCache.set(userId, entry);
+            dbUser = entry;
+          } else {
+            dbUser = null;
+          }
+        }
 
         if (
           !dbUser ||
@@ -239,19 +285,14 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
         }
 
         if (session.user) {
-          // Always serve the live values from DB — role / publicId might have
-          // changed via /api/auth/select-role or admin tools and we don't want
-          // a stale token to mask that.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (session.user as any).role = dbUser.role;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (session.user as any).id = userId;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (session.user as any).publicId = dbUser.publicId;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (session.user as any).needsRoleSelection = token.needsRoleSelection;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (session.user as any).needsNameEntry = token.needsNameEntry;
+          // Live DB values — role/publicId may have changed via select-role
+          // or admin tools; we don't want a stale token to mask that. Types
+          // are augmented in `types/next-auth.d.ts`, no casts needed.
+          session.user.role = dbUser.role;
+          session.user.id = userId;
+          session.user.publicId = dbUser.publicId;
+          session.user.needsRoleSelection = token.needsRoleSelection;
+          session.user.needsNameEntry = token.needsNameEntry;
         }
         return session;
       },

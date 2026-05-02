@@ -193,7 +193,10 @@ describe("POST /api/webhooks/stripe", () => {
     expect(prismaMock.broker.update).not.toHaveBeenCalled();
   });
 
-  it("invoice.payment_failed marks PAST_DUE (does not revoke access)", async () => {
+  it("invoice.payment_failed marks PAST_DUE AND resets credits to FREE", async () => {
+    // Hard-cut on payment failure (was previously a soft "grace period" that
+    // let past-due brokers keep messaging for ~3 weeks). Successful retry
+    // restores paid-tier credits via invoice.paid.
     stripeMock.webhooks.constructEvent.mockReturnValue({
       type: "invoice.payment_failed",
       data: { object: events.invoicePaid() },
@@ -203,16 +206,17 @@ describe("POST /api/webhooks/stripe", () => {
       ...makeSubscription(),
       broker: { id: "broker_1" },
     } as never);
-    prismaMock.subscription.update.mockResolvedValue(makeSubscription({ status: "PAST_DUE" }));
+    prismaMock.$transaction.mockResolvedValue([
+      makeSubscription({ status: "PAST_DUE" }),
+      { id: "broker_1", responseCredits: 0 },
+    ] as never);
 
     const { req, res } = postWebhook({});
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
-    const updateArgs = prismaMock.subscription.update.mock.calls[0][0];
-    expect(updateArgs.data).toEqual({ status: "PAST_DUE" });
-    // Credits must NOT be wiped on a soft failure — grace period.
-    expect(prismaMock.broker.update).not.toHaveBeenCalled();
+    // Both writes happen in the same transaction (status flip + credit reset).
+    expect(prismaMock.$transaction).toHaveBeenCalledOnce();
   });
 
   it("returns 200 for event types we don't handle (don't break the webhook)", async () => {

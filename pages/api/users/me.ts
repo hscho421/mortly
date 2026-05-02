@@ -138,10 +138,13 @@ export default async function handler(
         });
       }
 
-      // 5. Reports filed against this user's broker profile (targetType="broker")
+      // 5. Reports filed against this user's broker profile.
+      // Pre-enum migration this used lowercase "broker"; post-migration the
+      // column is enum ReportTargetType which is upper-case. Backfill in the
+      // same migration converted historical rows.
       if (brokerId) {
         await tx.report.deleteMany({
-          where: { targetType: "broker", targetId: brokerId },
+          where: { targetType: "BROKER", targetId: brokerId },
         });
       }
 

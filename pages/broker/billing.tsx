@@ -247,27 +247,47 @@ export default function BrokerBillingPage() {
           // Downgrade scheduled for next cycle — no DB change yet
           setSuccessMessage(t("broker.planScheduled", { tier }));
         } else {
-          // Upgrade applied immediately — wait for webhook, then refresh
-          await new Promise((r) => setTimeout(r, 2000));
-          setSuccessMessage(t("broker.planUpgraded", { tier }));
-          try {
-            const profileRes = await fetch("/api/brokers/profile");
-            if (profileRes.ok) {
-              const profile = await profileRes.json();
-              setCurrentTier(profile.subscriptionTier || "FREE");
-              setResponseCredits(profile.responseCredits ?? 0);
-              if (profile.subscription) {
-                setSubscription({
-                  stripeSubscriptionId: profile.subscription.stripeSubscriptionId,
-                  status: profile.subscription.status,
-                  cancelAtPeriodEnd: profile.subscription.cancelAtPeriodEnd,
-                  currentPeriodEnd: profile.subscription.currentPeriodEnd,
-                  pendingTier: profile.subscription.pendingTier,
-                });
+          // Upgrade applied immediately. Webhook propagation can take 1-10s,
+          // so poll the broker profile until the tier flips (or timeout).
+          // The previous fixed 2s wait was too short — fast networks fired
+          // the refetch before the webhook landed; users saw "still on FREE"
+          // and re-triggered checkout.
+          setSuccessMessage(t("broker.planUpdating", { tier }));
+          const POLL_INTERVAL_MS = 1000;
+          const MAX_POLL_MS = 15_000;
+          const start = Date.now();
+          let updated = false;
+          while (Date.now() - start < MAX_POLL_MS) {
+            try {
+              const profileRes = await fetch("/api/brokers/profile");
+              if (profileRes.ok) {
+                const profile = await profileRes.json();
+                if (profile.subscriptionTier === tier) {
+                  setCurrentTier(profile.subscriptionTier);
+                  setResponseCredits(profile.responseCredits ?? 0);
+                  if (profile.subscription) {
+                    setSubscription({
+                      stripeSubscriptionId: profile.subscription.stripeSubscriptionId,
+                      status: profile.subscription.status,
+                      cancelAtPeriodEnd: profile.subscription.cancelAtPeriodEnd,
+                      currentPeriodEnd: profile.subscription.currentPeriodEnd,
+                      pendingTier: profile.subscription.pendingTier,
+                    });
+                  }
+                  setSuccessMessage(t("broker.planUpgraded", { tier }));
+                  updated = true;
+                  break;
+                }
               }
+            } catch {
+              // transient — try again on next tick
             }
-          } catch {
-            window.location.reload();
+            await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+          }
+          if (!updated) {
+            // Webhook didn't land in 15s — leave user on the page with a
+            // gentler message; reload would lose context.
+            setSuccessMessage(t("broker.planUpdatePending", { tier }));
           }
         }
         return;

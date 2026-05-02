@@ -1,8 +1,15 @@
 /** @vitest-environment jsdom */
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+// RequestForm now persists draft state to sessionStorage to survive page
+// refresh — but tests share a jsdom window, so leftover drafts from a
+// previous test would re-hydrate as the initial state. Wipe before each.
+beforeEach(() => {
+  if (typeof window !== "undefined") window.sessionStorage.clear();
+});
 
 // Stub next-i18next: return the key so assertions are stable and we don't need
 // to load translation JSON.

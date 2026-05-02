@@ -56,6 +56,11 @@ export default withAdmin(async (req, res, session) => {
   if (!ids.every((i): i is string => typeof i === "string" && i.length > 0)) {
     return res.status(400).json({ error: "ids must be non-empty strings" });
   }
+  // Reject duplicates — would otherwise produce two audit rows for the same
+  // user and confuse forensics ("did the admin click twice or was it a bug?").
+  if (new Set(ids).size !== ids.length) {
+    return res.status(400).json({ error: "ids must be unique" });
+  }
 
   if (typeof status !== "string" || !VALID_STATUSES.includes(status as ValidStatus)) {
     return res.status(400).json({

@@ -73,38 +73,54 @@ export default withAuth(async (req, res, session) => {
         return res.status(403).json({ error: "Cannot send messages to this user" });
       }
 
-      // Spam guard: limit brokers to 3 messages before borrower responds
+      // Spam guard: limit brokers to N messages before borrower responds.
+      // Reads denormalized counters (Conversation.brokerMsgCount /
+      // borrowerMsgCount) instead of the previous groupBy over the full
+      // message history — that approach got expensive on long threads
+      // (~500ms per send for 10K-message conversations).
+      const isBorrower = conversation.borrowerId === session.user.id;
       if (conversation.broker.userId === session.user.id) {
-        const counts = await prisma.message.groupBy({
-          by: ["senderId"],
-          where: { conversationId },
-          _count: { _all: true },
+        // Default of 3 already lives in lib/settings.ts DEFAULTS — no || fallback
+        // needed (the prior `|| 3` would override an admin-set value of 0).
+        const msgLimit = await getSettingInt("broker_initial_message_limit");
+        const convoCounts = await prisma.conversation.findUnique({
+          where: { id: conversationId },
+          select: { brokerMsgCount: true, borrowerMsgCount: true },
         });
-        const brokerMsgCount = counts.find((c: { senderId: string }) => c.senderId === session.user.id)?._count._all ?? 0;
-        const borrowerMsgCount = counts.find((c: { senderId: string }) => c.senderId === conversation.borrowerId)?._count._all ?? 0;
-        const msgLimit = await getSettingInt("broker_initial_message_limit") || 3;
+        const borrowerMsgCount = convoCounts?.borrowerMsgCount ?? 0;
+        const brokerMsgCount = convoCounts?.brokerMsgCount ?? 0;
         if (borrowerMsgCount === 0 && brokerMsgCount >= msgLimit) {
           return res.status(429).json({ error: "Please wait for the client to respond before sending more messages" });
         }
       }
 
-      const message = await prisma.message.create({
-        data: {
-          conversationId,
-          senderId: session.user.id,
-          body: trimmed,
-        },
-      });
-
-      const isBorrower = conversation.borrowerId === session.user.id;
-      await prisma.conversation.update({
-        where: { id: conversationId },
-        data: {
-          updatedAt: new Date(),
-          ...(isBorrower
-            ? { borrowerLastReadAt: new Date() }
-            : { brokerLastReadAt: new Date() }),
-        },
+      // Same transaction: insert the message + bump the matching counter +
+      // touch updatedAt + lastReadAt. Counter drift would defeat the spam
+      // guard, so this MUST be atomic.
+      const message = await prisma.$transaction(async (tx) => {
+        const m = await tx.message.create({
+          data: {
+            conversationId,
+            senderId: session.user.id,
+            body: trimmed,
+          },
+        });
+        await tx.conversation.update({
+          where: { id: conversationId },
+          data: {
+            updatedAt: new Date(),
+            ...(isBorrower
+              ? {
+                  borrowerLastReadAt: new Date(),
+                  borrowerMsgCount: { increment: 1 },
+                }
+              : {
+                  brokerLastReadAt: new Date(),
+                  brokerMsgCount: { increment: 1 },
+                }),
+          },
+        });
+        return m;
       });
 
       // Fire-and-forget push to the other participant. Title must be the

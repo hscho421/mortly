@@ -42,8 +42,7 @@ export default function Navbar() {
   const fetchNotices = useCallback(async () => {
     // Defensive: revoked sessions can produce { user: undefined }; treat as
     // anonymous so we don't crash on session.user.role.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!session?.user || (session.user as any).role === "ADMIN") return;
+    if (!session?.user || session.user.role === "ADMIN") return;
     try {
       const [noticesRes, unreadRes] = await Promise.all([
         fetch("/api/notices"),

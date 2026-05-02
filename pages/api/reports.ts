@@ -1,3 +1,4 @@
+import { ReportTargetType } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/withAuth";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -41,16 +42,21 @@ export default withAuth(async (req, res, session) => {
       return res.status(400).json({ error: "Reason must be between 1 and 2000 characters" });
     }
 
-    const allowedTypes = ["BROKER", "REQUEST", "CONVERSATION"];
-    if (!allowedTypes.includes(targetType)) {
+    const allowedTypes: ReportTargetType[] = [
+      ReportTargetType.BROKER,
+      ReportTargetType.REQUEST,
+      ReportTargetType.CONVERSATION,
+    ];
+    if (!allowedTypes.includes(targetType as ReportTargetType)) {
       return res.status(400).json({ error: "Invalid targetType" });
     }
+    const typedTargetType = targetType as ReportTargetType;
 
     // Prevent duplicate reports from the same user for the same target
     const existing = await prisma.report.findFirst({
       where: {
         reporterId: session.user.id,
-        targetType,
+        targetType: typedTargetType,
         targetId,
       },
     });
@@ -62,7 +68,7 @@ export default withAuth(async (req, res, session) => {
     const report = await prisma.report.create({
       data: {
         reporterId: session.user.id,
-        targetType,
+        targetType: typedTargetType,
         targetId,
         reason: trimmedReason,
       },
