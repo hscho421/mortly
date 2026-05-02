@@ -29,6 +29,7 @@ export default class MyDocument extends Document<Props> {
           <link rel="manifest" href="/manifest.json" />
           <link rel="apple-touch-icon" href="/logo/logo.png" />
           <meta name="theme-color" content="#1B3A2D" />
+          <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
           <link rel="preconnect" href="https://fonts.googleapis.com" />
