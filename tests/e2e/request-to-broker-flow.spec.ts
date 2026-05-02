@@ -60,8 +60,16 @@ test.describe.serial("Borrower request → broker reply full flow", () => {
   let conversationId: string;
 
   test.beforeAll(async ({ playwright }) => {
-    borrowerCtx = await playwright.request.newContext({ baseURL: BASE_URL });
-    brokerCtx = await playwright.request.newContext({ baseURL: BASE_URL });
+    // withAuth's CSRF gate (lib/origin.ts isAllowedOrigin) requires Origin
+    // OR Referer to match NEXTAUTH_URL on mutating requests. Playwright's
+    // APIRequestContext doesn't send Origin by default, so without this
+    // every POST would 403 even with valid auth cookies.
+    const ctxOpts = {
+      baseURL: BASE_URL,
+      extraHTTPHeaders: { Origin: BASE_URL },
+    };
+    borrowerCtx = await playwright.request.newContext(ctxOpts);
+    brokerCtx = await playwright.request.newContext(ctxOpts);
     await signIn(borrowerCtx, SEED.borrower.email, SEED.borrower.password);
     await signIn(brokerCtx, SEED.broker.email, SEED.broker.password);
   });
