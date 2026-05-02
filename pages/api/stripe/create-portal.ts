@@ -1,20 +1,11 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { withAuth } from "@/lib/withAuth";
+import { getSafeRedirectOrigin } from "@/lib/origin";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withAuth(async (req, res, session) => {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || session.user.role !== "BROKER") {
-    return res.status(401).json({ error: "Unauthorized" });
   }
 
   try {
@@ -28,7 +19,9 @@ export default async function handler(
     }
 
     const stripe = getStripe();
-    const origin = req.headers.origin || process.env.NEXTAUTH_URL || "http://localhost:3000";
+    // Pin return_url to a server-allowlisted origin — never reflect
+    // req.headers.origin into a Stripe redirect URL.
+    const origin = getSafeRedirectOrigin();
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: broker.stripeCustomerId,
@@ -40,4 +33,4 @@ export default async function handler(
     console.error("Error creating portal session:", error);
     return res.status(500).json({ error: "Failed to create portal session" });
   }
-}
+}, { roles: ["BROKER"] });

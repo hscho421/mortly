@@ -71,7 +71,7 @@ describe("POST /api/auth/signup", () => {
     ["missing email", { email: undefined }, /All fields/],
     ["missing password", { password: undefined }, /All fields/],
     ["invalid email", { email: "not-an-email" }, /Invalid email/],
-    ["short password", { password: "short" }, /at least 8/],
+    ["short password", { password: "short" }, /8-200/],
     ["invalid role", { role: "HACKER" }, /Invalid role/],
   ])("returns 400 for %s", async (_label, patch, msg) => {
     const { req, res } = withFreshIp({ ...VALID_BODY(), ...patch });

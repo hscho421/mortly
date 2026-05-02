@@ -1,10 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { compare } from "bcryptjs";
 import { getServerSession } from "next-auth/next";
 import { encode } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { isAllowedOrigin } from "@/lib/origin";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
+const MOBILE_HEADER = "x-mortly-mobile";
 
 /**
  * DELETE /api/users/me — in-app account deletion (App Store 5.1.1(v)).
@@ -12,6 +15,10 @@ const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
  *
  * DELETE performs a hard cascade delete; PATCH is a targeted field update
  * used by the post-OAuth name-entry screen when Apple didn't return fullName.
+ *
+ * Both routes enforce same-origin (or trusted mobile header). DELETE requires
+ * a fresh `currentPassword` for credentials accounts so a stolen JWT alone
+ * cannot wipe the account.
  */
 export default async function handler(
   req: NextApiRequest,
@@ -22,6 +29,11 @@ export default async function handler(
   }
   if (req.method !== "DELETE") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const isMobile = req.headers[MOBILE_HEADER] === "1";
+  if (!isMobile && !isAllowedOrigin(req)) {
+    return res.status(403).json({ error: "Cross-origin request rejected" });
   }
 
   const session = await getServerSession(req, res, authOptions);
@@ -49,6 +61,30 @@ export default async function handler(
       return res
         .status(403)
         .json({ error: "Admin accounts cannot self-delete. Contact support." });
+    }
+
+    // Fresh re-auth before destructive action. Credentials accounts must
+    // retype the current password (proves possession, defeats stolen-JWT
+    // delete). OAuth-only accounts must echo a typed acknowledgment string;
+    // a future hardening pass should require a fresh OAuth round-trip.
+    const { currentPassword, ack } = (req.body ?? {}) as {
+      currentPassword?: unknown;
+      ack?: unknown;
+    };
+    if (user.passwordHash) {
+      if (typeof currentPassword !== "string" || currentPassword.length === 0) {
+        return res.status(400).json({ error: "currentPassword required" });
+      }
+      const ok = await compare(currentPassword, user.passwordHash);
+      if (!ok) {
+        return res.status(403).json({ error: "Incorrect password" });
+      }
+    } else {
+      if (ack !== "DELETE_MY_ACCOUNT") {
+        return res
+          .status(400)
+          .json({ error: "Typed acknowledgment required (ack: 'DELETE_MY_ACCOUNT')" });
+      }
     }
 
     const brokerId = user.broker?.id;
@@ -144,6 +180,11 @@ export default async function handler(
 }
 
 async function handlePatch(req: NextApiRequest, res: NextApiResponse) {
+  const isMobile = req.headers[MOBILE_HEADER] === "1";
+  if (!isMobile && !isAllowedOrigin(req)) {
+    return res.status(403).json({ error: "Cross-origin request rejected" });
+  }
+
   const session = await getServerSession(req, res, authOptions);
   if (!session?.user?.id) {
     return res.status(401).json({ error: "Unauthorized" });
@@ -171,7 +212,6 @@ async function handlePatch(req: NextApiRequest, res: NextApiResponse) {
     return res.status(404).json({ error: "User not found" });
   }
 
-  // Clear needsNameEntry from preferences; preserve other prefs.
   const prefs = (existing.preferences as Record<string, unknown>) || {};
   const restPrefs = { ...prefs };
   delete restPrefs.needsNameEntry;
@@ -183,31 +223,41 @@ async function handlePatch(req: NextApiRequest, res: NextApiResponse) {
       name: rawName,
       preferences: newPrefs ? JSON.parse(JSON.stringify(newPrefs)) : null,
     },
-    select: { id: true, publicId: true, email: true, name: true, role: true, preferences: true },
+    select: {
+      id: true, publicId: true, email: true, name: true, role: true, preferences: true,
+      tokenVersion: true, status: true,
+    },
   });
 
   const updatedPrefs = (updated.preferences as Record<string, unknown> | null) ?? {};
   const needsRoleSelection = updatedPrefs.needsRoleSelection === true;
 
-  // Re-encode the JWT so the client's next getSession() sees the updated
-  // name and cleared needsNameEntry (same pattern as select-role).
-  const sessionToken = await encode({
-    token: {
-      id: updated.id,
-      publicId: updated.publicId,
-      email: updated.email,
-      name: updated.name,
-      role: updated.role,
-      needsRoleSelection,
-      needsNameEntry: false,
-    },
-    secret,
-    maxAge: SESSION_MAX_AGE,
-  });
+  // Web clients pick up the cleared `needsNameEntry` flag via the next
+  // getSession() round-trip (the session callback always reads from the DB).
+  // Only mobile clients — which can't share an HttpOnly cookie — need the
+  // raw re-encoded token in the response body.
+  let sessionToken: string | null = null;
+  if (isMobile) {
+    sessionToken = await encode({
+      token: {
+        id: updated.id,
+        publicId: updated.publicId,
+        email: updated.email,
+        name: updated.name,
+        role: updated.role,
+        needsRoleSelection,
+        needsNameEntry: false,
+        tokenVersion: updated.tokenVersion,
+        status: updated.status,
+      },
+      secret,
+      maxAge: SESSION_MAX_AGE,
+    });
+  }
 
   return res.status(200).json({
     success: true,
-    sessionToken,
+    ...(sessionToken ? { sessionToken } : {}),
     user: {
       id: updated.id,
       publicId: updated.publicId,

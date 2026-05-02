@@ -60,13 +60,24 @@ export default function Footer() {
 
           {/* Get started / Dashboard */}
           <div>
-            {session ? (
+            {session?.user ? (
               <>
                 <h4 className="mono-label mb-4">
                   {t("nav.dashboard")}
                 </h4>
                 <nav className="flex flex-col gap-3">
-                  <Link href={session.user.role === "ADMIN" ? "/admin" : session.user.role === "BROKER" ? "/broker/dashboard" : "/borrower/dashboard"} className="font-body text-sm text-forest-700/80 transition-colors hover:text-amber-600">
+                  <Link
+                    href={
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      (session.user as any).role === "ADMIN"
+                        ? "/admin"
+                        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          (session.user as any).role === "BROKER"
+                          ? "/broker/dashboard"
+                          : "/borrower/dashboard"
+                    }
+                    className="font-body text-sm text-forest-700/80 transition-colors hover:text-amber-600"
+                  >
                     {t("nav.dashboard")}
                   </Link>
                 </nav>

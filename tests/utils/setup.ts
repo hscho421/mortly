@@ -10,6 +10,10 @@ process.env.STRIPE_PRICE_PRO = "price_pro_test";
 process.env.STRIPE_PRICE_PREMIUM = "price_premium_test";
 process.env.RESEND_API_KEY = "re_test_dummy";
 process.env.CRON_SECRET = "cron-test-secret-32-bytes-long-xxxx";
+// Cron tests don't run inside Vercel — opt into the non-Vercel auth path so
+// the bearer-secret check is sufficient. Real prod still requires the
+// platform-attached `x-vercel-cron: 1` header.
+process.env.ALLOW_NONVERCEL_CRON = "1";
 process.env.GOOGLE_CLIENT_ID = "google-test";
 process.env.GOOGLE_CLIENT_SECRET = "google-test-secret";
 

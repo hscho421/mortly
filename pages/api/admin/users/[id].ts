@@ -144,10 +144,19 @@ export default withAdmin(async (req, res, session) => {
     }
     const reason = reasonValidated;
 
+    // Bump tokenVersion on SUSPEND / BAN so any active JWT for the target
+    // is invalidated immediately (the session callback compares against
+    // tokenVersion). Keeping ACTIVE-on-ACTIVE as a no-op keeps the admin
+    // log clean of phantom revocations.
+    const shouldRevoke = status === "SUSPENDED" || status === "BANNED";
+
     const [updated] = await prisma.$transaction([
       prisma.user.update({
         where: { id: user.id },
-        data: { status },
+        data: {
+          status,
+          ...(shouldRevoke ? { tokenVersion: { increment: 1 } } : {}),
+        },
         select: {
           id: true,
           email: true,
@@ -171,4 +180,4 @@ export default withAdmin(async (req, res, session) => {
   }
 
   return res.status(405).json({ error: "Method not allowed" });
-});
+}, { rateLimitGet: true });

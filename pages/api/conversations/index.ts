@@ -1,19 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { generateConversationPublicId } from "@/lib/publicId";
 import { sendPushToUsers, brokerInquiryPush, borrowerInquiryPush } from "@/lib/push";
+import { withAuth } from "@/lib/withAuth";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
+export default withAuth(async (req, res, session) => {
   try {
     if (req.method === "GET") {
       const where: Record<string, unknown> = {};
@@ -161,24 +151,29 @@ export default async function handler(
           return res.status(403).json({ error: "You can only create conversations for your own requests" });
         }
 
-        // Block check — borrower starting convo with broker.
-        // Look up the broker's userId and check both directions.
+        // Look up the broker explicitly so we can return a clean 404 — the
+        // FK on Conversation.brokerId would otherwise blow up with a P2003
+        // and leak existence-by-error-text. Also gates broker-id enumeration
+        // by attempt-count.
         const targetBroker = await prisma.broker.findUnique({
           where: { id: bodyBrokerId },
           select: { userId: true },
         });
-        if (targetBroker) {
-          const blocked = await prisma.userBlock.findFirst({
-            where: {
-              OR: [
-                { blockerId: session.user.id, blockedId: targetBroker.userId },
-                { blockerId: targetBroker.userId, blockedId: session.user.id },
-              ],
-            },
-          });
-          if (blocked) {
-            return res.status(403).json({ error: "Cannot start conversation with this user" });
-          }
+        if (!targetBroker) {
+          return res.status(404).json({ error: "Broker not found" });
+        }
+
+        // Block check — borrower starting convo with broker.
+        const blocked = await prisma.userBlock.findFirst({
+          where: {
+            OR: [
+              { blockerId: session.user.id, blockedId: targetBroker.userId },
+              { blockerId: targetBroker.userId, blockedId: session.user.id },
+            ],
+          },
+        });
+        if (blocked) {
+          return res.status(403).json({ error: "Cannot start conversation with this user" });
         }
 
         const existing = await prisma.conversation.findUnique({
@@ -253,6 +248,12 @@ export default async function handler(
       // race conditions (duplicate conversations + credit double-spend)
       const convoPublicId = await generateConversationPublicId();
 
+      // Serializable isolation pins us against race-double-spend: two
+      // concurrent broker POSTs against the same request would otherwise both
+      // pass the existence check, both decrement the credit, and only the
+      // second create call would 5xx (unique violation triggers rollback,
+      // restoring the credit). Serializable + the unique key guarantee that
+      // exactly one transaction commits.
       const { conversation, isNew } = await prisma.$transaction(async (tx) => {
         // Idempotency: return existing conversation if already created
         const existing = await tx.conversation.findUnique({
@@ -291,7 +292,7 @@ export default async function handler(
         }
 
         return { conversation: conv, isNew: true };
-      });
+      }, { isolationLevel: "Serializable" });
 
       // Fire-and-forget push to the borrower (only on new conversation)
       if (isNew) {
@@ -319,4 +320,5 @@ export default async function handler(
     console.error("Error in /api/conversations:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-}
+}, { rateLimit: { perMinute: 30, bucket: "conversations" } });
+

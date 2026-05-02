@@ -64,31 +64,42 @@ describe("POST /api/auth/verify-email", () => {
     expect(prismaMock.user.update).not.toHaveBeenCalled();
   });
 
-  it("rejects a wrong-length code without touching DB", async () => {
+  it("rejects a wrong-length code (and bumps the per-code attempt counter)", async () => {
     prismaMock.user.findUnique.mockResolvedValue({
       id: "u1",
       emailVerified: false,
       verificationCode: "123456",
       verificationCodeExpiry: new Date(Date.now() + 60_000),
+      verificationAttempts: 0,
     } as never);
 
     const { req, res } = post({ email: "a@b.c", code: "12345" });
     await handler(req, res);
     expect(res.statusCode).toBe(400);
-    expect(prismaMock.user.update).not.toHaveBeenCalled();
+    // New behavior: every bad attempt bumps verificationAttempts so the per-
+    // code budget can lock out brute-forcers after MAX_ATTEMPTS_PER_CODE.
+    expect(prismaMock.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "u1" },
+        data: expect.objectContaining({ verificationAttempts: { increment: 1 } }),
+      }),
+    );
   });
 
-  it("returns 200 idempotently when user is already verified", async () => {
+  it("returns generic 400 when user is already verified (no enumeration oracle)", async () => {
+    // Previously returned 200 — that leaked "this email is verified" vs
+    // "wrong code" to attackers. Now the response is indistinguishable.
     prismaMock.user.findUnique.mockResolvedValue({
       id: "u1",
       emailVerified: true,
       verificationCode: null,
       verificationCodeExpiry: null,
+      verificationAttempts: 0,
     } as never);
 
     const { req, res } = post({ email: "a@b.c", code: "anything" });
     await handler(req, res);
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(400);
     expect(prismaMock.user.update).not.toHaveBeenCalled();
   });
 
@@ -101,22 +112,31 @@ describe("POST /api/auth/verify-email", () => {
     expect(jsonBody<{ message: string }>(res).message).toMatch(/Invalid code/);
   });
 
-  it("rejects after 6 attempts on the same email", async () => {
+  it("burns the code once verificationAttempts hits the per-code budget", async () => {
+    // After MAX_ATTEMPTS_PER_CODE failures the server clears the code and
+    // requires the user to call /api/auth/resend-code to mint a new one.
+    // We simulate the "attempts already at the cap" state and verify the
+    // next request invalidates the code rather than checking it again.
     prismaMock.user.findUnique.mockResolvedValue({
       id: "u1",
       emailVerified: false,
       verificationCode: "000000",
       verificationCodeExpiry: new Date(Date.now() + 60_000),
+      verificationAttempts: 5,
     } as never);
 
-    const email = `burst-${Math.random()}@test.com`;
-    for (let i = 0; i < 5; i++) {
-      const { req, res } = post({ email, code: "111111" });
-      await handler(req, res);
-      expect(res.statusCode).toBe(400); // invalid code, but not rate-limited yet
-    }
-    const { req, res } = post({ email, code: "111111" });
+    const { req, res } = post({ email: "a@b.c", code: "111111" });
     await handler(req, res);
-    expect(res.statusCode).toBe(429);
+    expect(res.statusCode).toBe(400);
+    expect(jsonBody<{ expired?: boolean }>(res).expired).toBe(true);
+    expect(prismaMock.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "u1" },
+        data: expect.objectContaining({
+          verificationCode: null,
+          verificationAttempts: 0,
+        }),
+      }),
+    );
   });
 });

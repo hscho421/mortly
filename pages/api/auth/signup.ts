@@ -5,6 +5,8 @@ import { generatePublicId } from "@/lib/publicId";
 import { generateVerificationCode, sendVerificationCode } from "@/lib/email";
 import { CURRENT_LEGAL_VERSION, createLegalAcceptanceMetadata } from "@/lib/legal";
 import { authLimiter, getClientIp } from "@/lib/rate-limit";
+import { isValidEmail, normalizeEmail } from "@/lib/normalizeEmail";
+import { assertString } from "@/lib/validate";
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,27 +22,28 @@ export default async function handler(
   }
 
   try {
-    const { name, email, password, role, locale, legalVersion } = req.body;
+    const { name: rawName, email: rawEmail, password, role, locale, legalVersion } = req.body;
 
-    // Validate required fields
-    if (!name || !email || !password || !role) {
+    if (!rawName || !rawEmail || !password || !role) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    let name: string;
+    try {
+      name = assertString(rawName, "name", { max: 100 });
+    } catch {
+      return res.status(400).json({ message: "Name must be 1-100 characters" });
+    }
+
+    if (!isValidEmail(rawEmail)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
+    const email = normalizeEmail(rawEmail);
 
-    // Validate password length
-    if (password.length < 8) {
-      return res
-        .status(400)
-        .json({ message: "Password must be at least 8 characters" });
+    if (typeof password !== "string" || password.length < 8 || password.length > 200) {
+      return res.status(400).json({ message: "Password must be 8-200 characters" });
     }
 
-    // Validate role
     if (!["BORROWER", "BROKER"].includes(role)) {
       return res.status(400).json({ message: "Invalid role" });
     }
@@ -51,7 +54,6 @@ export default async function handler(
       });
     }
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -62,17 +64,12 @@ export default async function handler(
         .json({ message: "An account with this email already exists" });
     }
 
-    // Hash password
     const passwordHash = await hash(password, 12);
-
-    // Generate unique 9-digit public ID
     const publicId = await generatePublicId();
 
-    // Generate verification code
     const verificationCode = generateVerificationCode();
-    const verificationCodeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const verificationCodeExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         name,
@@ -84,6 +81,7 @@ export default async function handler(
         verificationCode,
         verificationCodeExpiry,
         verificationCodeSentAt: new Date(),
+        verificationAttempts: 0,
         preferences: createLegalAcceptanceMetadata(),
       },
       select: {

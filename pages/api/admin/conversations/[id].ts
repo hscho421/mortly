@@ -7,6 +7,9 @@ import {
 } from "@/lib/admin/audit";
 
 export default withAdmin(async (req, res, session) => {
+  // GET on this endpoint exposes full chat history including borrower
+  // financial details — opt into the per-admin GET rate limit so a leaked
+  // admin token can't be used as a wholesale chat-extraction firehose.
   const { id: rawId } = req.query;
   if (!rawId || typeof rawId !== "string") {
     return res.status(400).json({ error: "Invalid conversation ID" });
@@ -105,8 +108,13 @@ export default withAdmin(async (req, res, session) => {
         data: {
           conversationId: conversation.id,
           senderId: session.user.id,
+          // isSystem flags this row so the rendering layer can show the
+          // admin/system marker from the column instead of the body prefix
+          // (regular users are blocked from sending body text starting with
+          // "[Admin]" so spoofing the same-looking message is impossible).
+          isSystem: true,
           body:
-            "[Admin] This conversation has been closed by an administrator." +
+            "This conversation has been closed by an administrator." +
             (reasonValidated ? ` Reason: ${reasonValidated}` : ""),
         },
       }),
@@ -133,4 +141,4 @@ export default withAdmin(async (req, res, session) => {
   }
 
   return res.status(405).json({ error: "Method not allowed" });
-});
+}, { rateLimitGet: true });

@@ -51,7 +51,11 @@ describe("POST /api/cron/auto-close-conversations", () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it("accepts both POST and GET (Vercel cron runners use GET)", async () => {
+  it("accepts both POST and GET (Vercel cron uses GET)", async () => {
+    // Vercel cron's only supported method is GET (vercel.json has no
+    // `method` field). Image-preload exploitation isn't possible because
+    // the auth gate requires Authorization: Bearer (browsers refuse to
+    // attach this on <img>) AND the platform `x-vercel-cron: 1` header.
     for (const method of ["POST", "GET"] as const) {
       const { req, res } = makeReqRes({ method, headers: authHeaders });
       await handler(req, res);

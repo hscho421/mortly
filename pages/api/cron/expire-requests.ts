@@ -1,29 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { timingSafeEqual } from "crypto";
 import prisma from "@/lib/prisma";
 import { getSettingInt } from "@/lib/settings";
-
-function verifyCronSecret(authHeader: string | undefined): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || !authHeader) return false;
-  const token = authHeader.replace("Bearer ", "");
-  if (token.length !== secret.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(token), Buffer.from(secret));
-  } catch {
-    return false;
-  }
-}
+import { verifyCronRequest } from "@/lib/cron";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "POST" && req.method !== "GET") {
+  // Accept GET (Vercel cron's only method) and POST (manual runs).
+  // Auth gate requires Authorization: Bearer + x-vercel-cron, neither of
+  // which a browser can forge via image preload.
+  if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!verifyCronSecret(req.headers.authorization)) {
+  if (!verifyCronRequest(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

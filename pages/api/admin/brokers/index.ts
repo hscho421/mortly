@@ -8,6 +8,7 @@ export default withAdmin(async (req, res) => {
 
     const where = buildSearchWhere<Record<string, unknown>>({
       filters: { verificationStatus: req.query.status },
+      enums: { verificationStatus: ["PENDING", "VERIFIED", "REJECTED"] },
     });
 
     const [brokers, total] = await Promise.all([

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
 import { buildAdminActionCreate, MAX_REASON_LEN, validateText } from "@/lib/admin/audit";
@@ -76,6 +77,10 @@ export default withAdmin(async (req, res, session) => {
   });
   const byId = new Map(users.map((u) => [u.id, u]));
 
+  // Single bulkActionId stamped onto every per-row audit row, so forensics
+  // can collapse a multi-target sweep into one logical action.
+  const bulkActionId = randomUUID();
+
   const results: Array<{ id: string; ok: boolean; error?: string }> = [];
 
   for (const id of ids) {
@@ -98,11 +103,16 @@ export default withAdmin(async (req, res, session) => {
       continue;
     }
 
+    const shouldRevoke = typedStatus === "SUSPENDED" || typedStatus === "BANNED";
+
     try {
       await prisma.$transaction([
         prisma.user.update({
           where: { id },
-          data: { status: typedStatus },
+          data: {
+            status: typedStatus,
+            ...(shouldRevoke ? { tokenVersion: { increment: 1 } } : {}),
+          },
         }),
         prisma.adminAction.create(
           buildAdminActionCreate(req, session, {
@@ -113,6 +123,7 @@ export default withAdmin(async (req, res, session) => {
               previousStatus: user.status,
               newStatus: typedStatus,
               bulk: true,
+              bulkActionId,
             },
             reason: typedReason,
           }),

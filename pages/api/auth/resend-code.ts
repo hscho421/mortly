@@ -5,6 +5,7 @@ import {
   sendVerificationCode,
 } from "@/lib/email";
 import { authLimiter, getClientIp } from "@/lib/rate-limit";
+import { isValidEmail, normalizeEmail } from "@/lib/normalizeEmail";
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,11 +21,12 @@ export default async function handler(
   }
 
   try {
-    const { email, locale } = req.body;
+    const { email: rawEmail, locale } = req.body;
 
-    if (!email) {
+    if (!isValidEmail(rawEmail)) {
       return res.status(400).json({ message: "Email is required" });
     }
+    const email = normalizeEmail(rawEmail);
 
     // Always return 200 for email enumeration protection
     const user = await prisma.user.findUnique({
@@ -60,6 +62,7 @@ export default async function handler(
         verificationCode: code,
         verificationCodeExpiry: expiry,
         verificationCodeSentAt: new Date(),
+        verificationAttempts: 0,
       },
     });
 

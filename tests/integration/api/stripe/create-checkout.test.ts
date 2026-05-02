@@ -36,11 +36,11 @@ describe("POST /api/stripe/create-checkout", () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it("401s when user is a borrower (not a broker)", async () => {
+  it("403s when user is a borrower (not a broker)", async () => {
     setSession(borrowerSession());
     const { req, res } = makeReqRes({ method: "POST", body: { tier: "BASIC" } });
     await handler(req, res);
-    expect(res.statusCode).toBe(401);
+    expect(res.statusCode).toBe(403);
   });
 
   it.each([
@@ -73,10 +73,11 @@ describe("POST /api/stripe/create-checkout", () => {
       url: "https://checkout.stripe.com/test-session",
     } as never);
 
+    // Default origin (localhost:3000) is in the allowlist; using a foreign
+    // origin would now trigger the CSRF gate (correct behavior).
     const { req, res } = makeReqRes({
       method: "POST",
       body: { tier: "BASIC" },
-      headers: { origin: "https://mortly.test" },
     });
     await handler(req, res);
 
@@ -115,15 +116,16 @@ describe("POST /api/stripe/create-checkout", () => {
     const { req, res } = makeReqRes({
       method: "POST",
       body: { tier: "PRO" },
-      headers: { origin: "https://example.com" },
     });
     await handler(req, res);
 
     const args = stripeMock.checkout.sessions.create.mock.calls[0][0];
     expect(args.mode).toBe("subscription");
     expect(args.line_items).toEqual([{ price: "price_pro_test", quantity: 1 }]);
-    expect(args.success_url).toBe("https://example.com/broker/billing?checkout=success");
-    expect(args.cancel_url).toBe("https://example.com/broker/billing");
+    // Pinned to NEXTAUTH_URL (was reflecting req.headers.origin — open
+    // redirect via attacker-supplied Origin).
+    expect(args.success_url).toBe("http://localhost:3000/broker/billing?checkout=success");
+    expect(args.cancel_url).toBe("http://localhost:3000/broker/billing");
     expect(args.subscription_data.metadata).toEqual({ brokerId: "broker_1", tier: "PRO" });
   });
 

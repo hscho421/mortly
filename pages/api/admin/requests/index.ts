@@ -13,6 +13,10 @@ export default withAdmin(async (req, res) => {
         status: req.query.status,
         mortgageCategory: req.query.type,
       },
+      enums: {
+        status: ["PENDING_APPROVAL", "OPEN", "IN_PROGRESS", "CLOSED", "EXPIRED", "REJECTED"],
+        mortgageCategory: ["RESIDENTIAL", "COMMERCIAL"],
+      },
       publicIdField: "publicId",
     });
 

@@ -108,9 +108,13 @@ describe("Session edge cases", () => {
         role: "BORROWER",
       },
     });
+    // OAuth-only attacker (no passwordHash) — must pass the typed ack.
+    // Real fix here is the other direction: a credentials user must now pass
+    // currentPassword. Either way, body-supplied `userId` is still ignored.
     prismaMock.user.findUnique.mockResolvedValue({
       id: "attacker_1",
       role: "BORROWER",
+      passwordHash: null,
       broker: null,
       borrowerRequests: [],
       conversations: [],
@@ -119,7 +123,7 @@ describe("Session edge cases", () => {
 
     const { req, res } = makeReqRes({
       method: "DELETE",
-      body: { userId: "victim_1" }, // ignored
+      body: { userId: "victim_1", ack: "DELETE_MY_ACCOUNT" }, // userId ignored
     });
     await usersMeHandler(req, res);
 

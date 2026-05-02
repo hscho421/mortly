@@ -18,6 +18,7 @@ export default withAdmin(async (req, res) => {
       filters: {
         status: req.query.status,
       },
+      enums: { status: ["ACTIVE", "CLOSED"] },
     });
 
     const [conversations, total] = await Promise.all([

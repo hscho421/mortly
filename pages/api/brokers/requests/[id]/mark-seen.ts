@@ -1,26 +1,12 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/withAuth";
 
 // Mark a single borrower request as "seen" for the authenticated broker.
 // Idempotent — composite PK (brokerId, requestId) + upsert means repeat
 // calls are cheap no-ops. Called when the broker opens a request detail.
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withAuth(async (req, res, session) => {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  if (session.user.role !== "BROKER") {
-    return res.status(403).json({ error: "Only brokers can mark requests as seen" });
   }
 
   const { id: requestId } = req.query;
@@ -66,4 +52,5 @@ export default async function handler(
     console.error("Error in /api/brokers/requests/[id]/mark-seen:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-}
+}, { roles: ["BROKER"] });
+

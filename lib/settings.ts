@@ -10,8 +10,12 @@ const DEFAULTS: Record<string, string> = {
   pro_tier_credits: "20",
 };
 
-// In-memory cache with 5-minute TTL
-const CACHE_TTL_MS = 5 * 60 * 1000;
+// In-memory cache with 10-second TTL.
+// Originally 5 minutes — too long: the Stripe webhook reads `*_tier_credits`
+// here and an admin settings change took up to 5min to propagate to warm
+// lambdas. Short TTL keeps reads cheap (~1 query / setting / 10s per lambda)
+// without leaking a half-window of stale credit grants.
+const CACHE_TTL_MS = 10 * 1000;
 const cache = new Map<string, { value: string; expiresAt: number }>();
 
 export async function getSetting(key: string): Promise<string> {

@@ -40,7 +40,10 @@ export default function Navbar() {
 
   // Fetch notices and unread messages for logged-in non-admin users
   const fetchNotices = useCallback(async () => {
-    if (!session || session.user.role === "ADMIN") return;
+    // Defensive: revoked sessions can produce { user: undefined }; treat as
+    // anonymous so we don't crash on session.user.role.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!session?.user || (session.user as any).role === "ADMIN") return;
     try {
       const [noticesRes, unreadRes] = await Promise.all([
         fetch("/api/notices"),

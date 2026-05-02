@@ -1,21 +1,12 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { generateRequestPublicId } from "@/lib/publicId";
 import { getSettingInt } from "@/lib/settings";
 import { validateProductTypes } from "@/lib/requestConfig";
+import { withAuth } from "@/lib/withAuth";
+import { assertOptionalString, assertString, assertOptionalBoundedJson, ValidationError } from "@/lib/validate";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
+export default withAuth(async (req, res, session) => {
   try {
     if (req.method === "GET") {
       const { province, mortgageCategory } = req.query;
@@ -125,24 +116,28 @@ export default async function handler(
       const {
         mortgageCategory,
         productTypes,
-        province,
-        city,
-        details,
-        desiredTimeline,
-        notes,
+        province: rawProvince,
+        city: rawCity,
+        details: rawDetails,
+        desiredTimeline: rawTimeline,
+        notes: rawNotes,
       } = req.body;
 
-      // ── Validate required fields ─────────────────────────────
       if (!mortgageCategory || !["RESIDENTIAL", "COMMERCIAL"].includes(mortgageCategory)) {
         return res.status(400).json({ error: "mortgageCategory must be RESIDENTIAL or COMMERCIAL" });
       }
 
-      if (!province) {
-        return res.status(400).json({ error: "Province is required" });
-      }
+      const province = assertString(rawProvince, "province", { max: 100 });
+      const city = assertOptionalString(rawCity, "city", { max: 100 });
+      const desiredTimeline = assertOptionalString(rawTimeline, "desiredTimeline", { max: 200 });
+      const notes = assertOptionalString(rawNotes, "notes", { max: 4000 });
+      const details = assertOptionalBoundedJson(rawDetails, "details", 4096);
 
-      if (!Array.isArray(productTypes) || productTypes.length === 0) {
+      if (!Array.isArray(productTypes) || productTypes.length === 0 || productTypes.length > 20) {
         return res.status(400).json({ error: "At least one product type is required" });
+      }
+      if (!productTypes.every((p: unknown) => typeof p === "string" && p.length <= 100)) {
+        return res.status(400).json({ error: "Invalid product type" });
       }
 
       if (!validateProductTypes(mortgageCategory, productTypes)) {
@@ -190,10 +185,10 @@ export default async function handler(
           mortgageCategory,
           productTypes,
           province,
-          city: city || null,
-          details: details || undefined,
-          desiredTimeline: desiredTimeline || null,
-          notes: notes || null,
+          city,
+          details: (details ?? undefined) as Prisma.InputJsonValue | undefined,
+          desiredTimeline,
+          notes,
           schemaVersion: 2,
         },
       });
@@ -203,7 +198,11 @@ export default async function handler(
 
     return res.status(405).json({ error: "Method not allowed" });
   } catch (error) {
+    // ValidationError travels up to withAuth's catch which maps it to a
+    // proper 400. Anything else is genuinely unexpected and gets logged.
+    if (error instanceof ValidationError) throw error;
     console.error("Error in /api/requests:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-}
+}, { rateLimit: { perMinute: 10, bucket: "requests-create" } });
+

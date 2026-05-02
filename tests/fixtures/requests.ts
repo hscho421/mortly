@@ -3,8 +3,12 @@ import type { BorrowerRequest, Conversation, Message, Subscription } from "@pris
 const baseDate = new Date("2026-01-01T00:00:00Z");
 
 export function makeBorrowerRequest(
-  overrides: Partial<BorrowerRequest> = {}
-): BorrowerRequest {
+  overrides: Partial<BorrowerRequest> & { _count?: { conversations: number } } = {}
+): BorrowerRequest & { _count: { conversations: number } } {
+  // Include `_count.conversations` because /api/requests/[id] now reads it
+  // to enforce the "no hard-delete + no material edit once conversations
+  // exist" rule. Tests that need to simulate paid-broker conversations can
+  // override it: makeBorrowerRequest({ _count: { conversations: 3 } }).
   return {
     id: "req_1",
     publicId: "300000001",
@@ -25,8 +29,9 @@ export function makeBorrowerRequest(
     schemaVersion: 2,
     createdAt: baseDate,
     updatedAt: baseDate,
+    _count: { conversations: 0 },
     ...overrides,
-  } as BorrowerRequest;
+  } as BorrowerRequest & { _count: { conversations: number } };
 }
 
 export function makeConversation(

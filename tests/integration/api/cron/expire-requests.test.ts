@@ -66,7 +66,7 @@ describe("POST /api/cron/expire-requests", () => {
     expect(days).toBeLessThanOrEqual(30.01);
   });
 
-  it("also responds to GET (some cron runners use GET)", async () => {
+  it("also responds to GET (Vercel cron uses GET)", async () => {
     const { req, res } = makeReqRes({
       method: "GET",
       headers: { authorization: `Bearer ${SECRET}` },

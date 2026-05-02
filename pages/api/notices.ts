@@ -1,17 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/withAuth";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
+export default withAuth(async (req, res, session) => {
   if (req.method === "GET") {
     try {
       const notices = await prisma.adminNotice.findMany({
@@ -36,7 +26,7 @@ export default async function handler(
   if (req.method === "PUT") {
     try {
       const { id } = req.body;
-      if (!id) {
+      if (typeof id !== "string" || id.length === 0 || id.length > 100) {
         return res.status(400).json({ error: "Notice id is required" });
       }
 
@@ -53,4 +43,4 @@ export default async function handler(
   }
 
   return res.status(405).json({ error: "Method not allowed" });
-}
+});

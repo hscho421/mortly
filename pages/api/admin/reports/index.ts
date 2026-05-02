@@ -13,6 +13,10 @@ export default withAdmin(async (req, res) => {
         status: req.query.status,
         targetType: req.query.targetType,
       },
+      enums: {
+        status: ["OPEN", "REVIEWED", "RESOLVED", "DISMISSED"],
+        targetType: ["BROKER", "REQUEST", "CONVERSATION", "USER"],
+      },
       publicIdField: "targetId",
     });
 

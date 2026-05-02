@@ -104,7 +104,8 @@ export default withAdmin(async (req, res, session) => {
               data: {
                 conversationId: convo.id,
                 senderId: session.user.id,
-                body: "[Admin] This request has been closed by an administrator.",
+                isSystem: true,
+                body: "This request has been closed by an administrator.",
               },
             });
           }

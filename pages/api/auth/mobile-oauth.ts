@@ -4,7 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 import appleSigninAuth from "apple-signin-auth";
 import prisma from "@/lib/prisma";
 import { generatePublicId } from "@/lib/publicId";
-import { CURRENT_LEGAL_VERSION, createLegalAcceptanceMetadata } from "@/lib/legal";
+import { createLegalAcceptanceMetadata } from "@/lib/legal";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 
@@ -132,6 +132,8 @@ export default async function handler(
     }
 
     if (!user && identity.email) {
+      // identity.email is already lowercased by verifyGoogle / verifyApple,
+      // but lookup is case-insensitive via the functional unique index either way.
       user = await prisma.user.findUnique({ where: { email: identity.email } });
 
       if (user) {
@@ -182,6 +184,8 @@ export default async function handler(
     const needsRoleSelection = prefs.needsRoleSelection === true;
     const needsNameEntry = prefs.needsNameEntry === true || !user.name;
 
+    // Embed tokenVersion + status so the session callback can detect server-
+    // side revocation (password change, ban, suspend) on every read.
     const token = await encode({
       token: {
         id: user.id,
@@ -191,6 +195,8 @@ export default async function handler(
         role: user.role,
         needsRoleSelection,
         needsNameEntry,
+        tokenVersion: user.tokenVersion,
+        status: user.status,
       },
       secret,
       maxAge: SESSION_MAX_AGE,

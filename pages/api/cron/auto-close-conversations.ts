@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { timingSafeEqual } from "crypto";
 import prisma from "@/lib/prisma";
+import { verifyCronRequest } from "@/lib/cron";
 
 const INACTIVE_HOURS = 72;
 const UNSTARTED_DAYS = 7;
@@ -14,27 +14,21 @@ interface ConvoWithMessages extends ConvoWithRequest {
   messages: { senderId: string }[];
 }
 
-function verifyCronSecret(authHeader: string | undefined): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || !authHeader) return false;
-  const token = authHeader.replace("Bearer ", "");
-  if (token.length !== secret.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(token), Buffer.from(secret));
-  } catch {
-    return false;
-  }
-}
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== "POST" && req.method !== "GET") {
+  // Accept GET (Vercel cron's only supported method — vercel.json has no
+  // `method` field) and POST (for manual/curl runs from trusted env).
+  // Image-preload exploitation isn't possible because the auth gate
+  // requires the Authorization: Bearer header (which browsers refuse to
+  // attach to <img> / <link> preloads) AND the platform-attached
+  // `x-vercel-cron: 1` header (which browsers can't forge).
+  if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!verifyCronSecret(req.headers.authorization)) {
+  if (!verifyCronRequest(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

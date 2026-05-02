@@ -1,22 +1,13 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getStripe, getPriceIdForTier, getTierForPriceId } from "@/lib/stripe";
+import { withAuth } from "@/lib/withAuth";
+import { getSafeRedirectOrigin } from "@/lib/origin";
 
 const TIER_RANK: Record<string, number> = { FREE: 0, BASIC: 1, PRO: 2, PREMIUM: 3 };
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withAuth(async (req, res, session) => {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || session.user.role !== "BROKER") {
-    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const { tier } = req.body;
@@ -93,8 +84,12 @@ export default async function handler(
       }
     }
 
-    // No active subscription — create Checkout session
-    const origin = req.headers.origin || process.env.NEXTAUTH_URL || "http://localhost:3000";
+    // No active subscription — create Checkout session.
+    // CRITICAL: never derive `origin` from `req.headers.origin` here. That
+    // header is client-controlled — an attacker submitting a forged Origin
+    // could redirect post-checkout to a phishing page that mimics our
+    // billing screen. `getSafeRedirectOrigin` pins to NEXTAUTH_URL.
+    const origin = getSafeRedirectOrigin();
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: "subscription",
@@ -113,4 +108,5 @@ export default async function handler(
     console.error("Error creating checkout session:", error);
     return res.status(500).json({ error: "Failed to create checkout session" });
   }
-}
+}, { roles: ["BROKER"] });
+

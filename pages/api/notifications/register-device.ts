@@ -1,21 +1,11 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { Expo } from "expo-server-sdk";
+import { withAuth } from "@/lib/withAuth";
 
 const PLATFORMS = ["IOS", "ANDROID", "WEB"] as const;
 type Platform = (typeof PLATFORMS)[number];
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
+export default withAuth(async (req, res, session) => {
   try {
     if (req.method === "POST") {
       const { token, platform, locale, deviceName, appVersion } = req.body ?? {};
@@ -33,11 +23,19 @@ export default async function handler(
       const normalizedLocale = locale === "en" ? "en" : "ko";
       const now = new Date();
 
-      // If the token belongs to a different user (e.g. shared device with
-      // multiple accounts), remove the old binding first to prevent hijacking.
+      // Token-hijack guard: if this Expo token is already registered to a
+      // different user we refuse the registration. Silently reassigning would
+      // let an attacker who learns another user's push token (network sniffing
+      // on a shared LAN, leaked log) steal their notifications by claiming the
+      // token from their own account. The legitimate user must explicitly
+      // unregister the old device first (DELETE), then re-register from the
+      // new account.
       const existing = await prisma.deviceToken.findUnique({ where: { token } });
       if (existing && existing.userId !== session.user.id) {
-        await prisma.deviceToken.delete({ where: { id: existing.id } });
+        return res.status(409).json({
+          error:
+            "This device is already registered to a different account. Sign out of the other account on this device first.",
+        });
       }
 
       await prisma.deviceToken.upsert({
@@ -84,4 +82,5 @@ export default async function handler(
     console.error("Error in /api/notifications/register-device:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-}
+});
+

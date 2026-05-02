@@ -67,6 +67,42 @@ export default withAdmin(async (req, res, session) => {
       return res.status(404).json({ error: "Broker not found" });
     }
 
+    // Two-admin gate for VERIFIED: a single admin can RECOMMEND verification
+    // (creates a RECOMMEND_VERIFY_BROKER audit row) but the actual VERIFIED
+    // flip must be performed by a different admin. Stops a single rogue or
+    // compromised admin account from minting fake verified brokers at scale.
+    if (verificationStatus === "VERIFIED") {
+      const recommendation = await prisma.adminAction.findFirst({
+        where: {
+          action: "RECOMMEND_VERIFY_BROKER",
+          targetType: "BROKER",
+          targetId: broker.user.publicId,
+          adminId: { not: session.user.id },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!recommendation) {
+        // Record THIS admin's recommendation. Another admin can complete the
+        // verification by re-PUTing VERIFIED.
+        await prisma.adminAction.create({
+          data: {
+            adminId: session.user.id,
+            action: "RECOMMEND_VERIFY_BROKER",
+            targetType: "BROKER",
+            targetId: broker.user.publicId,
+            details: JSON.stringify({
+              previousStatus: broker.verificationStatus,
+              ...(reason ? { reason } : {}),
+            }),
+          },
+        });
+        return res.status(202).json({
+          status: "PENDING_SECOND_REVIEW",
+          message: "Recommendation recorded. A different admin must complete the verification.",
+        });
+      }
+    }
+
     const actionMap: Record<string, string> = {
       VERIFIED: "VERIFY_BROKER",
       REJECTED: "REJECT_BROKER",

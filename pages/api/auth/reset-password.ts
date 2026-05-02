@@ -39,6 +39,13 @@ export default async function handler(
 
     const passwordHash = await hash(password, 12);
 
+    // Bump tokenVersion as part of the same write so all existing JWTs for
+    // this user are invalidated atomically with the password change. Without
+    // this, a leaked JWT survives the reset and the legitimate user's "I
+    // changed my password" did nothing to evict the attacker's session.
+    //
+    // emailVerified is set to true intentionally — receiving the reset link
+    // proves inbox ownership equivalent to verifying.
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -46,6 +53,7 @@ export default async function handler(
         resetToken: null,
         resetTokenExpiry: null,
         emailVerified: true,
+        tokenVersion: { increment: 1 },
       },
     });
 

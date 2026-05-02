@@ -68,6 +68,29 @@ export default async function handler(
     return res.status(400).json({ error: "Invalid signature" });
   }
 
+  // Idempotency ledger — Stripe retries aggressively, and out-of-order
+  // delivery is a real production failure mode (we've seen invoice.paid
+  // arrive twice within 100ms). Inserting `event.id` first ensures a duplicate
+  // delivery short-circuits before mutating any of our state.
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { eventId: event.id, type: event.type },
+    });
+  } catch (err) {
+    // Unique constraint violation = we've seen this event id before. Ack the
+    // delivery so Stripe stops retrying, but don't run handlers again.
+    if (
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2002"
+    ) {
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+    console.error("Webhook ledger insert failed:", err);
+    return res.status(500).json({ error: "Webhook ledger failed" });
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed":
@@ -90,6 +113,10 @@ export default async function handler(
     }
   } catch (err) {
     console.error(`Webhook handler error for ${event.type}:`, err);
+    // Roll back the ledger entry so Stripe retries deliver the event again
+    // and we get a chance to reprocess. Not strictly required (Stripe will
+    // retry on a 5xx anyway), but this keeps the ledger honest.
+    await prisma.processedStripeEvent.delete({ where: { eventId: event.id } }).catch(() => {});
     return res.status(500).json({ error: "Webhook handler failed" });
   }
 
@@ -292,9 +319,17 @@ async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
   };
   const mappedStatus = statusMap[stripeSub.status] || subscription.status;
 
-  const tierChanged = tier && tier !== subscription.tier;
-
   await prisma.$transaction(async (tx) => {
+    // Re-read inside the transaction so the tier comparison is against the
+    // committed-at-this-instant DB state, not the snapshot we read above.
+    // Without this, two concurrent subscription.updated deliveries can both
+    // see `tier !== subscription.tier` and both apply credits.
+    const current = await tx.subscription.findUnique({
+      where: { stripeSubscriptionId: stripeSub.id },
+      select: { tier: true },
+    });
+    const tierChanged = !!(tier && current && tier !== current.tier);
+
     await tx.subscription.update({
       where: { stripeSubscriptionId: stripeSub.id },
       data: {

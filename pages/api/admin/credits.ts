@@ -9,8 +9,15 @@ export default withAdmin(async (req, res, session) => {
       return res.status(400).json({ error: "brokerId is required" });
     }
 
-    if (typeof amount !== "number" || amount === 0) {
-      return res.status(400).json({ error: "amount must be a non-zero number" });
+    if (typeof amount !== "number" || !Number.isInteger(amount) || amount === 0) {
+      return res.status(400).json({ error: "amount must be a non-zero integer" });
+    }
+    // Hard cap: no single admin action can change a balance by more than
+    // 10,000. Larger adjustments must be done in multiple deliberate steps
+    // (and each one is audited). Defends against fat-finger and rogue-admin
+    // worst case.
+    if (Math.abs(amount) > 10_000) {
+      return res.status(400).json({ error: "amount must be between -10000 and 10000" });
     }
 
     const broker = await prisma.broker.findUnique({

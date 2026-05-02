@@ -1,7 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/withAuth";
 
 /**
  * POST   /api/users/:publicId/block   — block another user
@@ -14,15 +12,7 @@ import prisma from "@/lib/prisma";
  *   - new conversation POST (broker → borrower) is rejected
  *   - both directions hidden — block is symmetric for visibility
  */
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session?.user?.id) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
+export default withAuth(async (req, res, session) => {
   const { publicId } = req.query;
   if (!publicId || typeof publicId !== "string") {
     return res.status(400).json({ error: "publicId is required" });
@@ -76,4 +66,5 @@ export default async function handler(
     console.error("Error in /api/users/[publicId]/block:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-}
+});
+

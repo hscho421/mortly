@@ -97,11 +97,13 @@ describe("withAdmin CSRF gate", () => {
     expect(res.statusCode).toBe(403);
   });
 
-  it("allows POST with same-origin Origin header", async () => {
+  it("allows POST when Origin is in the server-side allowlist (NEXTAUTH_URL)", async () => {
+    // Allowlist now drives CSRF, not host equality. NEXTAUTH_URL
+    // (= http://localhost:3000 in tests) is the trusted origin.
     const req = makeReq({
       method: "POST",
       host: "example.com",
-      origin: "https://example.com",
+      origin: "http://localhost:3000",
     });
     const res = makeRes();
     await wrapped(req, res as unknown as NextApiResponse);
@@ -112,7 +114,7 @@ describe("withAdmin CSRF gate", () => {
     const req = makeReq({
       method: "PUT",
       host: "example.com",
-      referer: "https://example.com/admin/people",
+      referer: "http://localhost:3000/admin/people",
     });
     const res = makeRes();
     await wrapped(req, res as unknown as NextApiResponse);

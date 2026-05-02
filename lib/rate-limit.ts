@@ -54,10 +54,31 @@ export const verifyCodeLimiter = rateLimit({
   uniqueTokenPerInterval: 500,
 });
 
+/**
+ * Resolve the client IP for rate-limit keying.
+ *
+ * On Vercel the leftmost `x-forwarded-for` entry is client-supplied — an
+ * attacker can prepend whatever they want to cycle their rate-limit key. The
+ * trustworthy origin IP is `x-real-ip` (set by Vercel's edge) and, failing
+ * that, the LAST `x-forwarded-for` entry (closest to the platform). We never
+ * use the leftmost entry except as a final fallback in non-prod where neither
+ * header is present.
+ */
 export function getClientIp(req: { headers: Record<string, string | string[] | undefined> }): string {
+  const realIp = req.headers["x-real-ip"];
+  if (typeof realIp === "string" && realIp.trim().length > 0) {
+    return realIp.trim();
+  }
   const xff = req.headers["x-forwarded-for"];
-  const ip = typeof xff === "string" ? xff.split(",")[0]?.trim() : undefined;
-  return ip || "unknown";
+  const xffStr = Array.isArray(xff) ? xff[0] : xff;
+  if (typeof xffStr === "string" && xffStr.length > 0) {
+    const parts = xffStr.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 0) {
+      // Last entry on Vercel/Cloudflare is the platform-attached IP.
+      return parts[parts.length - 1];
+    }
+  }
+  return "unknown";
 }
 
 // ─────────────────────────────────────────────────────────────────────

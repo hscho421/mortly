@@ -1,20 +1,10 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { withAuth } from "@/lib/withAuth";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default withAuth(async (req, res, session) => {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || session.user.role !== "BROKER") {
-    return res.status(401).json({ error: "Unauthorized" });
   }
 
   try {
@@ -49,4 +39,4 @@ export default async function handler(
     console.error("Error fetching invoices:", error);
     return res.status(500).json({ error: "Failed to fetch invoices" });
   }
-}
+}, { roles: ["BROKER"] });

@@ -138,23 +138,32 @@ describe("/api/requests/[id]", () => {
       }
     });
 
-    it("cascades delete on an OPEN request (messages → convos → request)", async () => {
-      prismaMock.borrowerRequest.findUnique.mockResolvedValue(makeBorrowerRequest({ status: "OPEN" }));
-      prismaMock.conversation.findMany.mockResolvedValue([
-        makeConversation({ id: "conv_1" }),
-        makeConversation({ id: "conv_2" }),
-      ] as never);
-      prismaMock.message.deleteMany.mockResolvedValue({ count: 5 } as never);
-      prismaMock.conversation.deleteMany.mockResolvedValue({ count: 2 } as never);
-      prismaMock.borrowerRequest.delete.mockResolvedValue(makeBorrowerRequest());
+    it("hard-deletes an OPEN request that has zero conversations", async () => {
+      prismaMock.borrowerRequest.findUnique.mockResolvedValue(
+        makeBorrowerRequest({ status: "OPEN", _count: { conversations: 0 } }) as never,
+      );
+      prismaMock.borrowerRequest.delete.mockResolvedValue(makeBorrowerRequest() as never);
 
       const { req, res } = makeReqRes({ method: "DELETE", query: { id: "300000001" } });
       await handler(req, res);
 
       expect(res.statusCode).toBe(200);
-      expect(prismaMock.message.deleteMany).toHaveBeenCalledOnce();
-      expect(prismaMock.conversation.deleteMany).toHaveBeenCalledOnce();
       expect(prismaMock.borrowerRequest.delete).toHaveBeenCalledOnce();
+    });
+
+    it("blocks hard-delete when conversations exist (brokers paid for them)", async () => {
+      // Refusing the delete is the security-fix: previously the cascade wiped
+      // chats brokers had spent credits on. Borrower must close (PUT) instead
+      // so history is preserved.
+      prismaMock.borrowerRequest.findUnique.mockResolvedValue(
+        makeBorrowerRequest({ status: "OPEN", _count: { conversations: 3 } }) as never,
+      );
+
+      const { req, res } = makeReqRes({ method: "DELETE", query: { id: "300000001" } });
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(409);
+      expect(prismaMock.borrowerRequest.delete).not.toHaveBeenCalled();
     });
   });
 

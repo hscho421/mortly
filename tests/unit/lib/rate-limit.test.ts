@@ -66,19 +66,35 @@ describe("verifyCodeLimiter", () => {
 });
 
 describe("getClientIp", () => {
-  it("extracts the first IP from x-forwarded-for", () => {
-    expect(getClientIp({ headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" } })).toBe("1.2.3.4");
+  it("prefers x-real-ip when present (Vercel-attached)", () => {
+    expect(
+      getClientIp({
+        headers: { "x-real-ip": "10.0.0.1", "x-forwarded-for": "1.2.3.4" },
+      }),
+    ).toBe("10.0.0.1");
   });
 
-  it("returns 'unknown' when the header is missing", () => {
+  it("falls back to the LAST x-forwarded-for entry (closest to the platform)", () => {
+    // Leftmost XFF entries are client-supplied on Vercel — using them as the
+    // rate-limit key would let attackers cycle theirs to bypass the limit.
+    expect(
+      getClientIp({ headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" } }),
+    ).toBe("5.6.7.8");
+  });
+
+  it("returns 'unknown' when no IP-bearing header is present", () => {
     expect(getClientIp({ headers: {} })).toBe("unknown");
   });
 
-  it("returns 'unknown' when the header is an array (Next gives string | string[])", () => {
-    expect(getClientIp({ headers: { "x-forwarded-for": ["a", "b"] } })).toBe("unknown");
+  it("handles array x-forwarded-for by reading the first array element", () => {
+    expect(
+      getClientIp({ headers: { "x-forwarded-for": ["1.2.3.4, 5.6.7.8", "ignored"] } }),
+    ).toBe("5.6.7.8");
   });
 
-  it("trims whitespace around the first entry", () => {
-    expect(getClientIp({ headers: { "x-forwarded-for": "  9.9.9.9  ,  8.8.8.8" } })).toBe("9.9.9.9");
+  it("trims whitespace around entries", () => {
+    expect(
+      getClientIp({ headers: { "x-forwarded-for": "  9.9.9.9  ,  8.8.8.8 " } }),
+    ).toBe("8.8.8.8");
   });
 });

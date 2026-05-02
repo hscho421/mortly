@@ -22,6 +22,11 @@ model User {
   verificationCode       String?
   verificationCodeExpiry DateTime?
   verificationCodeSentAt DateTime?
+  verificationAttempts   Int               @default(0)
+  // Bumped on password change, ban/suspend, account delete, "log out everywhere".
+  // Embedded in the JWT and re-checked on every session read so revocation is
+  // server-controlled rather than relying on JWT expiry alone.
+  tokenVersion           Int               @default(0)
   resetToken             String?           @unique
   resetTokenExpiry       DateTime?
   preferences            Json?
@@ -188,6 +193,11 @@ model Message {
   conversationId String
   senderId       String
   body           String
+  // True when an admin or cron created the row on behalf of the participants
+  // (e.g. "[Admin] This conversation has been closed"). Rendering layer must
+  // pull the system marker from THIS column, never from a body-text prefix —
+  // otherwise users could spoof system messages by typing "[Admin] ...".
+  isSystem       Boolean      @default(false)
   createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   sender         User         @relation(fields: [senderId], references: [id])
@@ -195,6 +205,19 @@ model Message {
   @@index([conversationId, createdAt])
   @@index([conversationId, senderId, createdAt])
   @@map("messages")
+}
+
+// Stripe webhook idempotency ledger. Every event we accept gets recorded here
+// before we run the handler. A duplicate `event.id` (Stripe retries are common
+// and out-of-order delivery happens) short-circuits with a 200 so we never
+// double-grant credits or apply tier changes twice.
+model ProcessedStripeEvent {
+  eventId   String   @id
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("processed_stripe_events")
 }
 
 model Subscription {

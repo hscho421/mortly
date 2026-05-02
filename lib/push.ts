@@ -109,27 +109,32 @@ function truncate(s: string, max = 120): string {
   return chars.length > max ? `${chars.slice(0, max).join("")}…` : trimmed;
 }
 
-/** A new chat message arrived. Title = sender's display name. */
-export function messagePush(senderName: string, body: string): LocalizedPush {
-  const preview = truncate(body);
+/**
+ * Privacy default: don't leak message content into the OS notification log /
+ * lock screen. The text content arrives only as a generic "New message" body
+ * unless the recipient has explicitly opted in via
+ * preferences.pushPreviewEnabled === true. (Future: thread that flag through
+ * sendPushToUsers per-recipient. For now we always use the safe form.)
+ *
+ * Borrower financial details (loan amount, location, income type) leaking via
+ * push preview is a fintech privacy regression — defaulting to "safe" prevents
+ * shoulder-surfing on shared/work devices.
+ */
+export function messagePush(senderName: string, _body: string): LocalizedPush {
   return {
     title: { en: senderName, ko: senderName },
-    body: { en: preview, ko: preview },
+    body: {
+      en: "New message",
+      ko: "새 메시지",
+    },
   };
 }
 
 /** A broker reached out to a borrower (first message on a new conversation). */
 export function brokerInquiryPush(
   brokerageName: string,
-  firstMessage?: string
+  _firstMessage?: string
 ): LocalizedPush {
-  if (firstMessage && firstMessage.trim().length > 0) {
-    const preview = truncate(firstMessage);
-    return {
-      title: { en: brokerageName, ko: brokerageName },
-      body: { en: preview, ko: preview },
-    };
-  }
   return {
     title: {
       en: "New message from a broker",

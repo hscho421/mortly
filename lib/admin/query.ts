@@ -70,6 +70,14 @@ export interface BuildSearchWhereParams {
    */
   filters?: Record<string, unknown>;
   /**
+   * Per-filter-key allowlist of accepted string values. Use this for any
+   * field that maps to a Prisma enum (`status`, `role`, `mortgageCategory`,
+   * etc.) so users can't smuggle Prisma operators through `req.query`
+   * (e.g. `?status[gte]=`). Filter values that aren't strings or aren't
+   * in the allowlist are silently dropped.
+   */
+  enums?: Record<string, readonly string[]>;
+  /**
    * Optional field name (e.g. `"publicId"` or `"targetId"`) to add to the
    * search OR clause as `{ contains: s }` with NO insensitive mode — matching
    * the existing code's treatment of id-like fields.
@@ -99,7 +107,7 @@ export interface BuildSearchWhereParams {
 export function buildSearchWhere<T extends Record<string, unknown>>(
   params: BuildSearchWhereParams
 ): T {
-  const { search, searchFields, filters, publicIdField } = params;
+  const { search, searchFields, filters, enums, publicIdField } = params;
   const where: Record<string, unknown> = {};
 
   // Flat filter assignment. "ALL" and empty strings are skipped, matching
@@ -108,6 +116,13 @@ export function buildSearchWhere<T extends Record<string, unknown>>(
     for (const [key, value] of Object.entries(filters)) {
       if (value === undefined || value === null) continue;
       if (typeof value === "string" && (value === "" || value === "ALL")) continue;
+      // Enum allowlist gate. Anything non-string or outside the allowed set
+      // is dropped silently — defends against `?status[gte]=` style smuggling
+      // (qs/query parsers can yield objects) and rogue values that would
+      // otherwise reach Prisma as raw filter operators.
+      if (enums && key in enums) {
+        if (typeof value !== "string" || !enums[key].includes(value)) continue;
+      }
       where[key] = value;
     }
   }

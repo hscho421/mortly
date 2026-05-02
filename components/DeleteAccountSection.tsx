@@ -16,27 +16,86 @@ export default function DeleteAccountSection() {
   const { t } = useTranslation("common");
   const router = useRouter();
 
-  // null = closed, "first" = showing initial confirm, "second" = showing final confirm
-  const [stage, setStage] = useState<null | "first" | "second">(null);
+  // null = closed, "first" = initial confirm, "second" = final confirm,
+  // "password" = password prompt (only shown for credentials accounts —
+  // OAuth-only users skip this stage).
+  const [stage, setStage] = useState<null | "first" | "second" | "password">(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
+
+  /**
+   * Two-pass call:
+   *   1. Send `ack` only — works for OAuth-only accounts (no passwordHash).
+   *   2. If server returns 400 "currentPassword required", surface the
+   *      password prompt, then retry with the typed password.
+   *
+   * This keeps OAuth users on the existing two-modal flow and only adds the
+   * password step for credentials users (who can prove possession).
+   */
+  const callDelete = async (body: Record<string, unknown>) => {
+    const res = await fetch("/api/users/me", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return { ok: true as const };
+    const json = await res.json().catch(() => ({}));
+    return {
+      ok: false as const,
+      status: res.status,
+      message: json.error || json.message || t("settings.deleteAccountFailed"),
+    };
+  };
+
+  const finishDelete = async () => {
+    // Server wiped the account; clear the local session and redirect.
+    await signOut({ callbackUrl: "/", redirect: false });
+    router.push("/", undefined, { locale: router.locale });
+  };
 
   const handleDelete = async () => {
     setError("");
     setDeleting(true);
     try {
-      const res = await fetch("/api/users/me", { method: "DELETE" });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || body.message || t("settings.deleteAccountFailed"));
+      const r = await callDelete({ ack: "DELETE_MY_ACCOUNT" });
+      if (r.ok) {
+        await finishDelete();
+        return;
       }
-      // Server has wiped the account; sign out the NextAuth session and redirect.
-      // signOut clears cookies/tokens and routes to the callback URL.
-      await signOut({ callbackUrl: "/", redirect: false });
-      router.push("/", undefined, { locale: router.locale });
+      // 400 "currentPassword required" → switch to the password prompt.
+      // Any other 4xx/5xx is a real failure.
+      if (r.status === 400 && /password/i.test(r.message)) {
+        setStage("password");
+        return;
+      }
+      throw new Error(r.message);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : t("settings.deleteAccountFailed"));
       setStage(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteWithPassword = async () => {
+    if (!password) {
+      setError(t("settings.deleteAccountFailed"));
+      return;
+    }
+    setError("");
+    setDeleting(true);
+    try {
+      const r = await callDelete({ currentPassword: password });
+      if (r.ok) {
+        await finishDelete();
+        return;
+      }
+      throw new Error(r.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : t("settings.deleteAccountFailed"));
+      // Keep the password modal open so the user can retry without restarting
+      // the two-step confirm flow.
     } finally {
       setDeleting(false);
     }
@@ -91,6 +150,69 @@ export default function DeleteAccountSection() {
           onConfirm={handleDelete}
           deleting={deleting}
         />
+      )}
+
+      {/* Password re-auth modal — only shown for credentials accounts when
+          the OAuth ack path returns "currentPassword required". A stolen JWT
+          alone is not enough to wipe a credentials account. */}
+      {stage === "password" && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-forest-900/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => (deleting ? undefined : (setStage(null), setPassword("")))}
+        >
+          <div
+            className="w-full max-w-md rounded-sm bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="heading-sm mb-2">
+              {t("settings.deleteAccountPasswordTitle", "Confirm with your password")}
+            </h3>
+            <p className="text-body-sm text-sage-500 mb-4">
+              {t(
+                "settings.deleteAccountPasswordDesc",
+                "Enter your current password to permanently delete your account.",
+              )}
+            </p>
+            <input
+              type="password"
+              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={deleting}
+              placeholder={t("settings.deleteAccountPasswordPlaceholder", "Current password")}
+              className="mb-4 w-full rounded-sm border border-cream-300 bg-white px-3 py-2 font-body text-sm text-forest-700 outline-none focus:border-forest-700"
+            />
+            {error ? (
+              <p className="mb-3 text-body-sm text-error-600">{error}</p>
+            ) : null}
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setStage(null);
+                  setPassword("");
+                  setError("");
+                }}
+                disabled={deleting}
+                className="rounded-full border border-cream-300 bg-white px-5 py-2 font-body text-sm font-semibold text-forest-700 transition-colors hover:bg-cream-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t("settings.deleteAccountCancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteWithPassword}
+                disabled={deleting || !password}
+                className="rounded-full bg-error-600 px-5 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleting
+                  ? t("settings.deleteAccountDeleting")
+                  : t("settings.deleteAccountConfirm")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -10,6 +10,10 @@ export default withAdmin(async (req, res) => {
       search: req.query.search,
       searchFields: ["name", "email"],
       filters: { role: req.query.role, status: req.query.status },
+      enums: {
+        role: ["BORROWER", "BROKER", "ADMIN"],
+        status: ["ACTIVE", "SUSPENDED", "BANNED"],
+      },
       publicIdField: "publicId",
     });
 

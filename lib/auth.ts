@@ -6,6 +6,23 @@ import { compare } from "bcryptjs";
 import prisma from "./prisma";
 import { generatePublicId } from "./publicId";
 import { CURRENT_LEGAL_VERSION, createLegalAcceptanceMetadata } from "./legal";
+import { normalizeEmail } from "./normalizeEmail";
+
+/**
+ * Bump a user's `tokenVersion`. Every existing JWT for the user becomes
+ * invalid the next time it round-trips through the `session` callback.
+ * Call this from:
+ *   - password change
+ *   - admin SUSPEND / BAN
+ *   - account deletion
+ *   - "log out everywhere" (future)
+ */
+export async function revokeUserSessions(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+  });
+}
 
 export function createAuthOptions(acceptedLegalVersion?: string | null): NextAuthOptions {
   return {
@@ -33,8 +50,9 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
             throw new Error("Email and password are required");
           }
 
+          const email = normalizeEmail(credentials.email);
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
+            where: { email },
           });
 
           if (!user) {
@@ -78,8 +96,10 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
           return true;
         }
 
-        const email = user.email;
+        const email = user.email ? normalizeEmail(user.email) : null;
         if (!email) return false;
+        // Make sure downstream lookups see the canonicalized form too.
+        user.email = email;
 
         const providerField = account.provider === "google" ? "googleId" : "appleId";
         const providerId = account.providerAccountId;
@@ -151,16 +171,28 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
       },
 
       async jwt({ token, account, trigger }) {
-        // On initial sign-in or session update (e.g. after role selection), load user from DB
+        // On initial sign-in / explicit `update` trigger we hydrate the token
+        // from the DB. We also stamp `tokenVersion` so the session callback
+        // can later detect revocation.
         if (account || trigger === "update") {
+          const lookupEmail = token.email ? normalizeEmail(token.email) : "";
           const dbUser = await prisma.user.findUnique({
-            where: { email: token.email! },
-            select: { id: true, publicId: true, role: true, preferences: true },
+            where: { email: lookupEmail },
+            select: {
+              id: true,
+              publicId: true,
+              role: true,
+              preferences: true,
+              tokenVersion: true,
+              status: true,
+            },
           });
           if (dbUser) {
             token.id = dbUser.id;
             token.publicId = dbUser.publicId;
             token.role = dbUser.role;
+            token.tokenVersion = dbUser.tokenVersion;
+            token.status = dbUser.status;
             const prefs = dbUser.preferences as Record<string, unknown> | null;
             token.needsRoleSelection = prefs?.needsRoleSelection === true;
             token.needsNameEntry = prefs?.needsNameEntry === true;
@@ -170,13 +202,52 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
       },
 
       async session({ session, token }) {
+        // Server-side revocation gate. Every session read re-checks the user's
+        // tokenVersion + status from the DB. Mismatch ⇒ return an empty object
+        // so NextAuth's useSession() / getServerSession() treats this as
+        // "no session" (consumers do `if (!session) ...` everywhere).
+        //
+        // Returning a session with `user` mutated to undefined would crash any
+        // consumer that does `session.user.role` — and there are ~30 such
+        // sites — so we nuke the whole object instead.
+        const userId = token.id as string | undefined;
+        if (!userId) return session;
+
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            tokenVersion: true,
+            status: true,
+            role: true,
+            publicId: true,
+          },
+        });
+
+        if (
+          !dbUser ||
+          dbUser.tokenVersion !== token.tokenVersion ||
+          dbUser.status !== "ACTIVE"
+        ) {
+          // NextAuth assigns our return value directly to the response body
+          // (next-auth/core/routes/session.js: `response.body = updatedSession`).
+          // Returning null makes /api/auth/session emit `null`, which
+          // useSession()/getServerSession() interpret as "unauthenticated"
+          // — same shape every consumer already handles via `if (!session)`.
+          // The TS signature insists on Session, so we cast.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return null as any;
+        }
+
         if (session.user) {
+          // Always serve the live values from DB — role / publicId might have
+          // changed via /api/auth/select-role or admin tools and we don't want
+          // a stale token to mask that.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (session.user as any).role = token.role;
+          (session.user as any).role = dbUser.role;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (session.user as any).id = token.id;
+          (session.user as any).id = userId;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (session.user as any).publicId = token.publicId;
+          (session.user as any).publicId = dbUser.publicId;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (session.user as any).needsRoleSelection = token.needsRoleSelection;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,7 +261,49 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
     },
     session: {
       strategy: "jwt",
+      // Web sessions: 7 days. Mobile flows that need longer-lived tokens
+      // mint their own via `mobile-oauth.ts` / `select-role.ts`.
+      maxAge: 7 * 24 * 60 * 60,
+      updateAge: 60 * 60,
     },
+    // Pin cookie attributes — never let NextAuth's defaults drift. `__Secure-`
+    // prefix is enforced in production; in dev we strip it so HTTPS isn't
+    // required locally.
+    cookies: (() => {
+      const isProd = process.env.NODE_ENV === "production";
+      const cookieName = isProd
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token";
+      return {
+        sessionToken: {
+          name: cookieName,
+          options: {
+            httpOnly: true,
+            sameSite: "lax",
+            path: "/",
+            secure: isProd,
+          },
+        },
+        callbackUrl: {
+          name: isProd ? "__Secure-next-auth.callback-url" : "next-auth.callback-url",
+          options: {
+            httpOnly: true,
+            sameSite: "lax",
+            path: "/",
+            secure: isProd,
+          },
+        },
+        csrfToken: {
+          name: isProd ? "__Host-next-auth.csrf-token" : "next-auth.csrf-token",
+          options: {
+            httpOnly: true,
+            sameSite: "lax",
+            path: "/",
+            secure: isProd,
+          },
+        },
+      };
+    })(),
     secret: process.env.NEXTAUTH_SECRET,
   };
 }

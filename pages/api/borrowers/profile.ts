@@ -1,19 +1,8 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import { hash, compare } from "bcryptjs";
 import prisma from "@/lib/prisma";
+import { withAuth } from "@/lib/withAuth";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session?.user?.id) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  // GET - fetch profile
+export default withAuth(async (req, res, session) => {
   if (req.method === "GET") {
     try {
       const user = await prisma.user.findUnique({
@@ -91,6 +80,14 @@ export default async function handler(
         return res.status(400).json({ message: "No changes provided" });
       }
 
+      // Bump tokenVersion on password change so every other JWT for this
+      // account stops working. Without this, a stolen token survives the
+      // user's password rotation for the full session lifetime.
+      const passwordChanged = "passwordHash" in updateData;
+      if (passwordChanged) {
+        (updateData as Record<string, unknown>).tokenVersion = { increment: 1 };
+      }
+
       const updated = await prisma.user.update({
         where: { id: session.user.id },
         data: updateData,
@@ -105,4 +102,5 @@ export default async function handler(
   }
 
   return res.status(405).json({ message: "Method not allowed" });
-}
+});
+

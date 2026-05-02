@@ -2,34 +2,15 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isAllowedOrigin } from "@/lib/origin";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const MUTATIONS_PER_MIN = 30;
-
-/**
- * CSRF gate. For mutating methods we require an `Origin` (or `Referer`)
- * header whose host matches the request host. This blocks cross-origin
- * browser-issued POST/PUT/PATCH/DELETE — the CSRF threat — while permitting
- * same-origin fetches made by the admin UI.
- *
- * Same-host comparison covers sub-path and port differences correctly
- * because `URL(...).host` includes the port. Tooling without an `Origin`
- * header (curl, some CI scripts) is rejected; tooling that sends an
- * explicit `Origin: https://<host>` is allowed.
- */
-function sameOriginOk(req: NextApiRequest): boolean {
-  const origin = req.headers.origin;
-  const referer = req.headers.referer;
-  const host = req.headers.host;
-  if (!host) return false;
-  const source = typeof origin === "string" && origin.length > 0 ? origin : typeof referer === "string" ? referer : "";
-  if (!source) return false;
-  try {
-    return new URL(source).host === host;
-  } catch {
-    return false;
-  }
-}
+// Default per-admin GET budget for sensitive resources (conversations, full
+// user details, message history). Read-heavy list pages can opt out — but the
+// default is "limited" so leaking an admin token can't be turned into a
+// firehose data extraction.
+const SENSITIVE_GETS_PER_MIN = 600;
 
 /**
  * Session shape as seen by an admin route handler.
@@ -76,8 +57,18 @@ export type AdminHandler = (
  * });
  * ```
  */
+export interface WithAdminOptions {
+  /**
+   * Apply a per-admin GET rate limit (default off). Use for endpoints that
+   * surface PII / chat content / cross-borrower views — limits a stolen
+   * admin token from being used as a wholesale data exfil firehose.
+   */
+  rateLimitGet?: boolean;
+}
+
 export function withAdmin(
-  handler: AdminHandler
+  handler: AdminHandler,
+  opts: WithAdminOptions = {},
 ): (req: NextApiRequest, res: NextApiResponse) => Promise<void> {
   return async function wrapped(req: NextApiRequest, res: NextApiResponse): Promise<void> {
     try {
@@ -100,7 +91,7 @@ export function withAdmin(
       // CSRF + rate limit on destructive verbs. GET is unrestricted
       // (read-heavy admin UIs poll frequently).
       if (req.method && MUTATING_METHODS.has(req.method)) {
-        if (!sameOriginOk(req)) {
+        if (!isAllowedOrigin(req)) {
           res.status(403).json({ error: "Cross-origin request rejected" });
           return;
         }
@@ -119,6 +110,19 @@ export function withAdmin(
           return;
         }
         res.setHeader("X-RateLimit-Remaining", String(remaining));
+      } else if (opts.rateLimitGet && req.method === "GET") {
+        // Sensitive read endpoints opt-in to a 600/min admin budget.
+        const adminId = (session.user as { id?: string } | undefined)?.id ?? "unknown";
+        const { success } = await checkRateLimit({
+          key: `admin-get-${adminId}`,
+          limit: SENSITIVE_GETS_PER_MIN,
+          windowMs: 60_000,
+        });
+        if (!success) {
+          res.setHeader("Retry-After", "60");
+          res.status(429).json({ error: "Too many admin reads — slow down" });
+          return;
+        }
       }
 
       await handler(req, res, session as AdminSession);
