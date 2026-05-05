@@ -45,9 +45,6 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-32">
           <div className="grid lg:grid-cols-[1.3fr_1fr] gap-12 lg:gap-16 items-center">
             <div>
-              <div className="eyebrow-dark animate-fade-in-up opacity-0 stagger-1">
-                — {t("home.title1")}
-              </div>
               <h1 className="animate-fade-in-up opacity-0 stagger-2 mt-6 font-display font-semibold text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-cream-100 leading-[1.05]">
                 {t("home.title1")}
                 <br />
