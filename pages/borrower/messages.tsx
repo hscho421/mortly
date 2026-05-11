@@ -328,7 +328,7 @@ export default function BorrowerMessagesPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || t("errors.failedToSendMessage"));
+        throw new Error(data.error || data.message || t("errors.failedToSendMessage"));
       }
 
       // Optimistic append: add the sent message locally on success. Supabase
