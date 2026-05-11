@@ -21,7 +21,13 @@ export default function Navbar() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const noticeRef = useRef<HTMLDivElement>(null);
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  // While next-auth is resolving the session (SSG homepages have no SSR
+  // session, so first paint is always `loading`), hide auth-dependent chrome
+  // entirely. Otherwise returning visitors see a ~100-500ms flash of the
+  // logged-out Sign in / Get started CTAs before the navbar swaps to the
+  // authed state.
+  const authReady = status !== "loading";
   const router = useRouter();
   const { t } = useTranslation("common");
 
@@ -201,7 +207,12 @@ export default function Navbar() {
               </button>
             </div>
 
-            {session ? (
+            {!authReady ? (
+              // Reserved space matching the authed/unauthed slot height so the
+              // navbar doesn't shift when session resolves. ~32px tall matches
+              // the icon buttons / sign-in pair on the right side.
+              <div aria-hidden className="h-8" />
+            ) : session ? (
               <div className="flex items-center gap-1">
                 {/* Notification bell */}
                 {showUserLinks && (
@@ -401,7 +412,7 @@ export default function Navbar() {
 
           <div className="my-3 h-px bg-cream-200" />
 
-          {session ? (
+          {!authReady ? null : session ? (
             <div className="space-y-0.5">
               <Link
                 href={dashboardHref}
