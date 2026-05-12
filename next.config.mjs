@@ -69,13 +69,20 @@ const nextConfig = {
     // server runs on http://; with the directive, every chunk gets upgraded
     // to https:// and fails with ERR_SSL_PROTOCOL_ERROR locally. Prod runs
     // over https end-to-end so the directive is safe + useful there.
+    // Supabase Realtime opens a WebSocket against the project subdomain
+    // (`wss://<ref>.supabase.co/realtime/v1/websocket`). CSP applies to
+    // WebSocket via `connect-src`; without the wss: + https: allowlist
+    // entries Safari throws "WebSocket not available: The operation is
+    // insecure" and the messages page errors out. Allowlist both the
+    // anon-key REST surface (https://*.supabase.co) and the WebSocket
+    // (wss://*.supabase.co).
     const directives = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://us.i.posthog.com https://us-assets.i.posthog.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
-      "connect-src 'self' https://api.stripe.com https://us.i.posthog.com https://us-assets.i.posthog.com",
+      "connect-src 'self' https://api.stripe.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.supabase.co wss://*.supabase.co",
       "frame-src https://js.stripe.com https://hooks.stripe.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",

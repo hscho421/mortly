@@ -178,13 +178,12 @@ export default function BrokerOnboardingPage() {
 
           <div>
             <label htmlFor="licenseNumber" className="label-text">
-              {t("broker.licenseNumber")} <span className="text-amber-600">*</span>
+              {t("broker.licenseNumber")}
             </label>
             <input
               id="licenseNumber"
               name="licenseNumber"
               type="text"
-              required
               value={form.licenseNumber}
               onChange={handleChange}
               className="input-field"

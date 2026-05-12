@@ -10,7 +10,7 @@ import {
   RequestContextSkeleton,
 } from "@/components/broker/MessagesSkeletons";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
@@ -174,6 +174,11 @@ export default function BrokerMessagesPage() {
   // Supabase Realtime for instant messages
   useEffect(() => {
     if (!activeConvId || authStatus !== "authenticated") return;
+    // Skip subscribe entirely when Realtime isn't configured. Without this
+    // guard Supabase opens a WebSocket against an empty/insecure URL and
+    // Safari throws "WebSocket not available: The operation is insecure",
+    // which our ErrorBoundary surfaces to the user.
+    if (!isSupabaseConfigured) return;
 
     const channel = supabase
       .channel(`chat-${activeConvId}`)

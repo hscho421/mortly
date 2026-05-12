@@ -42,19 +42,12 @@ function validateBrokerFields(body: Record<string, unknown>, partial: boolean) {
     out.phone = assertPhone(undefined, "phone");
   }
 
-  // License number is non-null in the Prisma schema, so on initial create
-  // (`partial=false`) it must be present. Updates (`partial=true`) may omit
-  // it to leave the existing value untouched.
   if (body.licenseNumber !== undefined) {
-    const license = partial
-      ? assertOptionalString(body.licenseNumber, "licenseNumber", { max: 50 })
-      : assertString(body.licenseNumber, "licenseNumber", { max: 50 });
+    const license = assertOptionalString(body.licenseNumber, "licenseNumber", { max: 50 });
     if (license && !LICENSE_RE.test(license)) {
       throw new ValidationError("licenseNumber must be alphanumeric with optional dashes");
     }
-    if (license !== null && license !== undefined) out.licenseNumber = license;
-  } else if (!partial) {
-    out.licenseNumber = assertString(undefined, "licenseNumber", { max: 50 });
+    out.licenseNumber = license ?? null;
   }
 
   if (body.bio !== undefined) {

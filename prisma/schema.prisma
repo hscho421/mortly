@@ -126,7 +126,7 @@ model Broker {
   userId             String               @unique
   brokerageName      String
   province           String
-  licenseNumber      String
+  licenseNumber      String?
   phone              String?
   mortgageCategory   BrokerMortgageCategory @default(BOTH)
   bio                String?

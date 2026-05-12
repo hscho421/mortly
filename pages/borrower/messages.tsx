@@ -20,7 +20,7 @@ import {
   RequestContextSkeleton,
 } from "@/components/broker/MessagesSkeletons";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { ConversationWithParticipants } from "@/types";
 import type { Message } from "@/types";
 
@@ -188,6 +188,7 @@ export default function BorrowerMessagesPage() {
   /* ---- Supabase Realtime for instant messages ---- */
   useEffect(() => {
     if (!activeId || authStatus !== "authenticated") return;
+    if (!isSupabaseConfigured) return;
 
     const channel = supabase
       .channel(`chat-${activeId}`)
