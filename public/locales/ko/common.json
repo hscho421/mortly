@@ -199,7 +199,7 @@
     "selectRoleBtn": "계속"
   },
   "borrowerDashboard": {
-    "title": "안녕하세요, {{name}}님.",
+    "title": "안녕하세요, {{name}} 님.",
     "myRequest": "내 상담신청",
     "brokers": "모기지 전문가",
     "chat": "채팅",
