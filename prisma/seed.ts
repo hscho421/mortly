@@ -665,8 +665,13 @@ async function main() {
     await seedMock();
   } else if (mode === "empty") {
     await seedEmpty();
+  } else if (mode === "clean") {
+    // Wipe-only: every table dropped, no accounts/settings recreated.
+    // Use this to reset prod-like environments before manually creating
+    // the first admin via /api/admin/users/create or psql.
+    console.log("Clean mode — DB wiped, nothing seeded.");
   } else {
-    console.error(`Unknown mode: "${mode}". Use "mock" or "empty".`);
+    console.error(`Unknown mode: "${mode}". Use "mock", "empty", or "clean".`);
     process.exit(1);
   }
 }

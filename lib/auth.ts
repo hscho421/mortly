@@ -48,6 +48,17 @@ export async function revokeUserSessions(userId: string): Promise<void> {
   sessionDbCache.delete(userId);
 }
 
+/**
+ * Drop the cached DB snapshot for a user so the next `session` callback
+ * re-reads from Postgres. Use this after mutating fields the session
+ * callback projects into the session (`role`, `publicId`, `status`),
+ * when bumping `tokenVersion` would be too aggressive (it'd invalidate
+ * the user's existing JWT and log them out).
+ */
+export function invalidateSessionDbCache(userId: string): void {
+  sessionDbCache.delete(userId);
+}
+
 export function createAuthOptions(acceptedLegalVersion?: string | null): NextAuthOptions {
   return {
     providers: [

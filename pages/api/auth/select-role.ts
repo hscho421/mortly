@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { encode } from "next-auth/jwt";
-import { authOptions } from "@/lib/auth";
+import { authOptions, invalidateSessionDbCache } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { isAllowedOrigin } from "@/lib/origin";
 import { normalizeEmail } from "@/lib/normalizeEmail";
@@ -72,6 +72,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       preferences: newPrefs,
     },
   });
+
+  // Drop the cached DB snapshot so the very next /api/auth/session call
+  // (the page calls update() right after this returns) re-reads the new
+  // role from Postgres. Without this the session callback serves the
+  // pre-update role for up to 5 seconds — long enough that the redirect
+  // to /broker/dashboard renders as a borrower.
+  invalidateSessionDbCache(user.id);
 
   // Mobile clients store the raw session token themselves; web clients use
   // the HttpOnly cookie set by NextAuth. Returning a long-lived JWT in the

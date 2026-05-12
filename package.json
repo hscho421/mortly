@@ -12,6 +12,7 @@
     "seed": "npx tsx prisma/seed.ts",
     "seed:mock": "npm run seed -- mock",
     "seed:empty": "npm run seed -- empty",
+    "seed:clean": "npm run seed -- clean",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run tests/unit",
