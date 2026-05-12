@@ -574,11 +574,13 @@ const PersonRowView = memo(function PersonRowView({
         <div className="min-w-0">
           <div className="font-medium flex items-center gap-1.5">
             {u.name || <span className="text-sage-500">—</span>}
-            {u.broker && (
+            {u.broker ? (
               <ABadge tone={toneForVerification(u.broker.verificationStatus)}>
                 {u.broker.verificationStatus}
               </ABadge>
-            )}
+            ) : u.role === "BROKER" ? (
+              <ABadge tone="neutral">NO PROFILE</ABadge>
+            ) : null}
           </div>
           <div className="text-[11px] text-sage-500 truncate">{u.email}</div>
         </div>

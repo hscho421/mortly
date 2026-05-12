@@ -12,12 +12,12 @@ import type { NextApiRequest } from "next";
 function buildAllowlist(): Set<string> {
   const out = new Set<string>();
   const primary = process.env.NEXTAUTH_URL;
-  if (primary) out.add(normalizeOrigin(primary));
+  if (primary) addWithWwwSibling(out, normalizeOrigin(primary));
   const extra = process.env.ADDITIONAL_ALLOWED_ORIGINS;
   if (extra) {
     for (const o of extra.split(",")) {
       const trimmed = o.trim();
-      if (trimmed) out.add(normalizeOrigin(trimmed));
+      if (trimmed) addWithWwwSibling(out, normalizeOrigin(trimmed));
     }
   }
   // Local dev / preview fallbacks — only added when not in production.
@@ -26,6 +26,26 @@ function buildAllowlist(): Set<string> {
     out.add("http://127.0.0.1:3000");
   }
   return out;
+}
+
+/**
+ * Add `origin` plus its `www.`-prefix sibling (or its de-`www.`'d sibling) so
+ * a mismatch between `NEXTAUTH_URL` and the host the user typed never silently
+ * blocks every mutating request with a 403. Apex ↔ www on the same domain are
+ * effectively the same origin from a CSRF standpoint.
+ */
+function addWithWwwSibling(set: Set<string>, origin: string): void {
+  set.add(origin);
+  try {
+    const u = new URL(origin);
+    if (u.host.startsWith("www.")) {
+      set.add(`${u.protocol}//${u.host.slice(4)}`);
+    } else {
+      set.add(`${u.protocol}//www.${u.host}`);
+    }
+  } catch {
+    // origin wasn't a parseable URL; nothing to mirror.
+  }
 }
 
 function normalizeOrigin(raw: string): string {

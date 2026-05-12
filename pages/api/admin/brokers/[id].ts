@@ -75,11 +75,14 @@ export default withAdmin(async (req, res, session) => {
       return res.status(404).json({ error: "Broker not found" });
     }
 
-    // Two-admin gate for VERIFIED: a single admin can RECOMMEND verification
-    // (creates a RECOMMEND_VERIFY_BROKER audit row) but the actual VERIFIED
-    // flip must be performed by a different admin. Stops a single rogue or
-    // compromised admin account from minting fake verified brokers at scale.
-    if (verificationStatus === "VERIFIED") {
+    // Two-admin gate for VERIFIED — opt-in via env flag. When enabled,
+    // a single admin can only RECOMMEND verification (creates a
+    // RECOMMEND_VERIFY_BROKER audit row); the actual VERIFIED flip must
+    // be performed by a different admin, blocking a single rogue or
+    // compromised admin from minting fake verified brokers at scale.
+    // Disabled by default so single-admin deployments aren't blocked.
+    const requireDualReview = process.env.BROKER_VERIFY_REQUIRES_TWO_ADMINS === "true";
+    if (requireDualReview && verificationStatus === "VERIFIED") {
       const recommendation = await prisma.adminAction.findFirst({
         where: {
           action: "RECOMMEND_VERIFY_BROKER",
