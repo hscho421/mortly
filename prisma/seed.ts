@@ -583,7 +583,7 @@ async function seedE2EFixtures(passwordHash: string) {
 
 // ─── Empty seed ───────────────────────────────────────────────
 async function seedEmpty() {
-  const hash = await bcrypt.hash("123", 10);
+  const hash = await bcrypt.hash("password123", 10);
   let pubIdx = 900;
 
   // Admin
@@ -645,7 +645,7 @@ async function seedEmpty() {
     });
   }
 
-  console.log("Empty seed complete! All passwords: 123");
+  console.log("Empty seed complete! All passwords: password123");
   console.log("\nAccounts:");
   console.log("  Admin:    admin@test.com");
   console.log("  Borrower: borrower1@test.com / borrower2@test.com");
