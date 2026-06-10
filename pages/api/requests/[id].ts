@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { validateProductTypes } from "@/lib/requestConfig";
+import { notifyConversations } from "@/lib/realtime";
 import { withAuth } from "@/lib/withAuth";
 import { assertOptionalString, assertOptionalBoundedJson, ValidationError } from "@/lib/validate";
 
@@ -99,7 +100,7 @@ export default withAuth(async (req, res, session) => {
         return res.status(400).json({ error: "Only status CLOSED is allowed" });
       }
 
-      const updated = await prisma.$transaction(async (tx) => {
+      const { updatedReq, closedConvoIds } = await prisma.$transaction(async (tx) => {
         const updatedReq = await tx.borrowerRequest.update({
           where: { id: request.id },
           data: { status },
@@ -128,10 +129,13 @@ export default withAuth(async (req, res, session) => {
           });
         }
 
-        return updatedReq;
+        return { updatedReq, closedConvoIds: activeConversations.map((c) => c.id) };
       });
 
-      return res.status(200).json(updated);
+      // Nudge each affected thread to reflect the close + system message.
+      notifyConversations(closedConvoIds);
+
+      return res.status(200).json(updatedReq);
     }
 
     if (req.method === "PATCH") {

@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { notifyConversation } from "@/lib/realtime";
 import { withAuth } from "@/lib/withAuth";
 
 export default withAuth(async (req, res, session) => {
@@ -154,6 +155,9 @@ export default withAuth(async (req, res, session) => {
         where: { id },
         data: { status: "CLOSED" },
       });
+
+      // Nudge the other party's open thread to reflect the closed state.
+      notifyConversation(id);
 
       return res.status(200).json(updated);
     }

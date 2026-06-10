@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getSettingInt } from "@/lib/settings";
 import { sendPushToUsers, messagePush } from "@/lib/push";
+import { notifyConversation } from "@/lib/realtime";
 import { withAuth } from "@/lib/withAuth";
 
 // 30 messages/min per sender — enough for normal back-and-forth, blocks
@@ -122,6 +123,10 @@ export default withAuth(async (req, res, session) => {
         });
         return m;
       });
+
+      // Content-free realtime nudge so the recipient's open thread refetches
+      // via the authenticated API. No message body crosses the anon transport.
+      notifyConversation(conversationId);
 
       // Fire-and-forget push to the other participant. Title must be the
       // sender's personal name (broker.user.name), not the brokerage name —

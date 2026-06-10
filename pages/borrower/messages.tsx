@@ -185,52 +185,40 @@ export default function BorrowerMessagesPage() {
     }
   }, [router.query.id, activeId, fetchActiveConversation]);
 
-  /* ---- Supabase Realtime for instant messages ---- */
+  /* ---- Supabase Realtime: content-free "sync" nudge → authenticated refetch ----
+   * Chat content is NEVER delivered over the anon-key transport. The server
+   * broadcasts an empty `sync` event when a message is sent or the conversation
+   * status changes; we then refetch the thread through the participant-gated
+   * GET /api/conversations/[id] (merging new messages by id, exactly like the
+   * 5s poll below, which remains the fallback). This is what lets Row-Level
+   * Security stay deny-all on public.messages / public.conversations. */
   useEffect(() => {
     if (!activeId || authStatus !== "authenticated") return;
     if (!isSupabaseConfigured) return;
 
     const channel = supabase
       .channel(`chat-${activeId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversationId=eq.${activeId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          // Only add if we don't already have it (e.g. from optimistic update)
-          setMessages((prev) =>
-            prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]
+      .on("broadcast", { event: "sync" }, async () => {
+        try {
+          const res = await fetch(`/api/conversations/${activeId}`);
+          if (!res.ok) return;
+          const data: ConversationWithParticipants = await res.json();
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const incoming = data.messages.filter((m) => !existingIds.has(m.id));
+            return incoming.length === 0 ? prev : [...prev, ...incoming];
+          });
+          setConversation((prev: ConversationWithParticipants | null) =>
+            prev ? { ...prev, status: data.status } : prev
           );
-          // Refresh conversation list sidebar and navbar badge (skip during active selection to avoid race)
           if (!isSelectingRef.current) {
             fetchConversations();
             window.dispatchEvent(new Event("refresh-unread"));
           }
+        } catch {
+          // Best-effort — the 5s poll backstops every update.
         }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "conversations",
-          filter: `id=eq.${activeId}`,
-        },
-        (payload) => {
-          const updated = payload.new as { status: string };
-          if (updated.status === "CLOSED") {
-            setConversation((prev: ConversationWithParticipants | null) =>
-              prev ? { ...prev, status: "CLOSED" as const } : prev
-            );
-            fetchConversations();
-          }
-        }
-      )
+      })
       .subscribe();
 
     return () => {

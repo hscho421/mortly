@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { generateConversationPublicId } from "@/lib/publicId";
 import { sendPushToUsers, brokerInquiryPush, borrowerInquiryPush } from "@/lib/push";
+import { notifyConversation } from "@/lib/realtime";
 import { withAuth } from "@/lib/withAuth";
 
 export default withAuth(async (req, res, session) => {
@@ -316,6 +317,8 @@ export default withAuth(async (req, res, session) => {
 
       // Fire-and-forget push to the borrower (only on new conversation)
       if (isNew) {
+        // Nudge the new thread (carries the broker's intro message) to refetch.
+        notifyConversation(conversation.id);
         sendPushToUsers({
           userIds: [request.borrowerId],
           content: brokerInquiryPush(

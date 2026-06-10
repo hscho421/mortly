@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
+import { notifyConversations } from "@/lib/realtime";
 import {
   buildAdminActionCreate,
   MAX_REASON_LEN,
@@ -86,6 +87,7 @@ export default withAdmin(async (req, res, session) => {
       updateData.rejectionReason = null;
     }
 
+    const closedConvoIds: string[] = [];
     const updated = await prisma.$transaction(async (tx) => {
       const updatedReq = await tx.borrowerRequest.update({
         where: { id: request.id },
@@ -108,6 +110,7 @@ export default withAdmin(async (req, res, session) => {
                 body: "This request has been closed by an administrator.",
               },
             });
+            closedConvoIds.push(convo.id);
           }
 
           await tx.conversation.updateMany({
@@ -119,6 +122,9 @@ export default withAdmin(async (req, res, session) => {
 
       return updatedReq;
     });
+
+    // Nudge each affected thread to reflect the admin close + system message.
+    if (closedConvoIds.length > 0) notifyConversations(closedConvoIds);
 
     // Determine the admin action type
     let actionType = "UPDATE_REQUEST_STATUS";

@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
+import { notifyConversation } from "@/lib/realtime";
 import {
   buildAdminActionCreate,
   MAX_REASON_LEN,
@@ -136,6 +137,9 @@ export default withAdmin(async (req, res, session) => {
         }),
       ),
     ]);
+
+    // Nudge both participants' open threads to reflect the admin close.
+    notifyConversation(conversation.id);
 
     return res.status(200).json(updated);
   }
