@@ -26,7 +26,6 @@ interface ConversationBroker {
       id: string;
       publicId: string;
       name: string | null;
-      email: string;
     };
   };
 }

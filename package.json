@@ -28,6 +28,10 @@
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
   },
+  "overrides": {
+    "protobufjs": "^7.6.3",
+    "i18next-fs-backend": "^2.6.6"
+  },
   "dependencies": {
     "@prisma/client": "5.22.0",
     "@supabase/supabase-js": "^2.100.1",
@@ -37,7 +41,7 @@
     "expo-server-sdk": "^6.1.0",
     "google-auth-library": "^10.6.2",
     "i18next": "^25.10.10",
-    "next": "^16.2.1",
+    "next": "^16.2.9",
     "next-auth": "^4.24.13",
     "next-i18next": "^15.4.3",
     "next-sitemap": "^4.2.3",

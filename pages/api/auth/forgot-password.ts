@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { randomBytes, createHash, randomInt } from "crypto";
 import prisma from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
-import { authLimiter, getClientIp } from "@/lib/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { isValidEmail, normalizeEmail } from "@/lib/normalizeEmail";
 
 /**
@@ -22,7 +22,11 @@ export default async function handler(
 
   const start = Date.now();
 
-  const { success } = authLimiter.check(3, `forgot-${getClientIp(req)}`);
+  const { success } = await checkRateLimit({
+    key: `forgot-${getClientIp(req)}`,
+    limit: 3,
+    windowMs: 60_000,
+  });
   if (!success) {
     return res.status(429).json({ message: "Too many requests. Please try again later." });
   }

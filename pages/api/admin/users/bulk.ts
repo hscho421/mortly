@@ -136,11 +136,10 @@ export default withAdmin(async (req, res, session) => {
       ]);
       results.push({ id, ok: true });
     } catch (err) {
-      results.push({
-        id,
-        ok: false,
-        error: err instanceof Error ? err.message : "Update failed",
-      });
+      // Log the raw error server-side, but never return Prisma's message to the
+      // client — it can leak schema/constraint internals.
+      console.error("[admin/users/bulk] update failed for", id, err);
+      results.push({ id, ok: false, error: "Update failed" });
     }
   }
 

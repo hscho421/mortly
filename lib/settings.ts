@@ -10,6 +10,9 @@ const DEFAULTS: Record<string, string> = {
   free_tier_credits: "0",
   basic_tier_credits: "5",
   pro_tier_credits: "20",
+  // PIPEDA retention: days after a request goes terminal (EXPIRED/CLOSED/
+  // REJECTED) before the purge cron anonymizes its financial PII + chat bodies.
+  request_retention_days: "180",
 };
 
 interface CacheEntry {

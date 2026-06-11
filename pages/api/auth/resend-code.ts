@@ -4,7 +4,7 @@ import {
   generateVerificationCode,
   sendVerificationCode,
 } from "@/lib/email";
-import { authLimiter, getClientIp } from "@/lib/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { isValidEmail, normalizeEmail } from "@/lib/normalizeEmail";
 
 export default async function handler(
@@ -15,7 +15,11 @@ export default async function handler(
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const { success } = authLimiter.check(3, `resend-${getClientIp(req)}`);
+  const { success } = await checkRateLimit({
+    key: `resend-${getClientIp(req)}`,
+    limit: 3,
+    windowMs: 60_000,
+  });
   if (!success) {
     return res.status(429).json({ message: "Too many requests. Please try again later." });
   }

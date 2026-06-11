@@ -39,7 +39,10 @@ export default withAuth(async (req, res, session) => {
                   specialties: true,
                   bio: true,
                   user: {
-                    select: { id: true, publicId: true, name: true, email: true },
+                    // Never expose the broker's personal email to the borrower —
+                    // off-platform contact / scraping risk, and no feature uses
+                    // it. Matches conversations/[id].ts + conversations/index.ts.
+                    select: { id: true, publicId: true, name: true },
                   },
                 },
               },

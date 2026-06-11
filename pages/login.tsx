@@ -60,6 +60,16 @@ export default function LoginPage() {
           setIsLoading(false);
           return;
         }
+        if (result.error === "RATE_LIMITED") {
+          setError(
+            t(
+              "auth.tooManyAttempts",
+              "Too many sign-in attempts. Please wait a few minutes and try again.",
+            ),
+          );
+          setIsLoading(false);
+          return;
+        }
         setError(result.error);
         setIsLoading(false);
         return;

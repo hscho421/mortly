@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/auto-close-conversations",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/purge-expired",
+      "schedule": "30 1 * * *"
     }
   ]
 }

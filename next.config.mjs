@@ -3,6 +3,9 @@ import i18nConfig from "./next-i18next.config.js";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Don't advertise the framework/version — removes the `X-Powered-By: Next.js`
+  // fingerprint that helps an attacker target framework-specific CVEs.
+  poweredByHeader: false,
   i18n: i18nConfig.i18n,
   outputFileTracingIncludes: {
     "*": ["./next-i18next.config.js", "./public/locales/**/*"],
@@ -100,6 +103,12 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Cross-origin isolation against XS-Leaks. `allow-popups` is used
+          // (not bare `same-origin`) so redirect/popup-based OAuth and Stripe
+          // flows keep their window references. COEP/CORP are intentionally
+          // omitted — they break the Stripe.js + PostHog cross-origin embeds.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+          { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
           { key: "Permissions-Policy", value: "geolocation=(), microphone=(), camera=(), payment=(self \"https://js.stripe.com\")" },
           { key: "Content-Security-Policy", value: csp },
         ],

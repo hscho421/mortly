@@ -28,6 +28,14 @@ interface SessionDbCacheEntry {
 }
 const sessionDbCache = new Map<string, SessionDbCacheEntry>();
 
+// A valid cost-12 bcrypt hash of a fixed random string. The credentials
+// authorize() path compares the supplied password against THIS when the
+// account doesn't exist (or has no password), so the "no such account" branch
+// spends the same ~bcrypt time as a real failed login — removing the timing
+// oracle that let an attacker enumerate registered emails by latency.
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$cbk8xUXlRdp9dHCj67paL.bLOCBfgVorE2LBF5ASG2BjYQMHRbjte";
+
 /**
  * Bump a user's `tokenVersion`. Every existing JWT for the user becomes
  * invalid the next time it round-trips through the `session` callback.
@@ -90,6 +98,15 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
             where: { email },
           });
 
+          // Always run a bcrypt compare — against the user's real hash, or the
+          // dummy hash when the account is missing / OAuth-only — so the
+          // failure paths take constant time and don't leak account existence
+          // via response latency.
+          const isValid = await compare(
+            credentials.password,
+            user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+          );
+
           if (!user) {
             throw new Error("Invalid email or password");
           }
@@ -98,7 +115,6 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
             throw new Error("GOOGLE_ACCOUNT");
           }
 
-          const isValid = await compare(credentials.password, user.passwordHash);
           if (!isValid) {
             throw new Error("Invalid email or password");
           }
@@ -126,7 +142,7 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
       }),
     ],
     callbacks: {
-      async signIn({ user, account }) {
+      async signIn({ user, account, profile }) {
         if (account?.provider !== "google" && account?.provider !== "apple") {
           return true;
         }
@@ -135,6 +151,17 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
         if (!email) return false;
         // Make sure downstream lookups see the canonicalized form too.
         user.email = email;
+
+        // Account-takeover guard: refuse OAuth carrying an UNVERIFIED email
+        // before any auto-link / create. The raw provider profile exposes the
+        // claim (Google: boolean; Apple: boolean OR "true"/"false"). Mirrors
+        // the mobile-oauth.ts fix so neither sign-in path can link a victim's
+        // existing password account via an unverified email.
+        const rawVerified = (profile as { email_verified?: boolean | string } | undefined)
+          ?.email_verified;
+        if (rawVerified !== true && rawVerified !== "true") {
+          return false;
+        }
 
         const providerField = account.provider === "google" ? "googleId" : "appleId";
         const providerId = account.providerAccountId;

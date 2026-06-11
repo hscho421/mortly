@@ -257,6 +257,28 @@ export default withAuth(async (req, res, session) => {
         return res.status(403).json({ error: "Cannot send intro to this borrower" });
       }
 
+      // Validate the optional intro message with the SAME guards as
+      // /api/messages. This is a second user-controlled message-write path;
+      // without these checks a verified broker could seed the thread with a
+      // spoofed "[Admin] ..." system message or a >5000-char body that breaks
+      // the DB cap. Mirror messages/index.ts exactly.
+      let introBody: string | undefined;
+      if (message !== undefined && message !== null && message !== "") {
+        if (typeof message !== "string") {
+          return res.status(400).json({ error: "message must be a string" });
+        }
+        const trimmed = message.trim();
+        if (trimmed.length === 0 || trimmed.length > 5000) {
+          return res
+            .status(400)
+            .json({ error: "Message must be between 1 and 5000 characters" });
+        }
+        if (/^\s*\[(?:admin|system)\]/i.test(trimmed)) {
+          return res.status(400).json({ error: "Message cannot start with a system tag" });
+        }
+        introBody = trimmed;
+      }
+
       const isPremium = broker.subscriptionTier === "PREMIUM";
 
       // All conversation creation goes through a transaction to prevent
@@ -296,9 +318,9 @@ export default withAuth(async (req, res, session) => {
           },
         });
 
-        if (message) {
+        if (introBody) {
           await tx.message.create({
-            data: { conversationId: conv.id, senderId: session.user.id, body: message },
+            data: { conversationId: conv.id, senderId: session.user.id, body: introBody },
           });
           // Bump brokerMsgCount in the same transaction — the spam guard in
           // /api/messages reads this denormalized counter, and counter drift
@@ -323,7 +345,7 @@ export default withAuth(async (req, res, session) => {
           userIds: [request.borrowerId],
           content: brokerInquiryPush(
             broker.brokerageName || "A broker",
-            typeof message === "string" ? message : undefined
+            introBody
           ),
           data: {
             type: "conversation",

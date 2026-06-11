@@ -3,6 +3,17 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+// Safety guard: this seed wipes data and creates demo accounts with
+// well-known passwords (e.g. "password123"). It must NEVER run against a
+// production database. Require an explicit override to proceed in production.
+if (process.env.NODE_ENV === "production" && process.env.ALLOW_PROD_SEED !== "1") {
+  // eslint-disable-next-line no-console
+  console.error(
+    "[seed] Refusing to run with NODE_ENV=production. This creates demo accounts with default passwords. Set ALLOW_PROD_SEED=1 only if you are absolutely sure.",
+  );
+  process.exit(1);
+}
+
 const mode = process.argv[2] ?? "mock";
 
 // ─── Helpers ──────────────────────────────────────────────────

@@ -54,12 +54,20 @@ describe("checkRateLimit (Phase 7: Vercel KV)", () => {
     expect(res.remaining).toBe(0);
   });
 
-  it("fails open if KV throws (doesn't lock admins out on outage)", async () => {
+  it("degrades to the in-memory cap on KV error (does NOT fail open)", async () => {
     process.env.KV_REST_API_URL = "https://fake-kv.example.com";
-    kvMock.incr.mockRejectedValueOnce(new Error("network down"));
+    // KV always errors — every call must fall back to the per-lambda counter
+    // and the limit must still be enforced (the old behavior returned
+    // success:true unconditionally, which dropped the limit to unlimited).
+    kvMock.incr.mockRejectedValue(new Error("network down"));
     const mod = await import("@/lib/rate-limit");
-    const res = await mod.checkRateLimit({ key: "admin-3", limit: 10, windowMs: 60000 });
-    expect(res.success).toBe(true);
+    const key = "admin-err";
+    const r1 = await mod.checkRateLimit({ key, limit: 2, windowMs: 1000 });
+    const r2 = await mod.checkRateLimit({ key, limit: 2, windowMs: 1000 });
+    const r3 = await mod.checkRateLimit({ key, limit: 2, windowMs: 1000 });
+    expect(r1.success).toBe(true);
+    expect(r2.success).toBe(true);
+    expect(r3.success).toBe(false);
   });
 
   it("scopes keys so different admins don't share a counter", async () => {

@@ -17,20 +17,40 @@ export default withAuth(async (req, res, session) => {
   try {
     const broker = await prisma.broker.findUnique({
       where: { userId: session.user.id },
-      select: { id: true },
+      select: { id: true, verificationStatus: true },
     });
-    if (!broker) {
-      return res.status(404).json({ error: "Broker profile not found" });
+    // Mirror the read gate (requests/[id].ts): only VERIFIED brokers may
+    // interact with the marketplace at all.
+    if (!broker || broker.verificationStatus !== "VERIFIED") {
+      return res.status(403).json({ error: "Broker must be verified" });
     }
 
-    // Confirm the request exists before creating a seen row
-    // (avoids dangling records for bad ids).
+    // Brokers navigate by 9-digit publicId (e.g. /broker/requests/123456789),
+    // so resolve publicId OR internal id — same as requests/[id].ts. (The old
+    // id-only lookup silently 404'd every real call.)
+    const lookup = /^\d{9}$/.test(requestId)
+      ? { publicId: requestId }
+      : { id: requestId };
     const request = await prisma.borrowerRequest.findUnique({
-      where: { id: requestId },
-      select: { id: true },
+      where: lookup,
+      select: { id: true, status: true },
     });
     if (!request) {
       return res.status(404).json({ error: "Request not found" });
+    }
+
+    // Mirror the read gate (requests/[id].ts): a broker may mark-seen a request
+    // they can actually view — an OPEN marketplace request, OR any request they
+    // already have a conversation on. Returning 404 for anything else keeps the
+    // existence-oracle + write-IDOR closed.
+    if (request.status !== "OPEN") {
+      const hasConversation = await prisma.conversation.findFirst({
+        where: { requestId: request.id, brokerId: broker.id },
+        select: { id: true },
+      });
+      if (!hasConversation) {
+        return res.status(404).json({ error: "Request not found" });
+      }
     }
 
     await prisma.brokerRequestSeen.upsert({

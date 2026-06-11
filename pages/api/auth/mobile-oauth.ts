@@ -5,6 +5,7 @@ import appleSigninAuth from "apple-signin-auth";
 import prisma from "@/lib/prisma";
 import { generatePublicId } from "@/lib/publicId";
 import { createLegalAcceptanceMetadata } from "@/lib/legal";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 
@@ -28,6 +29,13 @@ async function verifyGoogle(idToken: string): Promise<GoogleIdentity> {
   const payload = ticket.getPayload();
   if (!payload?.sub || !payload.email) {
     throw new Error("Invalid Google token payload");
+  }
+  // SECURITY: never trust an unverified email for account creation/linking.
+  // Without this, a genuinely Google-signed token whose `email` claim is a
+  // victim's address with email_verified=false (e.g. an attacker-administered
+  // Workspace domain) could be linked to the victim's existing Mortly account.
+  if (payload.email_verified !== true) {
+    throw new Error("Google email not verified");
   }
   return {
     providerId: payload.sub,
@@ -64,9 +72,14 @@ async function verifyApple(
   if (!payload?.sub) {
     throw new Error("Invalid Apple token payload");
   }
+  // Apple returns email_verified as boolean OR the string "true"/"false".
+  // Only treat the email as usable for create/link when Apple verified it;
+  // otherwise fall back to the appleId-only path (no email-based linking).
+  const emailVerified =
+    payload.email_verified === true || payload.email_verified === "true";
   return {
     providerId: payload.sub,
-    email: payload.email ? payload.email.toLowerCase() : null,
+    email: payload.email && emailVerified ? payload.email.toLowerCase() : null,
     name: fallbackName,
   };
 }
@@ -82,6 +95,20 @@ export default async function handler(
   const secret = process.env.NEXTAUTH_SECRET;
   if (!secret) {
     return res.status(500).json({ error: "Server auth not configured" });
+  }
+
+  // Per-IP throttle. Every request triggers an external Google/Apple token
+  // verification round-trip BEFORE any other check, so without this the
+  // endpoint is a free cost-amplification / verification-quota-burn surface,
+  // and the session-minting + account-creation paths are uncapped.
+  const { success } = await checkRateLimit({
+    key: `mobile-oauth-${getClientIp(req)}`,
+    limit: 10,
+    windowMs: 60_000,
+  });
+  if (!success) {
+    res.setHeader("Retry-After", "60");
+    return res.status(429).json({ error: "Too many requests. Please try again later." });
   }
 
   try {
@@ -215,8 +242,12 @@ export default async function handler(
       },
     });
   } catch (err) {
-    console.error("Mobile OAuth error:", err);
-    console.error("OAuth verification detail:", err instanceof Error ? err.message : err);
+    // Redacted: never log the raw error/message — OAuth verification failures
+    // can echo token fragments. The error type alone is enough to triage.
+    console.error(
+      "Mobile OAuth error:",
+      err instanceof Error ? err.name : "unknown",
+    );
     return res.status(401).json({ error: "Authentication failed" });
   }
 }
