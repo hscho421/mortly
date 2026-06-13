@@ -3,6 +3,15 @@
 **Status:** Design / not yet implemented · **Created:** 2026-06-14
 **Stack context:** Next.js Pages Router, Prisma/Postgres on Supabase (Pro), NextAuth (JWT), `@supabase/supabase-js` already a dependency, Vercel hosting.
 
+> **Update 2026-06-14 (post-Phase-3):** the original "VERIFIED-only upload" gate
+> (§5/§13) was relaxed to allow **PENDING** brokers to set a photo, so they can
+> complete their profile right after onboarding. Safe because borrowers only ever
+> see brokers who've started conversations (which requires VERIFIED), so an
+> unverified broker's photo is visible only to themselves + admins, and admins
+> review it during verification. Only REJECTED accounts are blocked. Onboarding
+> now redirects to `/broker/profile` (where the upload control lives) instead of
+> the dashboard.
+
 ## 1. Goal & scope
 
 Replace the initials-box avatars in messaging (and broker-facing surfaces) with real **broker** profile photos.

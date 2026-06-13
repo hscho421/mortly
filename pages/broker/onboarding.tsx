@@ -95,7 +95,10 @@ export default function BrokerOnboardingPage() {
       // dashboard would render the "Complete your profile" banner for up to
       // 30s (the polling interval) until the next counter sweep.
       await refreshBrokerData();
-      router.push("/broker/dashboard", undefined, { locale: router.locale });
+      // Land on the profile page (not the dashboard) so the broker can add a
+      // profile photo right after creating their profile — the upload control
+      // lives there and now accepts PENDING brokers.
+      router.push("/broker/profile", undefined, { locale: router.locale });
     } catch (err) {
       posthog.captureException(err);
       setError(t("common.unexpectedError"));

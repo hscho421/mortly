@@ -33,10 +33,15 @@ export default withAuth(
     if (!broker) {
       return res.status(404).json({ error: "Broker profile not found" });
     }
-    if (broker.verificationStatus !== "VERIFIED") {
+    // PENDING brokers may set a photo (so they can complete their profile right
+    // after onboarding). It stays invisible to borrowers until verified —
+    // borrowers only ever see brokers who've started conversations, which
+    // requires VERIFIED — and admins review it during verification. Only
+    // REJECTED accounts are blocked.
+    if (broker.verificationStatus === "REJECTED") {
       return res
         .status(403)
-        .json({ error: "Only verified brokers can set a profile photo", code: "NOT_VERIFIED" });
+        .json({ error: "This account cannot set a profile photo", code: "REJECTED" });
     }
 
     const path = brokerAvatarPath(session.user.id);

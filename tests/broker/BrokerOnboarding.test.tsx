@@ -111,7 +111,7 @@ afterEach(() => {
 });
 
 describe("BrokerOnboardingPage — H1 regression", () => {
-  it("refreshes BrokerDataContext before navigating to dashboard", async () => {
+  it("refreshes BrokerDataContext before navigating to the profile page", async () => {
     render(
       <BrokerDataProvider>
         <BrokerOnboardingPage />
@@ -133,17 +133,18 @@ describe("BrokerOnboardingPage — H1 regression", () => {
     const save = screen.getByRole("button", { name: /broker\.save/i });
     fireEvent.click(save);
 
-    // The router must be pushed to /broker/dashboard AFTER profile creation.
+    // Post-onboarding we land on /broker/profile (not the dashboard) so the
+    // broker can add a profile photo right after creating their profile.
     await waitFor(() =>
       expect(routerPush).toHaveBeenCalledWith(
-        "/broker/dashboard",
+        "/broker/profile",
         undefined,
         { locale: "ko" },
       ),
     );
 
     // And critically: the profile must have been re-fetched after the POST
-    // (proving the refresh() call), so the dashboard inherits a non-null
+    // (proving the refresh() call), so the shell inherits a non-null
     // profile instead of the stale 404 cache. We assert by counting the
     // GETs to /api/brokers/profile: there should be at least 2 (initial
     // mount + post-onboarding refresh).

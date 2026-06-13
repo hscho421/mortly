@@ -276,7 +276,7 @@ export default function BrokerProfilePage() {
             <p className="font-body text-sm font-semibold text-forest-800">
               {t("broker.profilePhoto", "Profile photo")}
             </p>
-            {verificationStatus === "VERIFIED" ? (
+            {verificationStatus !== "REJECTED" ? (
               <>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <label className="btn-secondary cursor-pointer text-sm py-1.5 px-3">
@@ -310,7 +310,7 @@ export default function BrokerProfilePage() {
               </>
             ) : (
               <p className="mt-1 font-body text-xs text-sage-400">
-                {t("broker.avatarVerifiedOnly", "Available once your account is verified.")}
+                {t("broker.avatarUnavailable", "Profile photo isn't available for this account.")}
               </p>
             )}
           </div>

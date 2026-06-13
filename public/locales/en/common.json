@@ -620,7 +620,7 @@
     "avatarUploadFailed": "Upload failed. Please try again.",
     "avatarRemoveFailed": "Could not remove the photo.",
     "avatarHint": "JPG, PNG or WebP. Squared and resized automatically.",
-    "avatarVerifiedOnly": "Available once your account is verified.",
+    "avatarUnavailable": "Profile photo isn't available for this account.",
     "dashboardSubtitle": "Here is an overview of your mortly activity.",
     "dashboardLoading": "Loading your dashboard...",
     "verifiedTitle": "Congratulations! You're Verified",

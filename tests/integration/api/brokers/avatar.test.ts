@@ -44,13 +44,21 @@ describe("POST /api/brokers/avatar/upload-url", () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it("403s an unverified broker", async () => {
-    prismaMock.broker.findUnique.mockResolvedValue({ verificationStatus: "PENDING" } as never);
+  it("403s a REJECTED broker", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue({ verificationStatus: "REJECTED" } as never);
     const { req, res } = makeReqRes({ method: "POST" });
     await uploadUrlHandler(req, res);
     expect(res.statusCode).toBe(403);
-    expect(jsonBody<{ code?: string }>(res).code).toBe("NOT_VERIFIED");
+    expect(jsonBody<{ code?: string }>(res).code).toBe("REJECTED");
     expect(createSignedUploadUrl).not.toHaveBeenCalled();
+  });
+
+  it("allows a PENDING broker (can set a photo right after onboarding)", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue({ verificationStatus: "PENDING" } as never);
+    const { req, res } = makeReqRes({ method: "POST" });
+    await uploadUrlHandler(req, res);
+    expect(res.statusCode).toBe(200);
+    expect(createSignedUploadUrl).toHaveBeenCalled();
   });
 
   it("returns a signed upload URL for a verified broker, scoped to their own path", async () => {
