@@ -36,4 +36,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 /** True when supabase env is wired up and Realtime can be used. */
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// When the public env vars are absent, fall back to an inert placeholder
+// client. `createClient("", "")` throws "supabaseUrl is required" at MODULE
+// LOAD, which crashes Next's page-data collection for any page that imports
+// this (e.g. /borrower/messages) — failing the whole build on a host that
+// hasn't set NEXT_PUBLIC_SUPABASE_* (and NEXT_PUBLIC vars must exist at BUILD
+// time). Every consumer guards on `isSupabaseConfigured` before touching
+// `supabase`, so the placeholder is constructed but never actually contacted.
+export const supabase = createClient(
+  supabaseUrl || "https://placeholder.supabase.co",
+  supabaseAnonKey || "placeholder-anon-key",
+);
