@@ -39,6 +39,7 @@ export default withAuth(async (req, res, session) => {
                   specialties: true,
                   bio: true,
                   profilePhoto: true,
+                  updatedAt: true,
                   user: {
                     // Never expose the broker's personal email to the borrower —
                     // off-platform contact / scraping risk, and no feature uses

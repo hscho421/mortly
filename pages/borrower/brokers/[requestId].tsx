@@ -24,6 +24,7 @@ interface ConversationBroker {
     specialties: string | null;
     bio: string | null;
     profilePhoto: string | null;
+    updatedAt: string;
     user: {
       id: string;
       publicId: string;
@@ -176,6 +177,7 @@ export default function BrokerComparison() {
                       <Avatar
                         name={broker.user.name || broker.brokerageName}
                         photoPath={broker.profilePhoto}
+                        version={broker.updatedAt}
                         size={48}
                         className="text-base sm:text-lg"
                       />

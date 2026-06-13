@@ -41,6 +41,7 @@ export interface BrokerProfile {
   subscriptionTier: "FREE" | "BASIC" | "PRO" | "PREMIUM" | string;
   responseCredits: number;
   mortgageCategory: "RESIDENTIAL" | "COMMERCIAL" | "BOTH" | string;
+  updatedAt?: string;
   user: { id: string; name: string | null; email: string };
 }
 

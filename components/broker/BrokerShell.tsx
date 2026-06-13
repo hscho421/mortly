@@ -171,6 +171,7 @@ export default function BrokerShell({
         brokerageName={profile?.brokerageName ?? null}
         subscriptionTier={profile?.subscriptionTier ?? null}
         photoPath={profile?.profilePhoto ?? null}
+        photoVersion={profile?.updatedAt ?? null}
         className="hidden md:flex"
       />
 
@@ -197,6 +198,7 @@ export default function BrokerShell({
             brokerageName={profile?.brokerageName ?? null}
             subscriptionTier={profile?.subscriptionTier ?? null}
             photoPath={profile?.profilePhoto ?? null}
+            photoVersion={profile?.updatedAt ?? null}
           />
         </div>
       )}
@@ -264,6 +266,7 @@ function Sidebar({
   brokerageName,
   subscriptionTier,
   photoPath,
+  photoVersion,
   className = "",
 }: {
   active: BrokerNavKey;
@@ -272,6 +275,7 @@ function Sidebar({
   brokerageName: string | null;
   subscriptionTier: string | null;
   photoPath?: string | null;
+  photoVersion?: string | null;
   className?: string;
 }) {
   const { t } = useTranslation("common");
@@ -346,7 +350,7 @@ function Sidebar({
 
       <div className="border-t border-cream-300 p-3">
         <div className="flex items-center gap-3 px-1 py-2">
-          <Avatar name={brokerName} photoPath={photoPath} size={36} />
+          <Avatar name={brokerName} photoPath={photoPath} version={photoVersion} size={36} />
           <div className="min-w-0 flex-1">
             <div className="truncate font-body text-[13px] font-semibold text-forest-800">
               {brokerName}

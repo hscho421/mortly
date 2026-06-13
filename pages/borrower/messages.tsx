@@ -41,6 +41,7 @@ interface ConversationListItem {
     brokerageName: string;
     verificationStatus: string;
     profilePhoto?: string | null;
+    updatedAt?: string;
     user: { id: string; publicId?: string; name: string | null };
   };
   borrower: { id: string; name: string | null };
@@ -515,7 +516,7 @@ export default function BorrowerMessagesPage() {
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
                       <div className="relative shrink-0">
-                        <Avatar name={brokerName} photoPath={conv.broker.profilePhoto} size={40} />
+                        <Avatar name={brokerName} photoPath={conv.broker.profilePhoto} version={conv.broker.updatedAt} size={40} />
                         {hasUnread && (
                           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-error-500 px-1 font-body text-[10px] font-bold text-white">
                             {conv.unreadCount! > 9 ? "9+" : conv.unreadCount}
@@ -631,6 +632,7 @@ export default function BorrowerMessagesPage() {
                   <Avatar
                     name={conversation.broker.user.name || conversation.broker.brokerageName}
                     photoPath={conversation.broker.profilePhoto}
+                    version={conversation.broker.updatedAt as unknown as string}
                     size={40}
                   />
 

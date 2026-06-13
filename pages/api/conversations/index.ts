@@ -74,6 +74,7 @@ export default withAuth(async (req, res, session) => {
               brokerageName: true,
               verificationStatus: true,
               profilePhoto: true,
+              updatedAt: true,
               user: {
                 select: { id: true, publicId: true, name: true },
               },

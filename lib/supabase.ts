@@ -67,7 +67,16 @@ export function avatarPublicUrl(path: string, version?: string | number): string
  * Serving a `size`px square instead of the full image keeps egress tiny for
  * chat icons / cards. Falls back to the plain public URL if not configured.
  */
-export function avatarTransformUrl(path: string, size: number): string | null {
+export function avatarTransformUrl(
+  path: string,
+  size: number,
+  version?: string | number | null,
+): string | null {
   if (!supabaseUrl || !path) return null;
-  return `${supabaseUrl}/storage/v1/render/image/public/${AVATAR_BUCKET}/${path}?width=${size}&height=${size}&resize=cover`;
+  let url = `${supabaseUrl}/storage/v1/render/image/public/${AVATAR_BUCKET}/${path}?width=${size}&height=${size}&resize=cover`;
+  // Cache-buster keyed on the broker's updatedAt: the object path is
+  // deterministic (overwritten on replace), so without this the CDN/browser
+  // would serve the stale variant. Changing photo bumps updatedAt → new URL.
+  if (version != null) url += `&v=${encodeURIComponent(String(version))}`;
+  return url;
 }

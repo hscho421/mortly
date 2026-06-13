@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { avatarTransformUrl } from "@/lib/supabase";
 
 /**
@@ -15,15 +15,21 @@ export default function Avatar({
   name,
   photoPath,
   size = 40,
+  version,
   className = "",
 }: {
   name?: string | null;
   photoPath?: string | null;
   size?: number;
+  /** Cache-buster (e.g. broker.updatedAt) so a replaced photo isn't stale. */
+  version?: string | number | null;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const url = photoPath ? avatarTransformUrl(photoPath, size * 2) : null; // 2x for retina
+  const url = photoPath ? avatarTransformUrl(photoPath, size * 2, version) : null; // 2x for retina
+  // Retry when the URL changes (e.g. photo replaced → new version) instead of
+  // staying stuck on the fallback from a prior load error.
+  useEffect(() => setFailed(false), [url]);
   const initial = (name?.trim()?.[0] ?? "?").toUpperCase();
 
   const box = `inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${className}`;
