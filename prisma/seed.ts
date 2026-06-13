@@ -63,16 +63,29 @@ const BROKERAGE_NAMES = [
   "Keystone Mortgage Co.", "Horizon Rate Group", "Metro Home Finance",
 ];
 
-const PROVINCES = ["ON", "BC", "AB", "QC", "MB", "SK", "NS", "NB"];
+// Full province names, matching the UI dropdowns + lib/requestConfig PROVINCES
+// (and now the server validation). Mock data must look like real data — the
+// form submits full names, so seeding 2-letter codes produced rows that a
+// broker's province filter ("Ontario") could never match.
+const PROVINCES = [
+  "Ontario",
+  "British Columbia",
+  "Alberta",
+  "Quebec",
+  "Manitoba",
+  "Saskatchewan",
+  "Nova Scotia",
+  "New Brunswick",
+];
 const CITIES: Record<string, string[]> = {
-  ON: ["Toronto", "Ottawa", "Mississauga", "Brampton", "Hamilton", "London", "Markham", "Vaughan"],
-  BC: ["Vancouver", "Victoria", "Burnaby", "Richmond", "Surrey", "Kelowna"],
-  AB: ["Calgary", "Edmonton", "Red Deer", "Lethbridge"],
-  QC: ["Montreal", "Quebec City", "Laval", "Gatineau"],
-  MB: ["Winnipeg", "Brandon"],
-  SK: ["Saskatoon", "Regina"],
-  NS: ["Halifax", "Dartmouth"],
-  NB: ["Fredericton", "Moncton", "Saint John"],
+  Ontario: ["Toronto", "Ottawa", "Mississauga", "Brampton", "Hamilton", "London", "Markham", "Vaughan"],
+  "British Columbia": ["Vancouver", "Victoria", "Burnaby", "Richmond", "Surrey", "Kelowna"],
+  Alberta: ["Calgary", "Edmonton", "Red Deer", "Lethbridge"],
+  Quebec: ["Montreal", "Quebec City", "Laval", "Gatineau"],
+  Manitoba: ["Winnipeg", "Brandon"],
+  Saskatchewan: ["Saskatoon", "Regina"],
+  "Nova Scotia": ["Halifax", "Dartmouth"],
+  "New Brunswick": ["Fredericton", "Moncton", "Saint John"],
 };
 const SPECIALTIES = [
   "First-time buyers", "Refinancing", "Self-employed", "Commercial",
@@ -542,12 +555,12 @@ async function seedE2EFixtures(passwordHash: string) {
       verificationStatus: "VERIFIED",
       subscriptionTier: "BASIC",
       responseCredits: 10,
-      province: "ON",
+      province: "Ontario",
     },
     create: {
       userId: brokerUser.id,
       brokerageName: "E2E Test Brokerage",
-      province: "ON",
+      province: "Ontario",
       licenseNumber: "E2E12345",
       phone: "+14165550000",
       mortgageCategory: "BOTH",
@@ -573,7 +586,7 @@ async function seedE2EFixtures(passwordHash: string) {
       borrowerId: borrower.id,
       mortgageCategory: "RESIDENTIAL",
       productTypes: ["NEW_MORTGAGE"],
-      province: "ON",
+      province: "Ontario",
       city: "Toronto",
       details: {
         purposeOfUse: ["OWNER_OCCUPIED"],
@@ -612,10 +625,10 @@ async function seedEmpty() {
 
   // Brokers — one per tier
   for (const [email, name, tier, credits, province, license] of [
-    ["broker-free@test.com", "David Park", "FREE", 0, "ON", "M08009001"],
-    ["broker-basic@test.com", "Sarah Lee", "BASIC", 5, "ON", "M08001234"],
-    ["broker-pro@test.com", "Mike Chen", "PRO", 20, "BC", "X300567"],
-    ["broker-premium@test.com", "Jessica Wang", "PREMIUM", 999, "AB", "A20045678"],
+    ["broker-free@test.com", "David Park", "FREE", 0, "Ontario", "M08009001"],
+    ["broker-basic@test.com", "Sarah Lee", "BASIC", 5, "Ontario", "M08001234"],
+    ["broker-pro@test.com", "Mike Chen", "PRO", 20, "British Columbia", "X300567"],
+    ["broker-premium@test.com", "Jessica Wang", "PREMIUM", 999, "Alberta", "A20045678"],
   ] as const) {
     const u = await prisma.user.create({
       data: { email, passwordHash: hash, role: "BROKER", name, publicId: genPublicId(pubIdx++), emailVerified: true },

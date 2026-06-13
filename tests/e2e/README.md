@@ -26,7 +26,7 @@ npm run seed:mock
 | Email | Password | Role | Notes |
 |---|---|---|---|
 | `seed-e2e-borrower@mortly.test` | `password123` | BORROWER | verified |
-| `seed-e2e-broker@mortly.test` | `password123` | BROKER | VERIFIED, BASIC tier, 10 credits, province ON |
+| `seed-e2e-broker@mortly.test` | `password123` | BROKER | VERIFIED, BASIC tier, 10 credits, province Ontario |
 
 Plus one pre-existing OPEN request (`publicId: 999000010`) owned by the E2E borrower — the flow uses this instead of creating-then-approving, keeping the test simple and deterministic.
 

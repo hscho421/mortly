@@ -86,7 +86,7 @@ test.describe.serial("Borrower request → broker reply full flow", () => {
       data: {
         mortgageCategory: "RESIDENTIAL",
         productTypes: ["NEW_MORTGAGE"],
-        province: "ON",
+        province: "Ontario",
         city: "Toronto",
         details: {
           purposeOfUse: ["OWNER_OCCUPIED"],
@@ -104,7 +104,7 @@ test.describe.serial("Borrower request → broker reply full flow", () => {
   });
 
   test("broker sees the pre-seeded OPEN request in their browse list", async () => {
-    const res = await brokerCtx.get("/api/requests?province=ON");
+    const res = await brokerCtx.get("/api/requests?province=Ontario");
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body.data)).toBe(true);
