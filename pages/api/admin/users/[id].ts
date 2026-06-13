@@ -46,6 +46,12 @@ export default withAdmin(async (req, res, session) => {
             areasServed: true,
             specialties: true,
             updatedAt: true,
+            // Broker-side conversation TOTAL. This is an aggregate COUNT (a
+            // correlated subquery), not a row load — the brokers GET counts the
+            // same way with no OOM, so the earlier "full join" worry below
+            // doesn't apply to _count. The stats row + conversations header use
+            // it for brokers (User._count.conversations is borrower-side → 0).
+            _count: { select: { conversations: true } },
             // Broker-side conversations live on Broker.conversations (brokerId FK),
             // not on User.conversations (which is the borrower-side relation).
             // Surface them here so the admin user-detail page can render

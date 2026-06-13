@@ -88,6 +88,9 @@ interface UserDetail {
     // (borrower-side). The API surfaces these so this page can show a broker's
     // threads; a borrower's threads come from the top-level user.conversations.
     conversations: ConversationItem[];
+    // Broker-side conversation total. The top-level User._count.conversations is
+    // the borrower-side count (≈0 for a broker), so brokers read this instead.
+    _count: { conversations: number };
   } | null;
   borrowerRequests: BorrowerRequestItem[];
   conversations: ConversationItem[];
@@ -451,14 +454,14 @@ function UserDetailBody({
       <RecentRequestsTable requests={user.borrowerRequests} total={user._count.borrowerRequests} />
 
       {/* Brokers' threads live on the broker relation (broker-side); everyone
-          else's on user.conversations (borrower-side). _count.conversations is
-          the borrower-side total, so for brokers we fall back to the fetched
-          slice length (the API drops a broker-side total to avoid an OOM join). */}
+          else's on user.conversations (borrower-side). Each side carries its
+          own total — broker._count vs user._count — so the header count is
+          accurate while the list still shows just the 10 most recent. */}
       {user.broker ? (
         <RecentConversationsTable
           viewerRole="BROKER"
           conversations={user.broker.conversations}
-          total={user.broker.conversations.length}
+          total={user.broker._count.conversations}
         />
       ) : (
         <RecentConversationsTable
@@ -507,27 +510,38 @@ function UserInformation({ user }: { user: UserDetail }) {
 function StatsRow({ user }: { user: UserDetail }) {
   const { t } = useTranslation("common");
   const stats: Array<{ label: string; value: number | string; color?: string }> = [];
-  if (user.role === "BROKER" && user.broker) {
-    stats.push({
-      label: t("admin.userDetail.stats.credits", "크레딧"),
-      value: user.broker.responseCredits,
-      color: "text-amber-600",
-    });
+  if (user.broker) {
+    // Broker stats are broker-side. The borrower-side counts (requests, reports,
+    // User.conversations) are structurally ~0 for a broker and only mislead —
+    // a broker doesn't file requests/reports, and its threads live on the broker
+    // relation. Mirror the people list, which shows brokers just credits.
+    stats.push(
+      {
+        label: t("admin.userDetail.stats.credits", "크레딧"),
+        value: user.broker.responseCredits,
+        color: "text-amber-600",
+      },
+      {
+        label: t("admin.userDetail.stats.conversations", "대화"),
+        value: user.broker._count.conversations,
+      },
+    );
+  } else {
+    stats.push(
+      {
+        label: t("admin.userDetail.stats.requests", "요청"),
+        value: user._count.borrowerRequests,
+      },
+      {
+        label: t("admin.userDetail.stats.conversations", "대화"),
+        value: user._count.conversations,
+      },
+      {
+        label: t("admin.userDetail.stats.reports", "신고"),
+        value: user._count.reports,
+      },
+    );
   }
-  stats.push(
-    {
-      label: t("admin.userDetail.stats.requests", "요청"),
-      value: user._count.borrowerRequests,
-    },
-    {
-      label: t("admin.userDetail.stats.conversations", "대화"),
-      value: user._count.conversations,
-    },
-    {
-      label: t("admin.userDetail.stats.reports", "신고"),
-      value: user._count.reports,
-    },
-  );
   const gridCols =
     stats.length === 1
       ? "grid-cols-1"

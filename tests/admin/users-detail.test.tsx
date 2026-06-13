@@ -61,6 +61,7 @@ interface UserFixture {
     subscriptionTier: string;
     responseCredits: number;
     conversations: UserFixture["conversations"];
+    _count: { conversations: number };
   };
   borrowerRequests: Array<{
     id: string;
@@ -168,6 +169,7 @@ function makeBrokerUser(verificationStatus: "PENDING" | "VERIFIED" | "REJECTED")
       subscriptionTier: "PRO",
       responseCredits: 10,
       conversations: [],
+      _count: { conversations: 7 },
     },
   };
 }
@@ -275,6 +277,19 @@ describe("/admin/users/[id]", () => {
     expect(screen.getByText("PRO")).toBeInTheDocument();
     // credits stat box
     expect(screen.getByText("10")).toBeInTheDocument();
+  });
+
+  it("broker 대화 stat uses the broker-side count, not the borrower-side 0", async () => {
+    const u = makeBrokerUser("VERIFIED");
+    u.broker!._count = { conversations: 12 };
+    // The borrower-side counts on a broker are structurally 0 — the old bug
+    // rendered these (showing 대화 0) instead of the broker-side total.
+    expect(u._count.conversations).toBe(0);
+    mockFetchWith(u);
+    render(<AdminUserDetailPage />);
+    await screen.findByText("Acme Mortgage");
+    expect(screen.getByText("12")).toBeInTheDocument(); // 대화 = broker-side total
+    expect(screen.getByText("10")).toBeInTheDocument(); // 크레딧 = responseCredits
   });
 
   // ---- Broker verification (folded in from the former /admin/brokers/[id]) ----
