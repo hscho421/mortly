@@ -6,6 +6,7 @@ import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
 import { useAdminData } from "@/lib/admin/AdminDataContext";
 import { useToast } from "@/components/Toast";
+import Avatar from "@/components/Avatar";
 import {
   ABadge,
   ABtn,
@@ -46,7 +47,9 @@ interface BrokerDetail {
   verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
   subscriptionTier: string;
   responseCredits: number;
+  profilePhoto: string | null;
   createdAt: string;
+  updatedAt: string;
   user: {
     id: string;
     publicId: string;
@@ -315,25 +318,38 @@ function BrokerDetailBody({
         ← {t("admin.brokerDetail.back", "전문가 목록으로")}
       </Link>
 
-      <ASectionHead
-        label={t("admin.brokerDetail.eyebrow", "전문가 상세")}
-        title={broker.user.name || broker.brokerageName}
-        subtitle={
-          <span className="font-mono text-[11px] text-sage-500">
-            {broker.user.publicId} · {t("admin.brokerDetail.memberSince", "가입일")}{" "}
-            {formatAdminDate(broker.user.createdAt, "short")}
-          </span>
-        }
-        right={
-          <div className="flex items-center gap-1.5">
-            <ABadge tone={VERIFICATION_TONE[broker.verificationStatus]}>
-              {broker.verificationStatus}
-            </ABadge>
-            <ABadge tone={ACCOUNT_TONE[broker.user.status]}>{broker.user.status}</ABadge>
-            <ABadge tone="neutral">{broker.subscriptionTier}</ABadge>
-          </div>
-        }
-      />
+      <div className="flex items-start gap-4">
+        {/* Photo so admins can review/moderate it during verification. */}
+        <Avatar
+          name={broker.user.name || broker.brokerageName}
+          photoPath={broker.profilePhoto}
+          version={broker.updatedAt}
+          size={56}
+          rounded="sm"
+          className="mt-1"
+        />
+        <div className="flex-1 min-w-0">
+          <ASectionHead
+            label={t("admin.brokerDetail.eyebrow", "전문가 상세")}
+            title={broker.user.name || broker.brokerageName}
+            subtitle={
+              <span className="font-mono text-[11px] text-sage-500">
+                {broker.user.publicId} · {t("admin.brokerDetail.memberSince", "가입일")}{" "}
+                {formatAdminDate(broker.user.createdAt, "short")}
+              </span>
+            }
+            right={
+              <div className="flex items-center gap-1.5">
+                <ABadge tone={VERIFICATION_TONE[broker.verificationStatus]}>
+                  {broker.verificationStatus}
+                </ABadge>
+                <ABadge tone={ACCOUNT_TONE[broker.user.status]}>{broker.user.status}</ABadge>
+                <ABadge tone="neutral">{broker.subscriptionTier}</ABadge>
+              </div>
+            }
+          />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 mt-6">
         <ACard pad={0}>

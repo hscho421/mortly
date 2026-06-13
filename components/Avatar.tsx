@@ -16,6 +16,7 @@ export default function Avatar({
   photoPath,
   size = 40,
   version,
+  rounded = "full",
   className = "",
 }: {
   name?: string | null;
@@ -23,6 +24,9 @@ export default function Avatar({
   size?: number;
   /** Cache-buster (e.g. broker.updatedAt) so a replaced photo isn't stale. */
   version?: string | number | null;
+  /** "full" = circle (default). "sm" = rounded square — used in the admin UI,
+   *  whose design system forbids rounded-full. */
+  rounded?: "full" | "sm";
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -32,7 +36,8 @@ export default function Avatar({
   useEffect(() => setFailed(false), [url]);
   const initial = (name?.trim()?.[0] ?? "?").toUpperCase();
 
-  const box = `inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${className}`;
+  const radius = rounded === "sm" ? "rounded-sm" : "rounded-full";
+  const box = `inline-flex shrink-0 items-center justify-center overflow-hidden ${radius} ${className}`;
   const dims = { width: size, height: size };
 
   if (url && !failed) {
