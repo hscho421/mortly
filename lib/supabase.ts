@@ -61,3 +61,13 @@ export function avatarPublicUrl(path: string, version?: string | number): string
   const base = `${supabaseUrl}/storage/v1/object/public/${AVATAR_BUCKET}/${path}`;
   return version != null ? `${base}?v=${version}` : base;
 }
+
+/**
+ * On-the-fly resized variant via Supabase image transformations (Pro feature).
+ * Serving a `size`px square instead of the full image keeps egress tiny for
+ * chat icons / cards. Falls back to the plain public URL if not configured.
+ */
+export function avatarTransformUrl(path: string, size: number): string | null {
+  if (!supabaseUrl || !path) return null;
+  return `${supabaseUrl}/storage/v1/render/image/public/${AVATAR_BUCKET}/${path}?width=${size}&height=${size}&resize=cover`;
+}

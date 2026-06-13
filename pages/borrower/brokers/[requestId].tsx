@@ -9,6 +9,7 @@ import type { GetServerSideProps } from "next";
 import BorrowerShell from "@/components/borrower/BorrowerShell";
 import { SkeletonBrokerList } from "@/components/Skeleton";
 import ReportButton from "@/components/ReportButton";
+import Avatar from "@/components/Avatar";
 
 interface ConversationBroker {
   id: string;
@@ -22,6 +23,7 @@ interface ConversationBroker {
     yearsExperience: number | null;
     specialties: string | null;
     bio: string | null;
+    profilePhoto: string | null;
     user: {
       id: string;
       publicId: string;
@@ -171,9 +173,12 @@ export default function BrokerComparison() {
                   {/* Broker header */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-base sm:text-lg font-display font-bold shrink-0">
-                        {(broker.user.name || "B").charAt(0).toUpperCase()}
-                      </div>
+                      <Avatar
+                        name={broker.user.name || broker.brokerageName}
+                        photoPath={broker.profilePhoto}
+                        size={48}
+                        className="text-base sm:text-lg"
+                      />
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="text-base font-semibold font-body text-forest-800">

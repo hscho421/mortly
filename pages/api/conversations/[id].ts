@@ -50,6 +50,7 @@ export default withAuth(async (req, res, session) => {
               userId: true,
               brokerageName: true,
               verificationStatus: true,
+              profilePhoto: true,
               user: {
                 select: { id: true, publicId: true, name: true },
               },

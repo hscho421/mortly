@@ -13,6 +13,7 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { getRequestTitle } from "@/lib/requestConfig";
 import { dateLocale } from "@/lib/format";
+import Avatar from "@/components/Avatar";
 import BorrowerShell from "@/components/borrower/BorrowerShell";
 import RequestContextPanel from "@/components/broker/RequestContextPanel";
 import {
@@ -39,6 +40,7 @@ interface ConversationListItem {
     id: string;
     brokerageName: string;
     verificationStatus: string;
+    profilePhoto?: string | null;
     user: { id: string; publicId?: string; name: string | null };
   };
   borrower: { id: string; name: string | null };
@@ -512,8 +514,8 @@ export default function BorrowerMessagesPage() {
                   >
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
-                      <div className="relative w-10 h-10 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-sm font-display font-bold shrink-0">
-                        {brokerName.charAt(0).toUpperCase()}
+                      <div className="relative shrink-0">
+                        <Avatar name={brokerName} photoPath={conv.broker.profilePhoto} size={40} />
                         {hasUnread && (
                           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-error-500 px-1 font-body text-[10px] font-bold text-white">
                             {conv.unreadCount! > 9 ? "9+" : conv.unreadCount}
@@ -626,11 +628,11 @@ export default function BorrowerMessagesPage() {
                   </button>
 
                   {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-forest-100 text-forest-700 flex items-center justify-center text-sm font-display font-bold shrink-0">
-                    {(conversation.broker.user.name || "B")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </div>
+                  <Avatar
+                    name={conversation.broker.user.name || conversation.broker.brokerageName}
+                    photoPath={conversation.broker.profilePhoto}
+                    size={40}
+                  />
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
