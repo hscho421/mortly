@@ -12,8 +12,8 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { PROVINCES } from "@/lib/requestConfig";
 import { avatarPublicUrl } from "@/lib/supabase";
-import { resizeAvatar } from "@/lib/resizeImage";
 import { uploadBrokerAvatar } from "@/lib/uploadAvatar";
+import AvatarCropper from "@/components/AvatarCropper";
 
 interface BrokerUser {
   id: string;
@@ -56,6 +56,7 @@ export default function BrokerProfilePage() {
   const [success, setSuccess] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   const formatPhone = (raw: string): string => {
     const digits = raw.replace(/\D/g, "").slice(0, 10);
@@ -127,17 +128,28 @@ export default function BrokerProfilePage() {
     }));
   };
 
-  const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Pick a file → open the cropper (don't upload yet). The cropper produces
+  // the resized WebP from the user's chosen crop region.
+  const onPickAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // let the user re-pick the same file later
     if (!file) return;
     setError("");
     setSuccess("");
+    setCropSrc(URL.createObjectURL(file));
+  };
+
+  const closeCropper = () => {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const onCropped = async (blob: Blob) => {
+    closeCropper();
     setPhotoBusy(true);
     try {
-      // resize/crop/re-encode client-side (caps storage + strips EXIF), then
-      // run the shared upload flow (signed URL → storage → confirm).
-      const blob = await resizeAvatar(file);
       const { url, path } = await uploadBrokerAvatar(blob);
       // cache-bust so the CDN/browser don't serve the old image at the same path
       setPhotoUrl((url || avatarPublicUrl(path)) + `?v=${Date.now()}`);
@@ -206,6 +218,9 @@ export default function BrokerProfilePage() {
   return (
     <BrokerShell active="profile" pageTitle={t("titles.brokerProfile")}>
       <Head><title>{t("titles.brokerProfile")}</title></Head>
+      {cropSrc && (
+        <AvatarCropper imageSrc={cropSrc} onCancel={closeCropper} onCropped={onCropped} />
+      )}
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between ">
           <div>

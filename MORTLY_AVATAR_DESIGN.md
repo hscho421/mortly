@@ -20,6 +20,14 @@
 > toast to retry; otherwise → dashboard (no photo → dashboard). Profile-page
 > control kept for later edits.
 
+> **Update 3 (crop tool):** the blind center-crop was replaced with a real
+> crop+zoom step. `components/AvatarCropper.tsx` (react-easy-crop, dynamic-imported
+> so it's a separate chunk; round crop, zoom slider) opens after the broker picks
+> a file; `getCroppedWebp` in `lib/resizeImage.ts` renders the chosen region to a
+> ≤512px WebP (still strips EXIF). Wired into both the profile page and the
+> onboarding deferred-upload flow. Added `react-easy-crop@^6` (audit-clean — no new
+> vulns; the 4 pre-existing next-auth/uuid moderates are unchanged).
+
 ## 1. Goal & scope
 
 Replace the initials-box avatars in messaging (and broker-facing surfaces) with real **broker** profile photos.

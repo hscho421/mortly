@@ -36,6 +36,7 @@
     "@prisma/client": "5.22.0",
     "@supabase/supabase-js": "^2.100.1",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/kv": "^3.0.0",
     "apple-signin-auth": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "expo-server-sdk": "^6.1.0",
@@ -49,11 +50,11 @@
     "posthog-node": "^5.28.11",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-easy-crop": "^6.0.2",
     "react-i18next": "^16.5.8",
     "resend": "^6.9.4",
     "stripe": "^20.4.1",
-    "swr": "^2.2.5",
-    "@vercel/kv": "^3.0.0"
+    "swr": "^2.2.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

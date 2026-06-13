@@ -12,8 +12,8 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import posthog from "posthog-js";
 import { PROVINCES } from "@/lib/requestConfig";
-import { resizeAvatar } from "@/lib/resizeImage";
 import { uploadBrokerAvatar } from "@/lib/uploadAvatar";
+import AvatarCropper from "@/components/AvatarCropper";
 
 export default function BrokerOnboardingPage() {
   const { data: session, status } = useSession();
@@ -40,13 +40,19 @@ export default function BrokerOnboardingPage() {
   // local object URL for the inline preview (no network until submit).
   const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-  // Revoke the object URL when it changes / on unmount to avoid a leak.
+  // Revoke object URLs when they change / on unmount to avoid leaks.
   useEffect(() => {
     return () => {
       if (avatarPreview) URL.revokeObjectURL(avatarPreview);
     };
   }, [avatarPreview]);
+  useEffect(() => {
+    return () => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+    };
+  }, [cropSrc]);
 
   if (status === "loading") {
     return (
@@ -81,20 +87,28 @@ export default function BrokerOnboardingPage() {
     }));
   };
 
-  const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Pick a file → open the cropper. The cropped blob is held until submit.
+  const onPickAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    try {
-      const blob = await resizeAvatar(file);
-      setAvatarBlob(blob);
-      setAvatarPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return URL.createObjectURL(blob);
-      });
-    } catch {
-      setError(t("broker.avatarUploadFailed", "Couldn't process that image. Try another."));
-    }
+    setCropSrc(URL.createObjectURL(file));
+  };
+
+  const closeCropper = () => {
+    setCropSrc((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const onCropped = (blob: Blob) => {
+    closeCropper();
+    setAvatarBlob(blob);
+    setAvatarPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(blob);
+    });
   };
 
   const clearAvatar = () => {
@@ -164,6 +178,9 @@ export default function BrokerOnboardingPage() {
   return (
     <BrokerShell active="profile" pageTitle={t("titles.brokerOnboarding")} skipProfileGate>
       <Head><title>{t("titles.brokerOnboarding")}</title></Head>
+      {cropSrc && (
+        <AvatarCropper imageSrc={cropSrc} onCancel={closeCropper} onCropped={onCropped} />
+      )}
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 text-center ">
