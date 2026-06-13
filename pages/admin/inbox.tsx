@@ -636,12 +636,14 @@ function summarizeReport(r: InboxReportRow): RowSummary {
 
 function openDetail(row: InboxRow, router: ReturnType<typeof import("next/router").useRouter>) {
   // REQ and REP don't have dedicated detail pages — they live as drawers on
-  // Activity and Reports respectively. BRK has its own detail page.
+  // Activity and Reports respectively. BRK opens the unified user detail page
+  // (the broker panel there carries the verification actions). Note: route by
+  // row.publicId (the broker's *user* publicId), not row.id (the broker id).
   // Use router.push (soft nav) so we don't lose queue state on back-button.
   if (row.kind === "REQ") {
     router.push({ pathname: "/admin/activity", query: { req: row.publicId } });
   } else if (row.kind === "BRK") {
-    router.push({ pathname: "/admin/brokers/[id]", query: { id: row.id } });
+    router.push({ pathname: "/admin/users/[id]", query: { id: row.publicId } });
   } else {
     router.push({ pathname: "/admin/reports", query: { id: row.id } });
   }

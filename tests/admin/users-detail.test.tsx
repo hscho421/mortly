@@ -53,9 +53,14 @@ interface UserFixture {
     mortgageCategory: string;
     bio: string | null;
     yearsExperience: number | null;
-    verificationStatus: string;
+    areasServed: string | null;
+    specialties: string | null;
+    profilePhoto: string | null;
+    updatedAt: string;
+    verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
     subscriptionTier: string;
     responseCredits: number;
+    conversations: UserFixture["conversations"];
   };
   borrowerRequests: Array<{
     id: string;
@@ -134,6 +139,37 @@ function mockFetchWith(user: UserFixture) {
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
+}
+
+// A BROKER-role user with a broker record at the given verification status —
+// drives the broker panel (profile + verification actions) on the unified page.
+function makeBrokerUser(verificationStatus: "PENDING" | "VERIFIED" | "REJECTED"): UserFixture {
+  return {
+    ...USER_FIXTURE,
+    name: "Jane Broker",
+    role: "BROKER",
+    borrowerRequests: [],
+    conversations: [],
+    _count: { borrowerRequests: 0, conversations: 0, reports: 0 },
+    broker: {
+      id: "broker_1",
+      brokerageName: "Acme Mortgage",
+      province: "ON",
+      licenseNumber: "LIC-001",
+      phone: null,
+      mortgageCategory: "RESIDENTIAL",
+      bio: null,
+      yearsExperience: 3,
+      areasServed: null,
+      specialties: null,
+      profilePhoto: null,
+      updatedAt: "2025-01-02T00:00:00.000Z",
+      verificationStatus,
+      subscriptionTier: "PRO",
+      responseCredits: 10,
+      conversations: [],
+    },
+  };
 }
 
 describe("/admin/users/[id]", () => {
@@ -232,29 +268,127 @@ describe("/admin/users/[id]", () => {
   });
 
   it("renders BROKER details section when user has a broker record", async () => {
-    mockFetchWith({
-      ...USER_FIXTURE,
-      role: "BROKER",
-      broker: {
-        id: "broker_1",
-        brokerageName: "Acme Mortgage",
-        province: "ON",
-        licenseNumber: "LIC-001",
-        phone: null,
-        mortgageCategory: "RESIDENTIAL",
-        bio: null,
-        yearsExperience: 3,
-        verificationStatus: "VERIFIED",
-        subscriptionTier: "PRO",
-        responseCredits: 10,
-      },
-    });
+    mockFetchWith(makeBrokerUser("VERIFIED"));
     render(<AdminUserDetailPage />);
     expect(await screen.findByText("Acme Mortgage")).toBeInTheDocument();
     expect(screen.getByText("VERIFIED")).toBeInTheDocument();
     expect(screen.getByText("PRO")).toBeInTheDocument();
     // credits stat box
     expect(screen.getByText("10")).toBeInTheDocument();
+  });
+
+  // ---- Broker verification (folded in from the former /admin/brokers/[id]) ----
+
+  it("clicking 인증 opens the confirm dialog with verify copy + broker name", async () => {
+    mockFetchWith(makeBrokerUser("PENDING"));
+    render(<AdminUserDetailPage />);
+    await userEvent.click(await screen.findByTestId("broker-verify"));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("전문가 인증")).toBeInTheDocument();
+    expect(within(dialog).getByText(/Jane Broker/)).toBeInTheDocument();
+  });
+
+  it("confirming 인증 PUTs {verificationStatus:'VERIFIED'} to /api/admin/brokers/:id + invalidates", async () => {
+    const fetchMock = mockFetchWith(makeBrokerUser("PENDING"));
+    render(<AdminUserDetailPage />);
+    await userEvent.click(await screen.findByTestId("broker-verify"));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "인증" }));
+
+    await waitFor(() => {
+      const puts = fetchMock.mock.calls.filter(
+        (c) => c[1]?.method === "PUT" && String(c[0]).includes("/api/admin/brokers/"),
+      );
+      expect(puts).toHaveLength(1);
+      expect(String(puts[0][0])).toContain("/api/admin/brokers/broker_1");
+      expect(JSON.parse((puts[0][1] as RequestInit).body as string)).toEqual({
+        verificationStatus: "VERIFIED",
+      });
+    });
+    expect(mockInvalidate).toHaveBeenCalledTimes(1);
+    expect(mockToast).toHaveBeenCalledWith(expect.any(String), "success");
+  });
+
+  it("반려 opens a danger-tone dialog and PUTs {verificationStatus:'REJECTED'}", async () => {
+    const fetchMock = mockFetchWith(makeBrokerUser("PENDING"));
+    render(<AdminUserDetailPage />);
+    await userEvent.click(await screen.findByTestId("broker-reject"));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.querySelector("button.bg-error-700")).not.toBeNull();
+    await userEvent.click(within(dialog).getByRole("button", { name: "반려" }));
+
+    await waitFor(() => {
+      const puts = fetchMock.mock.calls.filter(
+        (c) => c[1]?.method === "PUT" && String(c[0]).includes("/api/admin/brokers/"),
+      );
+      expect(puts).toHaveLength(1);
+      expect(JSON.parse((puts[0][1] as RequestInit).body as string)).toEqual({
+        verificationStatus: "REJECTED",
+      });
+    });
+  });
+
+  it("verification buttons reflect status: VERIFIED hides 인증, shows reset", async () => {
+    mockFetchWith(makeBrokerUser("VERIFIED"));
+    render(<AdminUserDetailPage />);
+    await screen.findByText("Acme Mortgage");
+    expect(screen.queryByTestId("broker-verify")).not.toBeInTheDocument();
+    expect(screen.getByTestId("broker-reject")).toBeInTheDocument();
+    expect(screen.getByTestId("broker-reset-verification")).toBeInTheDocument();
+  });
+
+  it("renders the broker's (broker-side) conversations for a broker user", async () => {
+    const u = makeBrokerUser("VERIFIED");
+    u.broker!.conversations = [
+      {
+        id: "bconv_1",
+        publicId: "CONV-900",
+        status: "ACTIVE",
+        updatedAt: "2025-02-01T00:00:00.000Z",
+        _count: { messages: 4 },
+        broker: { id: "broker_1", user: { name: "Jane Broker", email: "jane@example.com" } },
+        borrower: { id: "usr_9", name: "Bob Borrower", email: "bob@example.com" },
+        request: { id: "req_9", province: "ON", mortgageCategory: "RESIDENTIAL" },
+      },
+    ];
+    mockFetchWith(u);
+    render(<AdminUserDetailPage />);
+    const row = (await screen.findByTestId("user-conversation-row")) as HTMLAnchorElement;
+    expect(row.getAttribute("href")).toBe("/admin/activity?id=bconv_1");
+    // viewerRole BROKER → shows the borrower as the counterparty
+    expect(within(row).getByText(/Bob Borrower/)).toBeInTheDocument();
+  });
+
+  it("PENDING hides the reset button (already pending)", async () => {
+    mockFetchWith(makeBrokerUser("PENDING"));
+    render(<AdminUserDetailPage />);
+    await screen.findByText("Acme Mortgage");
+    expect(screen.getByTestId("broker-verify")).toBeInTheDocument();
+    expect(screen.queryByTestId("broker-reset-verification")).not.toBeInTheDocument();
+  });
+
+  it("a 202 (two-admin gate) toasts info, not success", async () => {
+    // brokers PUT returns 202 PENDING_SECOND_REVIEW; users GET still returns the user.
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/api/admin/brokers/") && init?.method === "PUT") {
+        return new Response(JSON.stringify({ status: "PENDING_SECOND_REVIEW" }), { status: 202 });
+      }
+      if (url.startsWith("/api/admin/users/") && (!init?.method || init.method === "GET")) {
+        return new Response(JSON.stringify(makeBrokerUser("PENDING")), { status: 200 });
+      }
+      return new Response(JSON.stringify({}), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AdminUserDetailPage />);
+    await userEvent.click(await screen.findByTestId("broker-verify"));
+    const dialog = await screen.findByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "인증" }));
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(expect.any(String), "info");
+    });
+    expect(mockToast).not.toHaveBeenCalledWith(expect.any(String), "success");
   });
 
   it("fetch failure renders error branch", async () => {

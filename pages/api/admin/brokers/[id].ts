@@ -8,53 +8,11 @@ export default withAdmin(async (req, res, session) => {
     return res.status(400).json({ error: "Invalid broker ID" });
   }
 
-  if (req.method === "GET") {
-    // Support lookup by user publicId (9-digit) or broker internal id
-    const isPublicId = /^\d{9}$/.test(id);
-    // Switched conversations sub-query from `include` to `select` — the
-    // previous shape pulled every Conversation column (including borrower
-    // financial details that the admin detail page doesn't render). For a
-    // broker with 20 active threads that's ~50KB extra per page load.
-    const brokerInclude = {
-        user: {
-          select: { id: true, publicId: true, name: true, email: true, status: true, createdAt: true },
-        },
-        conversations: {
-          select: {
-            id: true,
-            publicId: true,
-            status: true,
-            updatedAt: true,
-            borrower: { select: { id: true, name: true, email: true } },
-            request: { select: { id: true, province: true, mortgageCategory: true, productTypes: true } },
-            _count: { select: { messages: true } },
-          },
-          orderBy: { updatedAt: "desc" as const },
-          take: 20,
-        },
-        subscription: true,
-        _count: {
-          select: { conversations: true },
-        },
-    };
-
-    const broker = isPublicId
-      ? await prisma.broker.findFirst({
-          where: { user: { publicId: id } },
-          include: brokerInclude,
-        })
-      : await prisma.broker.findUnique({
-          where: { id },
-          include: brokerInclude,
-        });
-
-    if (!broker) {
-      return res.status(404).json({ error: "Broker not found" });
-    }
-
-    return res.status(200).json(broker);
-  }
-
+  // GET was removed when /admin/brokers/[id] was folded into the unified
+  // /admin/users/[id] page: that page's broker panel is fed by the existing
+  // GET /api/admin/users/[id] (its broker sub-select), so this route only
+  // needs to serve the verification mutation below. The inbox inline
+  // approve/reject also PUTs here.
   if (req.method === "PUT") {
     const { verificationStatus, reason } = req.body;
 

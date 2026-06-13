@@ -212,7 +212,7 @@ export default function AdminReportsPage() {
         const d = detailState.data;
         const link =
           d.targetType === "BROKER"
-            ? `/admin/brokers/${d.targetId}`
+            ? `/admin/users/${d.targetId}`
             : d.targetType === "REQUEST"
             ? `/admin/activity?req=${d.targetId}`
             : d.targetType === "CONVERSATION"
@@ -358,7 +358,7 @@ function ReportDrawer({
       : detail.targetType;
   const targetLink =
     detail.targetType === "BROKER"
-      ? `/admin/brokers/${detail.targetId}`
+      ? `/admin/users/${detail.targetId}`
       : detail.targetType === "REQUEST"
       ? `/admin/activity?req=${detail.targetId}`
       : detail.targetType === "CONVERSATION"

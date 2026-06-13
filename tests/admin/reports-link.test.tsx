@@ -3,7 +3,10 @@
  *
  * Previous code linked REQUEST targets to `/admin/requests/${id}` — a route
  * that doesn't exist. New behavior: REQUEST → `/admin/activity?req=` and
- * CONVERSATION → `/admin/activity?id=`. BROKER is unchanged.
+ * CONVERSATION → `/admin/activity?id=`. BROKER now → `/admin/users/${id}`
+ * (the standalone /admin/brokers/[id] page was folded into the unified user
+ * detail page; targetId is the broker's user publicId, pre-resolved by the
+ * reports API).
  *
  * The drawer branches on `detail.targetType`, so we unit-test the pure
  * link-building logic via a plain function extracted into this file.
@@ -12,7 +15,7 @@ import { describe, it, expect } from "vitest";
 
 function targetLinkFor(targetType: string, targetId: string): string | null {
   return targetType === "BROKER"
-    ? `/admin/brokers/${targetId}`
+    ? `/admin/users/${targetId}`
     : targetType === "REQUEST"
     ? `/admin/activity?req=${targetId}`
     : targetType === "CONVERSATION"
@@ -31,9 +34,9 @@ describe("reports drawer targetLink", () => {
     expect(link).toBe("/admin/activity?id=cuid-abc");
   });
 
-  it("routes BROKER targets to /admin/brokers/:id", () => {
-    const link = targetLinkFor("BROKER", "brk_1");
-    expect(link).toBe("/admin/brokers/brk_1");
+  it("routes BROKER targets to /admin/users/:publicId (unified detail page)", () => {
+    const link = targetLinkFor("BROKER", "123456789");
+    expect(link).toBe("/admin/users/123456789");
   });
 
   it("returns null for unknown target types", () => {

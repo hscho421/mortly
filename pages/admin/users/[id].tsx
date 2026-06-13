@@ -6,6 +6,7 @@ import { adminSSR } from "@/lib/admin/ssrAuth";
 import AdminShell from "@/components/admin/AdminShell";
 import { useAdminData } from "@/lib/admin/AdminDataContext";
 import { useToast } from "@/components/Toast";
+import Avatar from "@/components/Avatar";
 import {
   ABadge,
   ABtn,
@@ -76,9 +77,17 @@ interface UserDetail {
     mortgageCategory: string;
     bio: string | null;
     yearsExperience: number | null;
-    verificationStatus: string;
+    areasServed: string | null;
+    specialties: string | null;
+    profilePhoto: string | null;
+    updatedAt: string;
+    verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
     subscriptionTier: string;
     responseCredits: number;
+    // Broker-side conversations (brokerId FK) — distinct from User.conversations
+    // (borrower-side). The API surfaces these so this page can show a broker's
+    // threads; a borrower's threads come from the top-level user.conversations.
+    conversations: ConversationItem[];
   } | null;
   borrowerRequests: BorrowerRequestItem[];
   conversations: ConversationItem[];
@@ -92,7 +101,12 @@ interface UserDetail {
 type PendingAction =
   | { kind: "suspend" }
   | { kind: "ban" }
-  | { kind: "reactivate" };
+  | { kind: "reactivate" }
+  // Broker verification — only reachable when the user has a broker record.
+  // Routes to PUT /api/admin/brokers/[id] (account status routes to users/[id]).
+  | { kind: "verify" }
+  | { kind: "reject" }
+  | { kind: "resetVerification" };
 
 export default function AdminUserDetailPage() {
   const { t } = useTranslation("common");
@@ -122,18 +136,48 @@ export default function AdminUserDetailPage() {
       if (!user) return;
       setSaving(true);
       try {
-        const status =
-          action.kind === "suspend" ? "SUSPENDED" : action.kind === "ban" ? "BANNED" : "ACTIVE";
-        const r = await fetch(`/api/admin/users/${user.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        });
-        if (!r.ok) {
-          const data = await r.json().catch(() => ({} as { error?: string }));
-          throw new Error(data.error || `HTTP ${r.status}`);
+        const isVerification =
+          action.kind === "verify" || action.kind === "reject" || action.kind === "resetVerification";
+
+        if (isVerification) {
+          // Verification status lives on the Broker, not the User — route to the
+          // brokers endpoint by broker id. Guard: only broker users reach here.
+          if (!user.broker) return;
+          const verificationStatus =
+            action.kind === "verify" ? "VERIFIED" : action.kind === "reject" ? "REJECTED" : "PENDING";
+          const r = await fetch(`/api/admin/brokers/${user.broker.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ verificationStatus }),
+          });
+          if (!r.ok) {
+            const data = await r.json().catch(() => ({} as { error?: string }));
+            throw new Error(data.error || `HTTP ${r.status}`);
+          }
+          // Two-admin gate: a 202 means verification was only RECOMMENDED and
+          // awaits a second admin — say so instead of implying it's complete.
+          if (r.status === 202) {
+            toast(
+              t("admin.brokerDetail.pendingSecondReview", "다른 관리자의 2차 승인이 필요합니다."),
+              "info",
+            );
+          } else {
+            toast(t("admin.userDetail.actionDone", "변경 완료"), "success");
+          }
+        } else {
+          const status =
+            action.kind === "suspend" ? "SUSPENDED" : action.kind === "ban" ? "BANNED" : "ACTIVE";
+          const r = await fetch(`/api/admin/users/${user.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          });
+          if (!r.ok) {
+            const data = await r.json().catch(() => ({} as { error?: string }));
+            throw new Error(data.error || `HTTP ${r.status}`);
+          }
+          toast(t("admin.userDetail.actionDone", "변경 완료"), "success");
         }
-        toast(t("admin.userDetail.actionDone", "변경 완료"), "success");
         ctl.refresh();
         void invalidate();
       } catch (err) {
@@ -253,7 +297,11 @@ export default function AdminUserDetailPage() {
         <AConfirmDialog
           open
           onClose={() => setPending(null)}
-          tone={pending.kind === "ban" ? "danger" : pending.kind === "suspend" ? "danger" : "default"}
+          tone={
+            pending.kind === "ban" || pending.kind === "suspend" || pending.kind === "reject"
+              ? "danger"
+              : "default"
+          }
           title={confirmTitle(pending, t)}
           description={confirmDescription(pending, user, t)}
           confirmLabel={confirmLabel(pending, t)}
@@ -275,6 +323,12 @@ function confirmTitle(a: PendingAction, t: TFn): string {
       return t("admin.userDetail.confirm.ban.title", "계정 차단");
     case "reactivate":
       return t("admin.userDetail.confirm.reactivate.title", "계정 재활성화");
+    case "verify":
+      return t("admin.brokerDetail.confirm.verify.title", "전문가 인증");
+    case "reject":
+      return t("admin.brokerDetail.confirm.reject.title", "인증 반려");
+    case "resetVerification":
+      return t("admin.brokerDetail.confirm.reset.title", "인증 대기 상태로 재설정");
   }
 }
 
@@ -299,6 +353,24 @@ function confirmDescription(a: PendingAction, user: UserDetail, t: TFn): string 
         "{{name}}의 계정을 다시 활성화합니다.",
         { name },
       );
+    case "verify":
+      return t(
+        "admin.brokerDetail.confirm.verify.body",
+        "{{name}}을(를) 인증 전문가로 등록합니다.",
+        { name },
+      );
+    case "reject":
+      return t(
+        "admin.brokerDetail.confirm.reject.body",
+        "{{name}}의 인증 요청을 반려합니다.",
+        { name },
+      );
+    case "resetVerification":
+      return t(
+        "admin.brokerDetail.confirm.reset.body",
+        "{{name}}의 인증을 대기 상태로 되돌립니다.",
+        { name },
+      );
   }
 }
 
@@ -310,6 +382,12 @@ function confirmLabel(a: PendingAction, t: TFn): string {
       return t("admin.userDetail.confirm.ban.confirm", "차단");
     case "reactivate":
       return t("admin.userDetail.confirm.reactivate.confirm", "재활성화");
+    case "verify":
+      return t("admin.brokerDetail.confirm.verify.confirm", "인증");
+    case "reject":
+      return t("admin.brokerDetail.confirm.reject.confirm", "반려");
+    case "resetVerification":
+      return t("admin.brokerDetail.confirm.reset.confirm", "대기로 재설정");
   }
 }
 
@@ -366,15 +444,29 @@ function UserDetailBody({
         </div>
       </div>
 
-      {user.broker && <BrokerDetails broker={user.broker} />}
+      {user.broker && (
+        <BrokerDetails broker={user.broker} saving={saving} onRequestAction={onRequestAction} />
+      )}
 
       <RecentRequestsTable requests={user.borrowerRequests} total={user._count.borrowerRequests} />
 
-      <RecentConversationsTable
-        viewerRole={user.role}
-        conversations={user.conversations}
-        total={user._count.conversations}
-      />
+      {/* Brokers' threads live on the broker relation (broker-side); everyone
+          else's on user.conversations (borrower-side). _count.conversations is
+          the borrower-side total, so for brokers we fall back to the fetched
+          slice length (the API drops a broker-side total to avoid an OOM join). */}
+      {user.broker ? (
+        <RecentConversationsTable
+          viewerRole="BROKER"
+          conversations={user.broker.conversations}
+          total={user.broker.conversations.length}
+        />
+      ) : (
+        <RecentConversationsTable
+          viewerRole={user.role}
+          conversations={user.conversations}
+          total={user._count.conversations}
+        />
+      )}
     </div>
   );
 }
@@ -547,7 +639,15 @@ function AccountActions({
   );
 }
 
-function BrokerDetails({ broker }: { broker: NonNullable<UserDetail["broker"]> }) {
+function BrokerDetails({
+  broker,
+  saving,
+  onRequestAction,
+}: {
+  broker: NonNullable<UserDetail["broker"]>;
+  saving: boolean;
+  onRequestAction: (a: PendingAction) => void;
+}) {
   const { t } = useTranslation("common");
   const pairs: Array<[string, string]> = [
     [t("admin.userDetail.broker.brokerage", "브로커리지"), broker.brokerageName],
@@ -564,24 +664,30 @@ function BrokerDetails({ broker }: { broker: NonNullable<UserDetail["broker"]> }
         ? t("admin.userDetail.broker.years", "{{count}}년", { count: broker.yearsExperience })
         : "—",
     ],
+    [t("admin.brokerDetail.field.areas", "활동지역"), broker.areasServed || "—"],
+    [t("admin.brokerDetail.field.specialties", "전문분야"), broker.specialties || "—"],
   ];
   return (
     <ACard pad={0} className="mt-6">
-      <div className="px-6 py-4 border-b border-cream-300 flex items-center justify-between">
-        <div className="font-display text-lg font-semibold text-forest-800">
-          {t("admin.userDetail.broker.title", "전문가 프로필")}
+      <div className="px-6 py-4 border-b border-cream-300 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Photo so admins can review/moderate it during verification. */}
+          <Avatar
+            name={broker.brokerageName}
+            photoPath={broker.profilePhoto}
+            version={broker.updatedAt}
+            size={44}
+            rounded="sm"
+          />
+          <div className="font-display text-lg font-semibold text-forest-800 truncate">
+            {t("admin.userDetail.broker.title", "전문가 프로필")}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <ABadge tone={toneForVerification(broker.verificationStatus)}>
             {broker.verificationStatus}
           </ABadge>
           <ABadge tone={toneForTier(broker.subscriptionTier)}>{broker.subscriptionTier}</ABadge>
-          <Link
-            href={`/admin/brokers/${broker.id}`}
-            className="font-mono text-[11px] text-sage-500 hover:text-forest-800 underline decoration-dotted underline-offset-2"
-          >
-            {t("admin.userDetail.broker.openFull", "전체 프로필")}
-          </Link>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3 p-6">
@@ -602,6 +708,50 @@ function BrokerDetails({ broker }: { broker: NonNullable<UserDetail["broker"]> }
           </div>
         </div>
       )}
+      {/* Verification actions — folded in from the former /admin/brokers/[id]
+          page so an admin can verify/reject without a second page hop.
+          Account moderation (suspend/ban) stays in AccountActions above. */}
+      <div className="px-6 py-4 border-t border-cream-300">
+        <div className="font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em] mb-3">
+          {t("admin.brokerDetail.verificationTitle", "인증 조치")}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {broker.verificationStatus !== "VERIFIED" && (
+            <ABtn
+              size="sm"
+              variant="success"
+              disabled={saving}
+              onClick={() => onRequestAction({ kind: "verify" })}
+              data-testid="broker-verify"
+            >
+              ✓ {t("admin.brokerDetail.verify", "인증")}
+            </ABtn>
+          )}
+          {broker.verificationStatus !== "REJECTED" && (
+            <ABtn
+              size="sm"
+              variant="ghost"
+              disabled={saving}
+              onClick={() => onRequestAction({ kind: "reject" })}
+              className="!text-error-700 !border-error-100"
+              data-testid="broker-reject"
+            >
+              ✕ {t("admin.brokerDetail.reject", "반려")}
+            </ABtn>
+          )}
+          {broker.verificationStatus !== "PENDING" && (
+            <ABtn
+              size="sm"
+              variant="ghost"
+              disabled={saving}
+              onClick={() => onRequestAction({ kind: "resetVerification" })}
+              data-testid="broker-reset-verification"
+            >
+              {t("admin.brokerDetail.resetPending", "대기로 재설정")}
+            </ABtn>
+          )}
+        </div>
+      </div>
     </ACard>
   );
 }

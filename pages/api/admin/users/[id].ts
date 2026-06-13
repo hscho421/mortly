@@ -39,6 +39,13 @@ export default withAdmin(async (req, res, session) => {
             verificationStatus: true,
             subscriptionTier: true,
             responseCredits: true,
+            // Surfaced for the unified broker panel on this page (the standalone
+            // /admin/brokers/[id] page was folded in here): avatar + the two
+            // free-text profile fields, plus updatedAt to cache-bust the photo.
+            profilePhoto: true,
+            areasServed: true,
+            specialties: true,
+            updatedAt: true,
             // Broker-side conversations live on Broker.conversations (brokerId FK),
             // not on User.conversations (which is the borrower-side relation).
             // Surface them here so the admin user-detail page can render

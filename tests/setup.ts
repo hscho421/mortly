@@ -32,7 +32,7 @@ vi.mock("next/router", () => {
   return {
     useRouter: () => ({
       query: {},
-      pathname: "/admin/brokers/[id]",
+      pathname: "/admin/users/[id]",
       locale: "ko",
       push,
       replace,
