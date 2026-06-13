@@ -5,6 +5,7 @@ import { encode } from "next-auth/jwt";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { isAllowedOrigin } from "@/lib/origin";
+import { getSupabaseAdmin, AVATAR_BUCKET } from "@/lib/supabaseAdmin";
 
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
 const MOBILE_HEADER = "x-mortly-mobile";
@@ -47,7 +48,7 @@ export default async function handler(
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        broker: { select: { id: true } },
+        broker: { select: { id: true, profilePhoto: true } },
         borrowerRequests: { select: { id: true } },
         conversations: { select: { id: true } },
       },
@@ -172,6 +173,20 @@ export default async function handler(
       // 10. Finally, the user row
       await tx.user.delete({ where: { id: userId } });
     });
+
+    // PIPEDA: a profile photo is personal data — delete the stored object
+    // after the DB transaction commits. Best-effort + logged: a leftover
+    // object must not fail the (already-committed) account deletion, and the
+    // storage key is no longer referenced by anything.
+    if (user.broker?.profilePhoto) {
+      const admin = getSupabaseAdmin();
+      if (admin) {
+        admin.storage
+          .from(AVATAR_BUCKET)
+          .remove([user.broker.profilePhoto])
+          .catch((err) => console.error("avatar cleanup on account delete failed:", err));
+      }
+    }
 
     return res.status(200).json({ success: true });
   } catch (error) {

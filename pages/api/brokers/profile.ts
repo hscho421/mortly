@@ -7,7 +7,6 @@ import {
   assertOptionalEnum,
   assertPhone,
   assertOptionalPhone,
-  assertOptionalHttpsUrl,
   ValidationError,
 } from "@/lib/validate";
 
@@ -62,10 +61,11 @@ function validateBrokerFields(body: Record<string, unknown>, partial: boolean) {
   if (body.yearsExperience !== undefined) {
     out.yearsExperience = assertOptionalInt(body.yearsExperience, "yearsExperience", { min: 0, max: 100 });
   }
-  if (body.profilePhoto !== undefined) {
-    // Reject `javascript:`, `data:`, `http:` — only `https://` URLs allowed.
-    out.profilePhoto = assertOptionalHttpsUrl(body.profilePhoto, "profilePhoto");
-  }
+  // profilePhoto is INTENTIONALLY not writable here. It is managed only via
+  // the avatar upload endpoints (/api/brokers/avatar*), which store a
+  // server-derived storage object path. Accepting an arbitrary client URL
+  // here was an SSRF/abuse vector and is now ignored (silently dropped from
+  // the update) rather than trusted.
   if (body.mortgageCategory !== undefined) {
     out.mortgageCategory = assertOptionalEnum(
       body.mortgageCategory,
