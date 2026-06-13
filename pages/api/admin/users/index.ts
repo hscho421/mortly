@@ -35,6 +35,8 @@ export default withAdmin(async (req, res) => {
               subscriptionTier: true,
               responseCredits: true,
               brokerageName: true,
+              profilePhoto: true,
+              updatedAt: true,
             },
           },
           _count: {

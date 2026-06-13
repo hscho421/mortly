@@ -45,6 +45,8 @@ interface PersonRow {
     subscriptionTier: string;
     responseCredits: number;
     brokerageName: string;
+    profilePhoto: string | null;
+    updatedAt: string;
   } | null;
   _count: {
     borrowerRequests: number;
@@ -578,7 +580,12 @@ const PersonRowView = memo(function PersonRowView({
         />
       </span>
       <div className="flex items-center gap-2.5 min-w-0">
-        <AAvatar size={32} initials={initials} />
+        <AAvatar
+          size={32}
+          initials={initials}
+          photoPath={u.broker?.profilePhoto}
+          version={u.broker?.updatedAt}
+        />
         <div className="min-w-0">
           <div className="font-medium flex items-center gap-1.5">
             {u.name || <span className="text-sage-500">—</span>}
@@ -597,10 +604,10 @@ const PersonRowView = memo(function PersonRowView({
         <div className="font-mono text-[11px]">{u.publicId}</div>
         <div className="font-mono text-[11px] text-sage-500">{formatYYYYMM(u.createdAt)}</div>
       </div>
-      <div>
+      <div className="min-w-0">
         <ABadge tone={toneForRole(u.role)}>{u.role}</ABadge>
         {roleSubline && (
-          <div className="text-[11px] text-sage-500 mt-1 truncate">{roleSubline}</div>
+          <div className="text-[11px] text-sage-500 mt-1 truncate" title={roleSubline}>{roleSubline}</div>
         )}
       </div>
       <ABadge tone={toneForUserStatus(u.status)}>{u.status}</ABadge>
