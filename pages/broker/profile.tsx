@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import BrokerShell from "@/components/broker/BrokerShell";
+import { useBrokerData } from "@/components/broker/BrokerDataContext";
 import { SkeletonProfile } from "@/components/Skeleton";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import type { CreateBrokerProfileInput } from "@/types";
@@ -33,6 +34,7 @@ export default function BrokerProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
+  const { refresh: refreshBrokerData } = useBrokerData();
 
   const [form, setForm] = useState<CreateBrokerProfileInput>({
     brokerageName: "",
@@ -153,6 +155,9 @@ export default function BrokerProfilePage() {
       // cache-bust so the CDN/browser don't serve the old image at the same path
       setPhotoUrl((url || avatarPublicUrl(path)) + `?v=${Date.now()}`);
       setSuccess(t("broker.avatarUpdated", "Profile photo updated."));
+      // Refresh the shared context so the sidebar avatar updates immediately
+      // (it reads from BrokerDataContext, otherwise stale until the 30s poll).
+      refreshBrokerData().catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : t("broker.avatarUploadFailed", "Upload failed. Please try again."));
     } finally {
@@ -169,6 +174,7 @@ export default function BrokerProfilePage() {
       if (!res.ok) throw new Error(t("broker.avatarRemoveFailed", "Could not remove the photo."));
       setPhotoUrl(null);
       setSuccess(t("broker.avatarRemoved", "Profile photo removed."));
+      refreshBrokerData().catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : t("broker.avatarRemoveFailed", "Could not remove the photo."));
     } finally {

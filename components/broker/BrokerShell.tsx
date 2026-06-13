@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "next-i18next";
 import BrandMark from "@/components/BrandMark";
+import Avatar from "@/components/Avatar";
 import { useBrokerData } from "./BrokerDataContext";
 
 /**
@@ -169,6 +170,7 @@ export default function BrokerShell({
         brokerName={brokerName}
         brokerageName={profile?.brokerageName ?? null}
         subscriptionTier={profile?.subscriptionTier ?? null}
+        photoPath={profile?.profilePhoto ?? null}
         className="hidden md:flex"
       />
 
@@ -194,6 +196,7 @@ export default function BrokerShell({
             brokerName={brokerName}
             brokerageName={profile?.brokerageName ?? null}
             subscriptionTier={profile?.subscriptionTier ?? null}
+            photoPath={profile?.profilePhoto ?? null}
           />
         </div>
       )}
@@ -260,6 +263,7 @@ function Sidebar({
   brokerName,
   brokerageName,
   subscriptionTier,
+  photoPath,
   className = "",
 }: {
   active: BrokerNavKey;
@@ -267,6 +271,7 @@ function Sidebar({
   brokerName: string;
   brokerageName: string | null;
   subscriptionTier: string | null;
+  photoPath?: string | null;
   className?: string;
 }) {
   const { t } = useTranslation("common");
@@ -341,12 +346,7 @@ function Sidebar({
 
       <div className="border-t border-cream-300 p-3">
         <div className="flex items-center gap-3 px-1 py-2">
-          <div
-            aria-hidden
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-cream-200 border border-cream-300 font-display text-sm font-semibold text-forest-800"
-          >
-            {brokerName[0]?.toUpperCase() ?? "B"}
-          </div>
+          <Avatar name={brokerName} photoPath={photoPath} size={36} />
           <div className="min-w-0 flex-1">
             <div className="truncate font-body text-[13px] font-semibold text-forest-800">
               {brokerName}
