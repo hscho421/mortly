@@ -29,15 +29,28 @@ export default function NewRequestPage() {
   const { refresh: refreshBorrowerData } = useBorrowerData();
   const [snapshot, setSnapshot] = useState<RequestFormSnapshot | null>(null);
 
-  // Warn on accidental tab close mid-form. Hook order must stay stable, so
-  // it sits above any conditional return.
+  // Warn on accidental tab close ONLY when the form has unsaved content —
+  // previously it warned even on a pristine, untouched form. Hook order must
+  // stay stable, so it sits above any conditional return.
+  const form = snapshot?.form;
+  const isDirty = !!form && (
+    !!form.province ||
+    !!form.city ||
+    !!form.notes ||
+    !!form.desiredTimeline ||
+    (form.productTypes?.length ?? 0) > 0 ||
+    Object.values(form.details ?? {}).some((v) =>
+      Array.isArray(v) ? v.length > 0 : v != null && v !== "" && (typeof v !== "object" || Object.keys(v).length > 0),
+    )
+  );
   useEffect(() => {
+    if (!isDirty) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, []);
+  }, [isDirty]);
 
   if (status === "loading") {
     return (
@@ -47,8 +60,17 @@ export default function NewRequestPage() {
     );
   }
 
-  // Auth gate handled by <BorrowerShell> upstream.
-  if (!session || session.user.role !== "BORROWER") return null;
+  // Unauthenticated / wrong-role visitors must still render <BorrowerShell> —
+  // it owns the /login redirect. Returning null here unmounts the shell before
+  // its redirect effect can fire, stranding visitors on a blank page (homepage,
+  // how-it-works and 404 CTAs all link straight to this route).
+  if (!session || session.user.role !== "BORROWER") {
+    return (
+      <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerNewRequest")}>
+        <SkeletonForm />
+      </BorrowerShell>
+    );
+  }
 
   const handleSubmit = async (data: CreateRequestInput) => {
     const res = await fetch("/api/requests", {

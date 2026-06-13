@@ -103,12 +103,6 @@ export async function sendPushToUsers({
 
 // ── Localized push templates ────────────────────────────────
 
-function truncate(s: string, max = 120): string {
-  const trimmed = s.trim();
-  const chars = Array.from(trimmed);
-  return chars.length > max ? `${chars.slice(0, max).join("")}…` : trimmed;
-}
-
 /**
  * Privacy default: don't leak message content into the OS notification log /
  * lock screen. The text content arrives only as a generic "New message" body

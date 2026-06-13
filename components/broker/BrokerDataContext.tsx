@@ -108,6 +108,11 @@ interface BrokerDataContextValue {
   loaded: boolean;
   /** True once profile resolved (even if null/404). */
   profileChecked: boolean;
+  /**
+   * True when the most recent counters fetch failed — pages should render an
+   * error state instead of presenting stale/empty lists as "all caught up".
+   */
+  requestsError: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -124,6 +129,7 @@ const BrokerDataContext = createContext<BrokerDataContextValue>({
   conversations: [],
   loaded: false,
   profileChecked: false,
+  requestsError: false,
   refresh: async () => {},
 });
 
@@ -142,6 +148,7 @@ export function BrokerDataProvider({ children }: { children: React.ReactNode }) 
   const [conversations, setConversations] = useState<BrokerCachedConversation[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [profileChecked, setProfileChecked] = useState(false);
+  const [requestsError, setRequestsError] = useState(false);
   const redirectedRef = useRef(false);
 
   const onboardingPath = "/broker/onboarding";
@@ -190,6 +197,9 @@ export function BrokerDataProvider({ children }: { children: React.ReactNode }) 
           typeof json.newCount === "number" ? json.newCount : 0;
         const data = (json.data ?? []) as BrokerCachedRequest[];
         setRecentRequests(data);
+        setRequestsError(false);
+      } else {
+        setRequestsError(true);
       }
       if (unreadRes.ok) {
         const json = await unreadRes.json();
@@ -208,7 +218,8 @@ export function BrokerDataProvider({ children }: { children: React.ReactNode }) 
       }
       setCounters(nextCounters);
     } catch {
-      // keep previous counters / lists
+      // keep previous counters / lists, but surface the failure
+      setRequestsError(true);
     }
   }, []);
 
@@ -256,9 +267,10 @@ export function BrokerDataProvider({ children }: { children: React.ReactNode }) 
       conversations,
       loaded,
       profileChecked,
+      requestsError,
       refresh,
     }),
-    [profile, counters, recentRequests, conversations, loaded, profileChecked, refresh],
+    [profile, counters, recentRequests, conversations, loaded, profileChecked, requestsError, refresh],
   );
 
   return (

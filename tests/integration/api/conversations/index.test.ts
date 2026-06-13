@@ -43,6 +43,30 @@ describe("POST /api/conversations — broker-initiated (credit economy)", () => 
     expect(jsonBody<{ error: string }>(res).error).toMatch(/verified/);
   });
 
+  it("rejects opening a conversation on a non-OPEN request (no credit spend)", async () => {
+    // Brokers must not spend credits contacting EXPIRED/CLOSED/REJECTED/
+    // PENDING_APPROVAL requests. Guard runs before the broker lookup.
+    prismaMock.borrowerRequest.findUnique.mockResolvedValue(
+      makeBorrowerRequest({ borrowerId: "user_borrower_1", status: "EXPIRED" })
+    );
+    const { req, res } = makeReqRes({ method: "POST", body: { requestId: "req_1" } });
+    await handler(req, res);
+    expect(res.statusCode).toBe(409);
+    expect(jsonBody<{ code?: string }>(res).code).toBe("REQUEST_NOT_OPEN");
+    expect(prismaMock.conversation.create).not.toHaveBeenCalled();
+  });
+
+  it("blocks a PAST_DUE broker subscription from initiating (PREMIUM bypass closed)", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue(
+      makeBroker({ subscriptionTier: "PREMIUM", subscription: { status: "PAST_DUE" } } as never)
+    );
+    const { req, res } = makeReqRes({ method: "POST", body: { requestId: "req_1" } });
+    await handler(req, res);
+    expect(res.statusCode).toBe(403);
+    expect(jsonBody<{ code?: string }>(res).code).toBe("SUBSCRIPTION_PAST_DUE");
+    expect(prismaMock.conversation.create).not.toHaveBeenCalled();
+  });
+
   it("blocks FREE tier from initiating conversations", async () => {
     prismaMock.broker.findUnique.mockResolvedValue(
       makeBroker({ subscriptionTier: "FREE", responseCredits: 0 })

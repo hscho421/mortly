@@ -27,6 +27,7 @@ const routerReplace = vi.hoisted(() => vi.fn());
 vi.mock("next/router", () => ({
   useRouter: () => ({
     pathname: "/borrower/dashboard",
+    asPath: "/borrower/dashboard",
     locale: "ko",
     push: vi.fn(),
     replace: routerReplace,
@@ -141,7 +142,7 @@ describe("BorrowerShell", () => {
     renderShell();
     await waitFor(() =>
       expect(routerReplace).toHaveBeenCalledWith(
-        "/login",
+        `/login?callbackUrl=${encodeURIComponent("/borrower/dashboard")}`,
         undefined,
         { locale: "ko" },
       ),

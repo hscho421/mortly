@@ -57,6 +57,7 @@ export default function BrokerDashboardPage() {
     recentRequests: contextRequests,
     conversations: contextConversations,
     loaded: contextLoaded,
+    requestsError,
   } = useBrokerData();
   const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
 
@@ -298,6 +299,14 @@ export default function BrokerDashboardPage() {
               {loadingLists ? (
                 <div className="px-5 py-10 text-center font-body text-[13px] text-sage-500">
                   {t("broker.loadingRequests")}
+                </div>
+              ) : requestsError && recentRequests.length === 0 ? (
+                // A fetch failure must not masquerade as "all caught up".
+                <div
+                  role="alert"
+                  className="m-5 rounded-sm border border-error-100 bg-error-50 px-4 py-3 font-body text-[13px] text-error-700"
+                >
+                  {t("broker.failedToLoadRequests")}
                 </div>
               ) : recentRequests.length === 0 ? (
                 <div className="p-5">

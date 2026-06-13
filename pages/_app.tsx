@@ -6,6 +6,7 @@ import { SessionProvider, useSession } from "next-auth/react";
 import { appWithTranslation, useTranslation } from "next-i18next";
 import { Analytics } from "@vercel/analytics/react";
 import { ToastProvider } from "@/components/Toast";
+import ConsentBanner from "@/components/ConsentBanner";
 import { AdminDataProvider } from "@/lib/admin/AdminDataContext";
 import { BrokerDataProvider } from "@/components/broker/BrokerDataContext";
 import { BorrowerDataProvider } from "@/components/borrower/BorrowerDataContext";
@@ -176,6 +177,7 @@ function App({
         </ErrorBoundary>
       </ToastProvider>
       <Analytics />
+      <ConsentBanner />
     </SessionProvider>
   );
 }

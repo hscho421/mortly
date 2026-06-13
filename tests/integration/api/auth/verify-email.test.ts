@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import "@/tests/mocks/prisma";
 import { prismaMock } from "@/tests/mocks/prisma";
 import { makeReqRes, jsonBody } from "@/tests/utils/apiHelpers";
+import { hashVerificationCode } from "@/lib/email";
 import handler from "@/pages/api/auth/verify-email";
+
+// Codes are stored hashed (sha256); the handler hashes the submitted code
+// before comparing. Tests therefore seed the stored value as the hash.
+const HASHED = hashVerificationCode("123456");
 
 function post(body: unknown) {
   const ip = `10.1.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
@@ -29,7 +34,7 @@ describe("POST /api/auth/verify-email", () => {
     prismaMock.user.findUnique.mockResolvedValue({
       id: "u1",
       emailVerified: false,
-      verificationCode: "123456",
+      verificationCode: HASHED,
       verificationCodeExpiry: futureExpiry,
     } as never);
     prismaMock.user.update.mockResolvedValue({} as never);
@@ -53,7 +58,7 @@ describe("POST /api/auth/verify-email", () => {
     prismaMock.user.findUnique.mockResolvedValue({
       id: "u1",
       emailVerified: false,
-      verificationCode: "123456",
+      verificationCode: HASHED,
       verificationCodeExpiry: new Date(Date.now() - 1000),
     } as never);
 
@@ -68,7 +73,7 @@ describe("POST /api/auth/verify-email", () => {
     prismaMock.user.findUnique.mockResolvedValue({
       id: "u1",
       emailVerified: false,
-      verificationCode: "123456",
+      verificationCode: HASHED,
       verificationCodeExpiry: new Date(Date.now() + 60_000),
       verificationAttempts: 0,
     } as never);

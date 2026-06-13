@@ -6,7 +6,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 export default function ForgotPasswordPage() {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -21,7 +21,9 @@ export default function ForgotPasswordPage() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        // locale → the reset email + link render in the requester's language
+        // (the server has no persisted locale to fall back on).
+        body: JSON.stringify({ email, locale: i18n.language }),
       });
 
       if (!res.ok) {

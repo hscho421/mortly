@@ -62,6 +62,7 @@ export default function BorrowerDashboard() {
     requests,
     conversations,
     loaded: contextLoaded,
+    requestsError,
   } = useBorrowerData();
 
   // Page reads requests + conversations directly from BorrowerDataContext —
@@ -69,7 +70,10 @@ export default function BorrowerDashboard() {
   // 30s poll has cached. Mutation flows (request create / edit / delete)
   // call `refresh()` on the context before navigating here.
   const loading = !contextLoaded;
-  const error: string | null = null;
+  // Surface context fetch failures — previously hardcoded null, which made
+  // the error banner unreachable and showed the "no requests yet" empty
+  // state during outages (inviting duplicate submissions).
+  const error = requestsError;
 
   const locale = router.locale === "ko" ? "ko" : "en";
 

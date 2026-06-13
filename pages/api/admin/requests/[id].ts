@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
 import { notifyConversations } from "@/lib/realtime";
+import { notifyUser } from "@/lib/notify";
 import {
   buildAdminActionCreate,
   MAX_REASON_LEN,
@@ -150,6 +151,65 @@ export default withAdmin(async (req, res, session) => {
         reason: reasonValidated,
       }),
     );
+
+    // Tell the borrower about the decision — approval/rejection was
+    // previously completely silent; borrowers only discovered outcomes by
+    // logging in and noticing the status badge. notifyUser never throws.
+    if (actionType === "APPROVE_REQUEST") {
+      await notifyUser({
+        userId: request.borrowerId,
+        adminId: session.user.id,
+        subject: "상담 요청이 승인되었습니다 / Your request is live",
+        body:
+          "요청이 승인되어 인증된 중개인에게 공개되었습니다. 중개인의 응답이 도착하면 알려드립니다. / " +
+          "Your request was approved and is now visible to verified brokers. We'll let you know when brokers respond.",
+        push: {
+          title: { ko: "상담 요청 승인", en: "Request approved" },
+          body: {
+            ko: "요청이 공개되었습니다. 곧 중개인의 응답을 받게 됩니다.",
+            en: "Your request is now live. Broker responses are on the way.",
+          },
+        },
+        pushData: { type: "request", requestId: request.publicId },
+        email: {
+          subjectKo: "상담 요청이 승인되었습니다",
+          subjectEn: "Your request is live",
+          bodyKo: "요청이 승인되어 인증된 중개인에게 공개되었습니다.",
+          bodyEn: "Your request was approved and is now visible to verified brokers.",
+          ctaPath: `/borrower/request/${request.publicId}`,
+          ctaLabelKo: "요청 보기",
+          ctaLabelEn: "View request",
+        },
+      });
+    } else if (actionType === "REJECT_REQUEST") {
+      const reasonKo = reasonValidated ? ` 사유: ${reasonValidated}` : "";
+      const reasonEn = reasonValidated ? ` Reason: ${reasonValidated}` : "";
+      await notifyUser({
+        userId: request.borrowerId,
+        adminId: session.user.id,
+        subject: "상담 요청이 승인되지 않았습니다 / Your request was not approved",
+        body:
+          `요청이 승인되지 않았습니다.${reasonKo} 내용을 수정하여 다시 제출하실 수 있습니다. / ` +
+          `Your request was not approved.${reasonEn} You can revise and submit a new request.`,
+        push: {
+          title: { ko: "상담 요청 검토 결과", en: "Request review result" },
+          body: {
+            ko: "요청이 승인되지 않았습니다. 자세한 내용을 확인하세요.",
+            en: "Your request was not approved. Tap for details.",
+          },
+        },
+        pushData: { type: "request", requestId: request.publicId },
+        email: {
+          subjectKo: "상담 요청이 승인되지 않았습니다",
+          subjectEn: "Your request was not approved",
+          bodyKo: `요청이 승인되지 않았습니다.${reasonKo}`,
+          bodyEn: `Your request was not approved.${reasonEn}`,
+          ctaPath: `/borrower/request/${request.publicId}`,
+          ctaLabelKo: "자세히 보기",
+          ctaLabelEn: "See details",
+        },
+      });
+    }
 
     return res.status(200).json(updated);
   }

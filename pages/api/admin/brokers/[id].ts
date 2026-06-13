@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { withAdmin } from "@/lib/admin/withAdmin";
+import { notifyUser } from "@/lib/notify";
 
 export default withAdmin(async (req, res, session) => {
   const { id } = req.query;
@@ -68,7 +69,7 @@ export default withAdmin(async (req, res, session) => {
 
     const broker = await prisma.broker.findUnique({
       where: { id },
-      include: { user: { select: { publicId: true } } },
+      include: { user: { select: { publicId: true, id: true } } },
     });
 
     if (!broker) {
@@ -139,6 +140,56 @@ export default withAdmin(async (req, res, session) => {
         },
       }),
     ]);
+
+    // Tell the broker about the decision — verification outcomes were
+    // previously silent; brokers had to keep checking their dashboard.
+    if (verificationStatus === "VERIFIED" && broker.verificationStatus !== "VERIFIED") {
+      await notifyUser({
+        userId: broker.user.id,
+        adminId: session.user.id,
+        subject: "중개인 인증이 완료되었습니다 / You're verified",
+        body:
+          "중개인 인증이 완료되었습니다. 이제 상담 요청을 보고 응답할 수 있습니다. / " +
+          "Your broker verification is complete. You can now browse and respond to requests.",
+        push: {
+          title: { ko: "인증 완료", en: "Verification complete" },
+          body: {
+            ko: "이제 상담 요청에 응답할 수 있습니다.",
+            en: "You can now respond to consultation requests.",
+          },
+        },
+        pushData: { type: "verification" },
+        email: {
+          subjectKo: "중개인 인증이 완료되었습니다",
+          subjectEn: "You're verified on mortly",
+          bodyKo: "인증이 완료되어 이제 상담 요청을 보고 응답할 수 있습니다.",
+          bodyEn: "Your verification is complete — you can now browse and respond to requests.",
+          ctaPath: "/broker/requests",
+          ctaLabelKo: "요청 보기",
+          ctaLabelEn: "Browse requests",
+        },
+      });
+    } else if (verificationStatus === "REJECTED" && broker.verificationStatus !== "REJECTED") {
+      const reasonKo = reason ? ` 사유: ${reason}` : "";
+      const reasonEn = reason ? ` Reason: ${reason}` : "";
+      await notifyUser({
+        userId: broker.user.id,
+        adminId: session.user.id,
+        subject: "중개인 인증이 거절되었습니다 / Verification not approved",
+        body:
+          `중개인 인증이 거절되었습니다.${reasonKo} 문의는 고객센터로 연락해 주세요. / ` +
+          `Your broker verification was not approved.${reasonEn} Contact support to review your profile.`,
+        email: {
+          subjectKo: "중개인 인증이 거절되었습니다",
+          subjectEn: "Your verification was not approved",
+          bodyKo: `중개인 인증이 거절되었습니다.${reasonKo}`,
+          bodyEn: `Your broker verification was not approved.${reasonEn}`,
+          ctaPath: "/contact",
+          ctaLabelKo: "문의하기",
+          ctaLabelEn: "Contact support",
+        },
+      });
+    }
 
     return res.status(200).json(updated);
   }

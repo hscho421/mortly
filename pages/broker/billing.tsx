@@ -145,6 +145,7 @@ export default function BrokerBillingPage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
 
   // Show success banner from checkout redirect
@@ -229,6 +230,7 @@ export default function BrokerBillingPage() {
   const executePlanChange = async (tier: string) => {
     setDowngradeTarget(null);
     setActionLoading(tier);
+    setErrorMessage("");
     try {
       const res = await fetch("/api/stripe/create-checkout", {
         method: "POST",
@@ -239,6 +241,7 @@ export default function BrokerBillingPage() {
 
       if (!res.ok) {
         console.error("Checkout error:", data.error);
+        setErrorMessage(t("broker.planUpdateFailed"));
         return;
       }
 
@@ -295,9 +298,15 @@ export default function BrokerBillingPage() {
 
       if (data.url) {
         window.location.href = data.url;
+        return;
       }
+
+      // Neither an in-place update nor a checkout URL — treat as failure
+      // rather than silently doing nothing.
+      setErrorMessage(t("broker.planUpdateFailed"));
     } catch (err) {
       console.error("Failed to initiate checkout:", err);
+      setErrorMessage(t("broker.planUpdateFailed"));
     } finally {
       setActionLoading(null);
     }
@@ -305,18 +314,22 @@ export default function BrokerBillingPage() {
 
   const handleManageSubscription = async () => {
     setActionLoading("portal");
+    setErrorMessage("");
     posthog.capture("billing_portal_opened", { current_tier: currentTier });
     try {
       const res = await fetch("/api/stripe/create-portal", {
         method: "POST",
       });
-      const data = await res.json();
-      if (data.url) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
         window.location.href = data.url;
+        return;
       }
+      setErrorMessage(t("broker.portalFailed"));
     } catch (err) {
       posthog.captureException(err);
       console.error("Failed to open portal:", err);
+      setErrorMessage(t("broker.portalFailed"));
     } finally {
       setActionLoading(null);
     }
@@ -331,9 +344,17 @@ export default function BrokerBillingPage() {
     );
   }
 
-  // Auth gate is handled by <BrokerShell> upstream (see BrokerShell.tsx).
-  // Render nothing if the role check fails so the body never paints.
-  if (!session || session.user.role !== "BROKER") return null;
+  // Unauthenticated / wrong-role visitors must still render <BrokerShell> —
+  // it owns the /login redirect. Returning null would unmount it before the
+  // redirect effect fires, leaving a permanently blank page.
+  if (!session || session.user.role !== "BROKER") {
+    return (
+      <BrokerShell active="billing" pageTitle={t("titles.brokerBilling")}>
+        <Head><title>{t("titles.brokerBilling")}</title></Head>
+        <SkeletonBilling />
+      </BrokerShell>
+    );
+  }
 
   return (
     <BrokerShell active="billing" pageTitle={t("titles.brokerBilling")}>
@@ -352,6 +373,18 @@ export default function BrokerBillingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
               <p className="font-body text-sm font-medium text-forest-700">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Action error banner (failed checkout / portal) */}
+        {errorMessage && (
+          <div className="mb-6  rounded-sm border-2 border-error-300 bg-error-50 p-4" role="alert">
+            <div className="flex items-center gap-3">
+              <svg className="h-5 w-5 text-error-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+              </svg>
+              <p className="font-body text-sm font-medium text-error-700">{errorMessage}</p>
             </div>
           </div>
         )}
@@ -386,11 +419,14 @@ export default function BrokerBillingPage() {
               </svg>
               <p className="font-body text-sm font-medium text-amber-700">
                 {t("broker.cancellingAt", {
-                  date: new Date(subscription.currentPeriodEnd).toLocaleDateString("en-CA", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  }),
+                  date: new Date(subscription.currentPeriodEnd).toLocaleDateString(
+                    router.locale === "ko" ? "ko-KR" : "en-CA",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    },
+                  ),
                 })}
               </p>
             </div>

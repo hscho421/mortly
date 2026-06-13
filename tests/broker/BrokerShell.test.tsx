@@ -35,6 +35,7 @@ const routerPathname = vi.hoisted(() => ({ current: "/broker/dashboard" }));
 vi.mock("next/router", () => ({
   useRouter: () => ({
     pathname: routerPathname.current,
+    asPath: routerPathname.current,
     locale: "ko",
     push: vi.fn(),
     replace: routerReplace,
@@ -159,7 +160,7 @@ describe("BrokerShell", () => {
     renderShell();
     await waitFor(() => {
       expect(routerReplace).toHaveBeenCalledWith(
-        "/login",
+        `/login?callbackUrl=${encodeURIComponent("/broker/dashboard")}`,
         undefined,
         { locale: "ko" },
       );

@@ -15,6 +15,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { getRequestTitle } from "@/lib/requestConfig";
+import { dateLocale } from "@/lib/format";
 import type { ResidentialDetails, CommercialDetails } from "@/types";
 
 interface ConversationListItem {
@@ -53,28 +54,29 @@ interface FullMessage {
   createdAt: string;
   senderId: string;
   conversationId: string;
+  isSystem?: boolean;
 }
 
 interface FullConversation extends ConversationListItem {
   messages: FullMessage[];
 }
 
-function formatTime(date: string) {
-  return new Date(date).toLocaleTimeString("en-CA", {
+function formatTime(date: string, locale?: string) {
+  return new Date(date).toLocaleTimeString(dateLocale(locale), {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-CA", {
+function formatDate(date: string, locale?: string) {
+  return new Date(date).toLocaleDateString(dateLocale(locale), {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-function formatRelativeTime(date: string) {
+function formatRelativeTime(date: string, locale?: string) {
   const now = new Date();
   const then = new Date(date);
   const diffMs = now.getTime() - then.getTime();
@@ -86,7 +88,7 @@ function formatRelativeTime(date: string) {
   if (diffMins < 60) return `${diffMins}m`;
   if (diffHours < 24) return `${diffHours}h`;
   if (diffDays < 7) return `${diffDays}d`;
-  return formatDate(date);
+  return formatDate(date, locale);
 }
 
 export default function BrokerMessagesPage() {
@@ -328,7 +330,7 @@ export default function BrokerMessagesPage() {
   const groupedMessages: { date: string; items: FullMessage[] }[] = [];
   let currentDate = "";
   for (const msg of messages) {
-    const dateStr = formatDate(msg.createdAt);
+    const dateStr = formatDate(msg.createdAt, router.locale);
     if (dateStr !== currentDate) {
       currentDate = dateStr;
       groupedMessages.push({ date: dateStr, items: [] });
@@ -441,8 +443,8 @@ export default function BrokerMessagesPage() {
                             )}
                             <span className={`font-body text-[11px] ${hasUnread ? "text-amber-600 font-semibold" : "text-forest-700/40"}`}>
                               {lastMessage
-                                ? formatRelativeTime(lastMessage.createdAt)
-                                : formatRelativeTime(conv.updatedAt)}
+                                ? formatRelativeTime(lastMessage.createdAt, router.locale)
+                                : formatRelativeTime(conv.updatedAt, router.locale)}
                             </span>
                           </div>
                         </div>
@@ -617,6 +619,17 @@ export default function BrokerMessagesPage() {
 
                         <div className="space-y-3">
                           {group.items.map((msg) => {
+                            // System messages render centered, not as a
+                            // misattributed participant bubble.
+                            if (msg.isSystem) {
+                              return (
+                                <div key={msg.id} className="flex justify-center">
+                                  <p className="max-w-[85%] rounded-sm bg-cream-200 px-3 py-1.5 text-center text-[12px] font-body text-sage-500">
+                                    {msg.body}
+                                  </p>
+                                </div>
+                              );
+                            }
                             const isMine = msg.senderId === brokerUserId;
                             return (
                               <div
@@ -638,7 +651,7 @@ export default function BrokerMessagesPage() {
                                       isMine ? "text-forest-300" : "text-sage-400"
                                     }`}
                                   >
-                                    {formatTime(msg.createdAt)}
+                                    {formatTime(msg.createdAt, router.locale)}
                                   </p>
                                 </div>
                               </div>
@@ -679,6 +692,13 @@ export default function BrokerMessagesPage() {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        // Korean IME: don't submit when Enter is confirming a
+                        // Hangul composition (see borrower/messages.tsx).
+                        if (e.key === "Enter" && e.nativeEvent.isComposing) {
+                          e.preventDefault();
+                        }
+                      }}
                       placeholder={t("messages.typeMessage")}
                       className="input-field flex-1"
                       disabled={sending}

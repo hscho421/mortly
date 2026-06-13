@@ -651,7 +651,7 @@ const ActivityRow = memo(function ActivityRow({
           {lastMsg && (
             <span className="italic text-sage-400">
               {" · "}
-              {lastMsg.sender.name || "—"}: "{truncate(lastMsg.body, 48)}"
+              {lastMsg.sender.name || "—"}: &quot;{truncate(lastMsg.body, 48)}&quot;
             </span>
           )}
         </div>

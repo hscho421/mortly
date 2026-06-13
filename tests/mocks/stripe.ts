@@ -14,6 +14,12 @@ export const stripeMock = {
     retrieve: vi.fn(),
     update: vi.fn(),
   },
+  subscriptionSchedules: {
+    create: vi.fn(),
+    retrieve: vi.fn(),
+    update: vi.fn(),
+    release: vi.fn(),
+  },
   checkout: {
     sessions: {
       create: vi.fn(),

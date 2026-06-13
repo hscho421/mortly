@@ -26,9 +26,10 @@ import {
   PRODUCT_LABEL_KEYS,
   TIMELINE_LABEL_KEYS,
 } from "@/lib/requestConfig";
+import { dateLocale } from "@/lib/format";
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-CA", {
+function formatDate(dateStr: string, locale?: string): string {
+  return new Date(dateStr).toLocaleDateString(dateLocale(locale), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -45,7 +46,7 @@ function relativeTime(dateStr: string, locale: string) {
   if (h < 24) return locale === "ko" ? `${h}시간 전` : `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return locale === "ko" ? `${d}일 전` : `${d}d ago`;
-  return formatDate(dateStr);
+  return formatDate(dateStr, locale);
 }
 
 export default function BrokerRequestDetailPage() {
@@ -282,7 +283,7 @@ export default function BrokerRequestDetailPage() {
             )}
             <FactCell
               label={t("broker.posted")}
-              value={formatDate(request.createdAt as string)}
+              value={formatDate(request.createdAt as string, router.locale)}
             />
           </div>
 

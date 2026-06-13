@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { validateProductTypes } from "@/lib/requestConfig";
+import { validateProductTypes, isValidProvince, isValidTimeline } from "@/lib/requestConfig";
 import { notifyConversations } from "@/lib/realtime";
 import { withAuth } from "@/lib/withAuth";
 import { assertOptionalString, assertOptionalBoundedJson, ValidationError } from "@/lib/validate";
@@ -103,6 +103,15 @@ export default withAuth(async (req, res, session) => {
         return res.status(400).json({ error: "Only status CLOSED is allowed" });
       }
 
+      // Closing only makes sense from a live state. Allowing it from terminal
+      // states would let a borrower overwrite REJECTED/EXPIRED history.
+      if (request.status !== "OPEN" && request.status !== "IN_PROGRESS") {
+        return res.status(400).json({
+          error: "Only OPEN or IN_PROGRESS requests can be closed",
+          code: "CLOSE_INVALID_STATUS",
+        });
+      }
+
       const { updatedReq, closedConvoIds } = await prisma.$transaction(async (tx) => {
         const updatedReq = await tx.borrowerRequest.update({
           where: { id: request.id },
@@ -183,22 +192,39 @@ export default withAuth(async (req, res, session) => {
           city === undefined &&
           details === undefined;
         if (!onlyCosmetic) {
+          // `code` lets the client render a translated message instead of
+          // this English prose (Korean-default audience).
           return res.status(409).json({
             error:
               "This request has active conversations — only notes and desired timeline can be updated. Close the request and create a new one for material changes.",
+            code: "EDIT_LOCKED_BY_CONVERSATIONS",
           });
         }
       }
 
+      // Validate mortgageCategory enum if provided — an unknown value would
+      // otherwise reach Prisma and surface as a 500 instead of a clean 400.
+      if (mortgageCategory !== undefined && !["RESIDENTIAL", "COMMERCIAL"].includes(mortgageCategory)) {
+        return res.status(400).json({ error: "mortgageCategory must be RESIDENTIAL or COMMERCIAL" });
+      }
+
       // Validate product types if provided
       if (productTypes) {
+        if (!Array.isArray(productTypes) || productTypes.length === 0 || productTypes.length > 20) {
+          return res.status(400).json({ error: "Invalid productTypes" });
+        }
         const cat = mortgageCategory || request.mortgageCategory;
         if (!validateProductTypes(cat, productTypes)) {
           return res.status(400).json({ error: "Invalid product type for selected category" });
         }
-        if (!Array.isArray(productTypes) || productTypes.length === 0 || productTypes.length > 20) {
-          return res.status(400).json({ error: "Invalid productTypes" });
-        }
+      }
+
+      // Province / timeline enum validation (parity with POST).
+      if (province !== undefined && province !== null && !isValidProvince(province)) {
+        return res.status(400).json({ error: "Invalid province" });
+      }
+      if (desiredTimeline !== undefined && desiredTimeline !== null && desiredTimeline !== "" && !isValidTimeline(desiredTimeline)) {
+        return res.status(400).json({ error: "Invalid desiredTimeline" });
       }
 
       // Bounded validation on the user-controlled string/JSON fields.

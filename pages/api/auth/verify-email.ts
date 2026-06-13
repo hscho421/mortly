@@ -3,6 +3,7 @@ import { timingSafeEqual } from "crypto";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { isValidEmail, normalizeEmail } from "@/lib/normalizeEmail";
+import { hashVerificationCode } from "@/lib/email";
 
 const MAX_ATTEMPTS_PER_CODE = 5;
 const ATTEMPTS_PER_IP_PER_HOUR = 30;
@@ -99,7 +100,8 @@ export default async function handler(
         .json({ message: "Too many attempts. Request a new code.", expired: true });
     }
 
-    if (!safeCompare(user.verificationCode, code)) {
+    // Compare the hash of the submitted code against the stored hash.
+    if (!safeCompare(user.verificationCode, hashVerificationCode(code))) {
       await prisma.user.update({
         where: { id: user.id },
         data: { verificationAttempts: { increment: 1 } },

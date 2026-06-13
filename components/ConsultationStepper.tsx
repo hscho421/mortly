@@ -3,7 +3,8 @@ import { useTranslation } from "next-i18next";
 interface ConsultationStepperProps {
   requestStatus: string;
   hasConversation: boolean;
-  hasActiveConversation: boolean;
+  /** @deprecated no longer affects step state — kept for call-site compat. */
+  hasActiveConversation?: boolean;
   conversationClosed: boolean;
 }
 
@@ -12,25 +13,29 @@ type StepState = "completed" | "active" | "pending";
 function getStepStates(
   requestStatus: string,
   hasConversation: boolean,
-  hasActiveConversation: boolean,
   conversationClosed: boolean
 ): [StepState, StepState, StepState] {
-  // Step 3 complete: conversation closed or request closed/expired
-  if (conversationClosed || requestStatus === "CLOSED" || requestStatus === "EXPIRED") {
+  const isTerminal = requestStatus === "CLOSED" || requestStatus === "EXPIRED";
+
+  // A terminal request that NEVER got a broker response did not have a
+  // consultation — don't check-mark steps 2 & 3 (the old code showed all
+  // three completed, implying a consultation that never happened).
+  if (isTerminal && !hasConversation) {
+    return ["completed", "pending", "pending"];
+  }
+
+  // Step 3 complete: a real conversation happened and is now closed, or the
+  // request reached a terminal state with conversations on it.
+  if (conversationClosed || isTerminal) {
     return ["completed", "completed", "completed"];
   }
 
-  // Step 2 active: broker responded and conversation is active
-  if (hasConversation && hasActiveConversation) {
-    return ["completed", "active", "pending"];
-  }
-
-  // Step 2 active: broker responded but conversation not yet active
+  // Step 2 active: broker has responded (conversation exists).
   if (hasConversation) {
     return ["completed", "active", "pending"];
   }
 
-  // Step 1 active: pending approval or open but no conversations yet
+  // Step 1 active: pending approval or open but no conversations yet.
   return ["active", "pending", "pending"];
 }
 
@@ -86,7 +91,6 @@ function ConnectorVertical({ completed }: { completed: boolean }) {
 export default function ConsultationStepper({
   requestStatus,
   hasConversation,
-  hasActiveConversation,
   conversationClosed,
 }: ConsultationStepperProps) {
   const { t } = useTranslation("common");
@@ -99,7 +103,6 @@ export default function ConsultationStepper({
   const [step1, step2, step3] = getStepStates(
     requestStatus,
     hasConversation,
-    hasActiveConversation,
     conversationClosed
   );
 

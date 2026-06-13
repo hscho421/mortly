@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
@@ -405,7 +405,7 @@ function ReportDrawer({
           {t("admin.reports.drawer.content", "신고 내용")}
         </div>
         <div className="text-[13px] text-forest-700/80 italic leading-relaxed">
-          "{detail.reason}"
+          &quot;{detail.reason}&quot;
         </div>
       </div>
 

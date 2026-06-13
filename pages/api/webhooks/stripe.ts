@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { getStripe, getTierForPriceId, getPriceIdForTier, getCreditsForTier } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
 import { getPostHogClient } from "@/lib/posthog-server";
+import { sendPaymentFailedEmail } from "@/lib/email";
 
 export const config = {
   api: { bodyParser: false },
@@ -70,25 +71,19 @@ export default async function handler(
 
   // Idempotency ledger — Stripe retries aggressively, and out-of-order
   // delivery is a real production failure mode (we've seen invoice.paid
-  // arrive twice within 100ms). Inserting `event.id` first ensures a duplicate
-  // delivery short-circuits before mutating any of our state.
-  try {
-    await prisma.processedStripeEvent.create({
-      data: { eventId: event.id, type: event.type },
-    });
-  } catch (err) {
-    // Unique constraint violation = we've seen this event id before. Ack the
-    // delivery so Stripe stops retrying, but don't run handlers again.
-    if (
-      err &&
-      typeof err === "object" &&
-      "code" in err &&
-      (err as { code?: string }).code === "P2002"
-    ) {
-      return res.status(200).json({ received: true, duplicate: true });
-    }
-    console.error("Webhook ledger insert failed:", err);
-    return res.status(500).json({ error: "Webhook ledger failed" });
+  // arrive twice within 100ms). A previously completed event short-circuits
+  // here. The ledger row is written AFTER the handler succeeds: the previous
+  // insert-first design meant a hard crash / lambda timeout mid-handler left
+  // the row behind, so Stripe's retry was swallowed as a "duplicate" and the
+  // event was lost forever. Every handler below is internally idempotent
+  // (in-transaction period/status re-checks), which also covers the tiny
+  // check→record race window on concurrent duplicate deliveries.
+  const seen = await prisma.processedStripeEvent.findUnique({
+    where: { eventId: event.id },
+    select: { eventId: true },
+  });
+  if (seen) {
+    return res.status(200).json({ received: true, duplicate: true });
   }
 
   try {
@@ -113,37 +108,25 @@ export default async function handler(
     }
   } catch (err) {
     console.error(`Webhook handler error for ${event.type}:`, err);
-    // Roll back the ledger so Stripe's retry isn't short-circuited as a
-    // duplicate. If the rollback ALSO fails (KV outage, DB blip), surface it
-    // loudly — silently swallowing means Stripe retries see the ledger row
-    // and 200, dropping the event entirely. Logging + observability event so
-    // it's noisy in metrics; we still return 500 to trigger Stripe's retry.
-    try {
-      await prisma.processedStripeEvent.delete({ where: { eventId: event.id } });
-    } catch (rollbackErr) {
-      console.error(
-        "[stripe-webhook] CRITICAL: ledger rollback failed for event",
-        event.id,
-        rollbackErr,
-      );
-      try {
-        getPostHogClient().capture({
-          distinctId: "system",
-          event: "webhook_ledger_rollback_failed",
-          properties: {
-            stripe_event_id: event.id,
-            stripe_event_type: event.type,
-            error: rollbackErr instanceof Error ? rollbackErr.message : String(rollbackErr),
-          },
-        });
-      } catch {
-        // PostHog itself can fail — at this point we've done all we can
-        // without paging a human. The handler already logged; Stripe still
-        // gets a 500 and will retry. Worst case: the duplicate-protection
-        // ledger entry blocks the retry, which is a known support ticket.
-      }
-    }
+    // No ledger row was written, so Stripe's retry will reprocess cleanly.
     return res.status(500).json({ error: "Webhook handler failed" });
+  }
+
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { eventId: event.id, type: event.type },
+    });
+  } catch (err) {
+    const isDuplicate =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2002";
+    if (!isDuplicate) {
+      // Failing to RECORD only means a future retry reprocesses an
+      // idempotent handler — never fail the delivery over bookkeeping.
+      console.error("Webhook ledger insert failed:", err);
+    }
   }
 
   return res.status(200).json({ received: true });
@@ -202,6 +185,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         currentPeriodEnd: period.end,
         cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
         endedAt: null,
+        // A fresh checkout must not inherit a downgrade scheduled against a
+        // previous (cancelled/expired) subscription.
+        pendingTier: null,
       },
     });
     await tx.broker.update({
@@ -234,10 +220,24 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   });
   if (!subscription) return;
 
+  // A delayed or replayed invoice.paid must not resurrect a subscription that
+  // was already cancelled/expired (e.g. Stripe re-delivers an old paid invoice
+  // after customer.subscription.deleted landed). Re-activating it here would
+  // silently re-grant paid-tier credits to a broker who no longer pays.
+  if (subscription.status === "EXPIRED" || subscription.status === "CANCELLED") {
+    return;
+  }
+
   const stripe = getStripe();
   const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
   const period = getSubPeriod(stripeSub);
   if (!period) return;
+
+  // Stripe is the source of truth for live status: if the subscription is no
+  // longer active over there, don't flip our row back to ACTIVE.
+  if (stripeSub.status !== "active" && stripeSub.status !== "trialing") {
+    return;
+  }
 
   // If there's a pending downgrade, apply it now and swap the Stripe price
   const priceId = stripeSub.items.data[0]?.price.id;
@@ -246,7 +246,11 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   if (subscription.pendingTier) {
     tier = subscription.pendingTier;
     const newPriceId = getPriceIdForTier(tier);
-    if (newPriceId) {
+    // The downgrade's subscription schedule normally swaps the price at the
+    // period boundary, so by the time this renewal invoice arrives the price
+    // already matches. This swap is a fallback for legacy pendingTier rows
+    // created before the schedule-based downgrade existed.
+    if (newPriceId && newPriceId !== priceId) {
       const existingItemId = stripeSub.items.data[0]?.id;
       if (existingItemId) {
         await stripe.subscriptions.update(stripeSubscriptionId, {
@@ -306,7 +310,11 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   const subscription = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId },
-    include: { broker: { select: { id: true } } },
+    include: {
+      broker: {
+        select: { id: true, user: { select: { id: true, email: true } } },
+      },
+    },
   });
 
   if (!subscription) return;
@@ -328,6 +336,46 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       data: { responseCredits: freeCredits },
     }),
   ]);
+
+  // Tell the broker — credits were previously stripped with ZERO
+  // notification, leaving them to discover mid-conversation that they
+  // couldn't respond to leads. Failures here must never fail the webhook.
+  try {
+    const brokerUser = subscription.broker.user;
+    if (!brokerUser?.email) return; // nothing to notify
+    const billingUrl = `${process.env.NEXTAUTH_URL || "https://mortly.ca"}/broker/billing`;
+    await sendPaymentFailedEmail(brokerUser.email, billingUrl);
+
+    // In-app notice. dedupeKey makes Stripe's invoice retries at-most-once;
+    // AdminNotice.adminId is required, so attribute system notices to the
+    // first admin account (skip the notice if none exists yet).
+    const sysAdmin = await prisma.user.findFirst({
+      where: { role: "ADMIN" },
+      select: { id: true },
+    });
+    if (sysAdmin) {
+      await prisma.adminNotice
+        .create({
+          data: {
+            adminId: sysAdmin.id,
+            userId: brokerUser.id,
+            subject: "결제 실패 / Payment failed",
+            body:
+              "구독 결제가 처리되지 않아 플랜 크레딧이 일시 중지되었습니다. 결제 수단을 업데이트하시면 즉시 복구됩니다. / " +
+              "Your subscription payment failed and your plan credits are paused. Update your payment method to restore them.",
+            dedupeKey: `payment-failed-${invoice.id}`,
+          },
+        })
+        .catch((err: unknown) => {
+          const isDuplicate =
+            err && typeof err === "object" && "code" in err &&
+            (err as { code?: string }).code === "P2002";
+          if (!isDuplicate) throw err;
+        });
+    }
+  } catch (err) {
+    console.error("payment-failed notification failed:", err);
+  }
 
   const posthog = getPostHogClient();
   posthog.capture({
@@ -407,6 +455,9 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
         status: "EXPIRED",
         endedAt: new Date(),
         cancelAtPeriodEnd: false,
+        // A scheduled downgrade dies with the subscription it was
+        // scheduled against.
+        pendingTier: null,
       },
     }),
     prisma.broker.update({

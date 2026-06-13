@@ -76,11 +76,16 @@ export default function BorrowerShell({
   const { profile, counters } = useBorrowerData();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Auth gate.
+  // Auth gate. callbackUrl brings the visitor back here after login — the
+  // marketing CTAs deep-link into authed pages (e.g. /borrower/request/new).
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "BORROWER") {
-      router.replace("/login", undefined, { locale: router.locale });
+      router.replace(
+        `/login?callbackUrl=${encodeURIComponent(router.asPath)}`,
+        undefined,
+        { locale: router.locale },
+      );
     }
   }, [session, status, router]);
 

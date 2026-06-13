@@ -62,9 +62,34 @@ export default withAuth(async (req, res, session) => {
         ? (TIER_RANK[tier] ?? 0) > (TIER_RANK[currentTier] ?? 0)
         : true;
 
-      if (existingItemId) {
+      if (existingItemId && currentPriceId) {
+        // A subscription managed by a schedule (from a previously scheduled
+        // downgrade) cannot be price-updated directly — Stripe errors. Track
+        // the schedule so upgrade/downgrade paths can release/rebuild it.
+        const scheduleId =
+          typeof stripeSub.schedule === "string"
+            ? stripeSub.schedule
+            : (stripeSub.schedule?.id ?? null);
+
+        if (currentTier === tier) {
+          // Re-selecting the current plan cancels a scheduled downgrade.
+          if (broker.subscription.pendingTier) {
+            if (scheduleId) await stripe.subscriptionSchedules.release(scheduleId);
+            await prisma.subscription.update({
+              where: { brokerId: broker.id },
+              data: { pendingTier: null },
+            });
+            return res.status(200).json({ updated: true, cancelled: true });
+          }
+          return res.status(400).json({ error: "Already on this plan" });
+        }
+
         if (isUpgrade) {
-          // Upgrade → immediate with proration
+          // Upgrade → immediate with proration. Release any downgrade
+          // schedule first (also cancels the pending downgrade — without
+          // this, the stale pendingTier silently downgraded the broker at
+          // the next renewal).
+          if (scheduleId) await stripe.subscriptionSchedules.release(scheduleId);
           await stripe.subscriptions.update(
             broker.subscription.stripeSubscriptionId,
             {
@@ -73,8 +98,38 @@ export default withAuth(async (req, res, session) => {
               metadata: { brokerId: broker.id, tier },
             }
           );
+          if (broker.subscription.pendingTier) {
+            await prisma.subscription.update({
+              where: { brokerId: broker.id },
+              data: { pendingTier: null },
+            });
+          }
         } else {
-          // Downgrade → store pending tier, apply on next billing cycle
+          // Downgrade → schedule the price change at the period boundary in
+          // Stripe itself. Previously only pendingTier was stored locally, so
+          // Stripe billed the renewal at the OLD higher price while
+          // invoice.paid granted the NEW lower tier's credits. The schedule
+          // makes Stripe generate the renewal invoice at the new price;
+          // pendingTier remains the source of truth for the entitlement swap.
+          const schedule = scheduleId
+            ? await stripe.subscriptionSchedules.retrieve(scheduleId)
+            : await stripe.subscriptionSchedules.create({
+                from_subscription: broker.subscription.stripeSubscriptionId,
+              });
+          await stripe.subscriptionSchedules.update(schedule.id, {
+            end_behavior: "release",
+            phases: [
+              {
+                items: [{ price: currentPriceId, quantity: 1 }],
+                start_date: schedule.phases[0].start_date,
+                end_date: schedule.phases[0].end_date,
+              },
+              {
+                items: [{ price: priceId, quantity: 1 }],
+                proration_behavior: "none",
+              },
+            ],
+          });
           await prisma.subscription.update({
             where: { brokerId: broker.id },
             data: { pendingTier: tier as "BASIC" | "PRO" | "PREMIUM" },

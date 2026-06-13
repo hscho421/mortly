@@ -45,6 +45,18 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      # Gate on lint + types + a real production build. The appleId
+      # schema/migration drift and the broker-filter contract break both
+      # shipped because CI only ran vitest.
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Production build
+        run: npm run build
+
       - name: Run Vitest (unit + integration + component)
         run: npm run test:coverage
 

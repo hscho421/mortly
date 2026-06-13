@@ -80,6 +80,23 @@ describe("POST /api/messages", () => {
     expect(updateArgs.data.borrowerLastReadAt).toBeInstanceOf(Date);
   });
 
+  it("rejects sending into a CLOSED conversation", async () => {
+    setSession(borrowerSession());
+    prismaMock.conversation.findUnique.mockReset();
+    prismaMock.conversation.findUnique.mockResolvedValue({
+      ...convoWithParticipants,
+      status: "CLOSED",
+    } as never);
+
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { conversationId: "conv_1", body: "still here?" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(409);
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
   it("non-participant cannot send", async () => {
     setSession({ user: { id: "user_stranger", publicId: "x", email: "s@t", name: null, role: "BORROWER" } });
     const { req, res } = makeReqRes({

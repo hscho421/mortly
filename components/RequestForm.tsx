@@ -2,29 +2,12 @@ import { useCallback, useEffect, useState, FormEvent } from "react";
 import { useTranslation } from "next-i18next";
 import type { CreateRequestInput, ResidentialDetails, CommercialDetails } from "@/types";
 import {
-  RESIDENTIAL_PRODUCTS,
-  COMMERCIAL_PRODUCTS,
   INCOME_TYPES,
   PRODUCT_LABEL_KEYS,
   INCOME_TYPE_LABEL_KEYS,
   getProductsForCategory,
+  PROVINCES,
 } from "@/lib/requestConfig";
-
-const PROVINCES = [
-  "Alberta",
-  "British Columbia",
-  "Manitoba",
-  "New Brunswick",
-  "Newfoundland and Labrador",
-  "Northwest Territories",
-  "Nova Scotia",
-  "Nunavut",
-  "Ontario",
-  "Prince Edward Island",
-  "Quebec",
-  "Saskatchewan",
-  "Yukon",
-];
 
 /**
  * Snapshot emitted by RequestForm whenever its internal state changes.
@@ -137,17 +120,20 @@ export default function RequestForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Income year selectors — derive initial from existing data or default to last 2 years
-  const currentYear = new Date().getFullYear();
+  // Income year selectors — derive initial from the RESOLVED form state, not
+  // just initialValues. In create mode `form` may have been rehydrated from
+  // the sessionStorage draft (with year keys in details.annualIncome); reading
+  // only initialValues left these "" after a refresh, so the restored amounts
+  // rendered as empty inputs (annualIncome[""]) and silently dropped.
   const existingYears = Object.keys(
-    (initialValues?.details as ResidentialDetails)?.annualIncome || {}
+    (form.details as ResidentialDetails)?.annualIncome || {}
   );
   const [incomeYear1, setIncomeYear1] = useState(existingYears[0] || "");
   const [incomeYear2, setIncomeYear2] = useState(existingYears[1] || "");
 
   // Commercial year selectors (shared across income & expenses)
   const existingCorpYears = Object.keys(
-    (initialValues?.details as CommercialDetails)?.corporateAnnualIncome || {}
+    (form.details as CommercialDetails)?.corporateAnnualIncome || {}
   );
   const [corpYear1, setCorpYear1] = useState(existingCorpYears[0] || "");
   const [corpYear2, setCorpYear2] = useState(existingCorpYears[1] || "");

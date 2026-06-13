@@ -9,6 +9,7 @@ import type { CreateBrokerProfileInput } from "@/types";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
+import { PROVINCES } from "@/lib/requestConfig";
 
 interface BrokerUser {
   id: string;
@@ -16,19 +17,6 @@ interface BrokerUser {
   name: string | null;
   email: string;
 }
-
-const PROVINCES = [
-  "Alberta",
-  "British Columbia",
-  "Manitoba",
-  "New Brunswick",
-  "Newfoundland and Labrador",
-  "Nova Scotia",
-  "Ontario",
-  "Prince Edward Island",
-  "Quebec",
-  "Saskatchewan",
-];
 
 interface BrokerProfile extends CreateBrokerProfileInput {
   id: string;

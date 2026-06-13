@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, createContext, useContext, ReactNode } from "react";
+import { useEffect, useRef, useState, createContext, useContext, ReactNode } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -147,7 +147,6 @@ export default function AdminShell({ active, children, pageTitle }: AdminShellPr
 function AdminShellChrome({
   active,
   adminName,
-  paletteOpen,
   setPaletteOpen,
   children,
 }: {
@@ -229,10 +228,10 @@ function AdminShellChrome({
           </button>
 
           <div className="flex items-center gap-3.5">
-            <div className="flex items-center gap-1.5 font-mono text-[11px] text-sage-500">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-success-500 animate-pulse" />
-              {t("admin.systemStatus", "모든 시스템 정상")}
-            </div>
+            {/* Removed a permanently-green "all systems normal" indicator — it
+                was static JSX backed by no health check, so it would have read
+                "normal" during a real outage. Reinstate only when wired to an
+                actual health probe. */}
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border border-amber-200 bg-amber-50 text-amber-700 font-mono text-[10px] font-semibold tracking-[0.1em] uppercase">
               {adminName} · ADMIN
             </span>

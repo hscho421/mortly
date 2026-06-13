@@ -38,7 +38,6 @@ const TARGETS: string[] = [
   "pages/broker/requests/[id].tsx",
   "components/RequestForm.tsx",
   "components/ConsultationStepper.tsx",
-  "components/RequestCard.tsx",
   "components/StatusBadge.tsx",
   "components/DeleteAccountSection.tsx",
   "components/Skeleton.tsx",

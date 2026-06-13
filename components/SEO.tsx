@@ -18,7 +18,9 @@ interface SEOProps {
 export default function SEO({
   title,
   description,
-  ogImage = `${SITE_URL}/og-default.png`,
+  // Must match the committed asset filename (public/og-default-1.png) — the
+  // old `/og-default.png` 404'd on every page's social/OG preview.
+  ogImage = `${SITE_URL}/og-default-1.png`,
   noindex = false,
   jsonLd,
 }: SEOProps) {

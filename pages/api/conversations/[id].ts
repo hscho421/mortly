@@ -35,6 +35,10 @@ export default withAuth(async (req, res, session) => {
               createdAt: true,
               senderId: true,
               conversationId: true,
+              // isSystem lets the chat UIs render admin/cron messages as a
+              // centered system notice instead of a misattributed participant
+              // bubble (cron auto-close, admin close, etc. set this flag).
+              isSystem: true,
               sender: {
                 select: { id: true, name: true, role: true },
               },

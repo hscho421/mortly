@@ -55,6 +55,18 @@ export default withAuth(async (req, res, session) => {
         return res.status(403).json({ error: "Forbidden" });
       }
 
+      // Refuse sends into a CLOSED conversation. The UI hides the input when
+      // closed, but a stale tab (the 5s poll fallback only merges messages,
+      // it doesn't refresh conversation status) could otherwise post into a
+      // closed thread — where the message is nearly invisible to the
+      // recipient (unread badges are suppressed for closed conversations).
+      if (conversation.status === "CLOSED") {
+        return res.status(409).json({
+          error: "This conversation is closed",
+          code: "CONVERSATION_CLOSED",
+        });
+      }
+
       // Block check — refuse to deliver new messages between blocked users
       // (in either direction). Existing message history stays intact, but
       // no new messages can be added once blocked. Apple guideline 1.2.

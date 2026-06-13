@@ -121,7 +121,7 @@ export default function AdminPeoplePage() {
     return `/api/admin/users?${params.toString()}`;
   }, [pageNum, roleFilter, statusFilter, search]);
 
-  const { data, isLoading, isValidating, mutate: refetchList } = useSWR<Paginated<PersonRow>>(
+  const { data, error: fetchError, isLoading, isValidating, mutate: refetchList } = useSWR<Paginated<PersonRow>>(
     listUrl,
     jsonFetcher,
     {
@@ -135,6 +135,10 @@ export default function AdminPeoplePage() {
   const rows = data?.data ?? [];
   const total = data?.pagination.total ?? 0;
   const loading = isLoading && !data;
+  // A fetch failure with no cached data must show an error, not the "no
+  // users match" empty state (which reads as "the query succeeded, zero
+  // results").
+  const loadFailed = !!fetchError && !data;
 
   // Drop selections that fall off the visible page.
   useEffect(() => {
@@ -447,6 +451,10 @@ export default function AdminPeoplePage() {
           {loading ? (
             <div className="p-8 text-center text-sm text-sage-500">
               {t("common.loading", "로딩 중…")}
+            </div>
+          ) : loadFailed ? (
+            <div className="p-10 text-center text-sm text-error-700" role="alert">
+              {t("admin.people.loadFailed", "사용자 목록을 불러오지 못했습니다. 다시 시도해 주세요.")}
             </div>
           ) : rows.length === 0 ? (
             <div className="p-10 text-center text-sm text-sage-500">

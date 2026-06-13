@@ -12,6 +12,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { getRequestTitle } from "@/lib/requestConfig";
+import { dateLocale } from "@/lib/format";
 import BorrowerShell from "@/components/borrower/BorrowerShell";
 import RequestContextPanel from "@/components/broker/RequestContextPanel";
 import {
@@ -58,22 +59,22 @@ interface ConversationListItem {
 /*  Helpers                                       */
 /* ────────────────────────────────────────────── */
 
-function formatTime(date: string) {
-  return new Date(date).toLocaleTimeString("en-CA", {
+function formatTime(date: string, locale?: string) {
+  return new Date(date).toLocaleTimeString(dateLocale(locale), {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-CA", {
+function formatDate(date: string, locale?: string) {
+  return new Date(date).toLocaleDateString(dateLocale(locale), {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-function relativeTime(date: string, justNowLabel = "Just now") {
+function relativeTime(date: string, justNowLabel = "Just now", locale?: string) {
   const now = new Date();
   const then = new Date(date);
   const diffMs = now.getTime() - then.getTime();
@@ -84,7 +85,7 @@ function relativeTime(date: string, justNowLabel = "Just now") {
   if (diffHr < 24) return `${diffHr}h`;
   const diffDay = Math.floor(diffHr / 24);
   if (diffDay < 7) return `${diffDay}d`;
-  return formatDate(date);
+  return formatDate(date, locale);
 }
 
 /* ────────────────────────────────────────────── */
@@ -384,7 +385,7 @@ export default function BorrowerMessagesPage() {
   const groupedMessages: { date: string; items: Message[] }[] = [];
   let currentDate = "";
   for (const msg of messages) {
-    const dateStr = formatDate(msg.createdAt as unknown as string);
+    const dateStr = formatDate(msg.createdAt as unknown as string, router.locale);
     if (dateStr !== currentDate) {
       currentDate = dateStr;
       groupedMessages.push({ date: dateStr, items: [] });
@@ -528,7 +529,7 @@ export default function BorrowerMessagesPage() {
                           </span>
                           {lastMsg && (
                             <span className={`text-[11px] font-body shrink-0 ${hasUnread ? "text-amber-600 font-semibold" : "text-sage-400"}`}>
-                              {relativeTime(lastMsg.createdAt, t("chat.justNow"))}
+                              {relativeTime(lastMsg.createdAt, t("chat.justNow"), router.locale)}
                             </span>
                           )}
                         </div>
@@ -723,6 +724,19 @@ export default function BorrowerMessagesPage() {
 
                         <div className="space-y-3">
                           {group.items.map((msg) => {
+                            // System messages (admin/cron close, etc.) render
+                            // as a centered notice, never as a participant
+                            // bubble — otherwise they're misattributed to
+                            // whichever user id the FK points at.
+                            if (msg.isSystem) {
+                              return (
+                                <div key={msg.id} className="flex justify-center">
+                                  <p className="max-w-[85%] rounded-sm bg-cream-200 px-3 py-1.5 text-center text-[12px] font-body text-sage-500">
+                                    {msg.body}
+                                  </p>
+                                </div>
+                              );
+                            }
                             const isMine = msg.senderId === userId;
                             return (
                               <div
@@ -749,7 +763,8 @@ export default function BorrowerMessagesPage() {
                                     }`}
                                   >
                                     {formatTime(
-                                      msg.createdAt as unknown as string
+                                      msg.createdAt as unknown as string,
+                                      router.locale
                                     )}
                                   </p>
                                 </div>
@@ -778,6 +793,15 @@ export default function BorrowerMessagesPage() {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        // Korean IME: the Enter that CONFIRMS a Hangul
+                        // composition also fires a keydown — without this guard
+                        // it submits a half-composed message. isComposing is
+                        // true until the composition is committed.
+                        if (e.key === "Enter" && e.nativeEvent.isComposing) {
+                          e.preventDefault();
+                        }
+                      }}
                       placeholder={t("messages.typeMessage")}
                       className="input-field flex-1"
                       disabled={sending}

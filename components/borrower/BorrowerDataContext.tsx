@@ -90,6 +90,13 @@ interface BorrowerDataContextValue {
   conversations: BorrowerCachedConversation[];
   loaded: boolean;
   profileChecked: boolean;
+  /**
+   * True when the most recent /api/requests fetch failed. Pages must render
+   * an error state from this instead of treating the (stale/empty) list as
+   * "no requests" — during an outage the dashboard previously told borrowers
+   * with active requests that they had none and invited duplicates.
+   */
+  requestsError: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -107,6 +114,7 @@ const BorrowerDataContext = createContext<BorrowerDataContextValue>({
   conversations: [],
   loaded: false,
   profileChecked: false,
+  requestsError: false,
   refresh: async () => {},
 });
 
@@ -124,6 +132,7 @@ export function BorrowerDataProvider({ children }: { children: React.ReactNode }
   const [conversations, setConversations] = useState<BorrowerCachedConversation[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [profileChecked, setProfileChecked] = useState(false);
+  const [requestsError, setRequestsError] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -164,6 +173,9 @@ export function BorrowerDataProvider({ children }: { children: React.ReactNode }
           0,
         );
         setRequests(list);
+        setRequestsError(false);
+      } else {
+        setRequestsError(true);
       }
       if (unreadRes.ok) {
         const json = await unreadRes.json();
@@ -179,7 +191,8 @@ export function BorrowerDataProvider({ children }: { children: React.ReactNode }
       }
       setCounters(nextCounters);
     } catch {
-      // keep previous counters / lists
+      // keep previous counters / lists, but surface the failure
+      setRequestsError(true);
     }
   }, []);
 
@@ -225,9 +238,10 @@ export function BorrowerDataProvider({ children }: { children: React.ReactNode }
       conversations,
       loaded,
       profileChecked,
+      requestsError,
       refresh,
     }),
-    [profile, counters, requests, conversations, loaded, profileChecked, refresh],
+    [profile, counters, requests, conversations, loaded, profileChecked, requestsError, refresh],
   );
 
   return (

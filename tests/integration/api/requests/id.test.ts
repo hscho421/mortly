@@ -113,6 +113,23 @@ describe("/api/requests/[id]", () => {
       expect(res.statusCode).toBe(400);
     });
 
+    it("rejects closing a request that is already terminal (REJECTED/EXPIRED/CLOSED)", async () => {
+      // Guard added so a borrower can't overwrite a REJECTED/EXPIRED history
+      // by closing it. Only OPEN/IN_PROGRESS may transition to CLOSED.
+      prismaMock.borrowerRequest.findUnique.mockResolvedValue(
+        makeBorrowerRequest({ status: "REJECTED" })
+      );
+      const { req, res } = makeReqRes({
+        method: "PUT",
+        query: { id: "300000001" },
+        body: { status: "CLOSED" },
+      });
+      await handler(req, res);
+      expect(res.statusCode).toBe(400);
+      expect(jsonBody<{ code?: string }>(res).code).toBe("CLOSE_INVALID_STATUS");
+      expect(prismaMock.borrowerRequest.update).not.toHaveBeenCalled();
+    });
+
     it("forbids non-owning borrower", async () => {
       prismaMock.borrowerRequest.findUnique.mockResolvedValue(
         makeBorrowerRequest({ borrowerId: "someone_else" })

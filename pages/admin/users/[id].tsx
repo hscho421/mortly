@@ -108,6 +108,12 @@ export default function AdminUserDetailPage() {
 
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [saving, setSaving] = useState(false);
+  // Send-notice modal — the command palette's "관리자 공지 발송" action routes
+  // here expecting this modal to exist (it previously dead-ended).
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [noticeSubject, setNoticeSubject] = useState("");
+  const [noticeBody, setNoticeBody] = useState("");
+  const [noticeSending, setNoticeSending] = useState(false);
 
   const user = state.state === "ready" ? state.data : null;
 
@@ -154,7 +160,94 @@ export default function AdminUserDetailPage() {
           onRetry={state.retry}
         />
       )}
-      {user && <UserDetailBody user={user} saving={saving} onRequestAction={setPending} />}
+      {user && (
+        <UserDetailBody
+          user={user}
+          saving={saving}
+          onRequestAction={setPending}
+          onSendNotice={() => setNoticeOpen(true)}
+        />
+      )}
+
+      {noticeOpen && user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-800/55 backdrop-blur-[2px]">
+          <div className="bg-white w-full max-w-md mx-4 border border-cream-300 shadow-xl">
+            <div className="px-6 py-4 border-b border-cream-300">
+              <div className="font-display text-lg font-semibold text-forest-800">
+                {t("admin.userDetail.sendNotice", "관리자 공지 발송")}
+              </div>
+              <div className="text-[12px] text-sage-500 mt-1">
+                {user.name || user.email}
+              </div>
+            </div>
+            <div className="p-5 space-y-3">
+              <input
+                type="text"
+                value={noticeSubject}
+                onChange={(e) => setNoticeSubject(e.target.value)}
+                maxLength={200}
+                placeholder={t("admin.userDetail.noticeSubject", "제목")}
+                className="w-full border border-cream-300 px-3 py-2 text-sm font-body text-forest-800 focus:outline-none focus:border-forest-600"
+                data-testid="notice-subject"
+              />
+              <textarea
+                value={noticeBody}
+                onChange={(e) => setNoticeBody(e.target.value)}
+                maxLength={2000}
+                rows={5}
+                placeholder={t("admin.userDetail.noticeBody", "내용")}
+                className="w-full border border-cream-300 px-3 py-2 text-sm font-body text-forest-800 focus:outline-none focus:border-forest-600 resize-none"
+                data-testid="notice-body"
+              />
+            </div>
+            <div className="px-5 pb-5 flex justify-end gap-2">
+              <ABtn
+                size="sm"
+                variant="ghost"
+                disabled={noticeSending}
+                onClick={() => setNoticeOpen(false)}
+              >
+                {t("admin.userDetail.cancel", "취소")}
+              </ABtn>
+              <ABtn
+                size="sm"
+                disabled={noticeSending || !noticeSubject.trim() || !noticeBody.trim()}
+                data-testid="notice-send"
+                onClick={async () => {
+                  setNoticeSending(true);
+                  try {
+                    const r = await fetch("/api/admin/notices", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        userId: user.id,
+                        subject: noticeSubject.trim(),
+                        body: noticeBody.trim(),
+                      }),
+                    });
+                    if (!r.ok) {
+                      const data = await r.json().catch(() => ({} as { error?: string }));
+                      throw new Error(data.error || `HTTP ${r.status}`);
+                    }
+                    toast(t("admin.userDetail.noticeSent", "공지를 발송했습니다"), "success");
+                    setNoticeOpen(false);
+                    setNoticeSubject("");
+                    setNoticeBody("");
+                  } catch (err) {
+                    toast(err instanceof Error ? err.message : "Failed", "error");
+                  } finally {
+                    setNoticeSending(false);
+                  }
+                }}
+              >
+                {noticeSending
+                  ? t("admin.userDetail.noticeSending", "발송 중…")
+                  : t("admin.userDetail.noticeSend", "발송")}
+              </ABtn>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pending && user && (
         <AConfirmDialog
@@ -224,10 +317,12 @@ function UserDetailBody({
   user,
   saving,
   onRequestAction,
+  onSendNotice,
 }: {
   user: UserDetail;
   saving: boolean;
   onRequestAction: (a: PendingAction) => void;
+  onSendNotice: () => void;
 }) {
   const { t } = useTranslation("common");
 
@@ -266,6 +361,7 @@ function UserDetailBody({
             user={user}
             saving={saving}
             onRequestAction={onRequestAction}
+            onSendNotice={onSendNotice}
           />
         </div>
       </div>
@@ -372,10 +468,12 @@ function AccountActions({
   user,
   saving,
   onRequestAction,
+  onSendNotice,
 }: {
   user: UserDetail;
   saving: boolean;
   onRequestAction: (a: PendingAction) => void;
+  onSendNotice: () => void;
 }) {
   const { t } = useTranslation("common");
   if (user.role === "ADMIN") {
@@ -435,6 +533,15 @@ function AccountActions({
             {t("admin.userDetail.reactivate", "재활성화")}
           </ABtn>
         )}
+        <ABtn
+          size="sm"
+          variant="ghost"
+          disabled={saving}
+          onClick={onSendNotice}
+          data-testid="user-send-notice"
+        >
+          {t("admin.userDetail.sendNotice", "공지 발송")}
+        </ABtn>
       </div>
     </ACard>
   );

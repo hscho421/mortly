@@ -2,9 +2,17 @@ import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { generateRequestPublicId } from "@/lib/publicId";
 import { getSettingInt } from "@/lib/settings";
-import { validateProductTypes } from "@/lib/requestConfig";
+import { validateProductTypes, isValidProvince, isValidTimeline, areValidIncomeTypes } from "@/lib/requestConfig";
 import { withAuth } from "@/lib/withAuth";
 import { assertOptionalString, assertString, assertOptionalBoundedJson, ValidationError } from "@/lib/validate";
+
+// Sentinel thrown inside the create transaction when the active-request cap
+// is hit, so we can roll back and map it to a clean 400 outside the tx.
+class ActiveRequestCapError extends Error {
+  constructor(public max: number) {
+    super("ACTIVE_REQUEST_CAP");
+  }
+}
 
 export default withAuth(async (req, res, session) => {
   try {
@@ -144,8 +152,18 @@ export default withAuth(async (req, res, session) => {
       }
 
       const province = assertString(rawProvince, "province", { max: 100 });
+      // Province must be a real Canadian province/territory — previously the
+      // server accepted any free-form string the client never offered.
+      if (!isValidProvince(province)) {
+        return res.status(400).json({ error: "Invalid province" });
+      }
       const city = assertOptionalString(rawCity, "city", { max: 100 });
       const desiredTimeline = assertOptionalString(rawTimeline, "desiredTimeline", { max: 200 });
+      // Timeline is optional, but if present must be one of the known options
+      // (the client only ever sends these).
+      if (desiredTimeline && !isValidTimeline(desiredTimeline)) {
+        return res.status(400).json({ error: "Invalid desiredTimeline" });
+      }
       const notes = assertOptionalString(rawNotes, "notes", { max: 4000 });
       const details = assertOptionalBoundedJson(rawDetails, "details", 4096);
 
@@ -166,8 +184,10 @@ export default withAuth(async (req, res, session) => {
             !details.purposeOfUse.every((v: string) => ["OWNER_OCCUPIED", "RENTAL"].includes(v))) {
           return res.status(400).json({ error: "Purpose of use is required for residential requests" });
         }
-        if (!Array.isArray(details?.incomeTypes) || details.incomeTypes.length === 0) {
-          return res.status(400).json({ error: "At least one income type is required for residential requests" });
+        // Income types must come from the known set — was previously only
+        // checked for non-emptiness, so arbitrary strings passed through.
+        if (!areValidIncomeTypes(details?.incomeTypes)) {
+          return res.status(400).json({ error: "At least one valid income type is required for residential requests" });
         }
       } else {
         // COMMERCIAL
@@ -180,34 +200,52 @@ export default withAuth(async (req, res, session) => {
       }
 
       // ── Enforce max active requests ──────────────────────────
+      // Count + create run in one Serializable transaction so two near-
+      // simultaneous submits (double-click, retries) can't both pass the cap
+      // and create N+1 requests — the previous count-then-create had a race
+      // window between the two statements.
       const maxRequests = await getSettingInt("max_requests_per_user");
-      const activeCount = await prisma.borrowerRequest.count({
-        where: {
-          borrowerId: session.user.id,
-          status: { in: ["PENDING_APPROVAL", "OPEN", "IN_PROGRESS"] },
-        },
-      });
-      if (activeCount >= maxRequests) {
-        return res.status(400).json({
-          error: `You can have at most ${maxRequests} active requests. Please close or wait for existing requests to expire.`,
-        });
-      }
-
       const publicId = await generateRequestPublicId();
-      const request = await prisma.borrowerRequest.create({
-        data: {
-          publicId,
-          borrowerId: session.user.id,
-          mortgageCategory,
-          productTypes,
-          province,
-          city,
-          details: (details ?? undefined) as Prisma.InputJsonValue | undefined,
-          desiredTimeline,
-          notes,
-          schemaVersion: 2,
-        },
-      });
+
+      let request;
+      try {
+        request = await prisma.$transaction(
+          async (tx) => {
+            const activeCount = await tx.borrowerRequest.count({
+              where: {
+                borrowerId: session.user.id,
+                status: { in: ["PENDING_APPROVAL", "OPEN", "IN_PROGRESS"] },
+              },
+            });
+            if (activeCount >= maxRequests) {
+              throw new ActiveRequestCapError(maxRequests);
+            }
+            return tx.borrowerRequest.create({
+              data: {
+                publicId,
+                borrowerId: session.user.id,
+                mortgageCategory,
+                productTypes,
+                province,
+                city,
+                details: (details ?? undefined) as Prisma.InputJsonValue | undefined,
+                desiredTimeline,
+                notes,
+                schemaVersion: 2,
+              },
+            });
+          },
+          { isolationLevel: "Serializable" },
+        );
+      } catch (err) {
+        if (err instanceof ActiveRequestCapError) {
+          return res.status(400).json({
+            error: `You can have at most ${err.max} active requests. Please close or wait for existing requests to expire.`,
+            code: "ACTIVE_REQUEST_CAP",
+          });
+        }
+        throw err;
+      }
 
       return res.status(201).json(request);
     }

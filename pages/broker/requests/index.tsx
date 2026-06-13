@@ -17,20 +17,8 @@ import type { GetStaticProps } from "next";
 import {
   PRODUCT_LABEL_KEYS,
   TIMELINE_LABEL_KEYS,
+  PROVINCES,
 } from "@/lib/requestConfig";
-
-const PROVINCES = [
-  "Alberta",
-  "British Columbia",
-  "Manitoba",
-  "New Brunswick",
-  "Newfoundland and Labrador",
-  "Nova Scotia",
-  "Ontario",
-  "Prince Edward Island",
-  "Quebec",
-  "Saskatchewan",
-];
 
 interface BrokerRequest {
   id: string;
@@ -42,10 +30,11 @@ interface BrokerRequest {
   mortgageCategory?: string | null;
   productTypes?: string[] | null;
   desiredTimeline?: string | null;
-  conversations?: { broker?: { userId: string } }[];
   _count?: { conversations?: number };
   /** True if this broker hasn't marked this request as seen yet. */
   isNew?: boolean;
+  /** True if this broker already has a conversation on this request. */
+  hasMyConversation?: boolean;
 }
 
 type CategoryFilter = "" | "RESIDENTIAL" | "COMMERCIAL";
@@ -67,26 +56,31 @@ function relativeTime(dateStr: string, locale: string) {
 }
 
 export default function BrokerRequestsPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const { t } = useTranslation("common");
 
   const [requests, setRequests] = useState<BrokerRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<"" | "NOT_VERIFIED" | "LOAD_FAILED">("");
   const [newCount, setNewCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [filterProvince, setFilterProvince] = useState<string>("");
   const [filterCategory, setFilterCategory] = useState<CategoryFilter>("");
   const [onlyUnresponded, setOnlyUnresponded] = useState(true);
 
-  const fetchRequests = useCallback(async () => {
-    setIsLoading(true);
+  const fetchRequests = useCallback(async (pageToLoad = 1) => {
+    if (pageToLoad === 1) setIsLoading(true);
+    else setLoadingMore(true);
     setError("");
     try {
       const params = new URLSearchParams();
       if (filterProvince) params.set("province", filterProvince);
       if (filterCategory) params.set("mortgageCategory", filterCategory);
+      params.set("page", String(pageToLoad));
 
       const res = await fetch(`/api/requests?${params.toString()}`);
       if (res.status === 403) {
@@ -98,12 +92,17 @@ export default function BrokerRequestsPage() {
         return;
       }
       const json = await res.json();
-      setRequests((json.data ?? json) as BrokerRequest[]);
+      const data = (json.data ?? json) as BrokerRequest[];
+      // Page 1 replaces (fresh load / filter change); later pages append.
+      setRequests((prev) => (pageToLoad === 1 ? data : [...prev, ...data]));
+      setPage(pageToLoad);
+      setTotalPages(json.pagination?.totalPages ?? 1);
       if (typeof json.newCount === "number") setNewCount(json.newCount);
     } catch {
       setError("LOAD_FAILED");
     } finally {
       setIsLoading(false);
+      setLoadingMore(false);
     }
   }, [filterProvince, filterCategory]);
 
@@ -124,14 +123,10 @@ export default function BrokerRequestsPage() {
 
   const filteredRequests = useMemo(() => {
     if (!onlyUnresponded) return requests;
-    const brokerUserId = session?.user?.id;
-    return requests.filter(
-      (req) =>
-        !req.conversations?.some(
-          (conv) => conv.broker?.userId === brokerUserId,
-        ),
-    );
-  }, [requests, onlyUnresponded, session?.user?.id]);
+    // The API returns a flat hasMyConversation boolean (it no longer includes
+    // nested conversations for the broker browse view).
+    return requests.filter((req) => !req.hasMyConversation);
+  }, [requests, onlyUnresponded]);
 
   if (status === "loading") {
     return (
@@ -305,6 +300,21 @@ export default function BrokerRequestsPage() {
                 />
               ))}
             </ul>
+
+            {page < totalPages && (
+              <div className="mt-6 flex justify-center">
+                <Btn
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => fetchRequests(page + 1)}
+                  disabled={loadingMore}
+                >
+                  {loadingMore
+                    ? t("common.loading", "Loading…")
+                    : t("broker.loadMore", "Load more")}
+                </Btn>
+              </div>
+            )}
           </>
         )}
       </div>

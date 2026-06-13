@@ -105,10 +105,15 @@ export default function BrokerShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Auth gate. Using router.replace so the back button doesn't return here.
+  // callbackUrl brings the visitor back after login (login.tsx honors it).
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "BROKER") {
-      router.replace("/login", undefined, { locale: router.locale });
+      router.replace(
+        `/login?callbackUrl=${encodeURIComponent(router.asPath)}`,
+        undefined,
+        { locale: router.locale },
+      );
     }
   }, [session, status, router]);
 
@@ -289,7 +294,9 @@ function Sidebar({
       <div className="flex items-baseline justify-between border-b border-cream-300 px-5 py-4">
         <BrandMark href="/broker/dashboard" className="h-7 w-auto" />
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-sage-500">
-          {subscriptionTier ? `${subscriptionTier} · PRO` : t("broker.tagline", "BROKER")}
+          {/* Was `${tier} · PRO` — the hardcoded "· PRO" made every plan read
+              "FREE · PRO". Show the actual tier (or the generic tagline). */}
+          {subscriptionTier || t("broker.tagline", "BROKER")}
         </span>
       </div>
 

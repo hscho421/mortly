@@ -80,7 +80,11 @@ export default function LoginPage() {
       const session = await sessionRes.json();
       const role = session?.user?.role;
 
-      posthog.identify(email, { email, role });
+      // Key analytics on the opaque publicId, never the raw email (PII in the
+      // distinct_id leaks into every event and the PostHog UI).
+      if (session?.user?.publicId) {
+        posthog.identify(session.user.publicId, { role });
+      }
       posthog.capture("user_logged_in", { role, method: "credentials" });
 
       const callbackUrl = router.query.callbackUrl as string | undefined;

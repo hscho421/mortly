@@ -117,7 +117,7 @@ const makeFetchMock = (requestOverrides?: {
                 createdAt: new Date().toISOString(),
                 isNew: true,
                 _count: { conversations: 0 },
-                conversations: [],
+                hasMyConversation: false,
               },
               {
                 id: "r2",
@@ -130,7 +130,7 @@ const makeFetchMock = (requestOverrides?: {
                 status: "OPEN",
                 createdAt: new Date().toISOString(),
                 _count: { conversations: 3 },
-                conversations: [],
+                hasMyConversation: false,
               },
             ],
             newCount: 1,
@@ -197,8 +197,9 @@ describe("BrokerRequestsPage (Phase 3 marketplace)", () => {
               status: "OPEN",
               createdAt: new Date().toISOString(),
               // Broker already responded to r1 — client side should drop it
-              // when chip is on (default).
-              conversations: [{ broker: { userId: "u1" } }],
+              // when chip is on (default). The API returns this as a flat
+              // boolean (no nested conversations in the broker browse view).
+              hasMyConversation: true,
               _count: { conversations: 1 },
             },
             {
@@ -209,7 +210,7 @@ describe("BrokerRequestsPage (Phase 3 marketplace)", () => {
               province: "BC",
               status: "OPEN",
               createdAt: new Date().toISOString(),
-              conversations: [],
+              hasMyConversation: false,
               _count: { conversations: 0 },
             },
           ],

@@ -108,6 +108,11 @@ export default function Navbar() {
   const unreadCount = notices.filter((n) => !n.read).length;
 
   const switchLocale = (locale: string) => {
+    // Persist the choice — Next.js reads NEXT_LOCALE on every request, so the
+    // selection survives full-page round-trips (OAuth, signOut, Stripe
+    // redirects, emailed links) and return visits. Without it, EN users were
+    // silently reset to the Korean default on every hard navigation.
+    document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000; samesite=lax`;
     router.push(router.asPath, router.asPath, { locale });
   };
 
@@ -250,45 +255,12 @@ export default function Navbar() {
                             {t("nav.notifications", "Notifications")}
                           </p>
                         </div>
-                        <div className="max-h-80 overflow-y-auto">
-                          {notices.length === 0 ? (
-                            <div className="px-4 py-8 text-center">
-                              <p className="font-body text-sm text-forest-700/50">
-                                {t("nav.noNotifications", "No notifications")}
-                              </p>
-                            </div>
-                          ) : (
-                            notices.map((notice) => (
-                              <button
-                                key={notice.id}
-                                onClick={() => markAsRead(notice.id)}
-                                className={`w-full text-left px-4 py-3 border-b border-cream-100 transition-colors hover:bg-cream-50 ${
-                                  !notice.read ? "bg-forest-50/30" : ""
-                                }`}
-                              >
-                                <div className="flex items-start gap-2">
-                                  {!notice.read && (
-                                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-forest-500" />
-                                  )}
-                                  <div className={!notice.read ? "" : "pl-4"}>
-                                    <p className={`font-body text-sm ${!notice.read ? "font-semibold text-forest-800" : "text-forest-700"}`}>
-                                      {notice.subject}
-                                    </p>
-                                    <p className="font-body text-xs text-forest-700/60 mt-0.5 line-clamp-2">
-                                      {notice.body}
-                                    </p>
-                                    <p className="font-body text-[10px] text-forest-700/40 mt-1">
-                                      {new Date(notice.createdAt).toLocaleDateString(
-                                        router.locale === "ko" ? "ko-KR" : "en-CA",
-                                        { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
-                                      )}
-                                    </p>
-                                  </div>
-                                </div>
-                              </button>
-                            ))
-                          )}
-                        </div>
+                        <NoticeList
+                          notices={notices}
+                          markAsRead={markAsRead}
+                          emptyLabel={t("nav.noNotifications", "No notifications")}
+                          locale={router.locale}
+                        />
                       </div>
                     )}
                   </div>
@@ -374,12 +346,17 @@ export default function Navbar() {
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center rounded-sm px-3 py-2.5 font-body text-[13px] transition-all duration-200 ${
-                  isActive(link.href)
+                  isActive(link.href) || (link.href === messagesHref && isMessagesActive)
                     ? "bg-cream-200 text-forest-800 font-medium border-l-2 border-amber-500"
                     : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
                 }`}
               >
                 {link.label}
+                {"badge" in link && (link as { badge?: number }).badge ? (
+                  <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-sm bg-amber-500 px-1.5 font-mono text-[10px] font-bold text-white">
+                    {(link as { badge: number }).badge > 9 ? "9+" : (link as { badge: number }).badge}
+                  </span>
+                ) : null}
               </Link>
             ))}
           </div>
@@ -414,42 +391,9 @@ export default function Navbar() {
 
           {!authReady ? null : session ? (
             <div className="space-y-0.5">
-              <Link
-                href={dashboardHref}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-sm px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
-                  isActive(dashboardHref)
-                    ? "bg-cream-200 text-forest-800 border-l-2 border-amber-500"
-                    : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
-                }`}
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                </svg>
-                {t("nav.dashboard")}
-              </Link>
-
-              {showUserLinks && (
-                <Link
-                  href={messagesHref}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 rounded-sm px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
-                    isMessagesActive
-                      ? "bg-cream-200 text-forest-800 border-l-2 border-amber-500"
-                      : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
-                  }`}
-                >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-                  </svg>
-                  {role === "BROKER" ? t("broker.messages") : t("nav.messages")}
-                  {unreadMessages > 0 && (
-                    <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-sm bg-amber-500 px-1.5 font-mono text-[10px] font-bold text-white">
-                      {unreadMessages > 9 ? "9+" : unreadMessages}
-                    </span>
-                  )}
-                </Link>
-              )}
+              {/* Dashboard + Messages are already in the primary nav list
+                  above — this section is account actions only (notifications,
+                  settings, sign out). They were previously duplicated here. */}
 
               {/* Mobile notifications */}
               {showUserLinks && (
@@ -522,6 +466,44 @@ export default function Navbar() {
       </div>
     </nav>
 
+    {/* Mobile notices sheet — the mobile-menu button toggles noticeOpen, but
+        the dropdown above lives inside the desktop-only (hidden md:flex)
+        container, so on mobile the button used to do nothing visible. */}
+    {noticeOpen && (
+      <div
+        className="md:hidden fixed inset-x-0 top-[57px] bottom-0 z-50 bg-black/30"
+        onClick={() => setNoticeOpen(false)}
+      >
+        <div
+          className="max-h-[70vh] overflow-y-auto border-b border-cream-300 bg-cream-50 shadow-xl"
+          role="dialog"
+          aria-label={t("nav.notifications", "Notifications")}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-cream-200">
+            <p className="font-body text-sm font-semibold text-forest-800">
+              {t("nav.notifications", "Notifications")}
+            </p>
+            <button
+              onClick={() => setNoticeOpen(false)}
+              className="rounded-sm p-1 text-forest-500 hover:bg-cream-200"
+              aria-label={t("common.close", "Close")}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <NoticeList
+            notices={notices}
+            markAsRead={markAsRead}
+            emptyLabel={t("nav.noNotifications", "No notifications")}
+            locale={router.locale}
+          />
+        </div>
+      </div>
+    )}
+
     {/* Logout confirmation modal */}
     {showLogoutConfirm && (
     <div
@@ -562,5 +544,58 @@ export default function Navbar() {
     </div>
     )}
     </>
+  );
+}
+
+/** Shared notice list body — rendered by the desktop dropdown AND the mobile sheet. */
+function NoticeList({
+  notices,
+  markAsRead,
+  emptyLabel,
+  locale,
+}: {
+  notices: Notice[];
+  markAsRead: (id: string) => void;
+  emptyLabel: string;
+  locale?: string;
+}) {
+  return (
+    <div className="max-h-80 overflow-y-auto">
+      {notices.length === 0 ? (
+        <div className="px-4 py-8 text-center">
+          <p className="font-body text-sm text-forest-700/50">{emptyLabel}</p>
+        </div>
+      ) : (
+        notices.map((notice) => (
+          <button
+            key={notice.id}
+            onClick={() => markAsRead(notice.id)}
+            className={`w-full text-left px-4 py-3 border-b border-cream-100 transition-colors hover:bg-cream-50 ${
+              !notice.read ? "bg-forest-50/30" : ""
+            }`}
+          >
+            <div className="flex items-start gap-2">
+              {!notice.read && (
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-forest-500" />
+              )}
+              <div className={!notice.read ? "" : "pl-4"}>
+                <p className={`font-body text-sm ${!notice.read ? "font-semibold text-forest-800" : "text-forest-700"}`}>
+                  {notice.subject}
+                </p>
+                <p className="font-body text-xs text-forest-700/60 mt-0.5 line-clamp-2">
+                  {notice.body}
+                </p>
+                <p className="font-body text-[10px] text-forest-700/40 mt-1">
+                  {new Date(notice.createdAt).toLocaleDateString(
+                    locale === "ko" ? "ko-KR" : "en-CA",
+                    { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+                  )}
+                </p>
+              </div>
+            </div>
+          </button>
+        ))
+      )}
+    </div>
   );
 }

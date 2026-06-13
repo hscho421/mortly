@@ -11,19 +11,7 @@ import { useToast } from "@/components/Toast";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import posthog from "posthog-js";
-
-const PROVINCES = [
-  "Alberta",
-  "British Columbia",
-  "Manitoba",
-  "New Brunswick",
-  "Newfoundland and Labrador",
-  "Nova Scotia",
-  "Ontario",
-  "Prince Edward Island",
-  "Quebec",
-  "Saskatchewan",
-];
+import { PROVINCES } from "@/lib/requestConfig";
 
 export default function BrokerOnboardingPage() {
   const { data: session, status } = useSession();

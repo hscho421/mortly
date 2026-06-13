@@ -15,6 +15,18 @@ vi.mock("@/lib/settings", () => ({
   invalidateSettingsCache: vi.fn(),
 }));
 
+// withAuth's per-user mutation rate limiter uses an in-memory counter that
+// accumulates across this whole test file (no KV in tests). It is exercised
+// by tests/unit/lib/rate-limit.test.ts; here it just causes false 429s once
+// the file has >10 POSTs, so stub it to always allow.
+vi.mock("@/lib/rate-limit", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/rate-limit")>("@/lib/rate-limit");
+  return {
+    ...actual,
+    checkRateLimit: vi.fn(async () => ({ success: true, remaining: 999, limit: 1000, reset: Date.now() + 60_000 })),
+  };
+});
+
 // publicId helpers do I/O; stub them to deterministic strings.
 vi.mock("@/lib/publicId", () => ({
   generatePublicId: vi.fn(async () => "100000099"),
@@ -106,6 +118,47 @@ describe("POST /api/requests", () => {
     await handler(req, res);
     expect(res.statusCode).toBe(400);
     expect(jsonBody<{ error: string }>(res).error).toMatch(/Invalid product type/);
+  });
+
+  it("rejects a province that isn't a real Canadian province/territory", async () => {
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { ...validResidentialBody(), province: "California" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(400);
+    expect(prismaMock.borrowerRequest.create).not.toHaveBeenCalled();
+  });
+
+  it("accepts a territory the broker lists previously omitted (Yukon)", async () => {
+    prismaMock.borrowerRequest.create.mockResolvedValue(makeBorrowerRequest());
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { ...validResidentialBody(), province: "Yukon" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(201);
+  });
+
+  it("rejects an unknown desiredTimeline value", async () => {
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { ...validResidentialBody(), desiredTimeline: "WHENEVER" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("rejects an unknown income type for residential", async () => {
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: {
+        ...validResidentialBody(),
+        details: { purposeOfUse: ["OWNER_OCCUPIED"], incomeTypes: ["LOTTERY"] },
+      },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(400);
   });
 
   it("requires province", async () => {

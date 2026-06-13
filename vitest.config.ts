@@ -19,6 +19,7 @@ export default defineConfig({
       "tests/borrower/**/*.test.{ts,tsx}",
       "tests/broker/**/*.test.{ts,tsx}",
       "tests/ui/**/*.test.{ts,tsx}",
+      "tests/i18n/**/*.test.{ts,tsx}",
     ],
     // tests/concurrency/** hits a real DB — opt-in via `npm run test:concurrency`.
     exclude: [

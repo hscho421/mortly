@@ -169,7 +169,7 @@ describe("POST /api/stripe/create-checkout", () => {
     expect(stripeMock.checkout.sessions.create).not.toHaveBeenCalled();
   });
 
-  it("PREMIUM → BASIC (downgrade): stores pendingTier, does NOT call Stripe", async () => {
+  it("PREMIUM → BASIC (downgrade): schedules the price change at period end + stores pendingTier", async () => {
     prismaMock.broker.findUnique.mockResolvedValue({
       ...makeBroker({ stripeCustomerId: "cus_1", subscriptionTier: "PREMIUM" }),
       subscription: makeSubscription({
@@ -182,6 +182,11 @@ describe("POST /api/stripe/create-checkout", () => {
     stripeMock.subscriptions.retrieve.mockResolvedValue({
       items: { data: [{ id: "si_1", price: { id: "price_premium_test" } }] },
     } as never);
+    stripeMock.subscriptionSchedules.create.mockResolvedValue({
+      id: "sched_1",
+      phases: [{ start_date: 1_700_000_000, end_date: 1_702_600_000 }],
+    } as never);
+    stripeMock.subscriptionSchedules.update.mockResolvedValue({} as never);
     prismaMock.subscription.update.mockResolvedValue(makeSubscription({ pendingTier: "BASIC" }));
 
     const { req, res } = makeReqRes({ method: "POST", body: { tier: "BASIC" } });
@@ -199,8 +204,61 @@ describe("POST /api/stripe/create-checkout", () => {
         data: { pendingTier: "BASIC" },
       })
     );
-    // Downgrade MUST NOT hit Stripe immediately — that happens at next invoice cycle.
+    // The price change is scheduled IN STRIPE at the period boundary so the
+    // renewal invoice bills the NEW price (previously the old higher price
+    // was charged while the lower tier's credits were granted).
+    expect(stripeMock.subscriptionSchedules.create).toHaveBeenCalledWith({
+      from_subscription: "sub_stripe_1",
+    });
+    const schedArgs = stripeMock.subscriptionSchedules.update.mock.calls[0];
+    expect(schedArgs[0]).toBe("sched_1");
+    expect(schedArgs[1].phases).toEqual([
+      {
+        items: [{ price: "price_premium_test", quantity: 1 }],
+        start_date: 1_700_000_000,
+        end_date: 1_702_600_000,
+      },
+      {
+        items: [{ price: "price_basic_test", quantity: 1 }],
+        proration_behavior: "none",
+      },
+    ]);
+    // The current cycle's price is never touched directly.
     expect(stripeMock.subscriptions.update).not.toHaveBeenCalled();
+  });
+
+  it("upgrade while a downgrade is scheduled: releases the schedule and clears pendingTier", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue({
+      ...makeBroker({ stripeCustomerId: "cus_1", subscriptionTier: "PRO" }),
+      subscription: makeSubscription({
+        stripeSubscriptionId: "sub_stripe_1",
+        status: "ACTIVE",
+        tier: "PRO",
+        pendingTier: "BASIC",
+      }),
+    } as never);
+    stripeMock.subscriptions.retrieve.mockResolvedValue({
+      schedule: "sched_1",
+      items: { data: [{ id: "si_1", price: { id: "price_pro_test" } }] },
+    } as never);
+    stripeMock.subscriptionSchedules.release.mockResolvedValue({} as never);
+    stripeMock.subscriptions.update.mockResolvedValue({} as never);
+    prismaMock.subscription.update.mockResolvedValue(makeSubscription({ pendingTier: null }));
+
+    const { req, res } = makeReqRes({ method: "POST", body: { tier: "PREMIUM" } });
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    // Stripe refuses direct price updates on a schedule-managed subscription,
+    // and a surviving pendingTier would silently downgrade at next renewal.
+    expect(stripeMock.subscriptionSchedules.release).toHaveBeenCalledWith("sched_1");
+    expect(prismaMock.subscription.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { brokerId: "broker_1" },
+        data: { pendingTier: null },
+      })
+    );
+    expect(stripeMock.subscriptions.update).toHaveBeenCalled();
   });
 
   it("non-active existing subscription: falls through to Checkout flow (treated as first-time)", async () => {

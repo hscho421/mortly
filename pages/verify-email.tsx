@@ -24,6 +24,16 @@ export default function VerifyEmailPage() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
+  // Signup sets emailFailed=1 when the verification email couldn't be sent —
+  // tell the user up front and let them resend immediately instead of waiting
+  // on a code that never arrived.
+  useEffect(() => {
+    if (router.query.emailFailed === "1") {
+      setError(t("auth.verificationEmailFailed", "We couldn't send your verification email. Tap Resend to try again."));
+      setCountdown(0);
+    }
+  }, [router.query.emailFailed, t]);
+
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
@@ -104,8 +114,17 @@ export default function VerifyEmailPage() {
       });
 
       if (res.status === 429) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         setCountdown(data.retryAfter || 60);
+        setError(t("auth.tooManyRequests", "Too many requests. Please wait a moment."));
+        return;
+      }
+
+      // Any other non-OK (400/500/email-send 502) must NOT report success —
+      // the previous code fell straight through to "code sent", so a failed
+      // send told the user a code was on the way when it never sent.
+      if (!res.ok) {
+        setError(t("common.somethingWentWrong"));
         return;
       }
 

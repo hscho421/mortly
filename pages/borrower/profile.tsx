@@ -233,11 +233,14 @@ export default function BorrowerProfilePage() {
               <div>
                 <label className="label-text">{t("settings.memberSince", "Member Since")}</label>
                 <p className="text-body-sm">
-                  {new Date(profile.createdAt).toLocaleDateString("en-CA", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                  {new Date(profile.createdAt).toLocaleDateString(
+                    router.locale === "ko" ? "ko-KR" : "en-CA",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    },
+                  )}
                 </p>
               </div>
             )}

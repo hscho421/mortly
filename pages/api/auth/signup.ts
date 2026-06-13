@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { hash } from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { generatePublicId } from "@/lib/publicId";
-import { generateVerificationCode, sendVerificationCode } from "@/lib/email";
+import { generateVerificationCode, hashVerificationCode, sendVerificationCode } from "@/lib/email";
 import { CURRENT_LEGAL_VERSION, createLegalAcceptanceMetadata } from "@/lib/legal";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { isValidEmail, normalizeEmail } from "@/lib/normalizeEmail";
@@ -82,7 +82,8 @@ export default async function handler(
         role,
         publicId,
         emailVerified: false,
-        verificationCode,
+        // Store the hash; the plaintext `verificationCode` is only emailed.
+        verificationCode: hashVerificationCode(verificationCode),
         verificationCodeExpiry,
         verificationCodeSentAt: new Date(),
         verificationAttempts: 0,

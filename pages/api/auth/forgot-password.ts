@@ -32,7 +32,11 @@ export default async function handler(
   }
 
   try {
-    const { email: rawEmail } = req.body;
+    const { email: rawEmail, locale: rawLocale } = req.body;
+    // The requester's UI language is the best signal we have for email
+    // language — user.preferences.locale is never written by any flow, so
+    // reading it alone meant every web user got a Korean reset email.
+    const locale = rawLocale === "en" ? "en" : "ko";
     if (!isValidEmail(rawEmail)) {
       // Even malformed input gets the constant-time treatment to deny
       // attackers a "non-string vs string-but-no-account" oracle.
@@ -46,25 +50,37 @@ export default async function handler(
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (user) {
-      const rawToken = randomBytes(32).toString("hex");
-      const hashedToken = createHash("sha256").update(rawToken).digest("hex");
-      const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+      // Per-account cooldown: don't issue a fresh reset token (or email) more
+      // than once per 60s for the same account, even across IPs. Blunts
+      // reset-email bombing / reset-link churn aimed at a specific victim.
+      // Done silently (no distinct response) so it isn't an enumeration oracle.
+      const lastSent = user.resetTokenExpiry
+        ? user.resetTokenExpiry.getTime() - 60 * 60 * 1000
+        : 0;
+      const withinCooldown = Date.now() - lastSent < 60_000;
 
-      await prisma.user.update({
-        where: { email },
-        data: { resetToken: hashedToken, resetTokenExpiry },
-      });
+      if (!withinCooldown) {
+        const rawToken = randomBytes(32).toString("hex");
+        const hashedToken = createHash("sha256").update(rawToken).digest("hex");
+        const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
 
-      const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${rawToken}`;
+        await prisma.user.update({
+          where: { email },
+          data: { resetToken: hashedToken, resetTokenExpiry },
+        });
 
-      // Fire-and-forget — never await the SMTP round-trip on the response
-      // path. Both code paths (user / no-user) finish in roughly the same
-      // wall time, removing the timing oracle.
-      sendPasswordResetEmail(
-        email,
-        resetUrl,
-        (user.preferences as Record<string, unknown>)?.locale === "en" ? "en" : "ko",
-      ).catch((err) => console.error("Failed to send password reset email:", err));
+        // Locale-prefix the link so the reset page renders in the same
+        // language as the email (ko is the unprefixed default locale).
+        const base = process.env.NEXTAUTH_URL || "http://localhost:3000";
+        const resetUrl = `${base}${locale === "en" ? "/en" : ""}/reset-password?token=${rawToken}`;
+
+        // Fire-and-forget — never await the SMTP round-trip on the response
+        // path. Both code paths (user / no-user) finish in roughly the same
+        // wall time, removing the timing oracle.
+        sendPasswordResetEmail(email, resetUrl, locale).catch((err) =>
+          console.error("Failed to send password reset email:", err),
+        );
+      }
     }
 
     await padToTarget(start);

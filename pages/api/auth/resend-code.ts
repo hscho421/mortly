@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prisma";
 import {
   generateVerificationCode,
+  hashVerificationCode,
   sendVerificationCode,
 } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -63,7 +64,8 @@ export default async function handler(
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        verificationCode: code,
+        // Store the hash; only the plaintext `code` is emailed.
+        verificationCode: hashVerificationCode(code),
         verificationCodeExpiry: expiry,
         verificationCodeSentAt: new Date(),
         verificationAttempts: 0,

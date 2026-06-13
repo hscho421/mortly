@@ -8,6 +8,7 @@ import { CURRENT_LEGAL_VERSION } from "@/lib/legal";
 // The endpoint sends a real verification email. Stub it so tests never hit Resend.
 vi.mock("@/lib/email", () => ({
   generateVerificationCode: vi.fn(() => "123456"),
+  hashVerificationCode: vi.fn((c: string) => `hashed:${c}`),
   sendVerificationCode: vi.fn(async () => undefined),
 }));
 

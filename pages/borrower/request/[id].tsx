@@ -15,9 +15,10 @@ import ConsultationStepper from "@/components/ConsultationStepper";
 import RequestForm from "@/components/RequestForm";
 import type { CreateRequestInput, ResidentialDetails, CommercialDetails } from "@/types";
 import { PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
+import { dateLocale } from "@/lib/format";
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-CA", {
+function formatDate(date: string, locale?: string) {
+  return new Date(date).toLocaleDateString(dateLocale(locale), {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -63,6 +64,8 @@ export default function RequestDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -95,14 +98,48 @@ export default function RequestDetail() {
   }, [authStatus, session, fetchRequest]);
 
   async function handleEdit(data: CreateRequestInput) {
+    // Send only the fields that actually changed. The server locks material
+    // fields by key *presence* once brokers have responded, so PATCHing the
+    // full form would always 409 after the first conversation even when the
+    // borrower only touched notes/timeline.
+    const changed: Partial<CreateRequestInput> = {};
+    if (data.mortgageCategory !== request.mortgageCategory) {
+      changed.mortgageCategory = data.mortgageCategory;
+    }
+    if (JSON.stringify(data.productTypes ?? []) !== JSON.stringify(request.productTypes ?? [])) {
+      changed.productTypes = data.productTypes;
+    }
+    if (data.province !== request.province) changed.province = data.province;
+    if ((data.city ?? "") !== (request.city ?? "")) changed.city = data.city;
+    if (JSON.stringify(data.details ?? {}) !== JSON.stringify(request.details ?? {})) {
+      changed.details = data.details;
+    }
+    if ((data.desiredTimeline ?? "") !== (request.desiredTimeline ?? "")) {
+      changed.desiredTimeline = data.desiredTimeline;
+    }
+    if ((data.notes ?? "") !== (request.notes ?? "")) changed.notes = data.notes;
+
+    if (Object.keys(changed).length === 0) {
+      setIsEditing(false);
+      return;
+    }
+
     const res = await fetch(`/api/requests/${request.publicId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(changed),
     });
 
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
+      if (json.code === "EDIT_LOCKED_BY_CONVERSATIONS") {
+        throw new Error(
+          t(
+            "request.editLockedByConversations",
+            "Brokers have already responded to this request, so only the notes and desired timeline can be changed.",
+          ),
+        );
+      }
       throw new Error(json.error || t("errors.failedToUpdateRequest"));
     }
 
@@ -111,6 +148,38 @@ export default function RequestDetail() {
     setIsEditing(false);
     setSuccessMsg(t("request.editSuccess"));
     setTimeout(() => setSuccessMsg(""), 4000);
+  }
+
+  async function handleClose() {
+    setClosing(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/requests/${request.publicId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CLOSED" }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || t("errors.failedToCloseRequest"));
+      }
+
+      const updated = await res.json();
+      setRequest((prev: RequestData) => ({ ...prev, ...updated }));
+      setIsEditing(false);
+      setSuccessMsg(t("request.closeSuccess"));
+      setTimeout(() => setSuccessMsg(""), 4000);
+      refreshBorrowerData().catch(() => {
+        // best-effort
+      });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("common.somethingWentWrong"));
+    } finally {
+      setShowCloseModal(false);
+      setClosing(false);
+    }
   }
 
   async function handleDelete() {
@@ -138,6 +207,30 @@ export default function RequestDetail() {
     }
   }
 
+  // Load failure with nothing to show — render an actionable error instead
+  // of the previous infinite skeleton (the guard below never released when
+  // `request` stayed null after a 403/500/network failure).
+  if (!loading && !request && error) {
+    return (
+      <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerRequestDetail")}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div
+            role="alert"
+            className="mb-6 rounded-sm bg-error-50 border border-error-500/20 p-4 text-sm text-error-700 font-body"
+          >
+            {error}
+          </div>
+          <Link
+            href="/borrower/dashboard"
+            className="inline-flex items-center gap-1 font-body text-sm font-medium text-forest-600 hover:text-forest-800 transition-colors"
+          >
+            ← {t("request.backToRequests")}
+          </Link>
+        </div>
+      </BorrowerShell>
+    );
+  }
+
   if (loading || !request) {
     return (
       <BorrowerShell active="dashboard" pageTitle={t("titles.borrowerRequestDetail")}>
@@ -147,6 +240,9 @@ export default function RequestDetail() {
   }
 
   const isEditable = request.status === "OPEN" || request.status === "PENDING_APPROVAL";
+  // Closing is the only exit for a request with conversations (delete is
+  // blocked server-side to protect chats brokers paid for).
+  const isClosable = request.status === "OPEN" || request.status === "IN_PROGRESS";
 
   // Build initial values for editing
   const editInitialValues: CreateRequestInput = {
@@ -199,7 +295,7 @@ export default function RequestDetail() {
               <StatusBadge status={request.status} />
             </div>
             <p className="text-body-sm">
-              {t("misc.created", { date: formatDate(request.createdAt) })}
+              {t("misc.created", { date: formatDate(request.createdAt, router.locale) })}
             </p>
           </div>
 
@@ -219,6 +315,14 @@ export default function RequestDetail() {
                   {t("request.delete")}
                 </button>
               </>
+            )}
+            {isClosable && !isEditing && (
+              <button
+                onClick={() => setShowCloseModal(true)}
+                className="btn-secondary text-sm py-2 px-4"
+              >
+                {t("request.close", "Close request")}
+              </button>
             )}
             <Link
               href="/borrower/request/new"
@@ -305,6 +409,14 @@ export default function RequestDetail() {
         {/* Request details - edit mode or read-only */}
         {isEditing ? (
           <div className="">
+            {convoCount > 0 && (
+              <div className="mb-6 rounded-sm border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700 font-body">
+                {t(
+                  "request.editLockedByConversations",
+                  "Brokers have already responded to this request, so only the notes and desired timeline can be changed.",
+                )}
+              </div>
+            )}
             <RequestForm
               initialValues={editInitialValues}
               onSubmit={handleEdit}
@@ -326,6 +438,39 @@ export default function RequestDetail() {
               <h2 className="heading-md">{t("request.requestDetails")}</h2>
             </div>
             <V2ReadOnlyView request={request} />
+          </div>
+        )}
+
+        {/* Close confirmation modal */}
+        {showCloseModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 ">
+            <div className="bg-white rounded-sm shadow-xl max-w-md w-full mx-4 p-6">
+              <h3 className="heading-md mb-2">{t("request.close", "Close request")}</h3>
+              <p className="text-body-sm mb-6">
+                {t(
+                  "request.closeConfirm",
+                  "Closing this request ends all active broker conversations. This cannot be undone.",
+                )}
+              </p>
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => setShowCloseModal(false)}
+                  disabled={closing}
+                  className="btn-secondary px-6 py-2.5"
+                >
+                  {t("request.cancel")}
+                </button>
+                <button
+                  onClick={handleClose}
+                  disabled={closing}
+                  className="rounded-sm bg-forest-700 px-6 py-2.5 text-sm font-body font-medium text-white hover:bg-forest-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {closing
+                    ? t("request.closing", "Closing…")
+                    : t("request.close", "Close request")}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -473,8 +618,10 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
             </div>
           ) : (
             <>
-              <DetailRow label={t("request.corporateIncome")} value={`$${(details as CommercialDetails).corporateAnnualIncome}` || "--"} />
-              <DetailRow label={t("request.corporateExpenses")} value={`$${(details as CommercialDetails).corporateAnnualExpenses}` || "--"} />
+              {/* Guard with a ternary — `` `$${x}` || "--" `` is always
+                  truthy, so a missing legacy scalar rendered "$undefined". */}
+              <DetailRow label={t("request.corporateIncome")} value={(details as CommercialDetails).corporateAnnualIncome ? `$${(details as CommercialDetails).corporateAnnualIncome}` : "--"} />
+              <DetailRow label={t("request.corporateExpenses")} value={(details as CommercialDetails).corporateAnnualExpenses ? `$${(details as CommercialDetails).corporateAnnualExpenses}` : "--"} />
             </>
           )}
           <DetailRow label={t("request.ownerNetIncome")} value={(details as CommercialDetails).ownerNetIncome ? `$${(details as CommercialDetails).ownerNetIncome}` : "--"} />

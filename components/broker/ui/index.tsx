@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 type DivProps = React.HTMLAttributes<HTMLDivElement>;
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
@@ -146,6 +147,21 @@ export const Btn = React.forwardRef<
     const { type: _buttonType, ...anchorProps } =
       rest as ButtonProps & { type?: string };
     void _buttonType;
+    // Internal links MUST go through next/link: a raw <a> bypasses the client
+    // router, forcing a full reload and dropping the active locale prefix —
+    // an English user on /en/... clicking a raw-anchor CTA was silently
+    // bounced to the Korean default locale.
+    if (href?.startsWith("/")) {
+      return (
+        <Link
+          href={href}
+          className={classes}
+          {...(anchorProps as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        >
+          {children}
+        </Link>
+      );
+    }
     return (
       <a
         href={href}

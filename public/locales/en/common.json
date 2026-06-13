@@ -22,7 +22,8 @@
     "logoutConfirm": "Sign Out",
     "notifications": "Notifications",
     "noNotifications": "No notifications",
-    "settings": "Settings"
+    "settings": "Settings",
+    "loggingOut": "Signing out…"
   },
   "footer": {
     "tagline": "Connecting Canadian homebuyers with trusted mortgage brokers, privately and securely.",
@@ -181,6 +182,8 @@
     "resendCodeIn": "Resend in {{seconds}}s",
     "codeSent": "New code sent.",
     "codeExpired": "Code expired. Request a new one.",
+    "tooManyRequests": "Too many requests. Please wait a moment and try again.",
+    "verificationEmailFailed": "We couldn't send your verification email. Tap Resend to try again.",
     "invalidCode": "Invalid code. Try again.",
     "emailVerified": "Email verified! Please sign in.",
     "emailNotVerified": "Please verify your email first.",
@@ -196,7 +199,8 @@
     "useGoogleSignIn": "This account uses Google sign-in. Please click 'Continue with Google' below.",
     "selectRoleTitle": "Choose Your Role",
     "selectRoleSubtitle": "How would you like to use mortly?",
-    "selectRoleBtn": "Continue"
+    "selectRoleBtn": "Continue",
+    "tooManyAttempts": "Too many sign-in attempts. Please wait a few minutes and try again."
   },
   "borrowerDashboard": {
     "title": "Hello, {{name}}.",
@@ -217,7 +221,13 @@
     "statTotal": "Total Requests",
     "statActive": "Active",
     "statOffers": "Offers Received",
-    "statCompleted": "Completed"
+    "statCompleted": "Completed",
+    "activeTrend": "{{total}} total request(s)",
+    "noActive": "No active requests",
+    "response": "response",
+    "responsesAcross": "Across {{count}} request(s)",
+    "responsesPlural": "responses",
+    "responsesWaiting": "Waiting for brokers to respond"
   },
   "request": {
     "backToRequests": "Back to My Requests",
@@ -298,6 +308,11 @@
     "saving": "Saving...",
     "cancel": "Cancel",
     "deleting": "Deleting...",
+    "close": "Close request",
+    "closing": "Closing...",
+    "closeConfirm": "Closing this request ends all active broker conversations. This cannot be undone.",
+    "closeSuccess": "Request closed.",
+    "editLockedByConversations": "Brokers have already responded to this request, so only the notes and desired timeline can be changed.",
     "mortgageCategory": "Mortgage Category",
     "residential": "Residential",
     "commercial": "Commercial",
@@ -370,7 +385,20 @@
     "residentialRequest": "Residential Request",
     "commercialRequest": "Commercial Request",
     "legacyFormat": "This request was submitted in the previous format.",
-    "failedToLoad": "Failed to load request"
+    "failedToLoad": "Failed to load request",
+    "incomeTypeOther": "Other income",
+    "locationSection": "Location",
+    "privacy": "Your contact details are never shared. All chat stays on mortly.",
+    "privacyEyebrow": "Privacy",
+    "stepBasicsHint": "Category & products",
+    "stepDetailsHint": "Location, income, timeline",
+    "stepLabel": "STEP {{n}} / {{total}}",
+    "stepReviewHint": "Confirm and post",
+    "summary": "Request summary",
+    "summaryNote": "This summary updates as you fill out the form.",
+    "summaryPlaceholder": "Your request summary will appear here as you fill out the form.",
+    "timelineSection": "Timeline",
+    "viewDetails": "View details"
   },
   "messages": {
     "title": "Messages",
@@ -401,7 +429,8 @@
     "disclaimerAccept": "I Understand",
     "brokerDisclaimerTitle": "Before You Begin",
     "brokerDisclaimerBody": "Mortly is a marketplace platform that connects those exploring mortgage options with mortgage professionals.\nConsultation requests listed here are submitted directly by clients. Mortly does not guarantee the accuracy or completeness of any request details.",
-    "brokerDisclaimerAccept": "I Understand"
+    "brokerDisclaimerAccept": "I Understand",
+    "loadingConversations": "Loading…"
   },
   "borrower": {
     "nav": {
@@ -411,7 +440,29 @@
     },
     "tagline": "BORROWER",
     "openNav": "Open navigation",
-    "closeNav": "Close navigation"
+    "closeNav": "Close navigation",
+    "actionRequired": "Action required",
+    "activeRequestEyebrow": "Active request",
+    "activeResponsesBadge": "{{count}} new responses",
+    "activityEyebrow": "Recent activity",
+    "activityTitle": "Latest responses",
+    "allRequestsEyebrow": "My requests",
+    "allRequestsTitle": "All requests",
+    "borrowerFallback": "there",
+    "brokerLabel": "Broker",
+    "dashboardEyebrow": "Dashboard",
+    "editRequest": "Edit request",
+    "noActiveRequest": "No active requests right now",
+    "noActiveRequestDesc": "Start a new request to invite verified brokers to respond.",
+    "noActivity": "No activity yet",
+    "noActivityDesc": "When brokers respond, you'll see their messages here.",
+    "posted": "Posted",
+    "requestContext": "Request context",
+    "responses": "Responses",
+    "viewAll": "View all",
+    "viewResponses": "View responses",
+    "welcome": "Hello,",
+    "welcomeSuffix": "."
   },
   "broker": {
     "nav": {
@@ -456,6 +507,7 @@
     "onboardingSuccess": "Profile submitted successfully! Redirecting to dashboard...",
     "requestsSubtitle": "Find borrowers looking for a mortgage broker in your area.",
     "allProvinces": "All Provinces",
+    "loadMore": "Load more",
     "allTypes": "All Types",
     "allPropertyTypes": "All Property Types",
     "loadingRequests": "Loading requests...",
@@ -517,6 +569,10 @@
     "updatePayment": "Update Payment",
     "subscriptionActivated": "Subscription activated! Your credits have been allocated.",
     "planUpgraded": "You've been upgraded to {{tier}}! Your credits have been updated.",
+    "planUpdating": "Updating your plan to {{tier}}…",
+    "planUpdatePending": "Your upgrade to {{tier}} is processing. It may take a minute to appear — no need to pay again.",
+    "planUpdateFailed": "We couldn't update your plan. You have not been charged — please try again.",
+    "portalFailed": "We couldn't open the billing portal. Please try again.",
     "planDowngraded": "Your plan has been changed to {{tier}}. Credits have been adjusted.",
     "planScheduled": "Your plan will change to {{tier}} at the start of your next billing cycle. You'll keep your current plan until then.",
     "pendingDowngrade": "Your plan will change to {{tier}} on {{date}}. You'll keep your current plan and credits until then.",
@@ -563,7 +619,52 @@
     "failedToLoadRequests": "Failed to load requests. Please try again.",
     "failedToFetchRequests": "Failed to fetch requests",
     "verificationTimeline": "Your profile is under review. This typically takes 1-2 business days.",
-    "contactSupport": "Questions? Contact us at"
+    "contactSupport": "Questions? Contact us at",
+    "actionRequired": "Action required",
+    "activeEyebrow": "In progress",
+    "allCaughtUpDesc": "No new requests match your coverage right now — we'll surface them here as they arrive.",
+    "backToList": "Back to list",
+    "brokerFallback": "Broker",
+    "col": {
+      "id": "ID",
+      "posted": "Posted",
+      "region": "Region",
+      "responses": "Responses",
+      "timeline": "Timeline",
+      "type": "Type"
+    },
+    "creditWillBeDeducted": "1 credit will be used. {{remaining}} remaining.",
+    "dashboardEyebrow": "Broker dashboard",
+    "detailsEyebrow": "Details",
+    "findRequests": "Find requests",
+    "goToRequests": "Browse all",
+    "includeResponded": "Include requests I've responded to",
+    "latestRequests": "Latest requests",
+    "newCount": "{{count}} new",
+    "newRequestsTitle": "New consultation requests",
+    "newRequestsWeek": "New requests · this week",
+    "noCreditsSubtitle": "Upgrade your plan or buy more credits to continue responding to requests.",
+    "noFullRequestLink": "Full request data unavailable for this conversation.",
+    "noRequestContext": "Select a conversation to see the request behind it.",
+    "noUnread": "No unread messages",
+    "onlyUnresponded": "Only unresponded",
+    "openForResponse": "Open",
+    "rejectedDesc": "Please contact support to review your broker profile.",
+    "rejectedTitle": "Verification rejected",
+    "requestContext": "Request context",
+    "requestDetailsTitle": "Request details",
+    "requestsEyebrow": "Consultation requests",
+    "respond": "Start consultation",
+    "respondEyebrow": "Respond",
+    "responsesSuffix": "responses",
+    "seeAll": "View all",
+    "startDirectThread": "Start a direct conversation",
+    "tapToReview": "Tap to review",
+    "unlimitedPlanRespond": "PREMIUM plan · unlimited responses.",
+    "unreadAwaiting": "{{count}} unread messages",
+    "viewFullRequest": "View full request",
+    "welcomeSuffix": ".",
+    "welcomeTo": "Welcome back,"
   },
   "admin": {
     "dashboard": "Admin Dashboard",
@@ -1287,12 +1388,13 @@
     "rejected": "Rejected",
     "reviewed": "Reviewed",
     "resolved": "Resolved",
-    "dismissed": "Dismissed"
+    "dismissed": "Dismissed",
+    "title": "Status"
   },
   "consultation": {
-    "step1": "상담 대기중",
-    "step2": "상담 진행중",
-    "step3": "상담완료",
+    "step1": "Awaiting consultation",
+    "step2": "Consultation in progress",
+    "step3": "Consultation completed",
     "step1Desc": "Your request is live. Verified brokers can now respond inside mortly.",
     "step2Desc": "You have active conversations with brokers. Review and respond in Messages.",
     "step3Desc": "Consultation complete",
@@ -1589,7 +1691,10 @@
     "deleteAccountCancel": "Cancel",
     "deleteAccountDeleting": "Deleting...",
     "deleteAccountSuccess": "Your account has been deleted.",
-    "deleteAccountFailed": "Failed to delete account. Please try again later."
+    "deleteAccountFailed": "Failed to delete account. Please try again later.",
+    "deleteAccountPasswordDesc": "Enter your current password to permanently delete your account.",
+    "deleteAccountPasswordPlaceholder": "Current password",
+    "deleteAccountPasswordTitle": "Confirm with your password"
   },
   "report": {
     "title": "Report",
@@ -1671,6 +1776,13 @@
     "feat_topPriority": "Top priority placement",
     "feat_advancedAnalytics": "Advanced analytics dashboard"
   },
+  "consent": {
+    "title": "Analytics consent",
+    "body": "We use privacy-friendly analytics to improve mortly. You can decline without affecting your experience.",
+    "learnMore": "Privacy policy",
+    "accept": "Accept",
+    "decline": "Decline"
+  },
   "common": {
     "loading": "Loading...",
     "somethingWentWrong": "Something went wrong",
@@ -1683,7 +1795,12 @@
     "plan": "Plan",
     "unlimited": "Unlimited",
     "failedToLoad": "Failed to load data. Please try again.",
-    "openDetail": "Open detail"
+    "openDetail": "Open detail",
+    "close": "Close",
+    "dismiss": "Dismiss",
+    "open": "Open",
+    "refresh": "Refresh",
+    "retry": "Retry"
   },
   "borrowerProfile": {
     "failedToFetch": "Failed to fetch profile",
@@ -1718,6 +1835,7 @@
     "failedToSubmitRequest": "Failed to submit request",
     "failedToUpdateRequest": "Failed to update request",
     "failedToDeleteRequest": "Failed to delete request",
+    "failedToCloseRequest": "Failed to close request",
     "failedToFetchIntroductions": "Failed to fetch introductions",
     "failedToCreateConversation": "Failed to create conversation"
   },
@@ -1768,7 +1886,8 @@
     "placeholderReenterPassword": "Re-enter your password",
     "posted": "Posted {{date}}",
     "brokerResponses": "{{count}} broker response(s)",
-    "requestNotFound": "Request not found."
+    "requestNotFound": "Request not found.",
+    "skipToContent": "Skip to content"
   },
   "contact": {
     "metaTitle": "Contact Us — mortly",

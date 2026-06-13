@@ -513,34 +513,38 @@ function DetailFields({ row }: { row: InboxRow }) {
       </div>
       <div className="mt-3 p-3.5 bg-cream-100 border border-cream-300">
         <div className="font-mono text-[9px] text-sage-500 uppercase tracking-widest">사유</div>
-        <div className="text-[13px] text-forest-700/80 italic mt-1 leading-relaxed">"{row.reason}"</div>
+        <div className="text-[13px] text-forest-700/80 italic mt-1 leading-relaxed">&quot;{row.reason}&quot;</div>
       </div>
     </>
   );
 }
 
+// Manual review checklist — guidance only. The previous version rendered
+// hardcoded "자동 체크" results (fake green checkmarks for moderation passes
+// and duplicate scans that never ran), which admins were making approval
+// decisions on. No pass/fail marker is shown because nothing is computed;
+// if real checks are built server-side (queue.ts), render their results here.
 function DetailChecks({ row }: { row: InboxRow }) {
   const checks =
     row.kind === "REQ"
       ? [
-          { ok: true, label: "신규 신청자 확인 완료" },
-          { ok: true, label: "중복 요청 없음" },
-          { ok: true, label: "콘텐츠 모더레이션 통과" },
+          "금액·지역·소득 정보가 그럴듯한지 확인",
+          "비슷한 내용의 중복 요청이 없는지 확인",
+          "메모에 연락처/욕설 등 부적절한 내용이 없는지 확인",
         ]
       : row.kind === "BRK"
       ? [
-          { ok: true, label: "라이선스 번호 형식 유효" },
-          { ok: true, label: "이메일 인증 완료" },
-          { ok: false, label: "라이선스 당국 조회 — 수동 확인 권장" },
+          "라이선스 번호를 해당 주 당국에서 조회",
+          "중개사무소 이름·주가 실제와 일치하는지 확인",
         ]
       : [
-          { ok: true, label: "신고자 이메일 인증 완료" },
-          { ok: false, label: "동일 대상 누적 신고 존재 — 검토 필요" },
+          "신고 사유와 대상 콘텐츠를 직접 확인",
+          "동일 대상에 대한 이전 신고 이력 확인",
         ];
   return (
     <div className="mt-5">
       <div className="font-mono text-[10px] text-sage-500 uppercase tracking-widest mb-2">
-        자동 체크
+        검토 체크리스트
       </div>
       {checks.map((c, i) => (
         <div
@@ -549,10 +553,8 @@ function DetailChecks({ row }: { row: InboxRow }) {
             i < checks.length - 1 ? "border-b border-cream-200" : ""
           }`}
         >
-          <span className={`font-mono font-bold ${c.ok ? "text-success-700" : "text-warning-700"}`}>
-            {c.ok ? "✓" : "!"}
-          </span>
-          {c.label}
+          <span className="font-mono font-bold text-sage-400">·</span>
+          {c}
         </div>
       ))}
     </div>
@@ -562,10 +564,10 @@ function DetailChecks({ row }: { row: InboxRow }) {
 function RecommendedAction({ row }: { row: InboxRow }) {
   const text =
     row.kind === "REQ"
-      ? "자동 체크를 모두 통과했습니다. 승인 시 전문가들에게 즉시 노출됩니다."
+      ? "승인 시 전문가들에게 즉시 노출되며, 신청자에게 승인/거절 알림이 발송됩니다."
       : row.kind === "BRK"
-      ? "라이선스 검증 후 승인하세요. 승인 시 전문가 플랜을 즉시 사용할 수 있습니다."
-      : "신고 내용을 검토 후 해결 또는 기각하세요. 해결 시 조치가 대상에게 안내됩니다.";
+      ? "라이선스 검증 후 승인하세요. 승인/거절 시 해당 전문가에게 알림이 발송됩니다."
+      : "신고 내용을 검토 후 해결 또는 기각하세요.";
   return (
     <div className="mt-4 p-3.5 bg-amber-50 border border-amber-200">
       <div className="font-mono text-[10px] text-amber-700 uppercase tracking-widest mb-1">

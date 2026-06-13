@@ -110,11 +110,11 @@ describe("Stripe webhook — out-of-order delivery", () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
-    // NOTE: the current handler does re-update the subscription row + broker
-    // credits even when EXPIRED. That's a known edge case — this test
-    // documents the behavior so a future refactor that tightens it will
-    // update the assertion deliberately (not accidentally).
-    expect(prismaMock.broker.update).toHaveBeenCalled();
+    // handleInvoicePaid now early-returns on an EXPIRED/CANCELLED subscription,
+    // so a replayed/late invoice.paid can NOT resurrect it or re-grant the
+    // paid-tier credits to a broker who no longer pays.
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
+    expect(prismaMock.subscription.update).not.toHaveBeenCalled();
   });
 
   it("payment_failed → paid (transient decline recovery): final state is ACTIVE", async () => {

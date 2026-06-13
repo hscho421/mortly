@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { randomInt } from "crypto";
+import { randomInt, createHash } from "crypto";
 
 let _resend: Resend | null = null;
 
@@ -15,7 +15,19 @@ const BASE_URL = process.env.NEXTAUTH_URL || "https://mortly.ca";
 const LOGO_URL = "https://mortly.ca/logo/resend_logo.png";
 
 export function generateVerificationCode(): string {
-  return randomInt(100000, 999999).toString();
+  // randomInt upper bound is exclusive — use 1_000_000 so 999999 is reachable.
+  return randomInt(100000, 1_000_000).toString();
+}
+
+/**
+ * Hash a verification code for at-rest storage. We email the plaintext code
+ * but persist only its SHA-256 hash — consistent with how reset tokens are
+ * stored (a DB-read attacker shouldn't get usable live codes). SHA-256 (not
+ * bcrypt) is fine here: the input space is tiny and brute-force is bounded by
+ * the 5-attempt burn + rate limits, not hash cost.
+ */
+export function hashVerificationCode(code: string): string {
+  return createHash("sha256").update(code).digest("hex");
 }
 
 export async function sendVerificationCode(
@@ -147,6 +159,108 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/**
+ * Generic bilingual lifecycle notification (request approved/rejected,
+ * broker verified, etc.). One message carries both languages — server-side
+ * senders (admin actions, webhooks, crons) have no reliable locale signal.
+ */
+export async function sendLifecycleEmail(opts: {
+  to: string;
+  subjectKo: string;
+  subjectEn: string;
+  bodyKo: string;
+  bodyEn: string;
+  ctaPath?: string;
+  ctaLabelKo?: string;
+  ctaLabelEn?: string;
+}): Promise<void> {
+  const cta =
+    opts.ctaPath != null
+      ? `<div style="text-align: center; margin-top: 24px;">
+          <a href="${BASE_URL}${opts.ctaPath}" style="display: inline-block; background: #1f3528; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 32px; border-radius: 8px;">
+            ${escapeHtml(opts.ctaLabelKo ?? "확인하기")} / ${escapeHtml(opts.ctaLabelEn ?? "View")}
+          </a>
+        </div>`
+      : "";
+
+  const html = `
+    <div style="font-family: 'Outfit', 'Noto Sans KR', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; background: #faf8f3; border-radius: 16px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <img src="${LOGO_URL}" alt="mortly" style="height: 32px; width: auto;" />
+      </div>
+      <div style="background: #ffffff; border-radius: 12px; padding: 32px;">
+        <h1 style="font-size: 20px; color: #1f3528; margin: 0 0 12px;">
+          ${escapeHtml(opts.subjectKo)}
+        </h1>
+        <p style="font-size: 14px; color: #1f3528; margin: 0 0 16px; line-height: 1.6;">
+          ${escapeHtml(opts.bodyKo)}
+        </p>
+        <p style="font-size: 13px; color: #94a3b8; margin: 0; line-height: 1.6;">
+          ${escapeHtml(opts.bodyEn)}
+        </p>
+        ${cta}
+      </div>
+    </div>
+  `;
+
+  await getResend().emails.send({
+    from: FROM,
+    to: opts.to,
+    subject: `[mortly] ${opts.subjectKo} / ${opts.subjectEn}`,
+    html,
+  });
+}
+
+/**
+ * Billing notice: subscription payment failed, paid credits paused.
+ * Bilingual in a single message — the Stripe webhook has no reliable locale
+ * signal for the broker, and billing emails are too important to guess.
+ */
+export async function sendPaymentFailedEmail(
+  email: string,
+  billingUrl: string
+): Promise<void> {
+  const subject =
+    "[mortly] 결제 실패 — 플랜이 일시 중지되었습니다 / Payment failed — plan paused";
+
+  const html = `
+    <div style="font-family: 'Outfit', 'Noto Sans KR', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; background: #faf8f3; border-radius: 16px;">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <img src="${LOGO_URL}" alt="mortly" style="height: 32px; width: auto;" />
+      </div>
+      <div style="background: #ffffff; border-radius: 12px; padding: 32px;">
+        <h1 style="font-size: 20px; color: #1f3528; margin: 0 0 12px;">
+          결제에 실패했습니다
+        </h1>
+        <p style="font-size: 14px; color: #64748b; margin: 0 0 16px; line-height: 1.6;">
+          구독 결제가 처리되지 않아 플랜 크레딧이 일시 중지되었습니다.
+          결제 수단을 업데이트하시면 플랜과 크레딧이 즉시 복구됩니다.
+        </p>
+        <p style="font-size: 13px; color: #94a3b8; margin: 0 0 24px; line-height: 1.6;">
+          Your subscription payment could not be processed, so your plan
+          credits have been paused. Update your payment method and your plan
+          and credits will be restored as soon as the payment succeeds.
+        </p>
+        <div style="text-align: center;">
+          <a href="${billingUrl}" style="display: inline-block; background: #1f3528; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; padding: 12px 32px; border-radius: 8px;">
+            결제 수단 업데이트 / Update payment method
+          </a>
+        </div>
+      </div>
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 24px;">
+        mortly · 결제 관련 문의는 이 이메일에 회신해 주세요. / Reply to this email for billing questions.
+      </p>
+    </div>
+  `;
+
+  await getResend().emails.send({
+    from: FROM,
+    to: email,
+    subject,
+    html,
+  });
 }
 
 export async function sendPasswordResetEmail(

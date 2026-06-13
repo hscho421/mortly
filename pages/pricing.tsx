@@ -46,19 +46,21 @@ export default function Pricing() {
     return null;
   }
 
+  // NOTE: feature rows must describe SHIPPED functionality only. The previous
+  // "new request notifications" (PRO+) and "real-time message alerts"
+  // (PREMIUM) rows advertised features with no backend implementation, and
+  // the strikethrough "was $49/$99/$199" anchor prices never existed — both
+  // removed pre-launch (misleading-advertising risk for a trust product).
+  // Re-add notification rows only once the features exist and are tier-gated.
   const tiers = [
     {
       tier: "FREE",
       name: t("pricing.freeName"),
       price: "$0",
-      originalPrice: null,
-      discount: null,
       period: "",
       description: t("pricing.freeDesc"),
       features: {
         responses: t("pricing.val_none"),
-        notifications: false,
-        realtimeAlerts: false,
       },
       cta: t("pricing.freeCta"),
       featured: false,
@@ -67,14 +69,10 @@ export default function Pricing() {
       tier: "BASIC",
       name: t("pricing.basicName"),
       price: "$29",
-      originalPrice: "$49",
-      discount: "41%",
       period: t("pricing.perMonth"),
       description: t("pricing.basicDesc"),
       features: {
         responses: t("pricing.val_5perMonth"),
-        notifications: false,
-        realtimeAlerts: false,
       },
       cta: t("pricing.basicCta"),
       featured: false,
@@ -83,14 +81,10 @@ export default function Pricing() {
       tier: "PRO",
       name: t("pricing.proName"),
       price: "$69",
-      originalPrice: "$99",
-      discount: "30%",
       period: t("pricing.perMonth"),
       description: t("pricing.proDesc"),
       features: {
         responses: t("pricing.val_20perMonth"),
-        notifications: true,
-        realtimeAlerts: false,
       },
       cta: t("pricing.proCta"),
       featured: true,
@@ -99,14 +93,10 @@ export default function Pricing() {
       tier: "PREMIUM",
       name: t("pricing.premiumName"),
       price: "$129",
-      originalPrice: "$199",
-      discount: "35%",
       period: t("pricing.perMonth"),
       description: t("pricing.premiumDesc"),
       features: {
         responses: t("pricing.val_unlimited"),
-        notifications: true,
-        realtimeAlerts: true,
       },
       cta: t("pricing.premiumCta"),
       featured: false,
@@ -115,8 +105,6 @@ export default function Pricing() {
 
   const comparisonRows = [
     { label: t("pricing.feat_responses"), key: "responses" },
-    { label: t("pricing.feat_notifications"), key: "notifications" },
-    { label: t("pricing.feat_realtimeAlerts"), key: "realtimeAlerts" },
   ];
 
   const faqs = [
@@ -177,16 +165,6 @@ export default function Pricing() {
                   {tier.name}
                 </h3>
                 <div className="mt-3">
-                  {tier.originalPrice && (
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-body text-sm line-through text-sage-400">
-                        {tier.originalPrice}
-                      </span>
-                      <span className="inline-block px-1.5 py-0.5 rounded-sm text-[10px] font-bold font-mono bg-red-50 text-red-600 border border-red-100">
-                        {tier.discount} {t("misc.off")}
-                      </span>
-                    </div>
-                  )}
                   <div className="flex items-baseline gap-1">
                     <span className="font-display font-semibold text-4xl sm:text-5xl tracking-[-0.03em] text-forest-800">
                       {tier.price}

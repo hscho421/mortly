@@ -83,6 +83,51 @@ export const TIMELINE_LABEL_KEYS: Record<string, string> = {
   "1_YEAR_PLUS": "request.timeline1YearPlus",
 };
 
+// ── Canadian provinces & territories ──────────────────────────
+// Single source of truth — the borrower form had all 13, while the three
+// broker surfaces (browse filter, onboarding, profile) listed only 10
+// (missing the territories), so a borrower in Yukon could never be matched
+// by a broker filtering on province. Import this everywhere instead of
+// re-declaring local arrays.
+
+export const PROVINCES = [
+  "Alberta",
+  "British Columbia",
+  "Manitoba",
+  "New Brunswick",
+  "Newfoundland and Labrador",
+  "Northwest Territories",
+  "Nova Scotia",
+  "Nunavut",
+  "Ontario",
+  "Prince Edward Island",
+  "Quebec",
+  "Saskatchewan",
+  "Yukon",
+] as const;
+
+const provinceSet = new Set<string>(PROVINCES);
+
+export function isValidProvince(p: unknown): p is string {
+  return typeof p === "string" && provinceSet.has(p);
+}
+
+const timelineSet = new Set<string>(TIMELINE_OPTIONS);
+
+export function isValidTimeline(t: unknown): boolean {
+  return typeof t === "string" && timelineSet.has(t);
+}
+
+const incomeTypeSet = new Set<string>(INCOME_TYPES);
+
+export function areValidIncomeTypes(types: unknown): boolean {
+  return (
+    Array.isArray(types) &&
+    types.length > 0 &&
+    types.every((t) => typeof t === "string" && incomeTypeSet.has(t))
+  );
+}
+
 // ── Validation helpers ────────────────────────────────────────
 
 const residentialSet = new Set<string>(RESIDENTIAL_PRODUCTS);

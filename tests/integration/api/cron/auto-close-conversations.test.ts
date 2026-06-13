@@ -93,29 +93,21 @@ describe("POST /api/cron/auto-close-conversations", () => {
 
   // ─── 7d-unstarted sweep (borrower never replied) ─────────────
 
-  it("closes 7d-unstarted conversations only where borrower never sent a message", async () => {
-    // 3 convos: one where borrower replied, two where only the broker messaged.
+  it("closes 7d-unstarted conversations via the borrowerMsgCount=0 DB filter", async () => {
+    // Engagement is now filtered IN THE QUERY (borrowerMsgCount: 0 — the
+    // denormalized counter maintained on every message send) instead of the
+    // old in-memory sample of 10 unordered messages, which could miss the
+    // borrower's replies entirely on broker-heavy threads. The mock therefore
+    // returns only what the DB would: conversations with zero borrower
+    // messages.
     const convos = [
-      // borrower engaged → must NOT close
-      {
-        id: "engaged",
-        request: { id: "r1", borrowerId: "borrower_1" },
-        messages: [
-          { senderId: "broker_user_1" },
-          { senderId: "borrower_1" }, // borrower reply present
-        ],
-      },
-      // only broker messaged → must close
       {
         id: "silent_a",
         request: { id: "r2", borrowerId: "borrower_2" },
-        messages: [{ senderId: "broker_user_2" }, { senderId: "broker_user_2" }],
       },
-      // zero messages — still counts as "borrower never engaged"
       {
         id: "silent_b",
         request: { id: "r3", borrowerId: "borrower_3" },
-        messages: [],
       },
     ];
 
@@ -128,9 +120,24 @@ describe("POST /api/cron/auto-close-conversations", () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
+    // The unstarted sweep's query must pin borrowerMsgCount to 0 so engaged
+    // borrowers are excluded by the database, not by sampling.
+    const unstartedWhere = prismaMock.conversation.findMany.mock.calls[1][0].where;
+    expect(unstartedWhere.borrowerMsgCount).toBe(0);
+    expect(unstartedWhere.status).toBe("ACTIVE");
+
     const ids = prismaMock.conversation.updateMany.mock.calls[0][0].where.id.in;
     expect(ids).toEqual(["silent_a", "silent_b"]);
-    expect(ids).not.toContain("engaged");
+
+    // Closed threads get a bilingual system message attributed to the
+    // request's borrower (Message.senderId is a required FK).
+    const msgArgs = prismaMock.message.createMany.mock.calls.at(-1)?.[0];
+    expect(msgArgs.data).toHaveLength(2);
+    expect(msgArgs.data[0]).toMatchObject({
+      conversationId: "silent_a",
+      senderId: "borrower_2",
+      isSystem: true,
+    });
   });
 
   // ─── Request cascade ────────────────────────────────────────

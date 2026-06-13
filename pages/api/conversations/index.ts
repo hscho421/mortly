@@ -158,6 +158,17 @@ export default withAuth(async (req, res, session) => {
         return res.status(404).json({ error: "Request not found" });
       }
 
+      // Conversations may only be opened on live requests. PENDING_APPROVAL
+      // has not passed admin review yet, and terminal requests
+      // (CLOSED/EXPIRED/REJECTED) must not consume broker credits or restart
+      // contact. Checked before any credit spend.
+      if (request.status !== "OPEN" && request.status !== "IN_PROGRESS") {
+        return res.status(409).json({
+          error: "This request is no longer open for new conversations",
+          code: "REQUEST_NOT_OPEN",
+        });
+      }
+
       if (session.user.role === "BORROWER") {
         if (!bodyBrokerId) {
           return res.status(400).json({ error: "brokerId is required" });
@@ -230,7 +241,14 @@ export default withAuth(async (req, res, session) => {
       // BROKER flow: create conversation directly with credit deduction
       const broker = await prisma.broker.findUnique({
         where: { userId: session.user.id },
-        select: { id: true, brokerageName: true, verificationStatus: true, subscriptionTier: true, responseCredits: true },
+        select: {
+          id: true,
+          brokerageName: true,
+          verificationStatus: true,
+          subscriptionTier: true,
+          responseCredits: true,
+          subscription: { select: { status: true } },
+        },
       });
 
       if (!broker) {
@@ -241,6 +259,18 @@ export default withAuth(async (req, res, session) => {
       }
       if (broker.subscriptionTier === "FREE") {
         return res.status(403).json({ error: "Free plan brokers cannot message clients. Please upgrade your plan." });
+      }
+      // A lapsed paid plan must not keep paid entitlements. Without this,
+      // PREMIUM brokers bypass the credit gate entirely while PAST_DUE —
+      // invoice.payment_failed resets credits but not subscriptionTier.
+      if (
+        broker.subscription?.status === "PAST_DUE" ||
+        broker.subscription?.status === "EXPIRED"
+      ) {
+        return res.status(403).json({
+          error: "Your subscription payment is past due. Please update your billing details to continue.",
+          code: "SUBSCRIPTION_PAST_DUE",
+        });
       }
 
       // Block check — broker reaching out to borrower.

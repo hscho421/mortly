@@ -91,12 +91,20 @@ export default function SignupPage() {
         return;
       }
 
-      posthog.identify(email, { name, email, role });
+      // Key on the opaque publicId, not the raw email (no PII in distinct_id).
+      if (data.user?.publicId) {
+        posthog.identify(data.user.publicId, { role });
+      }
       posthog.capture("user_signed_up", { role });
 
-      // Redirect to email verification page
+      // Redirect to email verification page. If the verification email failed
+      // to send (data.emailSent === false), tell the verify page to surface a
+      // "resend" prompt instead of leaving the user staring at a code that
+      // never arrived.
       router.push(
-        `/verify-email?email=${encodeURIComponent(email)}`,
+        `/verify-email?email=${encodeURIComponent(email)}${
+          data.emailSent === false ? "&emailFailed=1" : ""
+        }`,
         undefined,
         { locale: router.locale }
       );
