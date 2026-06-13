@@ -11,8 +11,9 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import { PROVINCES } from "@/lib/requestConfig";
-import { supabase, AVATAR_BUCKET, avatarPublicUrl } from "@/lib/supabase";
+import { avatarPublicUrl } from "@/lib/supabase";
 import { resizeAvatar } from "@/lib/resizeImage";
+import { uploadBrokerAvatar } from "@/lib/uploadAvatar";
 
 interface BrokerUser {
   id: string;
@@ -134,24 +135,10 @@ export default function BrokerProfilePage() {
     setSuccess("");
     setPhotoBusy(true);
     try {
-      // 1. resize/crop/re-encode client-side (caps storage + strips EXIF)
+      // resize/crop/re-encode client-side (caps storage + strips EXIF), then
+      // run the shared upload flow (signed URL → storage → confirm).
       const blob = await resizeAvatar(file);
-      // 2. get a path-scoped signed upload URL from our API
-      const urlRes = await fetch("/api/brokers/avatar/upload-url", { method: "POST" });
-      if (!urlRes.ok) {
-        const d = await urlRes.json().catch(() => ({}));
-        throw new Error(d.error || t("broker.avatarUploadFailed", "Upload failed. Please try again."));
-      }
-      const { path, token } = await urlRes.json();
-      // 3. upload the blob directly to Supabase Storage (not via our function)
-      const { error: upErr } = await supabase.storage
-        .from(AVATAR_BUCKET)
-        .uploadToSignedUrl(path, token, blob, { contentType: "image/webp" });
-      if (upErr) throw new Error(t("broker.avatarUploadFailed", "Upload failed. Please try again."));
-      // 4. confirm — persist the path on the broker row
-      const confirmRes = await fetch("/api/brokers/avatar", { method: "POST" });
-      if (!confirmRes.ok) throw new Error(t("broker.avatarUploadFailed", "Upload failed. Please try again."));
-      const { url } = await confirmRes.json();
+      const { url, path } = await uploadBrokerAvatar(blob);
       // cache-bust so the CDN/browser don't serve the old image at the same path
       setPhotoUrl((url || avatarPublicUrl(path)) + `?v=${Date.now()}`);
       setSuccess(t("broker.avatarUpdated", "Profile photo updated."));

@@ -11,6 +11,14 @@
 > review it during verification. Only REJECTED accounts are blocked. Onboarding
 > now redirects to `/broker/profile` (where the upload control lives) instead of
 > the dashboard.
+>
+> **Update 2 (deferred upload in onboarding):** the photo is now embedded directly
+> in the onboarding form via a *deferred upload* — pick + local preview in the
+> form (no network), then on submit: create the broker row → upload the held blob
+> (`lib/uploadAvatar.ts`, shared with the profile page) → redirect. Upload is
+> non-fatal: onboarding success + photo failure routes to `/broker/profile` with a
+> toast to retry; otherwise → dashboard (no photo → dashboard). Profile-page
+> control kept for later edits.
 
 ## 1. Goal & scope
 

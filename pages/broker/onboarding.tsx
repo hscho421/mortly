@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -12,6 +12,8 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import posthog from "posthog-js";
 import { PROVINCES } from "@/lib/requestConfig";
+import { resizeAvatar } from "@/lib/resizeImage";
+import { uploadBrokerAvatar } from "@/lib/uploadAvatar";
 
 export default function BrokerOnboardingPage() {
   const { data: session, status } = useSession();
@@ -33,6 +35,18 @@ export default function BrokerOnboardingPage() {
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Deferred avatar: held client-side until submit creates the broker row,
+  // then uploaded. `avatarBlob` is the resized WebP; `avatarPreview` is a
+  // local object URL for the inline preview (no network until submit).
+  const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  // Revoke the object URL when it changes / on unmount to avoid a leak.
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
 
   if (status === "loading") {
     return (
@@ -67,6 +81,30 @@ export default function BrokerOnboardingPage() {
     }));
   };
 
+  const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const blob = await resizeAvatar(file);
+      setAvatarBlob(blob);
+      setAvatarPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
+    } catch {
+      setError(t("broker.avatarUploadFailed", "Couldn't process that image. Try another."));
+    }
+  };
+
+  const clearAvatar = () => {
+    setAvatarBlob(null);
+    setAvatarPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -90,15 +128,32 @@ export default function BrokerOnboardingPage() {
         province: form.province,
         mortgage_category: form.mortgageCategory,
       });
+
+      // Deferred avatar upload: the broker row now exists, so run the upload.
+      // A failure here is NON-FATAL — onboarding already succeeded; we just
+      // route the broker to their profile so they can retry, instead of
+      // blocking the whole flow on a photo.
+      let avatarFailed = false;
+      if (avatarBlob) {
+        try {
+          await uploadBrokerAvatar(avatarBlob);
+        } catch {
+          avatarFailed = true;
+        }
+      }
+
       toast(t("broker.onboardingSuccess"), "success");
       // Refresh the shell's profile cache before navigating; otherwise the
       // dashboard would render the "Complete your profile" banner for up to
       // 30s (the polling interval) until the next counter sweep.
       await refreshBrokerData();
-      // Land on the profile page (not the dashboard) so the broker can add a
-      // profile photo right after creating their profile — the upload control
-      // lives there and now accepts PENDING brokers.
-      router.push("/broker/profile", undefined, { locale: router.locale });
+
+      if (avatarFailed) {
+        toast(t("broker.avatarUploadFailed", "Upload failed. Please try again."), "error");
+        router.push("/broker/profile", undefined, { locale: router.locale });
+      } else {
+        router.push("/broker/dashboard", undefined, { locale: router.locale });
+      }
     } catch (err) {
       posthog.captureException(err);
       setError(t("common.unexpectedError"));
@@ -130,6 +185,50 @@ export default function BrokerOnboardingPage() {
         )}
 
         <form onSubmit={handleSubmit} className="card-elevated space-y-6">
+          {/* Optional profile photo — uploaded after the profile is created. */}
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-forest-100 text-forest-700">
+              {avatarPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarPreview} alt={t("broker.profilePhotoAlt", "Profile photo")} className="h-full w-full object-cover" />
+              ) : (
+                <span className="font-display text-xl">
+                  {(form.brokerageName || session.user.name || "?").charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div>
+              <p className="font-body text-sm font-semibold text-forest-800">
+                {t("broker.profilePhoto", "Profile photo")}
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <label className="btn-secondary cursor-pointer text-sm py-1.5 px-3">
+                  {avatarPreview ? t("broker.avatarChange", "Change photo") : t("broker.avatarUpload", "Upload photo")}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    disabled={isSubmitting}
+                    onChange={onPickAvatar}
+                  />
+                </label>
+                {avatarPreview && (
+                  <button
+                    type="button"
+                    onClick={clearAvatar}
+                    disabled={isSubmitting}
+                    className="rounded-sm border border-error-300 bg-white px-3 py-1.5 text-sm font-body font-medium text-error-600 hover:bg-error-50 disabled:opacity-50"
+                  >
+                    {t("broker.avatarRemove", "Remove")}
+                  </button>
+                )}
+              </div>
+              <p className="mt-1.5 font-body text-xs text-sage-400">
+                {t("broker.avatarOptionalHint", "Optional. JPG, PNG or WebP — added when you finish.")}
+              </p>
+            </div>
+          </div>
+
           <div>
             <label htmlFor="brokerageName" className="label-text">
               {t("broker.brokerageName")} <span className="text-amber-600">*</span>

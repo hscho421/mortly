@@ -111,7 +111,7 @@ afterEach(() => {
 });
 
 describe("BrokerOnboardingPage — H1 regression", () => {
-  it("refreshes BrokerDataContext before navigating to the profile page", async () => {
+  it("refreshes BrokerDataContext before navigating to the dashboard", async () => {
     render(
       <BrokerDataProvider>
         <BrokerOnboardingPage />
@@ -133,11 +133,12 @@ describe("BrokerOnboardingPage — H1 regression", () => {
     const save = screen.getByRole("button", { name: /broker\.save/i });
     fireEvent.click(save);
 
-    // Post-onboarding we land on /broker/profile (not the dashboard) so the
-    // broker can add a profile photo right after creating their profile.
+    // No photo was picked in this test, so onboarding lands on the dashboard.
+    // (With a photo, it uploads inline; on upload failure it routes to the
+    // profile page so the broker can retry.)
     await waitFor(() =>
       expect(routerPush).toHaveBeenCalledWith(
-        "/broker/profile",
+        "/broker/dashboard",
         undefined,
         { locale: "ko" },
       ),
