@@ -1,4 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+// Canonical client-safe avatar helpers live in lib/supabase; re-exported here
+// so the API routes keep a single import surface.
+export { AVATAR_BUCKET, avatarPublicUrl } from "@/lib/supabase";
 
 /**
  * SERVER-ONLY Supabase client using the service-role key. NEVER import this
@@ -11,8 +14,6 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * dev / CI without the key) instead of throwing at import time — mirrors the
  * lib/supabase.ts approach that keeps the build robust.
  */
-export const AVATAR_BUCKET = "avatars";
-
 let _client: SupabaseClient | null | undefined;
 
 export function getSupabaseAdmin(): SupabaseClient | null {
@@ -44,11 +45,4 @@ export const isAvatarStorageConfigured = Boolean(
 /** Deterministic object key for a broker's avatar (overwrites in place). */
 export function brokerAvatarPath(userId: string): string {
   return `brokers/${userId}.webp`;
-}
-
-/** Public URL for a stored avatar object path. */
-export function avatarPublicUrl(path: string): string | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!url) return null;
-  return `${url}/storage/v1/object/public/${AVATAR_BUCKET}/${path}`;
 }

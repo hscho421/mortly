@@ -47,3 +47,17 @@ export const supabase = createClient(
   supabaseUrl || "https://placeholder.supabase.co",
   supabaseAnonKey || "placeholder-anon-key",
 );
+
+// ── Avatar storage (client-safe helpers) ──────────────────────
+export const AVATAR_BUCKET = "avatars";
+
+/**
+ * Build the public URL for a stored avatar object path. Client-safe (only
+ * reads NEXT_PUBLIC_SUPABASE_URL). `version` busts the CDN/browser cache when
+ * a broker replaces their photo (deterministic path = same URL otherwise).
+ */
+export function avatarPublicUrl(path: string, version?: string | number): string | null {
+  if (!supabaseUrl || !path) return null;
+  const base = `${supabaseUrl}/storage/v1/object/public/${AVATAR_BUCKET}/${path}`;
+  return version != null ? `${base}?v=${version}` : base;
+}
