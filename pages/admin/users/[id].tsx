@@ -417,21 +417,35 @@ function UserDetailBody({
         ← {t("admin.userDetail.back", "사용자 목록으로")}
       </Link>
 
-      <ASectionHead
-        label={t("admin.userDetail.eyebrow", "사용자 상세")}
-        title={user.name || t("admin.userDetail.unnamed", "이름 없음")}
-        subtitle={
-          <span className="font-mono text-[11px] text-sage-500">
-            {user.publicId} · {user.email}
-          </span>
-        }
-        right={
-          <div className="flex items-center gap-1.5">
-            <ABadge tone={toneForRole(user.role)}>{user.role}</ABadge>
-            <ABadge tone={toneForUserStatus(user.status)}>{user.status}</ABadge>
-          </div>
-        }
-      />
+      <div className="flex items-start gap-4">
+        {/* Identity avatar — photo for brokers, initials otherwise. Circular to
+            match avatars everywhere else (people list, app shell). */}
+        <Avatar
+          name={user.name || user.email}
+          photoPath={user.broker?.profilePhoto ?? null}
+          version={user.broker?.updatedAt}
+          size={56}
+          rounded="full"
+          className="mt-1"
+        />
+        <div className="flex-1 min-w-0">
+          <ASectionHead
+            label={t("admin.userDetail.eyebrow", "사용자 상세")}
+            title={user.name || t("admin.userDetail.unnamed", "이름 없음")}
+            subtitle={
+              <span className="font-mono text-[11px] text-sage-500">
+                {user.publicId} · {user.email}
+              </span>
+            }
+            right={
+              <div className="flex items-center gap-1.5">
+                <ABadge tone={toneForRole(user.role)}>{user.role}</ABadge>
+                <ABadge tone={toneForUserStatus(user.status)}>{user.status}</ABadge>
+              </div>
+            }
+          />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5 mt-6">
         <UserInformation user={user} />
@@ -684,18 +698,8 @@ function BrokerDetails({
   return (
     <ACard pad={0} className="mt-6">
       <div className="px-6 py-4 border-b border-cream-300 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Photo so admins can review/moderate it during verification. */}
-          <Avatar
-            name={broker.brokerageName}
-            photoPath={broker.profilePhoto}
-            version={broker.updatedAt}
-            size={44}
-            rounded="sm"
-          />
-          <div className="font-display text-lg font-semibold text-forest-800 truncate">
-            {t("admin.userDetail.broker.title", "전문가 프로필")}
-          </div>
+        <div className="font-display text-lg font-semibold text-forest-800 truncate">
+          {t("admin.userDetail.broker.title", "전문가 프로필")}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <ABadge tone={toneForVerification(broker.verificationStatus)}>

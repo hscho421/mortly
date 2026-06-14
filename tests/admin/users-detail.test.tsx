@@ -200,12 +200,20 @@ describe("/admin/users/[id]", () => {
     const { container } = render(<AdminUserDetailPage />);
     await screen.findByText("Bob Borrower");
     const html = container.innerHTML;
-    expect(html).not.toMatch(/\brounded-full\b/);
+    // rounded-full is allowed: the identity avatar is circular here to match
+    // avatars everywhere else (people list, app shell). Other legacy radii stay banned.
     expect(html).not.toMatch(/\brounded-(xl|2xl|lg|md)\b/);
     expect(html).not.toMatch(/\bcard-elevated\b/);
     expect(html).not.toMatch(/\bstagger-/);
     expect(html).not.toMatch(/bg-rose-\d/);
     expect(html).not.toMatch(/animate-fade/);
+  });
+
+  it("renders a circular identity avatar in the header", async () => {
+    mockFetchWith(USER_FIXTURE);
+    const { container } = render(<AdminUserDetailPage />);
+    await screen.findByText("Bob Borrower");
+    expect(container.querySelector(".rounded-full")).not.toBeNull();
   });
 
   it("request rows link to /admin/activity?req=<publicId>", async () => {
