@@ -34,6 +34,18 @@ vi.mock("next/router", () => ({
   }),
 }));
 
+// Supabase env is absent under test, so the real url helpers return null (and
+// avatars fall back to initials). Stub them so a photo path yields URLs — lets
+// the avatar render an <img> and the click-to-enlarge lightbox work.
+vi.mock("@/lib/supabase", () => ({
+  AVATAR_BUCKET: "avatars",
+  isSupabaseConfigured: true,
+  supabase: {},
+  avatarTransformUrl: (path: string | null, size: number) =>
+    path ? `https://test.supabase/transform/${path}?w=${size}` : null,
+  avatarPublicUrl: (path: string | null) => (path ? `https://test.supabase/public/${path}` : null),
+}));
+
 interface UserFixture {
   id: string;
   publicId: string;
@@ -214,6 +226,28 @@ describe("/admin/users/[id]", () => {
     const { container } = render(<AdminUserDetailPage />);
     await screen.findByText("Bob Borrower");
     expect(container.querySelector(".rounded-full")).not.toBeNull();
+  });
+
+  it("a user with no photo has no clickable avatar / lightbox", async () => {
+    mockFetchWith(USER_FIXTURE);
+    render(<AdminUserDetailPage />);
+    await screen.findByText("Bob Borrower");
+    expect(screen.queryByTestId("user-avatar-button")).not.toBeInTheDocument();
+  });
+
+  it("a broker photo is clickable and opens a full-size lightbox", async () => {
+    const u = makeBrokerUser("VERIFIED");
+    u.broker!.profilePhoto = "brokers/usr_1.webp";
+    mockFetchWith(u);
+    render(<AdminUserDetailPage />);
+    const btn = await screen.findByTestId("user-avatar-button");
+    expect(screen.queryByTestId("user-avatar-lightbox")).not.toBeInTheDocument();
+
+    await userEvent.click(btn);
+    const lightbox = await screen.findByTestId("user-avatar-lightbox");
+    const img = within(lightbox).getByRole("img") as HTMLImageElement;
+    // full public object, NOT the small header transform
+    expect(img.getAttribute("src")).toContain("/public/brokers/usr_1.webp");
   });
 
   it("request rows link to /admin/activity?req=<publicId>", async () => {

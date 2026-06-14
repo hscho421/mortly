@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
@@ -7,6 +7,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import { useAdminData } from "@/lib/admin/AdminDataContext";
 import { useToast } from "@/components/Toast";
 import Avatar from "@/components/Avatar";
+import { avatarPublicUrl } from "@/lib/supabase";
 import {
   ABadge,
   ABtn,
@@ -406,6 +407,33 @@ function UserDetailBody({
   onSendNotice: () => void;
 }) {
   const { t } = useTranslation("common");
+  const [photoOpen, setPhotoOpen] = useState(false);
+
+  // The header avatar is a small (112px) transform for performance; the full
+  // stored object (up to 512px) backs the click-to-enlarge lightbox.
+  const photoPath = user.broker?.profilePhoto ?? null;
+  const photoVersion = user.broker?.updatedAt;
+  const fullPhotoUrl = photoPath ? avatarPublicUrl(photoPath, photoVersion) : null;
+
+  // Esc closes the lightbox.
+  useEffect(() => {
+    if (!photoOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPhotoOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [photoOpen]);
+
+  const headerAvatar = (
+    <Avatar
+      name={user.name || user.email}
+      photoPath={photoPath}
+      version={photoVersion}
+      size={56}
+      rounded="full"
+    />
+  );
 
   return (
     <div className="px-7 pt-6 pb-10 max-w-5xl">
@@ -419,15 +447,21 @@ function UserDetailBody({
 
       <div className="flex items-start gap-4">
         {/* Identity avatar — photo for brokers, initials otherwise. Circular to
-            match avatars everywhere else (people list, app shell). */}
-        <Avatar
-          name={user.name || user.email}
-          photoPath={user.broker?.profilePhoto ?? null}
-          version={user.broker?.updatedAt}
-          size={56}
-          rounded="full"
-          className="mt-1"
-        />
+            match avatars everywhere else (people list, app shell). When there's
+            a photo it's a button that opens a full-size lightbox. */}
+        {fullPhotoUrl ? (
+          <button
+            type="button"
+            onClick={() => setPhotoOpen(true)}
+            title={t("admin.userDetail.viewPhoto", "사진 크게 보기")}
+            data-testid="user-avatar-button"
+            className="mt-1 rounded-full transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-400"
+          >
+            {headerAvatar}
+          </button>
+        ) : (
+          <div className="mt-1">{headerAvatar}</div>
+        )}
         <div className="flex-1 min-w-0">
           <ASectionHead
             label={t("admin.userDetail.eyebrow", "사용자 상세")}
@@ -483,6 +517,35 @@ function UserDetailBody({
           conversations={user.conversations}
           total={user._count.conversations}
         />
+      )}
+
+      {/* Click-to-enlarge: full stored image (up to 512px) vs the 112px header
+          transform. Backdrop or × closes; Esc handled above. */}
+      {photoOpen && fullPhotoUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-forest-800/70 backdrop-blur-[2px] p-6"
+          onClick={() => setPhotoOpen(false)}
+          data-testid="user-avatar-lightbox"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={fullPhotoUrl}
+              alt={user.name || user.email}
+              className="max-h-[80vh] max-w-[80vw] rounded-sm object-contain bg-cream-100 shadow-2xl"
+            />
+            <button
+              type="button"
+              onClick={() => setPhotoOpen(false)}
+              aria-label={t("admin.userDetail.close", "닫기")}
+              className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-forest-800 shadow-md hover:bg-cream-100"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
