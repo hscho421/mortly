@@ -453,7 +453,7 @@ export default function BorrowerMessagesPage() {
         </div>
       )}
 
-      <div ref={cols.containerRef} className="flex h-full">
+      <div ref={cols.containerRef} className="flex h-full overflow-hidden">
 
         {/* ──────────────── LEFT PANEL ──────────────── */}
         <div
@@ -463,9 +463,9 @@ export default function BorrowerMessagesPage() {
           }`}
         >
           {/* List header */}
-          <div className="px-5 py-4 border-b border-cream-300">
-            <div className="flex items-center justify-between">
-              <h1 className="heading-md">{t("messages.title")}</h1>
+          <div className={`py-4 border-b border-cream-300 ${cols.listCompact ? "px-2" : "px-5"}`}>
+            <div className={`flex items-center ${cols.listCompact ? "justify-center" : "justify-between"}`}>
+              {!cols.listCompact && <h1 className="heading-md">{t("messages.title")}</h1>}
               <span className="inline-flex items-center justify-center rounded-full bg-forest-100 px-2.5 py-0.5 font-body text-xs font-semibold text-forest-700">
                 {conversations.length}
               </span>
@@ -508,7 +508,10 @@ export default function BorrowerMessagesPage() {
                   <button
                     key={conv.id}
                     onClick={() => selectConversation(conv.id)}
-                    className={`w-full text-left px-5 py-4 border-b border-cream-200 transition-colors duration-150 hover:bg-cream-200/60 ${
+                    title={cols.listCompact ? brokerName : undefined}
+                    className={`w-full text-left border-b border-cream-200 transition-colors duration-150 hover:bg-cream-200/60 ${
+                      cols.listCompact ? "px-2 py-3" : "px-5 py-4"
+                    } ${
                       isActive
                         ? "bg-cream-200 border-l-[3px] border-l-amber-500"
                         : hasUnread
@@ -516,7 +519,7 @@ export default function BorrowerMessagesPage() {
                           : ""
                     }`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className={`flex items-start gap-3 ${cols.listCompact ? "justify-center" : ""}`}>
                       {/* Avatar */}
                       <div className="relative shrink-0">
                         <Avatar name={brokerName} photoPath={conv.broker.profilePhoto} version={conv.broker.updatedAt} size={40} />
@@ -528,6 +531,7 @@ export default function BorrowerMessagesPage() {
                       </div>
 
                       {/* Content */}
+                      {!cols.listCompact && (
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-0.5">
                           <span className={`font-body text-sm truncate ${hasUnread ? "font-bold text-forest-900" : "font-semibold text-forest-800"}`}>
@@ -564,6 +568,7 @@ export default function BorrowerMessagesPage() {
                           </p>
                         )}
                       </div>
+                      )}
                     </div>
                   </button>
                 );
@@ -581,7 +586,7 @@ export default function BorrowerMessagesPage() {
 
         {/* ──────────────── RIGHT PANEL ──────────────── */}
         <div
-          className={`flex-1 flex flex-col bg-cream-50 ${
+          className={`flex-1 min-w-0 flex flex-col bg-cream-50 ${
             !mobileShowChat ? "hidden md:flex" : "flex"
           }`}
         >

@@ -21,12 +21,20 @@ import {
 
 const DEFAULTS = { list: 384, context: 320 } as const; // lg:w-96 / w-80
 const BOUNDS = {
-  listMin: 260,
+  listMin: 72, // collapses to an icon-only rail (avatars only)
   listMax: 560,
   contextMin: 240,
   contextMax: 520,
   threadMin: 360, // never let the center thread collapse below this
 } as const;
+
+// Two 6px drag handles sit IN the flex row, so they consume width too — count
+// them when bounding columns or the far column overflows the page by ~12px.
+const HANDLES = 12;
+// Magnetic snap radius: within this many px of a snap target, stick to it.
+const SNAP_PX = 16;
+// Below this width the list renders icon-only rows (see `listCompact`).
+const COMPACT_BELOW = 190;
 
 const LG_QUERY = "(min-width: 1024px)";
 
@@ -34,11 +42,21 @@ function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
 
+/** Magnetic snap: if `width` is within SNAP_PX of any target, return the target. */
+function snapTo(width: number, targets: number[]): number {
+  for (const target of targets) {
+    if (Math.abs(width - target) <= SNAP_PX) return target;
+  }
+  return width;
+}
+
 /**
  * Pure width math for a drag (exported for testing). `dx` is the pointer delta
  * from drag start. The list grows as you drag right (+dx); the context column
  * lives on the right so it grows as you drag left (−dx). Both are clamped to
- * their bounds AND to leave the center thread at least `threadMin`.
+ * their bounds, kept from collapsing the center thread below `threadMin` (the
+ * drag handles count toward that), then magnetically snapped — the list to its
+ * collapsed + default widths, the context to its default.
  */
 export function computeNextWidth(
   side: "list" | "context",
@@ -47,11 +65,13 @@ export function computeNextWidth(
   total: number,
   otherWidth: number,
 ): number {
-  const room = total - otherWidth - BOUNDS.threadMin;
+  const room = total - otherWidth - BOUNDS.threadMin - HANDLES;
   if (side === "list") {
-    return clamp(startWidth + dx, BOUNDS.listMin, Math.min(BOUNDS.listMax, room));
+    const raw = clamp(startWidth + dx, BOUNDS.listMin, Math.min(BOUNDS.listMax, room));
+    return snapTo(raw, [BOUNDS.listMin, DEFAULTS.list]);
   }
-  return clamp(startWidth - dx, BOUNDS.contextMin, Math.min(BOUNDS.contextMax, room));
+  const raw = clamp(startWidth - dx, BOUNDS.contextMin, Math.min(BOUNDS.contextMax, room));
+  return snapTo(raw, [DEFAULTS.context]);
 }
 
 export interface ResizableColumns {
@@ -61,6 +81,8 @@ export interface ResizableColumns {
   active: boolean;
   /** Inline width for the list column; undefined below lg (Tailwind applies). */
   listStyle: CSSProperties | undefined;
+  /** True when the list is narrow enough to render icon-only rows. */
+  listCompact: boolean;
   /** Inline width for the context column; undefined below lg. */
   contextStyle: CSSProperties | undefined;
   onListHandleDown: (e: ReactPointerEvent) => void;
@@ -194,6 +216,7 @@ export function useResizableColumns(storageKey: string): ResizableColumns {
     containerRef,
     active,
     listStyle: active ? { width: list } : undefined,
+    listCompact: active && list < COMPACT_BELOW,
     contextStyle: active ? { width: context } : undefined,
     onListHandleDown,
     onContextHandleDown,

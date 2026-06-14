@@ -28,6 +28,7 @@ function Harness() {
         onDoubleClick={cols.resetContext}
       />
       <div data-testid="context" style={cols.contextStyle} />
+      {cols.listCompact && <div data-testid="list-compact" />}
     </div>
   );
 }
@@ -84,6 +85,17 @@ describe("useResizableColumns / ColumnResizeHandle", () => {
     expect(screen.getByTestId("list")).toHaveStyle({ width: "384px" });
     expect(JSON.parse(localStorage.getItem(KEY)!).list).toBe(384);
   });
+
+  it("flags the list as compact only when narrow", () => {
+    localStorage.setItem(KEY, JSON.stringify({ list: 80, context: 320 }));
+    const { unmount } = render(<Harness />);
+    expect(screen.getByTestId("list-compact")).toBeInTheDocument();
+    unmount();
+
+    localStorage.setItem(KEY, JSON.stringify({ list: 384, context: 320 }));
+    render(<Harness />);
+    expect(screen.queryByTestId("list-compact")).not.toBeInTheDocument();
+  });
 });
 
 describe("computeNextWidth (drag math)", () => {
@@ -104,13 +116,22 @@ describe("computeNextWidth (drag math)", () => {
 
   it("clamps to the column's own min/max", () => {
     expect(computeNextWidth("list", 384, 9999, TOTAL, 320)).toBe(560); // listMax
-    expect(computeNextWidth("list", 384, -9999, TOTAL, 320)).toBe(260); // listMin
+    expect(computeNextWidth("list", 384, -9999, TOTAL, 320)).toBe(72); // listMin (icon-only)
     expect(computeNextWidth("context", 320, -9999, TOTAL, 384)).toBe(520); // contextMax
   });
 
-  it("never lets the center thread collapse below its minimum", () => {
+  it("never lets the center thread collapse below its minimum (handles counted)", () => {
     // On a 1024px viewport with a 320px context, the list can't exceed
-    // 1024 − 320 − 360(threadMin) = 344, even though listMax is 560.
-    expect(computeNextWidth("list", 384, 9999, 1024, 320)).toBe(344);
+    // 1024 − 320 − 360(threadMin) − 12(handles) = 332, even though listMax is 560.
+    expect(computeNextWidth("list", 384, 9999, 1024, 320)).toBe(332);
+  });
+
+  it("magnetically snaps to the default width when within range", () => {
+    expect(computeNextWidth("list", 384, -8, TOTAL, 320)).toBe(384); // 376 → 384
+    expect(computeNextWidth("context", 320, -10, TOTAL, 384)).toBe(320); // 330 → 320
+  });
+
+  it("snaps to the collapsed (icon-only) width near the minimum", () => {
+    expect(computeNextWidth("list", 90, -8, TOTAL, 320)).toBe(72); // 82 → 72
   });
 });

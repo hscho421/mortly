@@ -353,7 +353,7 @@ export default function BrokerMessagesPage() {
 
       <div
         ref={cols.containerRef}
-        className="flex h-full"
+        className="flex h-full overflow-hidden"
       >
         {/* Left panel - Conversation list */}
         <div
@@ -363,9 +363,9 @@ export default function BrokerMessagesPage() {
           } ${mobileView === "list" ? "w-full md:w-80 lg:w-96" : ""}`}
         >
           {/* List header */}
-          <div className="shrink-0 border-b border-cream-300 px-5 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="heading-md">{t("messages.title")}</h1>
+          <div className={`shrink-0 border-b border-cream-300 py-4 ${cols.listCompact ? "px-2" : "px-5"}`}>
+            <div className={`flex items-center ${cols.listCompact ? "justify-center" : "justify-between"}`}>
+              {!cols.listCompact && <h1 className="heading-md">{t("messages.title")}</h1>}
               {!loadingList && (
                 <span className="inline-flex items-center rounded-full bg-forest-100 px-2.5 py-1 font-body text-xs font-semibold text-forest-700">
                   {conversations.length}
@@ -415,7 +415,10 @@ export default function BrokerMessagesPage() {
                   <button
                     key={conv.id}
                     onClick={() => selectConversation(conv.id)}
-                    className={`w-full text-left px-5 py-4 border-b border-cream-200 transition-colors duration-150 hover:bg-cream-200/60 ${
+                    title={cols.listCompact ? conv.borrower?.name || t("messages.borrowerLabel") : undefined}
+                    className={`w-full text-left border-b border-cream-200 transition-colors duration-150 hover:bg-cream-200/60 ${
+                      cols.listCompact ? "px-2 py-3" : "px-5 py-4"
+                    } ${
                       isActive
                         ? "bg-cream-200 border-l-[3px] border-l-amber-500"
                         : hasUnread
@@ -423,7 +426,7 @@ export default function BrokerMessagesPage() {
                           : ""
                     }`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className={`flex items-start gap-3 ${cols.listCompact ? "justify-center" : ""}`}>
                       {/* Avatar */}
                       <div className="relative shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-700 font-display font-bold text-sm">
                         {(conv.borrower?.name || "B")[0].toUpperCase()}
@@ -434,6 +437,7 @@ export default function BrokerMessagesPage() {
                         )}
                       </div>
 
+                      {!cols.listCompact && (
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className={`font-body text-sm truncate ${hasUnread ? "font-bold text-forest-900" : "font-semibold text-forest-800"}`}>
@@ -468,6 +472,7 @@ export default function BrokerMessagesPage() {
                           </p>
                         )}
                       </div>
+                      )}
                     </div>
                   </button>
                 );
@@ -484,7 +489,7 @@ export default function BrokerMessagesPage() {
 
         {/* Right panel - Active chat */}
         <div
-          className={`flex-1 flex flex-col bg-cream-50 ${
+          className={`flex-1 min-w-0 flex flex-col bg-cream-50 ${
             mobileView === "list" ? "hidden md:flex" : "flex"
           }`}
         >
