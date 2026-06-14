@@ -80,6 +80,20 @@
       "completed": "상담완료",
       "timeAgo": "{{time}} 전"
     },
+    "help": {
+      "title": "이런 상담을 도와드려요",
+      "purchase": "신규 모기지",
+      "purchaseDesc": "새 집 구매 자금",
+      "refinance": "재융자 (리파이낸싱)",
+      "refinanceDesc": "더 나은 조건으로 변경",
+      "renewal": "갱신 (리뉴얼)",
+      "renewalDesc": "만기 모기지 갱신",
+      "commercial": "상업용 모기지",
+      "commercialDesc": "상업·투자용 부동산",
+      "freeProp": "$0 수수료",
+      "verifiedProp": "검증된 전문가",
+      "compare": "여러 견적 비교"
+    },
     "social": {
       "overline": "캐나다인이 신뢰하는",
       "title": "숫자가 말해줍니다",

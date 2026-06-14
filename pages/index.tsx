@@ -8,7 +8,6 @@ import { useSession } from "next-auth/react";
 import type { LiveRequest } from "@/types";
 import type { InferGetStaticPropsType } from "next";
 import { createHash } from "crypto";
-import { PRODUCT_LABEL_KEYS } from "@/lib/requestConfig";
 
 export default function Home({ liveRequests }: InferGetStaticPropsType<typeof getStaticProps>) {
   const { t } = useTranslation("common");
@@ -98,68 +97,43 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                 </Link>
               </div>
               <div className="animate-fade-in-up opacity-0 stagger-5 mt-10 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] text-cream-200/50 tracking-[0.12em] uppercase">
-                <span>✓ {t("home.social.stat4Label")}</span>
-                <span>✓ {t("home.social.stat2Label")}</span>
-                <span>✓ {t("home.social.stat3Label")}</span>
+                <span>✓ {t("home.help.freeProp")}</span>
+                <span>✓ {t("home.help.verifiedProp")}</span>
+                <span>✓ {t("home.help.compare")}</span>
               </div>
             </div>
 
             {/* Marketplace summary card */}
             <div className="animate-fade-in-up opacity-0 stagger-5">
+              {/* Illustrative request categories — what brokers help with.
+                  Replaces the former build-time "LIVE" feed + fabricated stats
+                  (500+/50+/95%), which were misleading for a pre-launch product. */}
               <div className="rounded-sm border border-cream-100/10 bg-cream-100/[0.04] p-6">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="font-mono text-[10px] uppercase tracking-[0.15em] text-amber-400">
-                    ● {t("home.live.title")}
-                  </div>
-                  <div className="font-mono text-[11px] text-cream-200/50">
-                    {liveRequests.length > 0 ? `LIVE · ${liveRequests.length} OPEN` : "LIVE"}
-                  </div>
+                <div className="mb-5 font-mono text-[10px] uppercase tracking-[0.15em] text-amber-400">
+                  ● {t("home.help.title")}
                 </div>
                 <div className="space-y-0">
-                  {liveRequests.slice(0, 4).map((r, i) => {
-                    const statusLabel = r.status === "IN_PROGRESS"
-                      ? t("home.live.inProgress")
-                      : t("home.live.seekingBroker");
-                    return (
-                      <div
-                        key={r.key}
-                        className={`grid grid-cols-[1.4fr_1fr_0.9fr] gap-3 py-3.5 items-center text-[13px] ${i ? "border-t border-cream-100/[0.06]" : ""}`}
-                      >
-                        <div className="text-cream-100 truncate">
-                          {r.mortgageCategory === "COMMERCIAL" ? t("request.commercial") : t("request.residential")}
-                          {r.productTypes?.[0] ? ` · ${t(PRODUCT_LABEL_KEYS[r.productTypes[0]] ?? r.productTypes[0])}` : ""}
-                        </div>
-                        <div className="text-cream-200/60 text-xs truncate">
-                          {r.city ? `${r.city}, ` : ""}{r.province ?? ""}
-                        </div>
-                        <div className="text-right font-mono text-[10px] text-amber-400 uppercase tracking-[0.12em]">
-                          {statusLabel}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {liveRequests.length === 0 && (
-                    <div className="py-8 text-center text-sm text-cream-200/40">
-                      —
-                    </div>
-                  )}
-                </div>
-
-                {/* Stats grid */}
-                <div className="mt-6 grid grid-cols-2 gap-4 pt-5 border-t border-cream-100/10">
                   {[
-                    { v: t("home.social.stat1Value"), l: t("home.social.stat1Label") },
-                    { v: t("home.social.stat2Value"), l: t("home.social.stat2Label") },
-                    { v: t("home.social.stat3Value"), l: t("home.social.stat3Label") },
-                    { v: t("home.social.stat4Value"), l: t("home.social.stat4Label") },
-                  ].map((s, i) => (
-                    <div key={i} className={i < 2 ? "pb-4 border-b border-cream-100/10" : ""}>
-                      <div className="font-display text-3xl text-amber-400 leading-none">{s.v}</div>
-                      <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cream-200/50">
-                        {s.l}
-                      </div>
+                    { label: t("home.help.purchase"), desc: t("home.help.purchaseDesc") },
+                    { label: t("home.help.refinance"), desc: t("home.help.refinanceDesc") },
+                    { label: t("home.help.renewal"), desc: t("home.help.renewalDesc") },
+                    { label: t("home.help.commercial"), desc: t("home.help.commercialDesc") },
+                  ].map((item, i) => (
+                    <div
+                      key={item.label}
+                      className={`grid grid-cols-[1fr_1.1fr] gap-3 py-3.5 items-center text-[13px] ${i ? "border-t border-cream-100/[0.06]" : ""}`}
+                    >
+                      <div className="text-cream-100">{item.label}</div>
+                      <div className="text-cream-200/60 text-xs">{item.desc}</div>
                     </div>
                   ))}
+                </div>
+
+                {/* Truthful value props */}
+                <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 pt-5 border-t border-cream-100/10 font-mono text-[10px] uppercase tracking-[0.12em] text-cream-200/60">
+                  <span><span className="text-amber-400">✓</span> {t("home.help.freeProp")}</span>
+                  <span><span className="text-amber-400">✓</span> {t("home.help.verifiedProp")}</span>
+                  <span><span className="text-amber-400">✓</span> {t("home.help.compare")}</span>
                 </div>
               </div>
             </div>

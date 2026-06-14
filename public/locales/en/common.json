@@ -80,6 +80,20 @@
       "completed": "Consultation Complete",
       "timeAgo": "{{time}} ago"
     },
+    "help": {
+      "title": "What we help with",
+      "purchase": "New mortgage",
+      "purchaseDesc": "Financing a home purchase",
+      "refinance": "Refinance",
+      "refinanceDesc": "Switch to better terms",
+      "renewal": "Renewal",
+      "renewalDesc": "Renew a maturing mortgage",
+      "commercial": "Commercial mortgage",
+      "commercialDesc": "Commercial & investment property",
+      "freeProp": "$0 fees",
+      "verifiedProp": "Verified brokers",
+      "compare": "Compare quotes"
+    },
     "social": {
       "overline": "Trusted by Canadians",
       "title": "Numbers That Speak for Themselves",
