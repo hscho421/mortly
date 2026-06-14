@@ -66,7 +66,7 @@
     "verifiedBrokersDesc": "mortly의 모든 모기지 전문가들은 다양한 성공사례와 풍부한 실적을 기반으로 전문적인 상담을 제공합니다.",
     "noCommitment": "부담없는 이용",
     "noCommitmentDesc": "모기지 전문가와 꼭 연결할 의무없이, 자유롭게 나에게 적합한 모기지 옵션들을 탐색하세요.",
-    "mobileReady": "이제, 모바일에서도 더 간편하게",
+    "mobileReady": "[곧 출시 예정] 모바일에서도 더 간편하게",
     "mobileReadyDesc": "애플 앱스토어와 구글 플레이스토어에서 ‘mortly’를 다운받으세요.",
     "readyTitle": "모기지 전문가를 찾을 준비가 되셨나요?",
     "readyDesc": "몇 분만에 상담을 요청하고, 여러 전문가의 응답을 받아보세요.",
@@ -90,7 +90,7 @@
       "stat3Value": "95%",
       "stat3Label": "만족도",
       "stat4Value": "0",
-      "stat4Label": "신청인 이용 수수료"
+      "stat4Label": "언제나 무료 상담"
     },
     "valueProp": {
       "overline": "모두를 위한",
@@ -1430,7 +1430,7 @@
     "faqTitle": "자주 묻는 질문",
     "readyTitle": "시작할 준비가 되셨나요?",
     "readyDesc": "간단한 절차를 통해 편리하게 상담을 요청하세요.",
-    "submitRequest": "상담 요청하기",
+    "submitRequest": "시작하기",
     "joinBroker": "모기지 전문가로 가입하기",
     "bStep1Title": "상담요청 만들기",
     "bStep1Desc": "부동산 유형, 예산, 일정, 선호사항 등 모기지 필요사항을 알려주세요. 직접 연락처를 공개하지 않은 상태로 상담요청이 이루어집니다.",
