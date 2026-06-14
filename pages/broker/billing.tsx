@@ -61,8 +61,6 @@ function usePlans(t: (key: string) => string): Plan[] {
       description: t("pricing.freeDesc"),
       features: [
         { text: t("pricing.feat_responses") + ": " + t("pricing.val_none"), included: false },
-        { text: t("pricing.feat_notifications"), included: false },
-        { text: t("pricing.feat_realtimeAlerts"), included: false },
       ],
       highlighted: false,
     },
@@ -77,8 +75,6 @@ function usePlans(t: (key: string) => string): Plan[] {
       description: t("pricing.basicDesc"),
       features: [
         { text: t("pricing.feat_responses") + ": " + t("pricing.val_5perMonth"), included: true },
-        { text: t("pricing.feat_notifications"), included: false },
-        { text: t("pricing.feat_realtimeAlerts"), included: false },
       ],
       highlighted: false,
     },
@@ -93,8 +89,7 @@ function usePlans(t: (key: string) => string): Plan[] {
       description: t("pricing.proDesc"),
       features: [
         { text: t("pricing.feat_responses") + ": " + t("pricing.val_20perMonth"), included: true },
-        { text: t("pricing.feat_notifications"), included: true },
-        { text: t("pricing.feat_realtimeAlerts"), included: false },
+        { text: t("pricing.feat_mobileAlerts"), included: true },
       ],
       highlighted: true,
     },
@@ -109,8 +104,7 @@ function usePlans(t: (key: string) => string): Plan[] {
       description: t("pricing.premiumDesc"),
       features: [
         { text: t("pricing.feat_responses") + ": " + t("pricing.val_unlimited"), included: true },
-        { text: t("pricing.feat_notifications"), included: true },
-        { text: t("pricing.feat_realtimeAlerts"), included: true },
+        { text: t("pricing.feat_mobileAlerts"), included: true },
       ],
       highlighted: false,
     },

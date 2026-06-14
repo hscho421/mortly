@@ -1551,6 +1551,7 @@
     "feat_badge": "Featured broker badge",
     "feat_notifications": "New request notifications",
     "feat_realtimeAlerts": "Real-time message alerts",
+    "feat_mobileAlerts": "Real-time mobile-app alerts for new requests & messages (coming soon)",
     "feat_leadFilters": "Advanced lead filters",
     "feat_analytics": "Analytics dashboard",
     "feat_accountManager": "Dedicated account manager",
