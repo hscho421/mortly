@@ -49,6 +49,10 @@ function relativeTime(dateStr: string, locale: string) {
   return formatDate(dateStr, locale);
 }
 
+// Conversation-create error codes that mean "needs billing", not a hard error —
+// rendered as a warm upgrade card with a link to /broker/billing.
+const UPGRADE_CODES = ["UPGRADE_REQUIRED", "NO_CREDITS", "SUBSCRIPTION_PAST_DUE"];
+
 export default function BrokerRequestDetailPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -59,7 +63,11 @@ export default function BrokerRequestDetailPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [request, setRequest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(""); // fatal load error → "not found" view
+  // Action error from "start conversation" — kept SEPARATE from `error` so a
+  // gate (free plan / no credits / past due) doesn't nuke the page to "request
+  // not found". Carries the API's machine-readable code for localized copy.
+  const [actionError, setActionError] = useState<{ code?: string; message: string } | null>(null);
   const [isStartingChat, setIsStartingChat] = useState(false);
 
   useEffect(() => {
@@ -95,7 +103,7 @@ export default function BrokerRequestDetailPage() {
   async function handleStartConversation() {
     if (!request || isStartingChat) return;
     setIsStartingChat(true);
-    setError("");
+    setActionError(null);
 
     try {
       const res = await fetch("/api/conversations", {
@@ -106,7 +114,7 @@ export default function BrokerRequestDetailPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || t("common.somethingWentWrong"));
+        setActionError({ code: data.code, message: data.error || t("common.somethingWentWrong") });
         setIsStartingChat(false);
         return;
       }
@@ -127,7 +135,7 @@ export default function BrokerRequestDetailPage() {
       });
     } catch (err) {
       posthog.captureException(err);
-      setError(t("common.unexpectedError"));
+      setActionError({ message: t("common.unexpectedError") });
       setIsStartingChat(false);
     }
   }
@@ -411,14 +419,42 @@ export default function BrokerRequestDetailPage() {
                 </Btn>
               </div>
             </div>
-            {error && (
-              <p
-                role="alert"
-                className="mt-3 rounded-sm border border-error-100 bg-error-50 px-3 py-2 font-body text-[13px] text-error-700"
-              >
-                {error}
-              </p>
-            )}
+            {actionError &&
+              (UPGRADE_CODES.includes(actionError.code ?? "") ? (
+                // A plan/credit gate — not a hard error. Explain it warmly and
+                // route them to billing instead of a bare red alert.
+                <div className="mt-4 rounded-sm border border-amber-200 bg-amber-50 p-5">
+                  <div className="font-display text-[15px] font-semibold text-forest-800">
+                    {t("broker.cannotMessageTitle", "아직 메시지를 보낼 수 없어요")}
+                  </div>
+                  <p className="mt-1.5 max-w-xl font-body text-[13px] leading-relaxed text-forest-700/80">
+                    {actionError.code === "NO_CREDITS"
+                      ? t(
+                          "broker.noCreditsSubtitle",
+                          "Upgrade your plan or buy more credits to continue responding to requests.",
+                        )
+                      : actionError.code === "SUBSCRIPTION_PAST_DUE"
+                        ? t(
+                            "broker.pastDueDesc",
+                            "Your subscription payment is past due. Update your billing details to start messaging clients again.",
+                          )
+                        : t(
+                            "broker.upgradeFreeDesc",
+                            "The Free plan lets you browse requests, but messaging clients needs a paid plan. Upgrade to respond to requests and start conversations with borrowers.",
+                          )}
+                  </p>
+                  <Btn as="a" href="/broker/billing" size="sm" className="mt-4">
+                    {t("broker.viewBilling", "요금제·결제 보기")} →
+                  </Btn>
+                </div>
+              ) : (
+                <p
+                  role="alert"
+                  className="mt-3 rounded-sm border border-error-100 bg-error-50 px-3 py-2 font-body text-[13px] text-error-700"
+                >
+                  {actionError.message}
+                </p>
+              ))}
           </Card>
         )}
       </div>

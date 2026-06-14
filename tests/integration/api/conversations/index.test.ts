@@ -75,6 +75,7 @@ describe("POST /api/conversations — broker-initiated (credit economy)", () => 
     await handler(req, res);
     expect(res.statusCode).toBe(403);
     expect(jsonBody<{ error: string }>(res).error).toMatch(/Free plan/);
+    expect(jsonBody<{ code?: string }>(res).code).toBe("UPGRADE_REQUIRED");
   });
 
   it("BASIC tier broker with credits: deducts 1 credit atomically + creates conversation", async () => {
@@ -116,6 +117,7 @@ describe("POST /api/conversations — broker-initiated (credit economy)", () => 
 
     expect(res.statusCode).toBe(403);
     expect(jsonBody<{ error: string }>(res).error).toMatch(/No response credits/);
+    expect(jsonBody<{ code?: string }>(res).code).toBe("NO_CREDITS");
     expect(prismaMock.conversation.create).not.toHaveBeenCalled();
   });
 

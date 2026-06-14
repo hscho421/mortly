@@ -260,7 +260,7 @@ export default withAuth(async (req, res, session) => {
         return res.status(403).json({ error: "Broker must be verified to message clients" });
       }
       if (broker.subscriptionTier === "FREE") {
-        return res.status(403).json({ error: "Free plan brokers cannot message clients. Please upgrade your plan." });
+        return res.status(403).json({ error: "Free plan brokers cannot message clients. Please upgrade your plan.", code: "UPGRADE_REQUIRED" });
       }
       // A lapsed paid plan must not keep paid entitlements. Without this,
       // PREMIUM brokers bypass the credit gate entirely while PAST_DUE —
@@ -392,7 +392,7 @@ export default withAuth(async (req, res, session) => {
     return res.status(405).json({ error: "Method not allowed" });
   } catch (error) {
     if (error instanceof Error && error.message === "NO_CREDITS") {
-      return res.status(403).json({ error: "No response credits remaining" });
+      return res.status(403).json({ error: "No response credits remaining", code: "NO_CREDITS" });
     }
     console.error("Error in /api/conversations:", error);
     return res.status(500).json({ error: "Internal server error" });
