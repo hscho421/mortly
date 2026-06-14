@@ -109,8 +109,9 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                   Replaces the former build-time "LIVE" feed + fabricated stats
                   (500+/50+/95%), which were misleading for a pre-launch product. */}
               <div className="rounded-sm border border-cream-100/10 bg-cream-100/[0.04] p-6">
-                <div className="mb-5 font-mono text-[10px] uppercase tracking-[0.15em] text-amber-400">
-                  ● {t("home.help.title")}
+                <div className="mb-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.15em] text-amber-400">
+                  <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+                  {t("home.help.title")}
                 </div>
                 <div className="space-y-0">
                   {[
