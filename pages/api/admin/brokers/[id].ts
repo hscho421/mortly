@@ -105,9 +105,9 @@ export default withAdmin(async (req, res, session) => {
       await notifyUser({
         userId: broker.user.id,
         adminId: session.user.id,
-        subject: "중개인 인증이 완료되었습니다 / You're verified",
+        subject: "브로커 인증이 완료되었습니다 / You're verified",
         body:
-          "중개인 인증이 완료되었습니다. 이제 상담 요청을 보고 응답할 수 있습니다. / " +
+          "브로커 인증이 완료되었습니다. 이제 상담 요청을 보고 응답할 수 있습니다. / " +
           "Your broker verification is complete. You can now browse and respond to requests.",
         push: {
           title: { ko: "인증 완료", en: "Verification complete" },
@@ -118,10 +118,10 @@ export default withAdmin(async (req, res, session) => {
         },
         pushData: { type: "verification" },
         email: {
-          subjectKo: "중개인 인증이 완료되었습니다",
+          subjectKo: "브로커 인증이 완료되었습니다",
           subjectEn: "You're verified on mortly",
           bodyKo: "인증이 완료되어 이제 상담 요청을 보고 응답할 수 있습니다.",
-          bodyEn: "Your verification is complete — you can now browse and respond to requests.",
+          bodyEn: "Your verification is complete. You can now browse and respond to requests.",
           ctaPath: "/broker/requests",
           ctaLabelKo: "요청 보기",
           ctaLabelEn: "Browse requests",
@@ -133,14 +133,14 @@ export default withAdmin(async (req, res, session) => {
       await notifyUser({
         userId: broker.user.id,
         adminId: session.user.id,
-        subject: "중개인 인증이 거절되었습니다 / Verification not approved",
+        subject: "브로커 인증이 거절되었습니다 / Verification not approved",
         body:
-          `중개인 인증이 거절되었습니다.${reasonKo} 문의는 고객센터로 연락해 주세요. / ` +
+          `브로커 인증이 거절되었습니다.${reasonKo} 문의는 고객센터로 연락해 주세요. / ` +
           `Your broker verification was not approved.${reasonEn} Contact support to review your profile.`,
         email: {
-          subjectKo: "중개인 인증이 거절되었습니다",
+          subjectKo: "브로커 인증이 거절되었습니다",
           subjectEn: "Your verification was not approved",
-          bodyKo: `중개인 인증이 거절되었습니다.${reasonKo}`,
+          bodyKo: `브로커 인증이 거절되었습니다.${reasonKo}`,
           bodyEn: `Your broker verification was not approved.${reasonEn}`,
           ctaPath: "/contact",
           ctaLabelKo: "문의하기",

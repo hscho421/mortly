@@ -11,8 +11,28 @@ function getResend(): Resend {
 }
 
 const FROM = process.env.RESEND_FROM || "noreply@mortly.ca";
-const BASE_URL = process.env.NEXTAUTH_URL || "https://mortly.ca";
 const LOGO_URL = "https://mortly.ca/logo/resend_logo.png";
+
+/**
+ * Public origin for links placed INSIDE emails. A link in an email must never
+ * be a localhost/loopback URL — a real recipient can't open it (a dev server
+ * that sends a live email would otherwise embed a dead link). Resolution order:
+ *   1. EMAIL_BASE_URL — explicit override, honored even if localhost so a dev
+ *      can force local links for end-to-end testing.
+ *   2. NEXTAUTH_URL — unless it points at localhost, in which case we ignore it.
+ *   3. https://mortly.ca — canonical production fallback.
+ */
+export function emailBaseUrl(): string {
+  const explicit = process.env.EMAIL_BASE_URL?.replace(/\/+$/, "");
+  if (explicit) return explicit;
+  const raw = (process.env.NEXTAUTH_URL || "").replace(/\/+$/, "");
+  if (!raw || /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?(\/|$)/i.test(raw)) {
+    return "https://mortly.ca";
+  }
+  return raw;
+}
+
+const BASE_URL = emailBaseUrl();
 
 export function generateVerificationCode(): string {
   // randomInt upper bound is exclusive — use 1_000_000 so 999999 is reachable.
