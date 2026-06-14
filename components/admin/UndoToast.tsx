@@ -20,21 +20,25 @@ export default function UndoToast({ label, graceMs = 3000, onCommit, onUndo }: U
   const [remaining, setRemaining] = useState(graceMs);
   const committedRef = useRef(false);
 
+  // Tick down. Keep this updater PURE — it previously called onCommit() inside
+  // setRemaining(), which runs during render, so the parent's setState fired
+  // mid-render ("Cannot update a component while rendering a different
+  // component"). The auto-commit side effect lives in the effect below instead.
   useEffect(() => {
     const tickMs = 50;
     const id = setInterval(() => {
-      setRemaining((r) => {
-        const next = Math.max(0, r - tickMs);
-        if (next === 0 && !committedRef.current) {
-          committedRef.current = true;
-          void onCommit();
-          clearInterval(id);
-        }
-        return next;
-      });
+      setRemaining((r) => Math.max(0, r - tickMs));
     }, tickMs);
     return () => clearInterval(id);
-  }, [onCommit]);
+  }, []);
+
+  // Auto-commit once the grace period elapses (side effect, post-render).
+  useEffect(() => {
+    if (remaining === 0 && !committedRef.current) {
+      committedRef.current = true;
+      void onCommit();
+    }
+  }, [remaining, onCommit]);
 
   // Esc cancels
   useEffect(() => {
