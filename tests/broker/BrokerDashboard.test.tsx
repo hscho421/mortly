@@ -231,8 +231,8 @@ describe("BrokerDashboardPage (Phase 2)", () => {
     );
 
     renderDashboard();
-    // The requests widget shows the "verification in progress" empty-state...
-    expect(await screen.findByText(/Verification in progress/i)).toBeInTheDocument();
+    // The requests widget shows the shared "Verification Required" card...
+    expect(await screen.findByText(/Verification Required/i)).toBeInTheDocument();
     // ...and NOT the generic "failed to load requests" error.
     expect(screen.queryByText("broker.failedToLoadRequests")).toBeNull();
   });

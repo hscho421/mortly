@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
 import BrokerShell from "@/components/broker/BrokerShell";
+import VerificationPendingCard from "@/components/broker/VerificationPendingCard";
 import {
   AppTopbar,
   Badge,
@@ -150,46 +151,8 @@ export default function BrokerRequestsPage() {
           title={t("broker.browseRequests")}
         />
         <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
-          <Card padding="lg" className="text-center">
-            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-sm bg-amber-100">
-              <svg
-                className="h-7 w-7 text-amber-700"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
-                />
-              </svg>
-            </div>
-            <div className="font-display text-2xl font-semibold text-forest-800">
-              {t("broker.verificationRequired", "Verification Required")}
-            </div>
-            <p className="mx-auto mt-3 max-w-md font-body text-[14px] text-forest-700/80">
-              {t(
-                "broker.verificationRequiredDesc",
-                "Your broker profile must be verified before you can browse borrower requests. Please wait for admin approval.",
-              )}
-            </p>
-            <p className="mx-auto mt-2 max-w-md font-body text-[12px] text-sage-500">
-              {t("broker.verificationTimeline")}
-            </p>
-            <p className="mx-auto mb-6 mt-1 max-w-md font-body text-[12px] text-sage-500">
-              {t("broker.contactSupport")}{" "}
-              <a
-                href="mailto:support@mortly.ca"
-                className="text-forest-700 underline hover:text-forest-900"
-              >
-                support@mortly.ca
-              </a>
-            </p>
-            <Btn as="a" href="/broker/dashboard">
-              {t("nav.dashboard")}
-            </Btn>
+          <Card padding="lg">
+            <VerificationPendingCard showDashboardLink />
           </Card>
         </div>
       </BrokerShell>

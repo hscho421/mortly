@@ -4,6 +4,7 @@ import Head from "next/head";
 import Link from "next/link";
 import BrokerShell from "@/components/broker/BrokerShell";
 import { useBrokerData } from "@/components/broker/BrokerDataContext";
+import VerificationPendingCard from "@/components/broker/VerificationPendingCard";
 import {
   AppTopbar,
   Badge,
@@ -310,27 +311,24 @@ export default function BrokerDashboardPage() {
                 >
                   {t("broker.failedToLoadRequests")}
                 </div>
+              ) : !verified ? (
+                // Pending approval — show the same verification message as the
+                // full requests page (minus the dashboard button, we're on it).
+                <div className="px-5 py-10">
+                  <VerificationPendingCard />
+                </div>
               ) : recentRequests.length === 0 ? (
                 <div className="p-5">
                   <EmptyState
                     title={t("broker.noMatchingRequests")}
-                    body={
-                      verified
-                        ? t(
-                            "broker.allCaughtUpDesc",
-                            "No new requests match your coverage right now — we'll surface them here as they arrive.",
-                          )
-                        : t(
-                            "broker.pendingDesc",
-                            "Verification in progress — the marketplace opens automatically once approved.",
-                          )
-                    }
+                    body={t(
+                      "broker.allCaughtUpDesc",
+                      "No new requests match your coverage right now — we'll surface them here as they arrive.",
+                    )}
                     cta={
-                      verified ? (
-                        <Btn as="a" href="/broker/requests" size="sm" variant="ghost">
-                          {t("broker.goToRequests", "Browse all")}
-                        </Btn>
-                      ) : null
+                      <Btn as="a" href="/broker/requests" size="sm" variant="ghost">
+                        {t("broker.goToRequests", "Browse all")}
+                      </Btn>
                     }
                   />
                 </div>
