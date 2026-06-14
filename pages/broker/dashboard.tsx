@@ -300,8 +300,10 @@ export default function BrokerDashboardPage() {
                 <div className="px-5 py-10 text-center font-body text-[13px] text-sage-500">
                   {t("broker.loadingRequests")}
                 </div>
-              ) : requestsError && recentRequests.length === 0 ? (
-                // A fetch failure must not masquerade as "all caught up".
+              ) : verified && requestsError && recentRequests.length === 0 ? (
+                // A fetch failure must not masquerade as "all caught up". Only
+                // for verified brokers — an unverified broker's gated 403 is not
+                // an error; it falls through to the "pending" empty-state below.
                 <div
                   role="alert"
                   className="m-5 rounded-sm border border-error-100 bg-error-50 px-4 py-3 font-body text-[13px] text-error-700"

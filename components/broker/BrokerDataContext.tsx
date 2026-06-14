@@ -199,6 +199,12 @@ export function BrokerDataProvider({ children }: { children: React.ReactNode }) 
         const data = (json.data ?? []) as BrokerCachedRequest[];
         setRecentRequests(data);
         setRequestsError(false);
+      } else if (reqRes.status === 403) {
+        // Pending/unverified broker — the request feed is gated until approval.
+        // That's an expected state, not a load failure, so don't raise the error
+        // flag (the dashboard renders a "verification in progress" placeholder).
+        setRecentRequests([]);
+        setRequestsError(false);
       } else {
         setRequestsError(true);
       }

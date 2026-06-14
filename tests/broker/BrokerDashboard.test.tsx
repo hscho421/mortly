@@ -178,4 +178,62 @@ describe("BrokerDashboardPage (Phase 2)", () => {
     expect(screen.getByText(/New requests/i)).toBeInTheDocument();
     expect(screen.getByText(/Active Conversations|진행중인 상담/i)).toBeInTheDocument();
   });
+
+  it("shows a pending-verification placeholder (not a load error) when /api/requests 403s for an unverified broker", async () => {
+    // A still-pending broker: profile is PENDING and the gated feed returns 403.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.startsWith("/api/brokers/profile")) {
+          return new Response(
+            JSON.stringify({
+              id: "b1",
+              userId: "u1",
+              brokerageName: "Prime Mortgage",
+              province: "Ontario",
+              licenseNumber: "ONT-123",
+              phone: null,
+              bio: null,
+              yearsExperience: 1,
+              specialties: null,
+              areasServed: null,
+              profilePhoto: null,
+              verificationStatus: "PENDING",
+              subscriptionTier: "FREE",
+              responseCredits: 0,
+              mortgageCategory: "BOTH",
+              user: { id: "u1", name: "Jihoon Park", email: "j@x.co" },
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
+        if (url.startsWith("/api/requests")) {
+          return new Response(
+            JSON.stringify({ error: "Broker must be verified to view requests" }),
+            { status: 403, headers: { "content-type": "application/json" } },
+          );
+        }
+        if (url.startsWith("/api/messages/unread")) {
+          return new Response(JSON.stringify({ unread: 0 }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (url.startsWith("/api/conversations")) {
+          return new Response(JSON.stringify([]), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return new Response("{}", { status: 200 });
+      }),
+    );
+
+    renderDashboard();
+    // The requests widget shows the "verification in progress" empty-state...
+    expect(await screen.findByText(/Verification in progress/i)).toBeInTheDocument();
+    // ...and NOT the generic "failed to load requests" error.
+    expect(screen.queryByText("broker.failedToLoadRequests")).toBeNull();
+  });
 });
