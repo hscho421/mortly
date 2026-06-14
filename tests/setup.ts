@@ -7,6 +7,23 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// jsdom has no matchMedia — components that gate on breakpoints (e.g. the
+// messaging resizable columns) call it on mount. Default to "matches: true"
+// (desktop/lg) so those features are exercised; tests can override per-case.
+if (typeof window !== "undefined" && !window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+}
+
 // next-i18next's useTranslation in tests: fall back to the second arg.
 vi.mock("next-i18next", () => ({
   useTranslation: () => ({

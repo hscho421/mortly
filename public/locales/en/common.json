@@ -402,6 +402,8 @@
   },
   "messages": {
     "title": "Messages",
+    "resizeList": "Drag to resize the conversation list (double-click to reset)",
+    "resizeContext": "Drag to resize the info panel (double-click to reset)",
     "noConversations": "No conversations yet",
     "noConversationsDescBorrower": "Browse broker introductions to start chatting.",
     "noConversationsDescBroker": "Browse and respond to requests to connect with borrowers.",

@@ -10,6 +10,7 @@ import {
   RequestContextSkeleton,
 } from "@/components/broker/MessagesSkeletons";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
+import { useResizableColumns, ColumnResizeHandle } from "@/components/ResizableColumns";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -119,6 +120,7 @@ export default function BrokerMessagesPage() {
   }, [contextOpen]);
 
   const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(activeConvId);
+  const cols = useResizableColumns("mortly:msg-cols:broker");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSelectingRef = useRef(false);
@@ -350,13 +352,15 @@ export default function BrokerMessagesPage() {
       )}
 
       <div
+        ref={cols.containerRef}
         className="flex h-full"
       >
         {/* Left panel - Conversation list */}
         <div
-          className={`w-80 lg:w-96 shrink-0 border-r border-cream-300 bg-cream-100 flex flex-col ${
+          style={cols.listStyle}
+          className={`w-80 lg:w-96 shrink-0 border-r border-cream-300 lg:border-r-0 bg-cream-100 flex flex-col ${
             mobileView === "chat" ? "hidden md:flex" : "flex"
-          } ${mobileView === "list" ? "w-full md:w-80 lg:md:w-96" : ""}`}
+          } ${mobileView === "list" ? "w-full md:w-80 lg:w-96" : ""}`}
         >
           {/* List header */}
           <div className="shrink-0 border-b border-cream-300 px-5 py-4">
@@ -470,6 +474,13 @@ export default function BrokerMessagesPage() {
               })}
           </div>
         </div>
+
+        {/* Drag handle: list ↔ thread (lg+ only) */}
+        <ColumnResizeHandle
+          ariaLabel={t("messages.resizeList", "드래그하여 대화 목록 너비 조절 (더블클릭 시 초기화)")}
+          onPointerDown={cols.onListHandleDown}
+          onDoubleClick={cols.resetList}
+        />
 
         {/* Right panel - Active chat */}
         <div
@@ -757,11 +768,19 @@ export default function BrokerMessagesPage() {
           )}
         </div>
 
+        {/* Drag handle: thread ↔ context (lg+ only) */}
+        <ColumnResizeHandle
+          ariaLabel={t("messages.resizeContext", "드래그하여 정보 패널 너비 조절 (더블클릭 시 초기화)")}
+          onPointerDown={cols.onContextHandleDown}
+          onDoubleClick={cols.resetContext}
+        />
+
         {/* Right context panel — always mounted on lg+ as a third column.
             Shows a skeleton while the active conversation is loading so the
             pane never flashes empty between selection and data arrival. */}
         <div
           id="broker-request-context"
+          style={cols.contextStyle}
           className="hidden w-80 shrink-0 lg:block"
         >
           {activeConvId && loadingChat ? (

@@ -402,6 +402,8 @@
   },
   "messages": {
     "title": "메시지",
+    "resizeList": "드래그하여 대화 목록 너비 조절 (더블클릭 시 초기화)",
+    "resizeContext": "드래그하여 정보 패널 너비 조절 (더블클릭 시 초기화)",
     "noConversations": "아직 대화가 없습니다",
     "noConversationsDescBorrower": "모기지 전문가 소개를 확인하고 대화를 시작하세요.",
     "noConversationsDescBroker": "상담요청에 응답하여 고객과 상담을 진행하세요.",

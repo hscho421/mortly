@@ -22,6 +22,7 @@ import {
   RequestContextSkeleton,
 } from "@/components/broker/MessagesSkeletons";
 import ChatDisclaimer, { useDisclaimerNeeded } from "@/components/ChatDisclaimer";
+import { useResizableColumns, ColumnResizeHandle } from "@/components/ResizableColumns";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { ConversationWithParticipants } from "@/types";
 import type { Message } from "@/types";
@@ -132,6 +133,7 @@ export default function BorrowerMessagesPage() {
   }, [contextOpen]);
 
   const { disclaimerNeeded, acceptDisclaimer } = useDisclaimerNeeded(activeId);
+  const cols = useResizableColumns("mortly:msg-cols:borrower");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSelectingRef = useRef(false);
@@ -451,11 +453,12 @@ export default function BorrowerMessagesPage() {
         </div>
       )}
 
-      <div className="flex h-full">
+      <div ref={cols.containerRef} className="flex h-full">
 
         {/* ──────────────── LEFT PANEL ──────────────── */}
         <div
-          className={`w-full md:w-80 lg:w-96 border-r border-cream-300 bg-cream-100 flex flex-col shrink-0 ${
+          style={cols.listStyle}
+          className={`w-full md:w-80 lg:w-96 border-r border-cream-300 lg:border-r-0 bg-cream-100 flex flex-col shrink-0 ${
             mobileShowChat ? "hidden md:flex" : "flex"
           }`}
         >
@@ -568,6 +571,13 @@ export default function BorrowerMessagesPage() {
             )}
           </div>
         </div>
+
+        {/* Drag handle: list ↔ thread (lg+ only) */}
+        <ColumnResizeHandle
+          ariaLabel={t("messages.resizeList", "드래그하여 대화 목록 너비 조절 (더블클릭 시 초기화)")}
+          onPointerDown={cols.onListHandleDown}
+          onDoubleClick={cols.resetList}
+        />
 
         {/* ──────────────── RIGHT PANEL ──────────────── */}
         <div
@@ -824,9 +834,17 @@ export default function BorrowerMessagesPage() {
           ) : null}
         </div>
 
+        {/* Drag handle: thread ↔ context (lg+ only) */}
+        <ColumnResizeHandle
+          ariaLabel={t("messages.resizeContext", "드래그하여 정보 패널 너비 조절 (더블클릭 시 초기화)")}
+          onPointerDown={cols.onContextHandleDown}
+          onDoubleClick={cols.resetContext}
+        />
+
         {/* Right context panel — always mounted on lg+ */}
         <div
           id="borrower-request-context"
+          style={cols.contextStyle}
           className="hidden w-80 shrink-0 lg:block"
         >
           {activeId && chatLoading ? (
