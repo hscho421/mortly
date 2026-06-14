@@ -97,9 +97,9 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                 </Link>
               </div>
               <div className="animate-fade-in-up opacity-0 stagger-5 mt-10 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] text-cream-200/50 tracking-[0.12em] uppercase">
-                <span>✓ {t("home.help.freeProp")}</span>
-                <span>✓ {t("home.help.verifiedProp")}</span>
-                <span>✓ {t("home.help.compare")}</span>
+                <span>✓ {t("home.help.benefitPrivate")}</span>
+                <span>✓ {t("home.help.benefitOpinions")}</span>
+                <span>✓ {t("home.help.benefitResults")}</span>
               </div>
             </div>
 
@@ -114,14 +114,17 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                 </div>
                 <div className="space-y-0">
                   {[
+                    { label: t("home.help.preapproval"), desc: t("home.help.preapprovalDesc") },
                     { label: t("home.help.purchase"), desc: t("home.help.purchaseDesc") },
                     { label: t("home.help.refinance"), desc: t("home.help.refinanceDesc") },
                     { label: t("home.help.renewal"), desc: t("home.help.renewalDesc") },
+                    { label: t("home.help.reverse"), desc: t("home.help.reverseDesc") },
+                    { label: t("home.help.selfEmployed"), desc: t("home.help.selfEmployedDesc") },
                     { label: t("home.help.commercial"), desc: t("home.help.commercialDesc") },
                   ].map((item, i) => (
                     <div
                       key={item.label}
-                      className={`grid grid-cols-[1fr_1.1fr] gap-3 py-3.5 items-center text-[13px] ${i ? "border-t border-cream-100/[0.06]" : ""}`}
+                      className={`grid grid-cols-[1fr_1.1fr] gap-3 py-2.5 items-center text-[13px] ${i ? "border-t border-cream-100/[0.06]" : ""}`}
                     >
                       <div className="text-cream-100">{item.label}</div>
                       <div className="text-cream-200/60 text-xs">{item.desc}</div>
@@ -129,11 +132,9 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                   ))}
                 </div>
 
-                {/* Truthful value props */}
-                <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 pt-5 border-t border-cream-100/10 font-mono text-[10px] uppercase tracking-[0.12em] text-cream-200/60">
-                  <span><span className="text-amber-400">✓</span> {t("home.help.freeProp")}</span>
-                  <span><span className="text-amber-400">✓</span> {t("home.help.verifiedProp")}</span>
-                  <span><span className="text-amber-400">✓</span> {t("home.help.compare")}</span>
+                {/* Footnote: other consultations are welcome too */}
+                <div className="mt-6 pt-5 border-t border-cream-100/10 text-[11px] text-cream-200/60">
+                  <span className="text-amber-400">✓</span> {t("home.help.footnote")}
                 </div>
               </div>
             </div>

@@ -81,18 +81,25 @@
       "timeAgo": "{{time}} ago"
     },
     "help": {
-      "title": "What we help with",
+      "title": "Get help with all of these — conveniently",
+      "preapproval": "Mortgage pre-approval",
+      "preapprovalDesc": "Lock in a good rate upfront",
       "purchase": "New mortgage",
-      "purchaseDesc": "Financing a home purchase",
+      "purchaseDesc": "Financing a property (home or investment)",
       "refinance": "Refinance",
       "refinanceDesc": "Switch to better terms",
       "renewal": "Renewal",
-      "renewalDesc": "Renew a maturing mortgage",
+      "renewalDesc": "Review options before maturity",
+      "reverse": "Reverse mortgage",
+      "reverseDesc": "For homeowners aged 55+",
+      "selfEmployed": "Self-employed mortgage",
+      "selfEmployedDesc": "Buy a home on business income",
       "commercial": "Commercial mortgage",
-      "commercialDesc": "Commercial & investment property",
-      "freeProp": "$0 fees",
-      "verifiedProp": "Verified brokers",
-      "compare": "Compare quotes"
+      "commercialDesc": "Business purchase or extra financing",
+      "benefitPrivate": "Private consultations",
+      "benefitOpinions": "Multiple expert opinions",
+      "benefitResults": "Better outcomes",
+      "footnote": "You can also request any other consultation you need."
     },
     "social": {
       "overline": "Trusted by Canadians",

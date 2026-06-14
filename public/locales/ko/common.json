@@ -81,18 +81,25 @@
       "timeAgo": "{{time}} 전"
     },
     "help": {
-      "title": "이런 상담을 도와드려요",
+      "title": "이런 상담들을 편리하게 받아 보세요.",
+      "preapproval": "모기지 사전승인",
+      "preapprovalDesc": "좋은 금리로 사전 승인",
       "purchase": "신규 모기지",
-      "purchaseDesc": "새 집 구매 자금",
+      "purchaseDesc": "부동산 구입자금 (거주, 투자용)",
       "refinance": "재융자 (리파이낸싱)",
-      "refinanceDesc": "더 나은 조건으로 변경",
+      "refinanceDesc": "더 좋은 조건으로 변경",
       "renewal": "갱신 (리뉴얼)",
-      "renewalDesc": "만기 모기지 갱신",
+      "renewalDesc": "만기전 가능한 옵션 상담",
+      "reverse": "리버스 모기지",
+      "reverseDesc": "55세 이상 주택소유자 대상",
+      "selfEmployed": "자영업자 모기지",
+      "selfEmployedDesc": "사업소득으로 주택구입",
       "commercial": "상업용 모기지",
-      "commercialDesc": "상업·투자용 부동산",
-      "freeProp": "$0 수수료",
-      "verifiedProp": "검증된 전문가",
-      "compare": "여러 견적 비교"
+      "commercialDesc": "비즈니스 구입, 추가 대출",
+      "benefitPrivate": "비공개 상담",
+      "benefitOpinions": "여러 전문가 의견",
+      "benefitResults": "좋은 결과",
+      "footnote": "이외에도 필요하신 상담을 요청하실 수 있어요."
     },
     "social": {
       "overline": "캐나다인이 신뢰하는",
