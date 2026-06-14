@@ -22,7 +22,7 @@ export default function LiveActivityMarquee({ requests }: { requests: LiveReques
           </h2>
         </div>
         <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-sage-500">
-          LIVE · {requests.length} OPEN
+          LIVE
         </div>
       </div>
     </div>
