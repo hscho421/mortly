@@ -692,6 +692,8 @@
     "pastDueTitle": "결제에 실패했어요",
     "paymentDue": "결제 필요",
     "viewBilling": "요금제·결제 보기",
+    "billingCycle": "현재 결제 주기: {{start}} – {{end}}",
+    "renewsOn": "{{date}}에 갱신됩니다",
     "noFullRequestLink": "이 대화의 전체 요청 정보를 불러올 수 없습니다.",
     "noRequestContext": "대화를 선택하면 해당 요청 정보가 표시됩니다.",
     "noUnread": "읽지 않은 메시지 없음",

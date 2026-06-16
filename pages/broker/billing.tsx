@@ -31,6 +31,7 @@ interface SubscriptionData {
   stripeSubscriptionId: string | null;
   status: string;
   cancelAtPeriodEnd: boolean;
+  currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   pendingTier: string | null;
 }
@@ -126,6 +127,14 @@ function formatCurrency(amount: number, currency: string): string {
   }).format(amount / 100);
 }
 
+function fmtBillingDate(iso: string, locale?: string): string {
+  return new Date(iso).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 export default function BrokerBillingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -166,6 +175,7 @@ export default function BrokerBillingPage() {
               stripeSubscriptionId: data.subscription.stripeSubscriptionId,
               status: data.subscription.status,
               cancelAtPeriodEnd: data.subscription.cancelAtPeriodEnd,
+              currentPeriodStart: data.subscription.currentPeriodStart,
               currentPeriodEnd: data.subscription.currentPeriodEnd,
               pendingTier: data.subscription.pendingTier,
             });
@@ -267,6 +277,7 @@ export default function BrokerBillingPage() {
                       stripeSubscriptionId: profile.subscription.stripeSubscriptionId,
                       status: profile.subscription.status,
                       cancelAtPeriodEnd: profile.subscription.cancelAtPeriodEnd,
+                      currentPeriodStart: profile.subscription.currentPeriodStart,
                       currentPeriodEnd: profile.subscription.currentPeriodEnd,
                       pendingTier: profile.subscription.pendingTier,
                     });
@@ -455,6 +466,24 @@ export default function BrokerBillingPage() {
               <p className="text-body mt-1">
                 {t("broker.currentPlanDesc", { tier: currentTier })}
               </p>
+              {/* Billing cycle for a normally-renewing sub. The cancel /
+                  pending-downgrade cases already surface the date in their own
+                  banners above, so don't duplicate it here. */}
+              {subscription?.status === "ACTIVE" &&
+                !subscription.cancelAtPeriodEnd &&
+                !subscription.pendingTier &&
+                subscription.currentPeriodEnd && (
+                  <p className="mt-2 font-body text-[13px] text-forest-700/60">
+                    {subscription.currentPeriodStart
+                      ? t("broker.billingCycle", {
+                          start: fmtBillingDate(subscription.currentPeriodStart, router.locale),
+                          end: fmtBillingDate(subscription.currentPeriodEnd, router.locale),
+                        })
+                      : t("broker.renewsOn", {
+                          date: fmtBillingDate(subscription.currentPeriodEnd, router.locale),
+                        })}
+                  </p>
+                )}
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">

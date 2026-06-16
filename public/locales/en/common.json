@@ -692,6 +692,8 @@
     "pastDueTitle": "Payment failed",
     "paymentDue": "Payment due",
     "viewBilling": "View plans & billing",
+    "billingCycle": "Current billing cycle: {{start}} – {{end}}",
+    "renewsOn": "Renews on {{date}}",
     "noFullRequestLink": "Full request data unavailable for this conversation.",
     "noRequestContext": "Select a conversation to see the request behind it.",
     "noUnread": "No unread messages",
