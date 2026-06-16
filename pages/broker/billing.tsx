@@ -317,6 +317,60 @@ export default function BrokerBillingPage() {
     }
   };
 
+  const handleResume = async () => {
+    setActionLoading("resume");
+    setErrorMessage("");
+    posthog.capture("billing_subscription_resumed", { current_tier: currentTier });
+    try {
+      const res = await fetch("/api/stripe/resume-subscription", { method: "POST" });
+      if (!res.ok) {
+        setErrorMessage(t("broker.resumeFailed"));
+        return;
+      }
+
+      // Stripe applies the change, then the webhook flips cancelAtPeriodEnd
+      // back to false in our DB. Poll the profile until it lands (same shape
+      // as the upgrade poll above) so the cancelling banner clears in place.
+      const POLL_INTERVAL_MS = 1000;
+      const MAX_POLL_MS = 15_000;
+      const start = Date.now();
+      let resumed = false;
+      while (Date.now() - start < MAX_POLL_MS) {
+        try {
+          const profileRes = await fetch("/api/brokers/profile");
+          if (profileRes.ok) {
+            const profile = await profileRes.json();
+            if (profile.subscription && !profile.subscription.cancelAtPeriodEnd) {
+              setSubscription({
+                stripeSubscriptionId: profile.subscription.stripeSubscriptionId,
+                status: profile.subscription.status,
+                cancelAtPeriodEnd: profile.subscription.cancelAtPeriodEnd,
+                currentPeriodStart: profile.subscription.currentPeriodStart,
+                currentPeriodEnd: profile.subscription.currentPeriodEnd,
+                pendingTier: profile.subscription.pendingTier,
+              });
+              setSuccessMessage(t("broker.subscriptionResumed"));
+              resumed = true;
+              break;
+            }
+          }
+        } catch {
+          // transient — try again on next tick
+        }
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      }
+      if (!resumed) {
+        setSuccessMessage(t("broker.resumePending"));
+      }
+    } catch (err) {
+      posthog.captureException(err);
+      console.error("Failed to resume subscription:", err);
+      setErrorMessage(t("broker.resumeFailed"));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleManageSubscription = async () => {
     setActionLoading("portal");
     setErrorMessage("");
@@ -418,22 +472,37 @@ export default function BrokerBillingPage() {
         {/* Cancelling banner */}
         {subscription?.cancelAtPeriodEnd && subscription.currentPeriodEnd && (
           <div className="mb-6  rounded-sm border-2 border-amber-300 bg-amber-50 p-4">
-            <div className="flex items-center gap-3">
-              <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
-              <p className="font-body text-sm font-medium text-amber-700">
-                {t("broker.cancellingAt", {
-                  date: new Date(subscription.currentPeriodEnd).toLocaleDateString(
-                    router.locale === "ko" ? "ko-KR" : "en-CA",
-                    {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    },
-                  ),
-                })}
-              </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <svg className="h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                <p className="font-body text-sm font-medium text-amber-700">
+                  {t("broker.cancellingAt", {
+                    date: new Date(subscription.currentPeriodEnd).toLocaleDateString(
+                      router.locale === "ko" ? "ko-KR" : "en-CA",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    ),
+                  })}
+                </p>
+              </div>
+              <button
+                onClick={handleResume}
+                disabled={actionLoading === "resume"}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm bg-amber-500 px-4 py-2 font-body text-sm font-semibold text-white transition-all hover:bg-amber-600 disabled:opacity-50"
+              >
+                {actionLoading === "resume" && (
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                {actionLoading === "resume" ? t("broker.processing") : t("broker.resumeSubscription")}
+              </button>
             </div>
           </div>
         )}
@@ -530,7 +599,7 @@ export default function BrokerBillingPage() {
                       {plan.originalPrice}
                     </span>
                     <span className="inline-block px-2 py-0.5 rounded-full text-xs font-bold font-body bg-error-500 text-white">
-                      {plan.discount} OFF
+                      {t("broker.percentOff", { percent: plan.discount })}
                     </span>
                   </div>
                 )}
