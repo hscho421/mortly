@@ -236,4 +236,64 @@ describe("BrokerDashboardPage (Phase 2)", () => {
     // ...and NOT the generic "failed to load requests" error.
     expect(screen.queryByText("broker.failedToLoadRequests")).toBeNull();
   });
+
+  it("shows a PAST_DUE billing banner (not the 'no credits' banner) when payment failed", async () => {
+    // Verified PRO broker whose payment failed: credits are 0 AND status is
+    // PAST_DUE. The fix must show "update billing", not "buy more credits".
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.startsWith("/api/brokers/profile")) {
+          return new Response(
+            JSON.stringify({
+              id: "b1",
+              userId: "u1",
+              brokerageName: "Prime Mortgage",
+              province: "Ontario",
+              licenseNumber: "ONT-123",
+              phone: null,
+              bio: null,
+              yearsExperience: 12,
+              specialties: null,
+              areasServed: null,
+              profilePhoto: null,
+              verificationStatus: "VERIFIED",
+              subscriptionTier: "PRO",
+              responseCredits: 0,
+              subscription: { status: "PAST_DUE", cancelAtPeriodEnd: false, currentPeriodEnd: null },
+              mortgageCategory: "BOTH",
+              user: { id: "u1", name: "Jihoon Park", email: "j@x.co" },
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
+        if (url.startsWith("/api/requests")) {
+          return new Response(
+            JSON.stringify({ data: [], newCount: 0, pagination: { page: 1, limit: 5, total: 0, totalPages: 0 } }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
+        if (url.startsWith("/api/messages/unread")) {
+          return new Response(JSON.stringify({ unread: 0 }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (url.startsWith("/api/conversations")) {
+          return new Response(JSON.stringify([]), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return new Response("{}", { status: 200 });
+      }),
+    );
+
+    renderDashboard();
+    // PAST_DUE banner (title fallback)...
+    expect(await screen.findByText("결제에 실패했어요")).toBeInTheDocument();
+    // ...and NOT the "no credits, buy more" banner.
+    expect(screen.queryByText("credits.noCreditsMessage")).toBeNull();
+  });
 });

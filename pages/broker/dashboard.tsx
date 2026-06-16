@@ -141,6 +141,25 @@ export default function BrokerDashboardPage() {
         )}
       />
     );
+  } else if (profile.subscription?.status === "PAST_DUE") {
+    // Higher priority than the credits banner below: a past-due broker also has
+    // 0 credits, but the fix is to update payment — not "buy more credits".
+    actionBanner = (
+      <ActionBanner
+        tone="warning"
+        eyebrow={t("broker.actionRequired", "Action required")}
+        title={t("broker.pastDueTitle", "결제에 실패했어요")}
+        body={t(
+          "broker.pastDueDesc",
+          "Your subscription payment is past due. Update your billing details to start messaging clients again.",
+        )}
+        cta={
+          <Btn as="a" href="/broker/billing" size="sm">
+            {t("broker.viewBilling", "요금제·결제 보기")}
+          </Btn>
+        }
+      />
+    );
   } else if (!unlimited && profile.responseCredits === 0) {
     actionBanner = (
       <ActionBanner

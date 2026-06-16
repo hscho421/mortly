@@ -40,6 +40,15 @@ export interface BrokerProfile {
   verificationStatus: "PENDING" | "VERIFIED" | "REJECTED" | string;
   subscriptionTier: "FREE" | "BASIC" | "PRO" | "PREMIUM" | string;
   responseCredits: number;
+  // Surfaced so broker UI (sidebar badge, dashboard banner) can react to a
+  // failed/lapsed payment: subscriptionTier stays "PRO" while PAST_DUE, so the
+  // status is the only signal those surfaces have. Populated from the profile
+  // API's `subscription: true` include; null for brokers who never subscribed.
+  subscription?: {
+    status: "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED" | string;
+    cancelAtPeriodEnd?: boolean;
+    currentPeriodEnd?: string | null;
+  } | null;
   mortgageCategory: "RESIDENTIAL" | "COMMERCIAL" | "BOTH" | string;
   updatedAt?: string;
   user: { id: string; name: string | null; email: string };

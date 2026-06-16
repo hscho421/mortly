@@ -170,6 +170,7 @@ export default function BrokerShell({
         brokerName={brokerName}
         brokerageName={profile?.brokerageName ?? null}
         subscriptionTier={profile?.subscriptionTier ?? null}
+        pastDue={profile?.subscription?.status === "PAST_DUE"}
         photoPath={profile?.profilePhoto ?? null}
         photoVersion={profile?.updatedAt ?? null}
         className="hidden md:flex"
@@ -197,6 +198,7 @@ export default function BrokerShell({
             brokerName={brokerName}
             brokerageName={profile?.brokerageName ?? null}
             subscriptionTier={profile?.subscriptionTier ?? null}
+            pastDue={profile?.subscription?.status === "PAST_DUE"}
             photoPath={profile?.profilePhoto ?? null}
             photoVersion={profile?.updatedAt ?? null}
           />
@@ -265,6 +267,7 @@ function Sidebar({
   brokerName,
   brokerageName,
   subscriptionTier,
+  pastDue = false,
   photoPath,
   photoVersion,
   className = "",
@@ -274,6 +277,7 @@ function Sidebar({
   brokerName: string;
   brokerageName: string | null;
   subscriptionTier: string | null;
+  pastDue?: boolean;
   photoPath?: string | null;
   photoVersion?: string | null;
   className?: string;
@@ -302,11 +306,22 @@ function Sidebar({
     >
       <div className="flex items-baseline justify-between border-b border-cream-300 px-5 py-4">
         <BrandMark href="/broker/dashboard" className="h-7 w-auto" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-sage-500">
-          {/* Was `${tier} · PRO` — the hardcoded "· PRO" made every plan read
-              "FREE · PRO". Show the actual tier (or the generic tagline). */}
-          {subscriptionTier || t("broker.tagline", "BROKER")}
-        </span>
+        {/* Was `${tier} · PRO` — the hardcoded "· PRO" made every plan read
+            "FREE · PRO". Show the actual tier (or the generic tagline). While
+            PAST_DUE the tier still reads "PRO", so flag the payment issue in
+            amber rather than presenting the plan as healthy. */}
+        {pastDue ? (
+          <span
+            className="font-mono text-[10px] uppercase tracking-[0.18em] text-amber-600"
+            title={t("broker.paymentDue", "결제 필요")}
+          >
+            {subscriptionTier} · {t("broker.paymentDue", "결제 필요")}
+          </span>
+        ) : (
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-sage-500">
+            {subscriptionTier || t("broker.tagline", "BROKER")}
+          </span>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto p-2" aria-label="Broker navigation">

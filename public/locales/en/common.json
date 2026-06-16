@@ -689,6 +689,8 @@
     "cannotMessageTitle": "You can't message clients yet",
     "upgradeFreeDesc": "The Free plan lets you browse requests, but messaging clients needs a paid plan. Upgrade to respond to requests and start conversations with borrowers.",
     "pastDueDesc": "Your subscription payment is past due. Update your billing details to start messaging clients again.",
+    "pastDueTitle": "Payment failed",
+    "paymentDue": "Payment due",
     "viewBilling": "View plans & billing",
     "noFullRequestLink": "Full request data unavailable for this conversation.",
     "noRequestContext": "Select a conversation to see the request behind it.",
