@@ -1,9 +1,8 @@
 import prisma from "@/lib/prisma";
 import { getStripe, getPriceIdForTier, getTierForPriceId } from "@/lib/stripe";
+import { isUpgrade } from "@/lib/tiers";
 import { withAuth } from "@/lib/withAuth";
 import { getSafeRedirectOrigin } from "@/lib/origin";
-
-const TIER_RANK: Record<string, number> = { FREE: 0, BASIC: 1, PRO: 2, PREMIUM: 3 };
 
 export default withAuth(async (req, res, session) => {
   if (req.method !== "POST") {
@@ -58,9 +57,7 @@ export default withAuth(async (req, res, session) => {
       const existingItemId = stripeSub.items.data[0]?.id;
       const currentPriceId = stripeSub.items.data[0]?.price.id;
       const currentTier = currentPriceId ? getTierForPriceId(currentPriceId) : null;
-      const isUpgrade = currentTier
-        ? (TIER_RANK[tier] ?? 0) > (TIER_RANK[currentTier] ?? 0)
-        : true;
+      const upgrading = currentTier ? isUpgrade(currentTier, tier) : true;
 
       if (existingItemId && currentPriceId) {
         // A subscription managed by a schedule (from a previously scheduled
@@ -84,7 +81,7 @@ export default withAuth(async (req, res, session) => {
           return res.status(400).json({ error: "Already on this plan" });
         }
 
-        if (isUpgrade) {
+        if (upgrading) {
           // Upgrade → immediate with proration. Release any downgrade
           // schedule first (also cancels the pending downgrade — without
           // this, the stale pendingTier silently downgraded the broker at
@@ -135,7 +132,7 @@ export default withAuth(async (req, res, session) => {
             data: { pendingTier: tier as "BASIC" | "PRO" | "PREMIUM" },
           });
         }
-        return res.status(200).json({ updated: true, scheduled: !isUpgrade });
+        return res.status(200).json({ updated: true, scheduled: !upgrading });
       }
     }
 

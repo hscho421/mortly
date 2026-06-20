@@ -32,6 +32,7 @@ export const stripeMock = {
   },
   invoices: {
     list: vi.fn(),
+    createPreview: vi.fn(),
   },
   webhooks: {
     constructEvent: vi.fn(),

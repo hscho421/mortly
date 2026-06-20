@@ -8,6 +8,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import posthog from "posthog-js";
+import { tierRank, isUpgrade } from "@/lib/tiers";
 
 interface PlanFeature {
   text: string;
@@ -36,6 +37,14 @@ interface SubscriptionData {
   pendingTier: string | null;
 }
 
+interface PlanChangePreview {
+  scenario: "upgrade" | "downgrade";
+  prorationAmount?: number;
+  currency?: string;
+  nextBillDate?: string | null;
+  effectiveDate?: string | null;
+}
+
 interface Invoice {
   id: string;
   number: string | null;
@@ -46,8 +55,6 @@ interface Invoice {
   invoicePdf: string | null;
   hostedInvoiceUrl: string | null;
 }
-
-const TIER_RANK: Record<string, number> = { FREE: 0, BASIC: 1, PRO: 2, PREMIUM: 3 };
 
 function usePlans(t: (key: string) => string): Plan[] {
   return [
@@ -149,7 +156,9 @@ export default function BrokerBillingPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [downgradeTarget, setDowngradeTarget] = useState<string | null>(null);
+  const [pendingChange, setPendingChange] = useState<{ tier: string; isUpgrade: boolean } | null>(null);
+  const [preview, setPreview] = useState<PlanChangePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Show success banner from checkout redirect
   useEffect(() => {
@@ -209,7 +218,7 @@ export default function BrokerBillingPage() {
   const handleSelectPlan = async (tier: string) => {
     if (tier === currentTier || actionLoading) return;
 
-    const isDowngrade = (TIER_RANK[tier] ?? 0) < (TIER_RANK[currentTier] ?? 0);
+    const isDowngrade = tierRank(tier) < tierRank(currentTier);
     posthog.capture("billing_plan_selected", {
       selected_tier: tier,
       current_tier: currentTier,
@@ -222,17 +231,43 @@ export default function BrokerBillingPage() {
       return;
     }
 
-    // Confirm downgrade via modal
-    if (isDowngrade) {
-      setDowngradeTarget(tier);
+    // First-time purchase (no live sub) → straight to Checkout, where Stripe
+    // discloses the price on its own hosted page.
+    if (!hasStripeSubscription) {
+      await executePlanChange(tier);
       return;
     }
 
-    await executePlanChange(tier);
+    // Existing subscription → confirm in a modal that discloses the price
+    // impact (prorated charge for upgrades, effective date for both) before
+    // anything is applied.
+    openChangeConfirmation(tier, !isDowngrade);
+  };
+
+  const openChangeConfirmation = async (tier: string, isUpgrade: boolean) => {
+    setPendingChange({ tier, isUpgrade });
+    setPreview(null);
+    setPreviewLoading(true);
+    try {
+      const res = await fetch("/api/stripe/preview-plan-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      if (res.ok) {
+        setPreview(await res.json());
+      }
+      // A non-OK preview is non-fatal — the modal falls back to a generic note
+      // rather than blocking the change.
+    } catch {
+      // Network hiccup — same fallback.
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   const executePlanChange = async (tier: string) => {
-    setDowngradeTarget(null);
+    setPendingChange(null);
     setActionLoading(tier);
     setErrorMessage("");
     try {
@@ -667,7 +702,7 @@ export default function BrokerBillingPage() {
                   ? t("broker.processing")
                   : currentTier === plan.tier
                     ? t("broker.currentPlanBtn")
-                    : (TIER_RANK[plan.tier] ?? 0) > (TIER_RANK[currentTier] ?? 0)
+                    : isUpgrade(currentTier, plan.tier)
                       ? t("broker.upgrade")
                       : t("broker.downgrade", "Downgrade")}
               </button>
@@ -737,12 +772,13 @@ export default function BrokerBillingPage() {
         )}
       </div>
 
-      {/* Downgrade confirmation modal */}
-      {downgradeTarget && (
+      {/* Plan-change confirmation modal — discloses the price impact (prorated
+          charge for upgrades, effective date for both) before applying. */}
+      {pendingChange && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-forest-900/50 backdrop-blur-sm"
-            onClick={() => !actionLoading && setDowngradeTarget(null)}
+            onClick={() => !actionLoading && setPendingChange(null)}
           />
           <div className="relative mx-4 w-full max-w-md rounded-sm bg-white p-8 shadow-xl">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
@@ -750,30 +786,70 @@ export default function BrokerBillingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
               </svg>
             </div>
-            <h3 className="heading-sm">{t("broker.downgradeTitle")}</h3>
-            <p className="text-body mt-2">
-              {t("broker.confirmDowngrade", { tier: downgradeTarget })}
-            </p>
+            <h3 className="heading-sm">
+              {pendingChange.isUpgrade ? t("broker.confirmUpgradeTitle") : t("broker.downgradeTitle")}
+            </h3>
+
+            <div className="text-body mt-2 min-h-[3rem]">
+              {previewLoading ? (
+                <p className="flex items-center gap-2 text-forest-700/60">
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {t("broker.calculatingPrice")}
+                </p>
+              ) : preview?.scenario === "upgrade" && preview.prorationAmount != null && preview.currency ? (
+                <p>
+                  {t("broker.upgradeProrationNote", {
+                    tier: pendingChange.tier,
+                    amount: formatCurrency(preview.prorationAmount, preview.currency),
+                    date: preview.nextBillDate ? fmtBillingDate(preview.nextBillDate, router.locale) : "",
+                    price: plans.find((p) => p.tier === pendingChange.tier)?.price ?? "",
+                  })}
+                </p>
+              ) : preview?.scenario === "downgrade" && preview.effectiveDate ? (
+                <p>
+                  {t("broker.downgradeScheduleNote", {
+                    tier: pendingChange.tier,
+                    date: fmtBillingDate(preview.effectiveDate, router.locale),
+                    price: plans.find((p) => p.tier === pendingChange.tier)?.price ?? "",
+                  })}
+                </p>
+              ) : (
+                // Preview unavailable — still let the user proceed with a safe note.
+                <p>
+                  {pendingChange.isUpgrade
+                    ? t("broker.upgradeGenericNote", { tier: pendingChange.tier })
+                    : t("broker.confirmDowngrade", { tier: pendingChange.tier })}
+                </p>
+              )}
+            </div>
+
             <div className="mt-6 flex gap-3">
               <button
-                onClick={() => setDowngradeTarget(null)}
+                onClick={() => setPendingChange(null)}
                 disabled={!!actionLoading}
                 className="btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t("broker.cancel")}
               </button>
               <button
-                onClick={() => executePlanChange(downgradeTarget)}
-                disabled={!!actionLoading}
+                onClick={() => executePlanChange(pendingChange.tier)}
+                disabled={!!actionLoading || previewLoading}
                 className="flex-1 flex items-center justify-center gap-2 rounded-sm bg-amber-500 px-4 py-2.5 font-body text-sm font-semibold text-white transition-all hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading === downgradeTarget && (
+                {actionLoading === pendingChange.tier && (
                   <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                 )}
-                {actionLoading === downgradeTarget ? t("broker.processing") : t("broker.confirmDowngradeBtn")}
+                {actionLoading === pendingChange.tier
+                  ? t("broker.processing")
+                  : pendingChange.isUpgrade
+                    ? t("broker.confirmUpgradeBtn")
+                    : t("broker.confirmDowngradeBtn")}
               </button>
             </div>
           </div>

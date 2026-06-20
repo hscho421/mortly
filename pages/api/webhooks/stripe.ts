@@ -4,6 +4,7 @@ import { getStripe, getTierForPriceId, getPriceIdForTier, getCreditsForTier } fr
 import prisma from "@/lib/prisma";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { sendPaymentFailedEmail } from "@/lib/email";
+import type { Prisma, SubscriptionTier } from "@prisma/client";
 
 export const config = {
   api: { bodyParser: false },
@@ -33,6 +34,23 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   const sub = invoice.parent?.subscription_details?.subscription;
   if (!sub) return null;
   return typeof sub === "string" ? sub : sub.id;
+}
+
+// Set a broker's plan tier and the matching credit balance in one place.
+// `client` is a transaction client or the base prisma client; the call is
+// returned un-awaited so it also composes into a $transaction([...]) array.
+// Credits are passed in (each caller already computed them) so no settings
+// read moves inside a transaction.
+function setBrokerPlan(
+  client: Prisma.TransactionClient,
+  brokerId: string,
+  tier: SubscriptionTier,
+  credits: number,
+) {
+  return client.broker.update({
+    where: { id: brokerId },
+    data: { subscriptionTier: tier, responseCredits: credits },
+  });
 }
 
 export default async function handler(
@@ -190,13 +208,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         pendingTier: null,
       },
     });
-    await tx.broker.update({
-      where: { id: brokerId },
-      data: {
-        subscriptionTier: tier as "BASIC" | "PRO" | "PREMIUM",
-        responseCredits: credits,
-      },
-    });
+    await setBrokerPlan(tx, brokerId, tier as SubscriptionTier, credits);
   });
 
   const posthog = getPostHogClient();
@@ -287,13 +299,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
         pendingTier: null,
       },
     });
-    await tx.broker.update({
-      where: { id: subscription.broker.id },
-      data: {
-        subscriptionTier: tier as "BASIC" | "PRO" | "PREMIUM",
-        responseCredits: credits,
-      },
-    });
+    await setBrokerPlan(tx, subscription.broker.id, tier as SubscriptionTier, credits);
   });
 
   const posthog = getPostHogClient();
@@ -427,13 +433,7 @@ async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
 
     if (tierChanged && tier) {
       const credits = await getCreditsForTier(tier);
-      await tx.broker.update({
-        where: { id: subscription.broker.id },
-        data: {
-          subscriptionTier: tier as "BASIC" | "PRO" | "PREMIUM",
-          responseCredits: credits,
-        },
-      });
+      await setBrokerPlan(tx, subscription.broker.id, tier as SubscriptionTier, credits);
     }
   });
 }
@@ -460,13 +460,7 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
         pendingTier: null,
       },
     }),
-    prisma.broker.update({
-      where: { id: subscription.broker.id },
-      data: {
-        subscriptionTier: "FREE",
-        responseCredits: freeCredits,
-      },
-    }),
+    setBrokerPlan(prisma, subscription.broker.id, "FREE", freeCredits),
   ]);
 
   const posthog = getPostHogClient();
