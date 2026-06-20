@@ -18,3 +18,18 @@ export function tierRank(tier: string): number {
 export function isUpgrade(fromTier: string, toTier: string): boolean {
   return tierRank(toTier) > tierRank(fromTier);
 }
+
+type Translate = (key: string, opts?: Record<string, unknown>) => string;
+
+/**
+ * Localized label for a tier's monthly credit grant:
+ *   < 0  → unlimited (PREMIUM)
+ *   = 0  → none (FREE)
+ *   > 0  → "N per month"
+ * Uses `{{num}}` (not i18next's reserved `count`) to avoid pluralization rules.
+ */
+export function creditLabel(t: Translate, value: number): string {
+  if (value < 0) return t("pricing.val_unlimited");
+  if (value === 0) return t("pricing.val_none");
+  return t("pricing.val_perMonth", { num: value });
+}

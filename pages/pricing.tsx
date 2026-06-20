@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
+import { creditLabel } from "@/lib/tiers";
 
 function CellValue({ value }: { value: string | boolean }) {
   if (typeof value === "boolean") {
@@ -38,6 +39,19 @@ export default function Pricing() {
     }
   }, [session, status, router]);
 
+  // Live credit grants from the admin-editable settings, so the cards can't
+  // desync from what brokers actually receive. Falls back to the static copy
+  // until loaded / if the fetch fails.
+  const [credits, setCredits] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    fetch("/api/tier-credits")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setCredits(d))
+      .catch(() => {});
+  }, []);
+  const responsesFor = (tier: string, fallback: string) =>
+    credits ? creditLabel(t, credits[tier] ?? 0) : fallback;
+
   const goToBilling = () => {
     router.push("/broker/billing", undefined, { locale: router.locale });
   };
@@ -60,7 +74,7 @@ export default function Pricing() {
       period: "",
       description: t("pricing.freeDesc"),
       features: {
-        responses: t("pricing.val_none"),
+        responses: responsesFor("FREE", t("pricing.val_none")),
       },
       cta: t("pricing.freeCta"),
       featured: false,
@@ -72,7 +86,7 @@ export default function Pricing() {
       period: t("pricing.perMonth"),
       description: t("pricing.basicDesc"),
       features: {
-        responses: t("pricing.val_5perMonth"),
+        responses: responsesFor("BASIC", t("pricing.val_5perMonth")),
       },
       cta: t("pricing.basicCta"),
       featured: false,
@@ -84,7 +98,7 @@ export default function Pricing() {
       period: t("pricing.perMonth"),
       description: t("pricing.proDesc"),
       features: {
-        responses: t("pricing.val_20perMonth"),
+        responses: responsesFor("PRO", t("pricing.val_20perMonth")),
       },
       cta: t("pricing.proCta"),
       featured: true,
@@ -96,7 +110,7 @@ export default function Pricing() {
       period: t("pricing.perMonth"),
       description: t("pricing.premiumDesc"),
       features: {
-        responses: t("pricing.val_unlimited"),
+        responses: responsesFor("PREMIUM", t("pricing.val_unlimited")),
       },
       cta: t("pricing.premiumCta"),
       featured: false,
@@ -208,7 +222,9 @@ export default function Pricing() {
             ))}
           </div>
           <p className="mt-10 text-sm text-forest-700/60 font-body text-center animate-fade-in-up opacity-0 stagger-5 max-w-3xl mx-auto">
-            {t("pricing.creditExplanation")}
+            {credits
+              ? t("pricing.creditExplanationDynamic", { basic: credits.BASIC, pro: credits.PRO })
+              : t("pricing.creditExplanation")}
           </p>
         </div>
       </section>

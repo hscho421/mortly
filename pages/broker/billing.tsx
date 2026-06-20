@@ -8,7 +8,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import posthog from "posthog-js";
-import { tierRank, isUpgrade } from "@/lib/tiers";
+import { tierRank, isUpgrade, creditLabel } from "@/lib/tiers";
 
 interface PlanFeature {
   text: string;
@@ -56,7 +56,12 @@ interface Invoice {
   hostedInvoiceUrl: string | null;
 }
 
-function usePlans(t: (key: string) => string): Plan[] {
+function usePlans(
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  credits: Record<string, number> | null,
+): Plan[] {
+  const label = (tier: string, fallback: string) =>
+    credits ? creditLabel(t, credits[tier] ?? 0) : fallback;
   return [
     {
       name: t("pricing.freeName"),
@@ -65,10 +70,10 @@ function usePlans(t: (key: string) => string): Plan[] {
       originalPrice: null,
       discount: null,
       period: "",
-      credits: t("pricing.val_none"),
+      credits: label("FREE", t("pricing.val_none")),
       description: t("pricing.freeDesc"),
       features: [
-        { text: t("pricing.feat_responses") + ": " + t("pricing.val_none"), included: false },
+        { text: t("pricing.feat_responses") + ": " + label("FREE", t("pricing.val_none")), included: false },
       ],
       highlighted: false,
     },
@@ -79,10 +84,10 @@ function usePlans(t: (key: string) => string): Plan[] {
       originalPrice: "$49",
       discount: "41%",
       period: t("pricing.perMonth"),
-      credits: t("pricing.val_5perMonth"),
+      credits: label("BASIC", t("pricing.val_5perMonth")),
       description: t("pricing.basicDesc"),
       features: [
-        { text: t("pricing.feat_responses") + ": " + t("pricing.val_5perMonth"), included: true },
+        { text: t("pricing.feat_responses") + ": " + label("BASIC", t("pricing.val_5perMonth")), included: true },
       ],
       highlighted: false,
     },
@@ -93,10 +98,10 @@ function usePlans(t: (key: string) => string): Plan[] {
       originalPrice: "$99",
       discount: "30%",
       period: t("pricing.perMonth"),
-      credits: t("pricing.val_20perMonth"),
+      credits: label("PRO", t("pricing.val_20perMonth")),
       description: t("pricing.proDesc"),
       features: [
-        { text: t("pricing.feat_responses") + ": " + t("pricing.val_20perMonth"), included: true },
+        { text: t("pricing.feat_responses") + ": " + label("PRO", t("pricing.val_20perMonth")), included: true },
         { text: t("pricing.feat_mobileAlerts"), included: true },
       ],
       highlighted: true,
@@ -108,10 +113,10 @@ function usePlans(t: (key: string) => string): Plan[] {
       originalPrice: "$199",
       discount: "35%",
       period: t("pricing.perMonth"),
-      credits: t("pricing.val_unlimited"),
+      credits: label("PREMIUM", t("pricing.val_unlimited")),
       description: t("pricing.premiumDesc"),
       features: [
-        { text: t("pricing.feat_responses") + ": " + t("pricing.val_unlimited"), included: true },
+        { text: t("pricing.feat_responses") + ": " + label("PREMIUM", t("pricing.val_unlimited")), included: true },
         { text: t("pricing.feat_mobileAlerts"), included: true },
       ],
       highlighted: false,
@@ -147,7 +152,8 @@ export default function BrokerBillingPage() {
   const router = useRouter();
   const { t } = useTranslation("common");
 
-  const plans = usePlans(t);
+  const [tierCredits, setTierCredits] = useState<Record<string, number> | null>(null);
+  const plans = usePlans(t, tierCredits);
   const [currentTier, setCurrentTier] = useState("");
   const [responseCredits, setResponseCredits] = useState<number | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
@@ -159,6 +165,16 @@ export default function BrokerBillingPage() {
   const [pendingChange, setPendingChange] = useState<{ tier: string; isUpgrade: boolean } | null>(null);
   const [preview, setPreview] = useState<PlanChangePreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Live credit grants from the admin-editable settings, so the plan cards
+  // reflect what brokers actually receive. Falls back to the static copy in
+  // usePlans until loaded / if the fetch fails.
+  useEffect(() => {
+    fetch("/api/tier-credits")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setTierCredits(d))
+      .catch(() => {});
+  }, []);
 
   // Show success banner from checkout redirect
   useEffect(() => {
@@ -710,7 +726,9 @@ export default function BrokerBillingPage() {
           ))}
         </div>
         <p className="mt-8 mb-16 text-sm text-forest-700/60 font-body text-center">
-          {t("pricing.creditExplanation")}
+          {tierCredits
+            ? t("pricing.creditExplanationDynamic", { basic: tierCredits.BASIC, pro: tierCredits.PRO })
+            : t("pricing.creditExplanation")}
         </p>
 
         {/* Billing history */}
