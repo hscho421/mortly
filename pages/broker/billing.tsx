@@ -59,9 +59,16 @@ interface Invoice {
 function usePlans(
   t: (key: string, opts?: Record<string, unknown>) => string,
   credits: Record<string, number> | null,
+  earlyAccess: { enabled: boolean; windowHours: number } | null,
 ): Plan[] {
   const label = (tier: string, fallback: string) =>
     credits ? creditLabel(t, credits[tier] ?? 0) : fallback;
+  // Only advertise early access while the feature is actually live, and drive
+  // the "{{hours}}h" copy from the live window so it can never drift.
+  const earlyAccessRow = (included: boolean): PlanFeature[] =>
+    earlyAccess?.enabled
+      ? [{ text: t("pricing.feat_earlyAccess", { hours: earlyAccess.windowHours }), included }]
+      : [];
   return [
     {
       name: t("pricing.freeName"),
@@ -103,6 +110,7 @@ function usePlans(
       features: [
         { text: t("pricing.feat_responses") + ": " + label("PRO", t("pricing.val_20perMonth")), included: true },
         { text: t("pricing.feat_mobileAlerts"), included: true },
+        ...earlyAccessRow(false),
       ],
       highlighted: true,
     },
@@ -118,6 +126,7 @@ function usePlans(
       features: [
         { text: t("pricing.feat_responses") + ": " + label("PREMIUM", t("pricing.val_unlimited")), included: true },
         { text: t("pricing.feat_mobileAlerts"), included: true },
+        ...earlyAccessRow(true),
       ],
       highlighted: false,
     },
@@ -153,7 +162,8 @@ export default function BrokerBillingPage() {
   const { t } = useTranslation("common");
 
   const [tierCredits, setTierCredits] = useState<Record<string, number> | null>(null);
-  const plans = usePlans(t, tierCredits);
+  const [earlyAccess, setEarlyAccess] = useState<{ enabled: boolean; windowHours: number } | null>(null);
+  const plans = usePlans(t, tierCredits, earlyAccess);
   const [currentTier, setCurrentTier] = useState("");
   const [responseCredits, setResponseCredits] = useState<number | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
@@ -173,6 +183,15 @@ export default function BrokerBillingPage() {
     fetch("/api/tier-credits")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setTierCredits(d))
+      .catch(() => {});
+  }, []);
+
+  // PREMIUM early-access window config — gates the plan-card feature row so we
+  // only advertise the perk while it's actually live.
+  useEffect(() => {
+    fetch("/api/premium-early-access")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setEarlyAccess(d))
       .catch(() => {});
   }, []);
 

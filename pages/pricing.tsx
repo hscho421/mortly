@@ -52,6 +52,19 @@ export default function Pricing() {
   const responsesFor = (tier: string, fallback: string) =>
     credits ? creditLabel(t, credits[tier] ?? 0) : fallback;
 
+  // PREMIUM early-access: only advertise the row while the feature is live, and
+  // drive the "{{hours}}h" copy from the admin-set window so it never drifts.
+  const [earlyAccess, setEarlyAccess] = useState<{ enabled: boolean; windowHours: number } | null>(null);
+  useEffect(() => {
+    fetch("/api/premium-early-access")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setEarlyAccess(d))
+      .catch(() => {});
+  }, []);
+  const eaEnabled = earlyAccess?.enabled ?? false;
+  const eaHours = earlyAccess?.windowHours ?? 12;
+  const eaFeature = (included: boolean) => (eaEnabled ? { earlyAccess: included } : {});
+
   const goToBilling = () => {
     router.push("/broker/billing", undefined, { locale: router.locale });
   };
@@ -75,6 +88,7 @@ export default function Pricing() {
       description: t("pricing.freeDesc"),
       features: {
         responses: responsesFor("FREE", t("pricing.val_none")),
+        ...eaFeature(false),
       },
       cta: t("pricing.freeCta"),
       featured: false,
@@ -87,6 +101,7 @@ export default function Pricing() {
       description: t("pricing.basicDesc"),
       features: {
         responses: responsesFor("BASIC", t("pricing.val_5perMonth")),
+        ...eaFeature(false),
       },
       cta: t("pricing.basicCta"),
       featured: false,
@@ -99,6 +114,7 @@ export default function Pricing() {
       description: t("pricing.proDesc"),
       features: {
         responses: responsesFor("PRO", t("pricing.val_20perMonth")),
+        ...eaFeature(false),
       },
       cta: t("pricing.proCta"),
       featured: true,
@@ -111,6 +127,7 @@ export default function Pricing() {
       description: t("pricing.premiumDesc"),
       features: {
         responses: responsesFor("PREMIUM", t("pricing.val_unlimited")),
+        ...eaFeature(true),
       },
       cta: t("pricing.premiumCta"),
       featured: false,
@@ -119,6 +136,9 @@ export default function Pricing() {
 
   const comparisonRows = [
     { label: t("pricing.feat_responses"), key: "responses" },
+    ...(eaEnabled
+      ? [{ label: t("pricing.feat_earlyAccess", { hours: eaHours }), key: "earlyAccess" }]
+      : []),
   ];
 
   const faqs = [
@@ -261,7 +281,7 @@ export default function Pricing() {
                     <td className="py-4 pl-6 pr-4 text-sm text-forest-700 font-body">{row.label}</td>
                     {tiers.map((tier) => (
                       <td key={tier.name} className="py-4 px-4 text-center">
-                        <CellValue value={tier.features[row.key as keyof typeof tier.features]} />
+                        <CellValue value={(tier.features as Record<string, string | boolean>)[row.key] ?? false} />
                       </td>
                     ))}
                   </tr>

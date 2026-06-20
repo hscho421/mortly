@@ -87,6 +87,17 @@ export default withAdmin(async (req, res, session) => {
     if (status === "OPEN" && previousStatus === "REJECTED") {
       updateData.rejectionReason = null;
     }
+    // Entering OPEN stamps approvedAt ("went live at") and clears the release
+    // latch, starting a fresh PREMIUM early-access window. ALWAYS stamped —
+    // never gated on the feature toggle: a cached toggle read could otherwise
+    // make a just-approved request silently miss its window. When the feature
+    // is OFF the read-time gates ignore these fields entirely (everything is
+    // visible); the "don't retroactively hide on enable" concern is handled at
+    // the toggle instead (settings.ts releases the backlog when it's switched on).
+    if (status === "OPEN" && previousStatus !== "OPEN") {
+      updateData.approvedAt = new Date();
+      updateData.premiumReleasedAt = null;
+    }
 
     const closedConvoIds: string[] = [];
     const updated = await prisma.$transaction(async (tx) => {

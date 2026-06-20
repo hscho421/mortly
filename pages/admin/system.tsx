@@ -22,23 +22,31 @@ interface SettingField {
   key: string;
   label: string;
   type: "text" | "number" | "toggle";
-  group: "general" | "credits" | "requests" | "operations";
+  group: "general" | "credits" | "premium" | "requests" | "operations";
 }
 
 const SETTING_FIELDS: SettingField[] = [
-  { key: "platform_name",         label: "Platform name",      type: "text",    group: "general" },
-  { key: "support_email",         label: "Support email",      type: "text",    group: "general" },
-  { key: "free_tier_credits",     label: "FREE monthly",       type: "number",  group: "credits" },
-  { key: "basic_tier_credits",    label: "BASIC monthly",      type: "number",  group: "credits" },
-  { key: "pro_tier_credits",      label: "PRO monthly",        type: "number",  group: "credits" },
-  { key: "max_requests_per_user", label: "Max per user",       type: "number",  group: "requests" },
-  { key: "request_expiry_days",   label: "Expiry (days)",      type: "number",  group: "requests" },
-  { key: "maintenance_mode",      label: "Maintenance mode",   type: "toggle",  group: "operations" },
+  { key: "platform_name",                 label: "Platform name",        type: "text",    group: "general" },
+  { key: "support_email",                 label: "Support email",        type: "text",    group: "general" },
+  { key: "free_tier_credits",             label: "FREE monthly",         type: "number",  group: "credits" },
+  { key: "basic_tier_credits",            label: "BASIC monthly",        type: "number",  group: "credits" },
+  { key: "pro_tier_credits",              label: "PRO monthly",          type: "number",  group: "credits" },
+  { key: "premium_early_access_enabled",  label: "Premium early access", type: "toggle",  group: "premium" },
+  { key: "premium_window_hours",          label: "Window (hours)",       type: "number",  group: "premium" },
+  // NOTE: premium_valve_hours / premium_valve_min_responses are intentionally
+  // NOT surfaced here — they only drive the 6h early-release cron, which isn't
+  // scheduled on Vercel Hobby (see release-premium-requests.ts). The settings
+  // still exist (defaults in lib/settings) so the valve works if that cron is
+  // ever re-enabled via Pro / an external scheduler.
+  { key: "max_requests_per_user",         label: "Max per user",         type: "number",  group: "requests" },
+  { key: "request_expiry_days",           label: "Expiry (days)",        type: "number",  group: "requests" },
+  { key: "maintenance_mode",              label: "Maintenance mode",     type: "toggle",  group: "operations" },
 ];
 
 const GROUP_LABEL_KO: Record<SettingField["group"], string> = {
   general: "일반",
   credits: "크레딧",
+  premium: "프리미엄 우선 공개",
   requests: "요청",
   operations: "운영",
 };
@@ -186,7 +194,7 @@ export default function AdminSystemPage() {
                     {t("admin.loadingSettings", "로딩 중…")}
                   </div>
                 ) : (
-                  (["general", "credits", "requests", "operations"] as const).map((grp) => {
+                  (["general", "credits", "premium", "requests", "operations"] as const).map((grp) => {
                     const fields = SETTING_FIELDS.filter((f) => f.group === grp);
                     if (fields.length === 0) return null;
                     return (

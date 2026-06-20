@@ -3,6 +3,7 @@ import { validateProductTypes, isValidProvince, isValidTimeline } from "@/lib/re
 import { notifyConversations } from "@/lib/realtime";
 import { withAuth } from "@/lib/withAuth";
 import { assertOptionalString, assertOptionalBoundedJson, ValidationError } from "@/lib/validate";
+import { getPremiumAccessConfig, isExclusiveToPremium } from "@/lib/premiumAccess";
 
 export default withAuth(async (req, res, session) => {
   const { id: publicId } = req.query;
@@ -75,6 +76,28 @@ export default withAuth(async (req, res, session) => {
           );
           if (!hasConversation) {
             return res.status(403).json({ error: "Forbidden" });
+          }
+        }
+        // PREMIUM early-access gate (defense in depth — mirrors the feed filter
+        // so an exclusive request can't be reached via a shared/guessed ID).
+        // A non-PREMIUM broker who already has a conversation keeps access.
+        if (request.status === "OPEN" && broker.subscriptionTier !== "PREMIUM") {
+          const premiumConfig = await getPremiumAccessConfig();
+          const exclusive = isExclusiveToPremium(
+            { approvedAt: request.approvedAt, premiumReleasedAt: request.premiumReleasedAt },
+            premiumConfig,
+            new Date()
+          );
+          if (exclusive) {
+            const hasConversation = request.conversations.some(
+              (conv: { brokerId: string }) => conv.brokerId === broker.id
+            );
+            if (!hasConversation) {
+              return res.status(403).json({
+                error: "This request is currently available to Premium brokers only.",
+                code: "PREMIUM_EXCLUSIVE",
+              });
+            }
           }
         }
         // Strip competitor conversations — broker should only see their own

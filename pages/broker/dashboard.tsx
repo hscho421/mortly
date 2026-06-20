@@ -61,6 +61,16 @@ export default function BrokerDashboardPage() {
     requestsError,
   } = useBrokerData();
   const [showVerifiedBanner, setShowVerifiedBanner] = useState(false);
+  // PREMIUM early-access window config — drives the perk card (premium) and the
+  // upgrade teaser (everyone else). null until loaded → render nothing (no flash).
+  // Declared up here so the hook runs before the early returns below.
+  const [earlyAccess, setEarlyAccess] = useState<{ enabled: boolean; windowHours: number } | null>(null);
+  useEffect(() => {
+    fetch("/api/premium-early-access")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setEarlyAccess(d))
+      .catch(() => {});
+  }, []);
 
   // The dashboard reads its lists straight from BrokerDataContext to avoid
   // double-fetching the same endpoints every mount. `loadingLists` mirrors
@@ -299,6 +309,71 @@ export default function BrokerDashboardPage() {
             }
           />
         </div>
+
+        {/* PREMIUM early-access — active perk (premium) or upgrade teaser
+            (everyone else). Only while the feature is live + broker verified. */}
+        {earlyAccess?.enabled && verified && (
+          unlimited ? (
+            <div className="mb-8 overflow-hidden rounded-sm bg-forest-800 shadow-sm ring-1 ring-amber-400/30">
+              <div className="flex items-center gap-4 px-5 py-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-amber-400 text-forest-800">
+                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                    <path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L10 14.77l-5.2 2.73.99-5.79L1.58 7.62l5.82-.85L10 1.5z" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-sm bg-amber-400 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-forest-800">
+                      {t("broker.earlyAccessPerkBadge", "Premium")}
+                    </span>
+                    <span className="font-display text-[15px] font-semibold text-cream-50">
+                      {t("broker.earlyAccessPerkTitle", "선 공개 요청 · Early access")}
+                    </span>
+                  </div>
+                  <p className="mt-1 font-body text-[13px] text-cream-200/85">
+                    {t(
+                      "broker.earlyAccessPerkBody",
+                      "You see newly approved requests {{hours}} hours before other brokers.",
+                      { hours: earlyAccess.windowHours },
+                    )}
+                  </p>
+                </div>
+                <Btn as="a" href="/broker/requests" size="sm" variant="primary" className="hidden shrink-0 sm:inline-flex">
+                  {t("broker.earlyAccessPerkCta", "Browse leads")}
+                </Btn>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-8 overflow-hidden rounded-sm border border-amber-200 bg-cream-50">
+              <div className="flex items-center gap-4 px-5 py-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-forest-800 text-amber-400">
+                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                    <path fillRule="evenodd" d="M10 1a4 4 0 00-4 4v2H5a2 2 0 00-2 2v7a2 2 0 002 2h10a2 2 0 002-2V9a2 2 0 00-2-2h-1V5a4 4 0 00-4-4zm2 6V5a2 2 0 10-4 0v2h4z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-[15px] font-semibold text-forest-800">
+                    {t(
+                      "broker.earlyAccessTeaserTitle",
+                      "Premium brokers get a {{hours}}-hour head start",
+                      { hours: earlyAccess.windowHours },
+                    )}
+                  </div>
+                  <p className="mt-1 font-body text-[13px] text-forest-700/80">
+                    {t(
+                      "broker.earlyAccessTeaserBody",
+                      "New requests go to Premium brokers first. Upgrade to see leads up to {{hours}} hours before everyone else.",
+                      { hours: earlyAccess.windowHours },
+                    )}
+                  </p>
+                </div>
+                <Btn as="a" href="/broker/billing" size="sm" variant="dark" className="shrink-0">
+                  {t("broker.earlyAccessTeaserCta", "Upgrade")}
+                </Btn>
+              </div>
+            </div>
+          )
+        )}
 
         {/* Two-column content area */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">

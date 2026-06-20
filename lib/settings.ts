@@ -2,7 +2,7 @@ import { kv } from "@vercel/kv";
 import prisma from "@/lib/prisma";
 import { SETTINGS_CACHE_TTL_MS } from "@/lib/constants";
 
-const DEFAULTS: Record<string, string> = {
+export const DEFAULTS: Record<string, string> = {
   request_expiry_days: "30",
   max_requests_per_user: "5",
   maintenance_mode: "false",
@@ -10,6 +10,12 @@ const DEFAULTS: Record<string, string> = {
   free_tier_credits: "0",
   basic_tier_credits: "5",
   pro_tier_credits: "20",
+  // PREMIUM early-access: new requests are visible to PREMIUM brokers only for
+  // a window, then release to all. Master toggle ships OFF (dark launch).
+  premium_early_access_enabled: "false",
+  premium_window_hours: "12",
+  premium_valve_hours: "6",
+  premium_valve_min_responses: "2",
   // PIPEDA retention: days after a request goes terminal (EXPIRED/CLOSED/
   // REJECTED) before the purge cron anonymizes its financial PII + chat bodies.
   request_retention_days: "180",

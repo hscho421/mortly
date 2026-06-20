@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/withAuth";
+import { getPremiumAccessConfig, isExclusiveToPremium } from "@/lib/premiumAccess";
 
 // Mark a single borrower request as "seen" for the authenticated broker.
 // Idempotent — composite PK (brokerId, requestId) + upsert means repeat
@@ -17,7 +18,7 @@ export default withAuth(async (req, res, session) => {
   try {
     const broker = await prisma.broker.findUnique({
       where: { userId: session.user.id },
-      select: { id: true, verificationStatus: true },
+      select: { id: true, verificationStatus: true, subscriptionTier: true },
     });
     // Mirror the read gate (requests/[id].ts): only VERIFIED brokers may
     // interact with the marketplace at all.
@@ -33,7 +34,7 @@ export default withAuth(async (req, res, session) => {
       : { id: requestId };
     const request = await prisma.borrowerRequest.findUnique({
       where: lookup,
-      select: { id: true, status: true },
+      select: { id: true, status: true, approvedAt: true, premiumReleasedAt: true },
     });
     if (!request) {
       return res.status(404).json({ error: "Request not found" });
@@ -50,6 +51,26 @@ export default withAuth(async (req, res, session) => {
       });
       if (!hasConversation) {
         return res.status(404).json({ error: "Request not found" });
+      }
+    } else if (broker.subscriptionTier !== "PREMIUM") {
+      // OPEN but still in the PREMIUM-exclusive window → not viewable by a non-
+      // PREMIUM broker (unless they already have a conversation on it). 404 to
+      // match the read gate and avoid leaking that an exclusive request exists.
+      const premiumConfig = await getPremiumAccessConfig();
+      if (
+        isExclusiveToPremium(
+          { approvedAt: request.approvedAt, premiumReleasedAt: request.premiumReleasedAt },
+          premiumConfig,
+          new Date()
+        )
+      ) {
+        const hasConversation = await prisma.conversation.findFirst({
+          where: { requestId: request.id, brokerId: broker.id },
+          select: { id: true },
+        });
+        if (!hasConversation) {
+          return res.status(404).json({ error: "Request not found" });
+        }
       }
     }
 

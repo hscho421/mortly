@@ -2,6 +2,13 @@ import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { generateRequestPublicId } from "@/lib/publicId";
 import { getSettingInt } from "@/lib/settings";
+import {
+  getPremiumAccessConfig,
+  nonPremiumVisibilityWhere,
+  isExclusiveToPremium,
+  premiumWindowEndsAt,
+  type PremiumAccessConfig,
+} from "@/lib/premiumAccess";
 import { validateProductTypes, isValidProvince, isValidTimeline, areValidIncomeTypes } from "@/lib/requestConfig";
 import { withAuth } from "@/lib/withAuth";
 import { assertOptionalString, assertString, assertOptionalBoundedJson, ValidationError } from "@/lib/validate";
@@ -21,6 +28,8 @@ export default withAuth(async (req, res, session) => {
 
       const where: Record<string, unknown> = {};
       let brokerId: string | null = null;
+      const now = new Date();
+      let premiumConfig: PremiumAccessConfig | null = null;
 
       if (session.user.role === "BORROWER") {
         where.borrowerId = session.user.id;
@@ -33,6 +42,13 @@ export default withAuth(async (req, res, session) => {
         }
         brokerId = broker.id;
         where.status = "OPEN";
+        // PREMIUM early-access gate. PREMIUM brokers see every OPEN request,
+        // including in-window exclusives; everyone else sees only requests that
+        // have released to all (latched, hard-cap-elapsed, or never windowed).
+        premiumConfig = await getPremiumAccessConfig();
+        if (broker.subscriptionTier !== "PREMIUM") {
+          Object.assign(where, nonPremiumVisibilityWhere(premiumConfig, now));
+        }
       } else {
         return res.status(403).json({ error: "Forbidden" });
       }
@@ -116,11 +132,32 @@ export default withAuth(async (req, res, session) => {
         brokerId != null
           ? requests.map((r) => {
               const seens = (r as { brokerSeens?: unknown[] }).brokerSeens ?? [];
-              const { brokerSeens: _omit, ...rest } = r as Record<string, unknown>;
+              const reqWindow = {
+                approvedAt: (r as { approvedAt: Date | null }).approvedAt,
+                premiumReleasedAt: (r as { premiumReleasedAt: Date | null }).premiumReleasedAt,
+              };
+              // Drop the raw window timestamps from the response — the computed
+              // isPremiumExclusive + premiumWindowEndsAt below cover every UI
+              // need, and exposing approvedAt/premiumReleasedAt would leak the
+              // embargo mechanics to brokers. isPremiumExclusive is always false
+              // for non-PREMIUM brokers (in-window requests are filtered out).
+              const {
+                brokerSeens: _omit,
+                approvedAt: _omitApprovedAt,
+                premiumReleasedAt: _omitReleasedAt,
+                ...rest
+              } = r as Record<string, unknown>;
+              const exclusive =
+                premiumConfig != null && isExclusiveToPremium(reqWindow, premiumConfig, now);
               return {
                 ...rest,
                 isNew: seens.length === 0,
                 hasMyConversation: myConversationRequestIds?.has(r.id) ?? false,
+                isPremiumExclusive: exclusive,
+                premiumWindowEndsAt:
+                  exclusive && premiumConfig
+                    ? premiumWindowEndsAt(reqWindow, premiumConfig)
+                    : null,
               };
             })
           : requests;

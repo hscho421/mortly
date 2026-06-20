@@ -3,6 +3,7 @@ import { generateConversationPublicId } from "@/lib/publicId";
 import { sendPushToUsers, brokerInquiryPush, borrowerInquiryPush } from "@/lib/push";
 import { notifyConversation } from "@/lib/realtime";
 import { withAuth } from "@/lib/withAuth";
+import { getPremiumAccessConfig, isExclusiveToPremium } from "@/lib/premiumAccess";
 
 export default withAuth(async (req, res, session) => {
   try {
@@ -185,10 +186,30 @@ export default withAuth(async (req, res, session) => {
         // by attempt-count.
         const targetBroker = await prisma.broker.findUnique({
           where: { id: bodyBrokerId },
-          select: { userId: true },
+          select: { userId: true, subscriptionTier: true },
         });
         if (!targetBroker) {
           return res.status(404).json({ error: "Broker not found" });
+        }
+
+        // PREMIUM early-access: a borrower can't pull a non-PREMIUM broker into
+        // an in-window exclusive request either (closes the borrower-initiated
+        // path that would otherwise grant that broker access via the conversation
+        // exemption, and keeps the release valve a true premium-interest signal).
+        if (targetBroker.subscriptionTier !== "PREMIUM") {
+          const premiumConfig = await getPremiumAccessConfig();
+          if (
+            isExclusiveToPremium(
+              { approvedAt: request.approvedAt, premiumReleasedAt: request.premiumReleasedAt },
+              premiumConfig,
+              new Date()
+            )
+          ) {
+            return res.status(403).json({
+              error: "This request is currently available to Premium brokers only.",
+              code: "PREMIUM_EXCLUSIVE",
+            });
+          }
         }
 
         // Block check — borrower starting convo with broker.
@@ -261,6 +282,25 @@ export default withAuth(async (req, res, session) => {
       }
       if (broker.subscriptionTier === "FREE") {
         return res.status(403).json({ error: "Free plan brokers cannot message clients. Please upgrade your plan.", code: "UPGRADE_REQUIRED" });
+      }
+      // PREMIUM early-access gate: BASIC/PRO brokers cannot open a conversation
+      // on a request that's still inside its PREMIUM-exclusive window. This is
+      // the credit-spend chokepoint — mirrors the feed + detail filters so the
+      // embargo can't be bypassed by POSTing a known requestId directly.
+      if (broker.subscriptionTier !== "PREMIUM") {
+        const premiumConfig = await getPremiumAccessConfig();
+        if (
+          isExclusiveToPremium(
+            { approvedAt: request.approvedAt, premiumReleasedAt: request.premiumReleasedAt },
+            premiumConfig,
+            new Date()
+          )
+        ) {
+          return res.status(403).json({
+            error: "This request is currently available to Premium brokers only.",
+            code: "PREMIUM_EXCLUSIVE",
+          });
+        }
       }
       // A lapsed paid plan must not keep paid entitlements. Without this,
       // PREMIUM brokers bypass the credit gate entirely while PAST_DUE —

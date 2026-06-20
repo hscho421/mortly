@@ -106,6 +106,12 @@ model BorrowerRequest {
   schemaVersion      Int                  @default(2)
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
+  // PREMIUM early-access window. approvedAt = when the request entered OPEN
+  // (window start). premiumReleasedAt is a one-way latch: null = still
+  // visible to PREMIUM brokers only; non-null = released to all brokers
+  // (set by the release cron at the 12h cap or the <2-response 6h valve).
+  approvedAt         DateTime?
+  premiumReleasedAt  DateTime?
 
   borrower           User                 @relation(fields: [borrowerId], references: [id])
   conversations      Conversation[]
@@ -114,6 +120,8 @@ model BorrowerRequest {
   @@index([borrowerId])
   @@index([borrowerId, status])
   @@index([status, createdAt])
+  // Release cron scans OPEN requests by latch state; broker feed filters on it.
+  @@index([status, premiumReleasedAt])
   // Standalone status index — admin tabs and broker browse marketplace
   // filter by status alone; the (status, createdAt) composite isn't optimal
   // for a pure equality lookup with no order. Cheap to add, big win at scale.

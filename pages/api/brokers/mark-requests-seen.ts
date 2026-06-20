@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { withAuth } from "@/lib/withAuth";
+import { getPremiumAccessConfig, nonPremiumVisibilityWhere } from "@/lib/premiumAccess";
 
 // Mark every currently-OPEN borrower request as "seen" by this broker.
 // Uses BrokerRequestSeen (per-request join table) with composite PK
@@ -13,11 +14,21 @@ export default withAuth(async (req, res, session) => {
   try {
     const broker = await prisma.broker.findUnique({
       where: { userId: session.user.id },
-      select: { id: true },
+      select: { id: true, subscriptionTier: true },
     });
     if (!broker) {
       return res.status(404).json({ error: "Broker profile not found" });
     }
+
+    // Only mark requests this broker can actually SEE. Without this, a non-
+    // PREMIUM broker would silently mark in-window exclusive requests as seen
+    // (they're filtered from the feed but still OPEN), losing the "new" dot when
+    // those leads later release to them — undercutting the early-access fairness.
+    const premiumConfig = await getPremiumAccessConfig();
+    const visibilityWhere =
+      broker.subscriptionTier === "PREMIUM"
+        ? {}
+        : nonPremiumVisibilityWhere(premiumConfig, new Date());
 
     // Find all currently-open requests this broker hasn't seen yet.
     // Narrows the insert set — avoids re-insert attempts for already-seen rows.
@@ -25,6 +36,7 @@ export default withAuth(async (req, res, session) => {
       where: {
         status: "OPEN",
         brokerSeens: { none: { brokerId: broker.id } },
+        ...visibilityWhere,
       },
       select: { id: true },
     });

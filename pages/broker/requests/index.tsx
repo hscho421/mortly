@@ -36,6 +36,13 @@ interface BrokerRequest {
   isNew?: boolean;
   /** True if this broker already has a conversation on this request. */
   hasMyConversation?: boolean;
+  /**
+   * True if this request is in its PREMIUM-exclusive early-access window — only
+   * ever set for PREMIUM brokers (others never receive in-window requests).
+   */
+  isPremiumExclusive?: boolean;
+  /** Latest moment the exclusive window can last (12h cap); may release sooner. */
+  premiumWindowEndsAt?: string | null;
 }
 
 type CategoryFilter = "" | "RESIDENTIAL" | "COMMERCIAL";
@@ -129,6 +136,14 @@ export default function BrokerRequestsPage() {
     return requests.filter((req) => !req.hasMyConversation);
   }, [requests, onlyUnresponded]);
 
+  // Premium-exclusive leads currently visible to this (PREMIUM) broker. Always
+  // 0 for non-PREMIUM brokers since the API never sends them in-window requests.
+  // Must stay above the early returns below — hooks run unconditionally.
+  const exclusiveCount = useMemo(
+    () => requests.filter((r) => r.isPremiumExclusive).length,
+    [requests],
+  );
+
   if (status === "loading") {
     return (
       <BrokerShell active="requests" pageTitle={t("titles.brokerBrowseRequests")}>
@@ -170,13 +185,22 @@ export default function BrokerRequestsPage() {
       <AppTopbar
         eyebrow={
           <>
+            {exclusiveCount > 0 && (
+              <>
+                <span className="text-amber-600">★</span>{" "}
+                {t("broker.premiumExclusiveCount", "{{count}} exclusive for you", {
+                  count: exclusiveCount,
+                })}
+                {newCount > 0 ? "  ·  " : ""}
+              </>
+            )}
             {newCount > 0 ? (
               <>
                 <span className="text-amber-500">●</span>{" "}
                 {t("broker.newCount", "{{count}} new", { count: newCount })}
               </>
             ) : (
-              t("browse.allCaughtUp", "All caught up")
+              exclusiveCount === 0 && t("browse.allCaughtUp", "All caught up")
             )}
           </>
         }
@@ -441,8 +465,13 @@ function RequestRow({
           )}
           #{req.publicId}
         </span>
-        <span className="truncate font-body text-[13px] font-semibold text-forest-800">
-          {typeLabel(req, t)}
+        <span className="flex min-w-0 items-center gap-1.5 font-body text-[13px] font-semibold text-forest-800">
+          {req.isPremiumExclusive && (
+            <span className="shrink-0 rounded-sm bg-amber-500 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-white">
+              {t("broker.premiumExclusiveBadge", "Premium")}
+            </span>
+          )}
+          <span className="truncate">{typeLabel(req, t)}</span>
         </span>
         <span className="truncate font-body text-[13px] text-forest-700/80">
           {region}
@@ -498,11 +527,18 @@ function RequestCardMobile({
             )}
             #{req.publicId}
           </span>
-          <Badge
-            tone={req.mortgageCategory === "COMMERCIAL" ? "accent" : "neutral"}
-          >
-            {label}
-          </Badge>
+          <span className="flex items-center gap-1.5">
+            {req.isPremiumExclusive && (
+              <span className="rounded-sm bg-amber-500 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-white">
+                {t("broker.premiumExclusiveBadge", "Premium")}
+              </span>
+            )}
+            <Badge
+              tone={req.mortgageCategory === "COMMERCIAL" ? "accent" : "neutral"}
+            >
+              {label}
+            </Badge>
+          </span>
         </div>
         <div className="mt-1.5 font-body text-[14px] font-semibold text-forest-800">
           {typeLabel(req, t)}
