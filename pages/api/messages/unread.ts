@@ -16,7 +16,15 @@ export default withAuth(async (req, res, session) => {
         where: { userId },
         select: { id: true },
       });
-      brokerId = broker?.id;
+      // No Broker profile yet (signed up, not onboarded / awaiting verification)
+      // → they have no conversations. Return 0 WITHOUT falling through to the
+      // `brokerId: undefined` filter below: Prisma drops an `undefined` filter
+      // entirely, which would count unread across EVERY conversation platform-
+      // wide — the "38 unread on the messages tab" bug for unverified brokers.
+      if (!broker) {
+        return res.status(200).json({ unread: 0 });
+      }
+      brokerId = broker.id;
     }
 
     // Get all active conversations with their lastReadAt in one query
