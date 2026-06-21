@@ -77,11 +77,20 @@ export default function BorrowerDashboard() {
 
   const locale = router.locale === "ko" ? "ko" : "en";
 
-  const activeRequest = useMemo(
+  // All active requests (not just the first) get equal first-class treatment.
+  const activeRequests = useMemo(
     () =>
-      requests.find(
+      requests.filter(
         (r) => r.status === "OPEN" || r.status === "IN_PROGRESS",
-      ) ?? null,
+      ),
+    [requests],
+  );
+  // Everything else (pending / rejected / closed / expired) → compact list.
+  const otherRequests = useMemo(
+    () =>
+      requests.filter(
+        (r) => r.status !== "OPEN" && r.status !== "IN_PROGRESS",
+      ),
     [requests],
   );
 
@@ -95,13 +104,7 @@ export default function BorrowerDashboard() {
     [requests],
   );
 
-  const activeCount = useMemo(
-    () =>
-      requests.filter(
-        (r) => r.status === "OPEN" || r.status === "IN_PROGRESS",
-      ).length,
-    [requests],
-  );
+  const activeCount = activeRequests.length;
 
   // Activity feed = conversations sorted by updatedAt, top 5.
   const recentActivity = useMemo(
@@ -114,6 +117,21 @@ export default function BorrowerDashboard() {
         .slice(0, 5),
     [conversations],
   );
+
+  // Broker names per request (by publicId) for the active-request response peek.
+  // Sourced from the conversations list, which carries request.publicId + broker.
+  const responderNamesByRequest = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const c of conversations) {
+      const pid = c.request?.publicId;
+      const name = c.broker?.user?.name || c.broker?.brokerageName;
+      if (!pid || !name) continue;
+      const arr = map.get(pid) ?? [];
+      arr.push(name);
+      map.set(pid, arr);
+    }
+    return map;
+  }, [conversations]);
 
   // Pending or rejected request → priority banner.
   const rejectedReq = requests.find((r) => r.status === "REJECTED");
@@ -268,14 +286,38 @@ export default function BorrowerDashboard() {
               />
             </div>
 
-            {/* Active request hero + activity */}
+            {/* Active requests + activity */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-              <div className="lg:col-span-3">
-                <ActiveRequestHero
-                  request={activeRequest}
-                  locale={locale}
-                  t={t}
-                />
+              <div className="lg:col-span-3 space-y-4">
+                {activeRequests.length === 0 ? (
+                  <Card padding="lg">
+                    <Eyebrow>{t("borrower.activeRequestEyebrow", "활성 요청")}</Eyebrow>
+                    <div className="mt-2 font-display text-xl font-semibold text-forest-800">
+                      {t("borrower.noActiveRequest", "No active requests right now")}
+                    </div>
+                    <p className="mt-2 font-body text-[13px] text-sage-500">
+                      {t(
+                        "borrower.noActiveRequestDesc",
+                        "Start a new request to invite verified brokers to respond.",
+                      )}
+                    </p>
+                    <div className="mt-4">
+                      <Btn as="a" href="/borrower/request/new" size="md">
+                        + {t("borrowerDashboard.newRequest", "New request")}
+                      </Btn>
+                    </div>
+                  </Card>
+                ) : (
+                  activeRequests.map((req) => (
+                    <ActiveRequestCard
+                      key={req.id}
+                      request={req}
+                      responderNames={responderNamesByRequest.get(req.publicId) ?? []}
+                      locale={locale}
+                      t={t}
+                    />
+                  ))
+                )}
               </div>
               <div className="lg:col-span-2">
                 <Card padding="none" className="overflow-hidden">
@@ -364,27 +406,30 @@ export default function BorrowerDashboard() {
               </div>
             </div>
 
-            {/* All requests list */}
-            <div className="mt-8">
-              <SectionHead
-                eyebrow={t("borrower.allRequestsEyebrow", "내 요청")}
-                title={t("borrower.allRequestsTitle", "모든 요청")}
-                size="md"
-              />
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {requests.map((req) => (
-                  <RequestCard
-                    key={req.id}
-                    request={req}
-                    locale={locale}
-                    t={t}
-                  />
-                ))}
+            {/* Other requests — pending / closed / rejected / expired. Active
+                ones are shown as rich cards above, so they're excluded here. */}
+            {otherRequests.length > 0 && (
+              <div className="mt-8">
+                <SectionHead
+                  eyebrow={t("borrower.otherRequestsEyebrow", "기타")}
+                  title={t("borrower.otherRequestsTitle", "기타 요청")}
+                  size="md"
+                />
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {otherRequests.map((req) => (
+                    <RequestCard
+                      key={req.id}
+                      request={req}
+                      locale={locale}
+                      t={t}
+                    />
+                  ))}
+                </div>
+                <p className="mt-6 text-center font-body text-xs text-forest-700/50">
+                  {t("request.expirationNote")}
+                </p>
               </div>
-              <p className="mt-6 text-center font-body text-xs text-forest-700/50">
-                {t("request.expirationNote")}
-              </p>
-            </div>
+            )}
           </>
         )}
       </div>
@@ -397,41 +442,18 @@ export default function BorrowerDashboard() {
 // in-progress request with the data we actually have. No rate
 // fields (broker proposals were intentionally removed).
 // ──────────────────────────────────────────────────────────────
-function ActiveRequestHero({
+function ActiveRequestCard({
   request,
+  responderNames,
   locale,
   t,
 }: {
-  request: DashboardRequest | null;
+  request: DashboardRequest;
+  responderNames: string[];
   locale: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
 }) {
-  if (!request) {
-    return (
-      <Card padding="lg">
-        <Eyebrow>{t("borrower.activeRequestEyebrow", "활성 요청")}</Eyebrow>
-        <div className="mt-2 font-display text-xl font-semibold text-forest-800">
-          {t(
-            "borrower.noActiveRequest",
-            "No active requests right now",
-          )}
-        </div>
-        <p className="mt-2 font-body text-[13px] text-sage-500">
-          {t(
-            "borrower.noActiveRequestDesc",
-            "Start a new request to invite verified brokers to respond.",
-          )}
-        </p>
-        <div className="mt-4">
-          <Btn as="a" href="/borrower/request/new" size="md">
-            + {t("borrowerDashboard.newRequest", "New request")}
-          </Btn>
-        </div>
-      </Card>
-    );
-  }
-
   const category =
     request.mortgageCategory === "COMMERCIAL"
       ? t("request.commercial")
@@ -507,10 +529,22 @@ function ActiveRequestHero({
         </div>
       </div>
 
+      {/* Responder peek — who has reached out so far */}
+      {responderNames.length > 0 && (
+        <div className="px-5 pt-4 font-body text-[12px] text-forest-700/75">
+          {t("borrower.respondedBy", "응답한 전문가")}:{" "}
+          <span className="font-medium text-forest-800">
+            {responderNames.slice(0, 2).join(", ")}
+          </span>
+          {responderNames.length > 2 &&
+            ` ${t("borrower.andNMore", "외 {{count}}명", { count: responderNames.length - 2 })}`}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2 px-5 py-4">
         <Btn
           as="a"
-          href={`/borrower/brokers/${request.publicId}`}
+          href={`/borrower/request/${request.publicId}#responses`}
           size="md"
         >
           {t("borrower.viewResponses", "응답 보기")} →

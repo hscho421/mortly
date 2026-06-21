@@ -398,6 +398,31 @@ export default function BorrowerMessagesPage() {
     groupedMessages[groupedMessages.length - 1].items.push(msg);
   }
 
+  /* ---- group conversations by request (for the list panel) ---- */
+  // A borrower with several requests otherwise sees a flat, hard-to-parse list
+  // of all brokers. Group threads under their request; headers only appear when
+  // there's more than one request, so a single-request borrower sees no change.
+  const conversationGroups: {
+    key: string;
+    title: string;
+    convs: ConversationListItem[];
+  }[] = [];
+  {
+    const byRequest = new Map<string, (typeof conversationGroups)[number]>();
+    for (const c of conversations) {
+      const key = c.request?.publicId || c.request?.id || "__none__";
+      const existing = byRequest.get(key);
+      if (existing) {
+        existing.convs.push(c);
+      } else {
+        const group = { key, title: getRequestTitle(c.request), convs: [c] };
+        byRequest.set(key, group);
+        conversationGroups.push(group);
+      }
+    }
+  }
+  const showGroupHeaders = conversationGroups.length > 1;
+
   /* ────────────────────────────────────────────── */
   /*  Render                                        */
   /* ────────────────────────────────────────────── */
@@ -497,7 +522,14 @@ export default function BorrowerMessagesPage() {
                 </p>
               </div>
             ) : (
-              conversations.map((conv) => {
+              conversationGroups.map((group) => (
+                <div key={group.key}>
+                  {showGroupHeaders && !cols.listCompact && (
+                    <div className="sticky top-0 z-10 border-b border-cream-200 bg-cream-100/95 px-5 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-sage-500 backdrop-blur">
+                      {group.title}
+                    </div>
+                  )}
+                  {group.convs.map((conv) => {
                 const isActive = conv.id === activeId;
                 const lastMsg = conv.messages[0];
                 const brokerName =
@@ -548,17 +580,23 @@ export default function BorrowerMessagesPage() {
                           {conv.broker.brokerageName}
                         </p>
 
-                        {/* Badges row */}
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-[10px] font-medium text-forest-700">
-                            {getRequestTitle(conv.request)}
-                          </span>
-                          {conv.status === "CLOSED" && (
-                            <span className="inline-flex items-center rounded-full bg-sage-100 px-2 py-0.5 font-body text-[10px] font-medium text-sage-500">
-                              {t("messages.closed")}
-                            </span>
-                          )}
-                        </div>
+                        {/* Badges row — request label shown inline only when
+                            the list isn't grouped (a group header carries it
+                            otherwise); CLOSED badge always when applicable. */}
+                        {(!showGroupHeaders || conv.status === "CLOSED") && (
+                          <div className="flex items-center gap-2 mb-1">
+                            {!showGroupHeaders && (
+                              <span className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-[10px] font-medium text-forest-700">
+                                {getRequestTitle(conv.request)}
+                              </span>
+                            )}
+                            {conv.status === "CLOSED" && (
+                              <span className="inline-flex items-center rounded-full bg-sage-100 px-2 py-0.5 font-body text-[10px] font-medium text-sage-500">
+                                {t("messages.closed")}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {/* Last message preview */}
                         {lastMsg && (
@@ -572,7 +610,9 @@ export default function BorrowerMessagesPage() {
                     </div>
                   </button>
                 );
-              })
+                  })}
+                </div>
+              ))
             )}
           </div>
         </div>

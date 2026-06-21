@@ -149,23 +149,27 @@ describe("BorrowerDashboard (Phase 2)", () => {
     expect(screen.getAllByText(/Toronto, Ontario/).length).toBeGreaterThan(0);
   });
 
-  it("links 'View responses' button to the broker comparison page", async () => {
+  it("links 'View responses' to the request hub responses section", async () => {
     renderDashboard();
     await waitFor(() =>
       expect(screen.getByText(/응답 보기|View responses/i)).toBeInTheDocument(),
     );
+    // The standalone /borrower/brokers comparison page was folded into the
+    // request hub; the CTA now deep-links to its #responses section.
     const link = screen
       .getAllByRole("link")
       .find((l) =>
-        l.getAttribute("href")?.startsWith("/borrower/brokers/700000001"),
+        l.getAttribute("href")?.startsWith("/borrower/request/700000001"),
       );
-    expect(link).toBeTruthy();
+    expect(link?.getAttribute("href")).toContain("#responses");
   });
 
   it("renders recent activity from conversations", async () => {
     renderDashboard();
+    // The broker name now appears in both the active-request responder peek and
+    // the recent-activity panel, so assert on >=1 match.
     await waitFor(() =>
-      expect(screen.getByText("Park Jihoon")).toBeInTheDocument(),
+      expect(screen.getAllByText("Park Jihoon").length).toBeGreaterThan(0),
     );
     expect(screen.getByText(/Quick reply about your request/)).toBeInTheDocument();
   });

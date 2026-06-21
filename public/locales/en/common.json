@@ -312,6 +312,7 @@
     "waitingForBrokers": "Waiting for brokers to respond...",
     "waitingForBrokersDetail": "Your request was submitted. Brokers typically respond within 24 hours.",
     "requestDetails": "Request Details",
+    "respondersTitle": "Brokers who responded",
     "property": "Property",
     "financial": "Financial",
     "mortgagePreferences": "Mortgage Preferences",
@@ -485,6 +486,10 @@
     "responses": "Responses",
     "viewAll": "View all",
     "viewResponses": "View responses",
+    "andNMore": "and {{count}} more",
+    "otherRequestsEyebrow": "Other",
+    "otherRequestsTitle": "Other requests",
+    "respondedBy": "Responded by",
     "welcome": "Hello,",
     "welcomeSuffix": "."
   },

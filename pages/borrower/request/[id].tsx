@@ -13,6 +13,7 @@ import { SkeletonRequestDetail } from "@/components/Skeleton";
 import StatusBadge from "@/components/StatusBadge";
 import ConsultationStepper from "@/components/ConsultationStepper";
 import RequestForm from "@/components/RequestForm";
+import BrokerResponses, { type ConversationBroker } from "@/components/borrower/BrokerResponses";
 import type { CreateRequestInput, ResidentialDetails, CommercialDetails } from "@/types";
 import { PRODUCT_LABEL_KEYS, INCOME_TYPE_LABEL_KEYS, TIMELINE_LABEL_KEYS } from "@/lib/requestConfig";
 import { dateLocale } from "@/lib/format";
@@ -96,6 +97,15 @@ export default function RequestDetail() {
     if (!session) return;
     fetchRequest();
   }, [authStatus, session, fetchRequest]);
+
+  // Arriving via "...#responses" (the dashboard "응답 보기" CTA) → scroll to the
+  // responders section once it has rendered.
+  useEffect(() => {
+    if (loading || !request) return;
+    if (typeof window !== "undefined" && window.location.hash === "#responses") {
+      document.getElementById("responses")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [loading, request]);
 
   async function handleEdit(data: CreateRequestInput) {
     // Send only the fields that actually changed. The server locks material
@@ -382,29 +392,22 @@ export default function RequestDetail() {
 
         )}
 
-        {/* Broker messages card */}
-        <div className="card-elevated mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-body-sm">{t("request.brokerMessages")}</p>
-              <p className="font-display text-4xl text-forest-800 mt-1">
-                {convoCount}
-              </p>
+        {/* Brokers who responded to THIS request — the per-request hub view
+            (replaces the standalone /borrower/brokers/[id] comparison page).
+            Only shown once the request is live (no responses possible before). */}
+        {["OPEN", "IN_PROGRESS", "CLOSED", "EXPIRED"].includes(request.status) && (
+          <div id="responses" className="mb-8 scroll-mt-24">
+            <div className="pb-4 mb-4 border-b divider flex items-center justify-between gap-3">
+              <h2 className="heading-md">
+                {t("request.respondersTitle", "Brokers who responded")}
+              </h2>
+              <span className="font-display text-2xl text-forest-800">{convoCount}</span>
             </div>
-            {convoCount > 0 ? (
-              <Link
-                href="/borrower/messages"
-                className="btn-amber"
-              >
-                {t("request.viewMessages")}
-              </Link>
-            ) : (
-              <span className="text-body-sm text-sage-400">
-                {t("request.waitingForBrokersDetail")}
-              </span>
-            )}
+            <BrokerResponses
+              conversations={(request.conversations ?? []) as ConversationBroker[]}
+            />
           </div>
-        </div>
+        )}
 
         {/* Request details - edit mode or read-only */}
         {isEditing ? (
