@@ -280,6 +280,12 @@ describe("BrokerRequestDetailPage (Phase 3 detail)", () => {
       selector: "button",
     });
     fireEvent.click(respond);
+    // Non-PREMIUM (PRO) brokers must confirm before a credit is spent — the
+    // first click reveals a confirm button rather than starting the thread.
+    const confirm = await screen.findByText(/Use 1 credit|크레딧 1개 사용/i, {
+      selector: "button",
+    });
+    fireEvent.click(confirm);
     await waitFor(() =>
       expect(routerState.push).toHaveBeenCalledWith(
         "/broker/messages?id=conv1",
@@ -287,6 +293,21 @@ describe("BrokerRequestDetailPage (Phase 3 detail)", () => {
         { locale: "ko" },
       ),
     );
+  });
+
+  it("a single Respond click does not spend a credit without confirmation", async () => {
+    render(
+      <BrokerDataProvider>
+        <BrokerRequestDetailPage />
+      </BrokerDataProvider>,
+    );
+    const respond = await screen.findByText(/상담 시작|Respond/i, {
+      selector: "button",
+    });
+    fireEvent.click(respond);
+    // The confirm affordance appears; no conversation POST / navigation yet.
+    await screen.findByText(/Use 1 credit|크레딧 1개 사용/i, { selector: "button" });
+    expect(routerState.push).not.toHaveBeenCalled();
   });
 
   it("does not render an intro-form / proposal UI", async () => {

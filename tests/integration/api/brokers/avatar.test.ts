@@ -11,13 +11,18 @@ const createSignedUploadUrl = vi.fn(async () => ({
   error: null,
 }));
 const remove = vi.fn(async () => ({ error: null }));
+// Default: the confirm step finds a valid small WebP at the broker's path.
+const list = vi.fn(async () => ({
+  data: [{ name: "user_broker_1.webp", metadata: { mimetype: "image/webp", size: 24000 } }],
+  error: null,
+}));
 vi.mock("@/lib/supabaseAdmin", () => ({
   AVATAR_BUCKET: "avatars",
   brokerAvatarPath: (id: string) => `brokers/${id}.webp`,
   avatarPublicUrl: (p: string) => `https://x.supabase.co/storage/v1/object/public/avatars/${p}`,
   isAvatarStorageConfigured: true,
   getSupabaseAdmin: () => ({
-    storage: { from: () => ({ createSignedUploadUrl, remove }) },
+    storage: { from: () => ({ createSignedUploadUrl, remove, list }) },
   }),
 }));
 
@@ -92,6 +97,40 @@ describe("POST/DELETE /api/brokers/avatar", () => {
     const updateArgs = prismaMock.broker.update.mock.calls[0][0];
     expect(updateArgs.data.profilePhoto).toBe("brokers/user_broker_1.webp");
     expect(jsonBody<{ url: string }>(res).url).toContain("brokers/user_broker_1.webp");
+  });
+
+  it("confirm rejects a non-WebP object (e.g. HTML uploaded via the signed URL) and cleans it up", async () => {
+    list.mockResolvedValueOnce({
+      data: [{ name: "user_broker_1.webp", metadata: { mimetype: "text/html", size: 2000 } }],
+      error: null,
+    } as never);
+    const { req, res } = makeReqRes({ method: "POST" });
+    await avatarHandler(req, res);
+    expect(res.statusCode).toBe(400);
+    expect(jsonBody<{ code: string }>(res).code).toBe("INVALID_IMAGE_TYPE");
+    expect(remove).toHaveBeenCalledWith(["brokers/user_broker_1.webp"]);
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
+  });
+
+  it("confirm rejects when no object was actually uploaded", async () => {
+    list.mockResolvedValueOnce({ data: [], error: null } as never);
+    const { req, res } = makeReqRes({ method: "POST" });
+    await avatarHandler(req, res);
+    expect(res.statusCode).toBe(400);
+    expect(jsonBody<{ code: string }>(res).code).toBe("UPLOAD_MISSING");
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
+  });
+
+  it("confirm rejects an oversize object", async () => {
+    list.mockResolvedValueOnce({
+      data: [{ name: "user_broker_1.webp", metadata: { mimetype: "image/webp", size: 5 * 1024 * 1024 } }],
+      error: null,
+    } as never);
+    const { req, res } = makeReqRes({ method: "POST" });
+    await avatarHandler(req, res);
+    expect(res.statusCode).toBe(400);
+    expect(jsonBody<{ code: string }>(res).code).toBe("IMAGE_TOO_LARGE");
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
   });
 
   it("DELETE removes the object and nulls the field", async () => {
