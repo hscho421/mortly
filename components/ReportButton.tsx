@@ -73,7 +73,7 @@ export default function ReportButton({ targetType, targetId }: ReportButtonProps
           setFeedback(null);
         }}
         title={t("report.title")}
-        className="inline-flex items-center justify-center rounded-lg p-1.5 text-sage-400 hover:text-amber-600 hover:bg-amber-50 transition-colors duration-200"
+        className="inline-flex items-center justify-center rounded-sm p-1.5 text-sage-400 hover:text-amber-600 hover:bg-amber-50 transition-colors duration-200"
       >
         <svg
           className="h-4 w-4"
@@ -102,7 +102,7 @@ export default function ReportButton({ targetType, targetId }: ReportButtonProps
             }
           }}
         >
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-fade-in-up">
+          <div className="w-full max-w-md rounded-sm bg-white p-6 shadow-2xl animate-fade-in-up">
             <h2 className="heading-sm mb-4">{t("report.title")}</h2>
 
             <textarea
@@ -115,7 +115,7 @@ export default function ReportButton({ targetType, targetId }: ReportButtonProps
 
             {feedback && (
               <div
-                className={`mt-3 rounded-xl p-3 font-body text-sm ${
+                className={`mt-3 rounded-sm p-3 font-body text-sm ${
                   feedback.type === "success"
                     ? "bg-forest-50 text-forest-700 border border-forest-200"
                     : "bg-red-50 text-red-700 border border-red-200"

@@ -86,7 +86,14 @@ export default function SignupPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || t("common.somethingWentWrong"));
+        // API messages are not localized — map the status to translated copy.
+        setError(
+          res.status === 409
+            ? t("auth.emailExists")
+            : res.status === 429
+              ? t("auth.tooManyRequests")
+              : t("common.somethingWentWrong"),
+        );
         setIsLoading(false);
         return;
       }
@@ -152,7 +159,7 @@ export default function SignupPage() {
             </div>
 
             {error && (
-              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
+              <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
                 <p className="font-body text-sm text-red-700">{error}</p>
               </div>
             )}
@@ -224,7 +231,7 @@ export default function SignupPage() {
                   <div className="space-y-3">
                     <label
                       onClick={() => setRole("BORROWER")}
-                      className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3.5 cursor-pointer transition-all duration-200 ${
+                      className={`flex items-start gap-3 rounded-sm border-2 px-4 py-3.5 cursor-pointer transition-all duration-200 ${
                         role === "BORROWER"
                           ? "border-forest-700 bg-forest-50 shadow-sm"
                           : "border-cream-300 bg-white hover:border-sage-300 hover:bg-cream-50"
@@ -245,7 +252,7 @@ export default function SignupPage() {
                     </label>
                     <label
                       onClick={() => setRole("BROKER")}
-                      className={`flex items-start gap-3 rounded-xl border-2 px-4 py-3.5 cursor-pointer transition-all duration-200 ${
+                      className={`flex items-start gap-3 rounded-sm border-2 px-4 py-3.5 cursor-pointer transition-all duration-200 ${
                         role === "BROKER"
                           ? "border-forest-700 bg-forest-50 shadow-sm"
                           : "border-cream-300 bg-white hover:border-sage-300 hover:bg-cream-50"

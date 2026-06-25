@@ -70,7 +70,28 @@ export default function LoginPage() {
           setIsLoading(false);
           return;
         }
-        setError(result.error);
+        if (result.error === "INVALID_CREDENTIALS") {
+          setError(t("auth.invalidCredentials"));
+          setIsLoading(false);
+          return;
+        }
+        if (result.error === "MISSING_CREDENTIALS") {
+          setError(t("auth.missingCredentials"));
+          setIsLoading(false);
+          return;
+        }
+        if (result.error === "ACCOUNT_SUSPENDED") {
+          setError(t("auth.accountSuspended"));
+          setIsLoading(false);
+          return;
+        }
+        if (result.error === "ACCOUNT_BANNED") {
+          setError(t("auth.accountBanned"));
+          setIsLoading(false);
+          return;
+        }
+        // Any unmapped error code must never be shown raw to the user.
+        setError(t("common.unexpectedError"));
         setIsLoading(false);
         return;
       }
@@ -115,13 +136,13 @@ export default function LoginPage() {
             </div>
 
             {verified && (
-              <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 animate-fade-in">
+              <div className="mb-6 rounded-sm border border-green-200 bg-green-50 px-4 py-3 animate-fade-in">
                 <p className="font-body text-sm text-green-700">{t("auth.emailVerified")}</p>
               </div>
             )}
 
             {error && (
-              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
+              <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
                 <p className="font-body text-sm text-red-700">{error}</p>
               </div>
             )}

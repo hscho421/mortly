@@ -94,7 +94,7 @@ export default function ForBorrowers() {
             <Link href={ctaHref} className="btn-amber px-8 py-4 text-base">
               {ctaLabel}
             </Link>
-            <Link href="/how-it-works" className="inline-flex items-center justify-center rounded-lg border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
+            <Link href="/how-it-works" className="inline-flex items-center justify-center rounded-sm border-2 border-cream-300/30 px-8 py-4 font-body text-sm font-semibold text-cream-200 transition-all duration-300 hover:bg-cream-100/10 hover:border-cream-300/50 active:scale-[0.98]">
               {t("forBorrowers.seeHowItWorks")}
             </Link>
           </div>
@@ -118,7 +118,7 @@ export default function ForBorrowers() {
                 key={benefit.title}
                 className={`card-elevated animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
               >
-                <div className="w-14 h-14 rounded-xl bg-forest-50 text-forest-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-sm bg-forest-50 text-forest-600 flex items-center justify-center mb-6">
                   {benefit.icon}
                 </div>
                 <h3 className="heading-sm mb-3">{benefit.title}</h3>

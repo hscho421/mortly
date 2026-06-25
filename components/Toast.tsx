@@ -87,7 +87,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
 
   return (
     <div
-      className={`pointer-events-auto flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg animate-fade-in ${TOAST_STYLES[toast.type]}`}
+      className={`pointer-events-auto flex items-start gap-3 rounded-sm border px-4 py-3 shadow-lg animate-fade-in ${TOAST_STYLES[toast.type]}`}
       role="alert"
     >
       <span className="shrink-0 mt-0.5">{TOAST_ICONS[toast.type]}</span>

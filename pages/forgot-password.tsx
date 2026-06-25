@@ -27,8 +27,12 @@ export default function ForgotPasswordPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || t("common.somethingWentWrong"));
+        // API messages are not localized — map the status to translated copy.
+        throw new Error(
+          res.status === 429
+            ? t("auth.tooManyRequests")
+            : t("common.somethingWentWrong"),
+        );
       }
 
       setSubmitted(true);
@@ -84,7 +88,7 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 {error && (
-                  <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
+                  <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
                     <p className="font-body text-sm text-red-700">{error}</p>
                   </div>
                 )}

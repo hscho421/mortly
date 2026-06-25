@@ -155,7 +155,7 @@ export default function Privacy() {
                 key={item.title}
                 className={`card-elevated animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
               >
-                <div className="w-14 h-14 rounded-xl bg-forest-50 text-forest-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-sm bg-forest-50 text-forest-600 flex items-center justify-center mb-6">
                   {item.icon}
                 </div>
                 <h3 className="heading-sm mb-3">{item.title}</h3>
@@ -337,7 +337,7 @@ export default function Privacy() {
 
           <div className="mt-10 animate-fade-in-up opacity-0 stagger-5 card-elevated !bg-forest-50 border-forest-200">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-forest-100 text-forest-600 flex items-center justify-center">
+              <div className="flex-shrink-0 w-12 h-12 rounded-sm bg-forest-100 text-forest-600 flex items-center justify-center">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>

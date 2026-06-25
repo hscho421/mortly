@@ -180,13 +180,13 @@ export default function VerifyEmailPage() {
             </div>
 
             {error && (
-              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
+              <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
                 <p className="font-body text-sm text-red-700">{error}</p>
               </div>
             )}
 
             {success && (
-              <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 animate-fade-in">
+              <div className="mb-6 rounded-sm border border-green-200 bg-green-50 px-4 py-3 animate-fade-in">
                 <p className="font-body text-sm text-green-700">{success}</p>
               </div>
             )}
@@ -207,7 +207,7 @@ export default function VerifyEmailPage() {
                       value={digit}
                       onChange={(e) => handleChange(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(index, e)}
-                      className="h-12 w-12 rounded-xl border-2 border-cream-300 bg-white text-center font-mono text-xl font-bold text-forest-800 transition-all duration-200 focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-200"
+                      className="h-12 w-12 rounded-sm border-2 border-cream-300 bg-white text-center font-mono text-xl font-bold text-forest-800 transition-all duration-200 focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-200"
                     />
                   ))}
                 </div>

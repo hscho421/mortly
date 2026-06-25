@@ -222,7 +222,12 @@
     "selectRoleTitle": "역할을 선택하세요",
     "selectRoleSubtitle": "mortly를 어떻게 사용하시겠습니까?",
     "selectRoleBtn": "계속",
-    "tooManyAttempts": "로그인 시도가 너무 많습니다. 몇 분 후 다시 시도해 주세요."
+    "tooManyAttempts": "로그인 시도가 너무 많습니다. 몇 분 후 다시 시도해 주세요.",
+    "missingCredentials": "이메일과 비밀번호를 입력해 주세요",
+    "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다",
+    "accountSuspended": "계정이 일시 정지되었습니다. 고객 지원팀에 문의해 주세요.",
+    "accountBanned": "계정이 차단되었습니다.",
+    "emailExists": "이미 가입된 이메일입니다"
   },
   "borrowerDashboard": {
     "title": "안녕하세요, {{name}} 님.",
@@ -428,6 +433,7 @@
     "resizeList": "드래그하여 대화 목록 너비 조절 (더블클릭 시 초기화)",
     "resizeContext": "드래그하여 정보 패널 너비 조절 (더블클릭 시 초기화)",
     "noConversations": "아직 대화가 없습니다",
+    "noMessagesYet": "아직 메시지가 없습니다",
     "noConversationsDescBorrower": "모기지 전문가 소개를 확인하고 대화를 시작하세요.",
     "noConversationsDescBroker": "상담요청에 응답하여 고객과 상담을 진행하세요.",
     "selectConversation": "상담을 진행하세요.",
@@ -706,7 +712,7 @@
     "earlyAccessPerkBody": "다른 모기지 전문가보다 {{hours}}시간 먼저 새로 승인된 상담 요청을 확인하세요.",
     "earlyAccessPerkCta": "요청 보기",
     "earlyAccessTeaserTitle": "프리미엄 모기지 전문가는 {{hours}}시간 먼저 시작합니다",
-    "earlyAccessTeaserBody": "신규 요청은 프리미엄 모기지 전문가에게 먼저 공개됩니다. 업그레이드하고 누구보다 최대 {{hours}}시간 먼저 확인하세요.",
+    "earlyAccessTeaserBody": "신규 상담요청은 프리미엄 요금제를 구독중인 모기지전문가에게 {{hours}}시간 먼저 공개됩니다. 프리미엄 요금제로 업그레이드하고, 고객의 상담요청에 제일 먼저 답변하세요.",
     "earlyAccessTeaserCta": "프리미엄으로 업그레이드",
     "newRequestsTitle": "새로운 상담 요청",
     "newRequestsWeek": "새 요청 · 이번 주",

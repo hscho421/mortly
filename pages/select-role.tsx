@@ -107,7 +107,7 @@ export default function SelectRolePage() {
             </div>
 
             {error && (
-              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
+              <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
                 <p className="font-body text-sm text-red-700">{error}</p>
               </div>
             )}
@@ -118,7 +118,7 @@ export default function SelectRolePage() {
                 <button
                   type="button"
                   onClick={() => setRole("BORROWER")}
-                  className={`rounded-xl border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
+                  className={`rounded-sm border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
                     role === "BORROWER"
                       ? "border-forest-700 bg-forest-50 text-forest-800 shadow-sm"
                       : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"
@@ -129,7 +129,7 @@ export default function SelectRolePage() {
                 <button
                   type="button"
                   onClick={() => setRole("BROKER")}
-                  className={`rounded-xl border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
+                  className={`rounded-sm border-2 px-4 py-3 font-body text-sm font-medium transition-all duration-200 ${
                     role === "BROKER"
                       ? "border-forest-700 bg-forest-50 text-forest-800 shadow-sm"
                       : "border-cream-300 bg-white text-sage-600 hover:border-sage-300 hover:bg-cream-50"

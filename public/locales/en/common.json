@@ -222,7 +222,12 @@
     "selectRoleTitle": "Choose Your Role",
     "selectRoleSubtitle": "How would you like to use mortly?",
     "selectRoleBtn": "Continue",
-    "tooManyAttempts": "Too many sign-in attempts. Please wait a few minutes and try again."
+    "tooManyAttempts": "Too many sign-in attempts. Please wait a few minutes and try again.",
+    "missingCredentials": "Email and password are required",
+    "invalidCredentials": "Invalid email or password",
+    "accountSuspended": "Your account has been suspended. Please contact support.",
+    "accountBanned": "Your account has been banned.",
+    "emailExists": "An account with this email already exists"
   },
   "borrowerDashboard": {
     "title": "Hello, {{name}}.",
@@ -428,6 +433,7 @@
     "resizeList": "Drag to resize the conversation list (double-click to reset)",
     "resizeContext": "Drag to resize the info panel (double-click to reset)",
     "noConversations": "No conversations yet",
+    "noMessagesYet": "No messages yet",
     "noConversationsDescBorrower": "Browse broker introductions to start chatting.",
     "noConversationsDescBroker": "Browse and respond to requests to connect with borrowers.",
     "selectConversation": "Select a conversation",

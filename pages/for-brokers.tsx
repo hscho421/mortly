@@ -99,7 +99,7 @@ export default function ForBrokers() {
                 key={benefit.title}
                 className={`card-elevated animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 6)}`}
               >
-                <div className="w-14 h-14 rounded-xl bg-forest-50 text-forest-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-sm bg-forest-50 text-forest-600 flex items-center justify-center mb-6">
                   {benefit.icon}
                 </div>
                 <h3 className="heading-sm mb-3">{benefit.title}</h3>

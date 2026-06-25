@@ -40,10 +40,15 @@ export default function ResetPasswordPage() {
         body: JSON.stringify({ token, password }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.message || t("common.somethingWentWrong"));
+        // API messages are not localized — map the status to translated copy.
+        throw new Error(
+          res.status === 429
+            ? t("auth.tooManyRequests")
+            : res.status === 400
+              ? t("auth.invalidLinkDesc")
+              : t("common.somethingWentWrong"),
+        );
       }
 
       setSuccess(true);
@@ -109,7 +114,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 {error && (
-                  <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
+                  <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-3 animate-fade-in">
                     <p className="font-body text-sm text-red-700">{error}</p>
                   </div>
                 )}

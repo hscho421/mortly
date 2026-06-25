@@ -38,7 +38,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="rounded-lg px-3 py-1.5 font-body text-sm text-forest-700 hover:bg-cream-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="rounded-sm px-3 py-1.5 font-body text-sm text-forest-700 hover:bg-cream-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -51,7 +51,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
             <button
               key={p}
               onClick={() => onPageChange(p)}
-              className={`rounded-lg px-3 py-1.5 font-body text-sm transition-colors ${
+              className={`rounded-sm px-3 py-1.5 font-body text-sm transition-colors ${
                 p === page
                   ? "bg-forest-600 text-white"
                   : "text-forest-700 hover:bg-cream-100"
@@ -64,7 +64,7 @@ export default function Pagination({ page, totalPages, total, limit, onPageChang
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="rounded-lg px-3 py-1.5 font-body text-sm text-forest-700 hover:bg-cream-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="rounded-sm px-3 py-1.5 font-body text-sm text-forest-700 hover:bg-cream-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />

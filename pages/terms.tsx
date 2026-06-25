@@ -168,7 +168,7 @@ export default function Terms() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
                 href="/privacy"
-                className="flex-1 rounded-xl border border-cream-200 bg-white p-5 transition-all hover:border-forest-300 hover:shadow-sm"
+                className="flex-1 rounded-sm border border-cream-200 bg-white p-5 transition-all hover:border-forest-300 hover:shadow-sm"
               >
                 <p className="font-body text-xs font-semibold uppercase tracking-widest text-amber-600 mb-1">
                   {t("footer.legal")}
@@ -179,7 +179,7 @@ export default function Terms() {
               </Link>
               <Link
                 href="/contact"
-                className="flex-1 rounded-xl border border-cream-200 bg-white p-5 transition-all hover:border-forest-300 hover:shadow-sm"
+                className="flex-1 rounded-sm border border-cream-200 bg-white p-5 transition-all hover:border-forest-300 hover:shadow-sm"
               >
                 <p className="font-body text-xs font-semibold uppercase tracking-widest text-amber-600 mb-1">
                   {t("contact.badge")}

@@ -299,8 +299,8 @@ export default function BrokerMessagesPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || data.message || t("errors.failedToSendMessage"));
+        // API error strings are not localized — surface only translated copy.
+        throw new Error(t("errors.failedToSendMessage"));
       }
 
       // Optimistic append: add the sent message locally on success. Supabase
@@ -468,7 +468,7 @@ export default function BrokerMessagesPage() {
                           </p>
                         ) : (
                           <p className="font-body text-xs italic text-sage-400 mt-1">
-                            No messages yet
+                            {t("messages.noMessagesYet")}
                           </p>
                         )}
                       </div>
@@ -689,7 +689,7 @@ export default function BrokerMessagesPage() {
                     onClick={() => setError("")}
                     className="ml-2 underline text-error-600 font-medium"
                   >
-                    Dismiss
+                    {t("common.dismiss")}
                   </button>
                 </div>
               )}

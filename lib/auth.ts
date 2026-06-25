@@ -90,7 +90,7 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
         },
         async authorize(credentials) {
           if (!credentials?.email || !credentials?.password) {
-            throw new Error("Email and password are required");
+            throw new Error("MISSING_CREDENTIALS");
           }
 
           const email = normalizeEmail(credentials.email);
@@ -108,7 +108,7 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
           );
 
           if (!user) {
-            throw new Error("Invalid email or password");
+            throw new Error("INVALID_CREDENTIALS");
           }
 
           if (!user.passwordHash) {
@@ -116,7 +116,7 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
           }
 
           if (!isValid) {
-            throw new Error("Invalid email or password");
+            throw new Error("INVALID_CREDENTIALS");
           }
 
           if (!user.emailVerified) {
@@ -124,11 +124,11 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
           }
 
           if (user.status === "SUSPENDED") {
-            throw new Error("Your account has been suspended. Please contact support.");
+            throw new Error("ACCOUNT_SUSPENDED");
           }
 
           if (user.status === "BANNED") {
-            throw new Error("Your account has been banned.");
+            throw new Error("ACCOUNT_BANNED");
           }
 
           return {
