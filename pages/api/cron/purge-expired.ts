@@ -24,7 +24,12 @@ const REDACTED = "[redacted for privacy]";
  * the `OR(notes / details not null)` filter, so it drops out of subsequent
  * batches and future runs automatically (no cursor / marker column needed).
  */
-export default withCron(async (_req, res) => {
+/**
+ * Anonymize terminal-status requests past the retention window (PIPEDA
+ * Principle 5). Exported so the daily cron dispatcher (/api/cron/daily) can run
+ * it inline; the standalone route below remains for manual/external triggering.
+ */
+export async function runPurgeExpired(): Promise<{ purgedRequests: number; redactedMessages: number }> {
   const retentionDays = await getSettingInt("request_retention_days");
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - retentionDays);
@@ -73,5 +78,10 @@ export default withCron(async (_req, res) => {
     if (stale.length < BATCH) break;
   }
 
+  return { purgedRequests, redactedMessages };
+}
+
+export default withCron(async (_req, res) => {
+  const { purgedRequests, redactedMessages } = await runPurgeExpired();
   return res.status(200).json({ success: true, purgedRequests, redactedMessages });
 });

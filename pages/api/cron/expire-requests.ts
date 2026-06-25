@@ -5,8 +5,17 @@ import { notifyUser } from "@/lib/notify";
 
 // Bound per-tick work — a backlog drains across cron firings.
 const MAX_EXPIRY_PER_RUN = 1000;
+// Notify in bounded-concurrency chunks rather than one fully-sequential await
+// loop, so 1000 borrowers don't serialize ~3 DB round-trips each into a
+// multi-minute run that the function timeout would kill mid-loop.
+const NOTIFY_CHUNK = 25;
 
-export default withCron(async (_req, res) => {
+/**
+ * Expire stale borrower requests and notify each borrower. Exported so the
+ * daily cron dispatcher (/api/cron/daily) can run it inline alongside the other
+ * jobs while the standalone route remains for manual/external triggering.
+ */
+export async function runExpireRequests(): Promise<{ expiredCount: number }> {
   const expiryDays = await getSettingInt("request_expiry_days");
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - expiryDays);
@@ -26,7 +35,46 @@ export default withCron(async (_req, res) => {
   });
 
   if (toExpire.length === 0) {
-    return res.status(200).json({ success: true, expiredCount: 0 });
+    return { expiredCount: 0 };
+  }
+
+  // Resolve the system-admin sender ONCE (AdminNotice.adminId is required).
+  // Previously notifyUser re-ran this findFirst on every iteration.
+  const sysAdmin = await prisma.user.findFirst({
+    where: { role: "ADMIN" },
+    select: { id: true },
+  });
+  const adminId = sysAdmin?.id;
+
+  // Notify BEFORE flipping status. dedupeKey makes each notice at-most-once, so
+  // if the function times out partway, the un-flipped rows stay selectable and
+  // are retried next run — at worst a duplicate push, never a permanently
+  // dropped notification (the old flip-first order lost notices on timeout
+  // because the EXPIRED rows no longer matched the OPEN/PENDING selection).
+  // notifyUser never throws; allSettled is belt-and-suspenders.
+  for (let i = 0; i < toExpire.length; i += NOTIFY_CHUNK) {
+    const chunk = toExpire.slice(i, i + NOTIFY_CHUNK);
+    await Promise.allSettled(
+      chunk.map((r) =>
+        notifyUser({
+          userId: r.borrowerId,
+          adminId,
+          subject: "상담 요청이 만료되었습니다 / Your request expired",
+          body:
+            `${expiryDays}일이 지나 요청이 만료되었습니다. 계속 진행하시려면 새 요청을 작성해 주세요. / ` +
+            `Your request expired after ${expiryDays} days. Submit a new request to keep looking.`,
+          dedupeKey: `request-expired-${r.id}`,
+          push: {
+            title: { ko: "상담 요청 만료", en: "Request expired" },
+            body: {
+              ko: "요청이 만료되었습니다. 새 요청을 작성할 수 있습니다.",
+              en: "Your request expired. You can submit a new one anytime.",
+            },
+          },
+          pushData: { type: "request", requestId: r.publicId },
+        }),
+      ),
+    );
   }
 
   const result = await prisma.borrowerRequest.updateMany({
@@ -34,27 +82,10 @@ export default withCron(async (_req, res) => {
     data: { status: "EXPIRED" },
   });
 
-  // Notice + push per borrower (no email — bulk cron). dedupeKey makes this
-  // at-most-once per request even if a cron tick is retried. notifyUser never
-  // throws, so a notification failure can't fail the cron run.
-  for (const r of toExpire) {
-    await notifyUser({
-      userId: r.borrowerId,
-      subject: "상담 요청이 만료되었습니다 / Your request expired",
-      body:
-        `${expiryDays}일이 지나 요청이 만료되었습니다. 계속 진행하시려면 새 요청을 작성해 주세요. / ` +
-        `Your request expired after ${expiryDays} days. Submit a new request to keep looking.`,
-      dedupeKey: `request-expired-${r.id}`,
-      push: {
-        title: { ko: "상담 요청 만료", en: "Request expired" },
-        body: {
-          ko: "요청이 만료되었습니다. 새 요청을 작성할 수 있습니다.",
-          en: "Your request expired. You can submit a new one anytime.",
-        },
-      },
-      pushData: { type: "request", requestId: r.publicId },
-    });
-  }
+  return { expiredCount: result.count };
+}
 
-  return res.status(200).json({ success: true, expiredCount: result.count });
+export default withCron(async (_req, res) => {
+  const { expiredCount } = await runExpireRequests();
+  return res.status(200).json({ success: true, expiredCount });
 });

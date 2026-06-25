@@ -28,10 +28,21 @@ const convoWithParticipants = {
   broker: {
     userId: "user_broker_1",
     brokerageName: "Acme",
+    // Verified, paid, in-good-standing broker — passes the entitlement gate.
+    verificationStatus: "VERIFIED",
+    subscriptionTier: "BASIC",
+    subscription: { status: "ACTIVE" },
     user: { name: "Brenda" },
   },
   borrower: { id: "user_borrower_1", name: "Bob" },
 };
+
+// Same conversation but with the broker's entitlement overridden, for the
+// broker-side messaging gate tests.
+const convoWithBroker = (broker: Record<string, unknown>) => ({
+  ...convoWithParticipants,
+  broker: { ...convoWithParticipants.broker, ...broker },
+});
 
 describe("POST /api/messages", () => {
   beforeEach(() => {
@@ -190,6 +201,80 @@ describe("POST /api/messages", () => {
     const { req, res } = makeReqRes({
       method: "POST",
       body: { conversationId: "conv_1", body: "Another one" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(201);
+  });
+
+  // ── Broker entitlement gate (closes "paid access without paying") ─────
+  it("PAST_DUE broker cannot send in an existing conversation", async () => {
+    setSession(brokerSession());
+    prismaMock.conversation.findUnique
+      .mockReset()
+      .mockResolvedValue(convoWithBroker({ subscription: { status: "PAST_DUE" } }) as never);
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { conversationId: "conv_1", body: "still here?" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(403);
+    expect(jsonBody<{ code: string }>(res).code).toBe("SUBSCRIPTION_PAST_DUE");
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
+  it("CANCELLED broker cannot send in an existing conversation", async () => {
+    setSession(brokerSession());
+    prismaMock.conversation.findUnique
+      .mockReset()
+      .mockResolvedValue(convoWithBroker({ subscription: { status: "CANCELLED" } }) as never);
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { conversationId: "conv_1", body: "hi" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(403);
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
+  it("FREE-tier broker cannot send (e.g. pulled into a borrower-initiated thread)", async () => {
+    setSession(brokerSession());
+    prismaMock.conversation.findUnique
+      .mockReset()
+      .mockResolvedValue(convoWithBroker({ subscriptionTier: "FREE", subscription: null }) as never);
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { conversationId: "conv_1", body: "hi" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(403);
+    expect(jsonBody<{ code: string }>(res).code).toBe("UPGRADE_REQUIRED");
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
+  it("unverified broker cannot send", async () => {
+    setSession(brokerSession());
+    prismaMock.conversation.findUnique
+      .mockReset()
+      .mockResolvedValue(convoWithBroker({ verificationStatus: "PENDING" }) as never);
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { conversationId: "conv_1", body: "hi" },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(403);
+    expect(jsonBody<{ code: string }>(res).code).toBe("BROKER_NOT_VERIFIED");
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
+  it("entitlement gate never blocks the borrower side", async () => {
+    // Even when the broker on the thread is PAST_DUE, the borrower can still send.
+    setSession(borrowerSession());
+    prismaMock.conversation.findUnique
+      .mockReset()
+      .mockResolvedValue(convoWithBroker({ subscription: { status: "PAST_DUE" } }) as never);
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { conversationId: "conv_1", body: "Hello?" },
     });
     await handler(req, res);
     expect(res.statusCode).toBe(201);
