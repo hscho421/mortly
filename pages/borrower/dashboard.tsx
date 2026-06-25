@@ -63,6 +63,7 @@ export default function BorrowerDashboard() {
     conversations,
     loaded: contextLoaded,
     requestsError,
+    refresh,
   } = useBorrowerData();
 
   // Page reads requests + conversations directly from BorrowerDataContext —
@@ -173,7 +174,10 @@ export default function BorrowerDashboard() {
       />
 
       <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
-        {error && (
+        {/* Inline banner only when there's still content to show — the empty +
+            error case is handled by the retry card below so we never render the
+            "create your first request" CTA over a load failure. */}
+        {error && requests.length > 0 && (
           <div
             role="alert"
             className="mb-6 rounded-sm border border-error-100 bg-error-50 px-4 py-3 font-body text-[13px] text-error-700"
@@ -232,8 +236,22 @@ export default function BorrowerDashboard() {
           />
         ) : null}
 
-        {/* Empty state — no requests yet */}
-        {requests.length === 0 ? (
+        {/* Empty cache + load error → offer a retry, NOT "create your first
+            request" (which would push a borrower whose existing requests merely
+            failed to load into submitting a duplicate). */}
+        {requests.length === 0 && error ? (
+          <Card padding="lg" className="text-center">
+            <div className="font-display text-2xl font-semibold text-forest-800">
+              {t("borrowerDashboard.failedToLoadTitle", "Couldn't load your requests")}
+            </div>
+            <p className="mx-auto mt-3 max-w-md font-body text-[14px] text-forest-700/80">
+              {t("borrowerDashboard.failedToLoad")}
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Btn onClick={() => refresh()}>{t("common.retry", "Retry")}</Btn>
+            </div>
+          </Card>
+        ) : requests.length === 0 ? (
           <Card padding="lg" className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-sm border border-cream-300 bg-cream-200 font-display text-2xl text-forest-700">
               +

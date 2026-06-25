@@ -69,6 +69,8 @@ export default function BrokerRequestDetailPage() {
   // not found". Carries the API's machine-readable code for localized copy.
   const [actionError, setActionError] = useState<{ code?: string; message: string } | null>(null);
   const [isStartingChat, setIsStartingChat] = useState(false);
+  // Non-PREMIUM brokers must confirm before a single click spends a credit.
+  const [confirmingRespond, setConfirmingRespond] = useState(false);
 
   useEffect(() => {
     if (status === "loading" || !id) return;
@@ -399,24 +401,51 @@ export default function BrokerRequestDetailPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Btn
-                  as="a"
-                  href="/broker/requests"
-                  variant="ghost"
-                  size="md"
-                >
-                  {t("broker.backToList", "목록으로")}
-                </Btn>
-                <Btn
-                  onClick={handleStartConversation}
-                  disabled={isStartingChat}
-                  size="md"
-                >
-                  {isStartingChat
-                    ? t("broker.startingChat")
-                    : t("broker.respond", "상담 시작")}{" "}
-                  →
-                </Btn>
+                {!unlimited && confirmingRespond ? (
+                  // Inline confirm — the "1 credit will be used. N remaining."
+                  // hint above states the cost, so a single accidental click can
+                  // no longer spend a credit (which is real money for BASIC/PRO).
+                  <>
+                    <Btn
+                      variant="ghost"
+                      size="md"
+                      onClick={() => setConfirmingRespond(false)}
+                      disabled={isStartingChat}
+                    >
+                      {t("broker.cancel", "취소")}
+                    </Btn>
+                    <Btn
+                      onClick={handleStartConversation}
+                      disabled={isStartingChat}
+                      size="md"
+                    >
+                      {isStartingChat
+                        ? t("broker.startingChat")
+                        : t("broker.confirmRespond", "Use 1 credit")}{" "}
+                      →
+                    </Btn>
+                  </>
+                ) : (
+                  <>
+                    <Btn as="a" href="/broker/requests" variant="ghost" size="md">
+                      {t("broker.backToList", "목록으로")}
+                    </Btn>
+                    <Btn
+                      onClick={() =>
+                        unlimited
+                          ? handleStartConversation()
+                          : setConfirmingRespond(true)
+                      }
+                      disabled={isStartingChat}
+                      size="md"
+                    >
+                      {isStartingChat
+                        ? t("broker.startingChat")
+                        : t("broker.respond", "상담 시작")}{" "}
+                      →
+                    </Btn>
+                  </>
+                )}
               </div>
             </div>
             {actionError &&

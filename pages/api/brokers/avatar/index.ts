@@ -7,6 +7,10 @@ import {
   avatarPublicUrl,
 } from "@/lib/supabaseAdmin";
 
+// The client resizes avatars to a 512×512 WebP (~tens of KB); 1MB is a generous
+// ceiling that still blocks an attacker padding a non-image payload.
+const MAX_AVATAR_BYTES = 1024 * 1024;
+
 /**
  * POST   /api/brokers/avatar  — confirm an upload: persist the object path on
  *                               Broker.profilePhoto. The client calls this
@@ -30,6 +34,48 @@ export default withAuth(
     const path = brokerAvatarPath(session.user.id);
 
     if (req.method === "POST") {
+      // Verify the just-uploaded object before trusting it. The signed-upload URL
+      // pins neither content-type nor size, so a client could write HTML/SVG (or
+      // nothing) to its own avatar path — and the bucket is public-read, so that
+      // content would be served from our storage domain (phishing/malware under
+      // our brand). Gate on the stored object's metadata via the service-role
+      // client; reject (and clean up) anything that isn't a small WebP.
+      const verifier = getSupabaseAdmin();
+      if (verifier) {
+        const fileName = `${session.user.id}.webp`;
+        const { data: objects, error: listErr } = await verifier.storage
+          .from(AVATAR_BUCKET)
+          .list("brokers", { search: fileName, limit: 1 });
+        if (listErr) {
+          console.error("avatar verify failed:", listErr);
+          return res
+            .status(502)
+            .json({ error: "Could not verify the upload. Please try again." });
+        }
+        const obj = objects?.find((o: { name: string }) => o.name === fileName);
+        const meta = (obj?.metadata ?? null) as { mimetype?: string; size?: number } | null;
+        if (!obj || !meta) {
+          return res.status(400).json({
+            error: "No uploaded image found. Please try uploading again.",
+            code: "UPLOAD_MISSING",
+          });
+        }
+        if (meta.mimetype !== "image/webp") {
+          await verifier.storage.from(AVATAR_BUCKET).remove([path]).catch(() => {});
+          return res.status(400).json({
+            error: "Profile photo must be a WebP image.",
+            code: "INVALID_IMAGE_TYPE",
+          });
+        }
+        if (typeof meta.size === "number" && meta.size > MAX_AVATAR_BYTES) {
+          await verifier.storage.from(AVATAR_BUCKET).remove([path]).catch(() => {});
+          return res.status(400).json({
+            error: "Profile photo is too large.",
+            code: "IMAGE_TOO_LARGE",
+          });
+        }
+      }
+
       // Trust only the server-derived path. We store the object PATH (not a
       // full URL) so it survives project/domain changes; URL is built at read.
       const updated = await prisma.broker.update({
