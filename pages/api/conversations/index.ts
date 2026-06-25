@@ -307,7 +307,8 @@ export default withAuth(async (req, res, session) => {
       // invoice.payment_failed resets credits but not subscriptionTier.
       if (
         broker.subscription?.status === "PAST_DUE" ||
-        broker.subscription?.status === "EXPIRED"
+        broker.subscription?.status === "EXPIRED" ||
+        broker.subscription?.status === "CANCELLED"
       ) {
         return res.status(403).json({
           error: "Your subscription payment is past due. Please update your billing details to continue.",

@@ -3,6 +3,7 @@ import { getSettingInt } from "@/lib/settings";
 import { sendPushToUsers, messagePush } from "@/lib/push";
 import { notifyConversation } from "@/lib/realtime";
 import { withAuth } from "@/lib/withAuth";
+import { checkBrokerCanMessage } from "@/lib/brokerEntitlement";
 
 // 30 messages/min per sender — enough for normal back-and-forth, blocks
 // chat-flooding spam. The 3-message broker spam guard below remains in
@@ -36,6 +37,9 @@ export default withAuth(async (req, res, session) => {
             select: {
               userId: true,
               brokerageName: true,
+              verificationStatus: true,
+              subscriptionTier: true,
+              subscription: { select: { status: true } },
               user: { select: { name: true } },
             },
           },
@@ -53,6 +57,24 @@ export default withAuth(async (req, res, session) => {
 
       if (!isParticipant) {
         return res.status(403).json({ error: "Forbidden" });
+      }
+
+      // Broker-side entitlement gate. A broker may only message when VERIFIED,
+      // on a paid tier, and in good standing — the same rule that gates opening
+      // a conversation. Without this, a PAST_DUE broker (credits already reset
+      // to 0 by the webhook) or a FREE/unverified broker a borrower pulled into
+      // a thread could keep messaging for free in existing conversations. This
+      // gates entitlement only; it never charges a credit (replies stay free for
+      // a broker in good standing). Borrowers are unaffected.
+      if (conversation.broker.userId === session.user.id) {
+        const entitlement = checkBrokerCanMessage({
+          verificationStatus: conversation.broker.verificationStatus,
+          subscriptionTier: conversation.broker.subscriptionTier,
+          subscriptionStatus: conversation.broker.subscription?.status ?? null,
+        });
+        if (entitlement) {
+          return res.status(403).json({ error: entitlement.error, code: entitlement.code });
+        }
       }
 
       // Refuse sends into a CLOSED conversation. The UI hides the input when

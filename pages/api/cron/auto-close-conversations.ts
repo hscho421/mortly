@@ -84,55 +84,60 @@ async function batchClose(
   return { closedCount, affectedRequestIds };
 }
 
-export default withCron(async (_req, res) => {
-  try {
-    let totalClosed = 0;
-    const allAffectedRequests = new Set<string>();
+/**
+ * Auto-close stale conversations (+ cascade-close their now-idle requests).
+ * Exported so the daily cron dispatcher (/api/cron/daily) can run it inline;
+ * the standalone route below remains for manual/external triggering.
+ */
+export async function runAutoCloseConversations(): Promise<{ closedConversations: number }> {
+  let totalClosed = 0;
+  const allAffectedRequests = new Set<string>();
 
-    // 1. Close conversations inactive for INACTIVE_HOURS+ hours.
-    const inactiveCutoff = new Date(Date.now() - CONVERSATION_INACTIVE_HOURS * 60 * 60 * 1000);
-    const inactive = await batchClose(
-      { updatedAt: { lt: inactiveCutoff } },
-      "This conversation was closed due to inactivity. / 장기간 활동이 없어 대화가 종료되었습니다.",
-    );
-    totalClosed += inactive.closedCount;
-    inactive.affectedRequestIds.forEach((id) => allAffectedRequests.add(id));
+  // 1. Close conversations inactive for INACTIVE_HOURS+ hours.
+  const inactiveCutoff = new Date(Date.now() - CONVERSATION_INACTIVE_HOURS * 60 * 60 * 1000);
+  const inactive = await batchClose(
+    { updatedAt: { lt: inactiveCutoff } },
+    "This conversation was closed due to inactivity. / 장기간 활동이 없어 대화가 종료되었습니다.",
+  );
+  totalClosed += inactive.closedCount;
+  inactive.affectedRequestIds.forEach((id) => allAffectedRequests.add(id));
 
-    // 2. Close conversations where the borrower never engaged within
-    // UNSTARTED_DAYS. "Never engaged" = the denormalized borrowerMsgCount is
-    // still 0 — exact, and replaces the previous broken heuristic
-    // (senderId != "SYSTEM" excluded nothing since system messages carry a
-    // real user id, and the unordered take:10 sample could miss the
-    // borrower's messages entirely on broker-heavy threads).
-    const unstartedCutoff = new Date(Date.now() - CONVERSATION_UNSTARTED_DAYS * 24 * 60 * 60 * 1000);
-    const unstarted = await batchClose(
-      { createdAt: { lt: unstartedCutoff }, borrowerMsgCount: 0 },
-      "This conversation was closed because it never started. / 대화가 시작되지 않아 종료되었습니다.",
-    );
-    totalClosed += unstarted.closedCount;
-    unstarted.affectedRequestIds.forEach((id) => allAffectedRequests.add(id));
+  // 2. Close conversations where the borrower never engaged within
+  // UNSTARTED_DAYS. "Never engaged" = the denormalized borrowerMsgCount is
+  // still 0 — exact, and replaces the previous broken heuristic
+  // (senderId != "SYSTEM" excluded nothing since system messages carry a
+  // real user id, and the unordered take:10 sample could miss the
+  // borrower's messages entirely on broker-heavy threads).
+  const unstartedCutoff = new Date(Date.now() - CONVERSATION_UNSTARTED_DAYS * 24 * 60 * 60 * 1000);
+  const unstarted = await batchClose(
+    { createdAt: { lt: unstartedCutoff }, borrowerMsgCount: 0 },
+    "This conversation was closed because it never started. / 대화가 시작되지 않아 종료되었습니다.",
+  );
+  totalClosed += unstarted.closedCount;
+  unstarted.affectedRequestIds.forEach((id) => allAffectedRequests.add(id));
 
-    // 3. Cascade-close requests whose conversations are now all CLOSED.
-    if (allAffectedRequests.size > 0) {
-      const requestIdList = Array.from(allAffectedRequests);
-      const activeCounts = await prisma.conversation.groupBy({
-        by: ["requestId"],
-        where: { requestId: { in: requestIdList }, status: "ACTIVE" },
-        _count: { _all: true },
+  // 3. Cascade-close requests whose conversations are now all CLOSED.
+  if (allAffectedRequests.size > 0) {
+    const requestIdList = Array.from(allAffectedRequests);
+    const activeCounts = await prisma.conversation.groupBy({
+      by: ["requestId"],
+      where: { requestId: { in: requestIdList }, status: "ACTIVE" },
+      _count: { _all: true },
+    });
+    const stillActive = new Set(activeCounts.map((r) => r.requestId));
+    const requestsToClose = requestIdList.filter((rid) => !stillActive.has(rid));
+    if (requestsToClose.length > 0) {
+      await prisma.borrowerRequest.updateMany({
+        where: { id: { in: requestsToClose }, status: "IN_PROGRESS" },
+        data: { status: "CLOSED" },
       });
-      const stillActive = new Set(activeCounts.map((r) => r.requestId));
-      const requestsToClose = requestIdList.filter((rid) => !stillActive.has(rid));
-      if (requestsToClose.length > 0) {
-        await prisma.borrowerRequest.updateMany({
-          where: { id: { in: requestsToClose }, status: "IN_PROGRESS" },
-          data: { status: "CLOSED" },
-        });
-      }
     }
-
-    return res.status(200).json({ success: true, closedConversations: totalClosed });
-  } catch (error) {
-    console.error("Error in /api/cron/auto-close-conversations:", error);
-    return res.status(500).json({ error: "Internal server error" });
   }
+
+  return { closedConversations: totalClosed };
+}
+
+export default withCron(async (_req, res) => {
+  const { closedConversations } = await runAutoCloseConversations();
+  return res.status(200).json({ success: true, closedConversations });
 });
