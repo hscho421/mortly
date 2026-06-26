@@ -6,7 +6,7 @@ import Layout from "@/components/Layout";
 import SEO from "@/components/SEO";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
-import { creditLabel } from "@/lib/tiers";
+import { creditLabel, TIER_PRICING } from "@/lib/tiers";
 
 function CellValue({ value }: { value: string | boolean }) {
   if (typeof value === "boolean") {
@@ -83,7 +83,7 @@ export default function Pricing() {
     {
       tier: "FREE",
       name: t("pricing.freeName"),
-      price: "$0",
+      price: TIER_PRICING.FREE.price,
       period: "",
       description: t("pricing.freeDesc"),
       features: {
@@ -96,7 +96,7 @@ export default function Pricing() {
     {
       tier: "BASIC",
       name: t("pricing.basicName"),
-      price: "$29",
+      price: TIER_PRICING.BASIC.price,
       period: t("pricing.perMonth"),
       description: t("pricing.basicDesc"),
       features: {
@@ -109,7 +109,7 @@ export default function Pricing() {
     {
       tier: "PRO",
       name: t("pricing.proName"),
-      price: "$69",
+      price: TIER_PRICING.PRO.price,
       period: t("pricing.perMonth"),
       description: t("pricing.proDesc"),
       features: {
@@ -122,7 +122,7 @@ export default function Pricing() {
     {
       tier: "PREMIUM",
       name: t("pricing.premiumName"),
-      price: "$129",
+      price: TIER_PRICING.PREMIUM.price,
       period: t("pricing.perMonth"),
       description: t("pricing.premiumDesc"),
       features: {

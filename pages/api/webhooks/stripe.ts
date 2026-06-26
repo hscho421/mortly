@@ -157,6 +157,9 @@ export default async function handler(
       case "charge.dispute.created":
         await handleChargeDisputeCreated(event.data.object as Stripe.Dispute);
         break;
+      case "customer.deleted":
+        await handleCustomerDeleted(event.data.object as Stripe.Customer);
+        break;
       default:
         break;
     }
@@ -204,15 +207,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   const brokerId = stripeSub.metadata.brokerId;
-  if (!brokerId) return;
-
   const priceId = stripeSub.items.data[0]?.price.id;
-  if (!priceId) return;
-  const tier = getTierForPriceId(priceId);
-  if (!tier) return;
-
+  const tier = priceId ? getTierForPriceId(priceId) : undefined;
   const period = getSubPeriod(stripeSub);
-  if (!period) return;
+
+  // We have an ACTIVE paid subscription but can't map it to a broker/plan
+  // (missing metadata, or a price not in STRIPE_PRICE_* — e.g. a price-ID drift
+  // between the deploy that created the Checkout and the one processing this
+  // event). That is "paid but no service": THROW so the event is NOT recorded as
+  // processed, Stripe retries, and it surfaces in logs — instead of silently
+  // recording it and leaving the charged broker on FREE forever with no signal.
+  if (!brokerId || !priceId || !tier || !period) {
+    throw new Error(
+      `Cannot provision checkout (paid but unmappable): session=${session.id} ` +
+        `sub=${stripeSubscriptionId} brokerId=${brokerId} priceId=${priceId} tier=${tier}`,
+    );
+  }
 
   const credits = await getCreditsForTier(tier);
 
@@ -300,7 +310,16 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   if (invoice.billing_reason === "subscription_create") return;
 
   const stripeSubscriptionId = getInvoiceSubscriptionId(invoice);
-  if (!stripeSubscriptionId) return;
+  if (!stripeSubscriptionId) {
+    // A non-subscription invoice legitimately has no sub id (silent). But a
+    // subscription invoice whose id we couldn't extract = a dropped renewal
+    // (e.g. a webhook-endpoint payload API-version mismatch) — log it loudly so
+    // it isn't silently lost.
+    if (invoice.billing_reason?.startsWith("subscription")) {
+      console.error("Dropped subscription invoice.paid — no extractable sub id", invoice.id, invoice.billing_reason);
+    }
+    return;
+  }
 
   const subscription = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId },
@@ -336,15 +355,22 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     const newPriceId = getPriceIdForTier(tier);
     // The downgrade's subscription schedule normally swaps the price at the
     // period boundary, so by the time this renewal invoice arrives the price
-    // already matches. This swap is a fallback for legacy pendingTier rows
-    // created before the schedule-based downgrade existed.
-    if (newPriceId && newPriceId !== priceId) {
+    // already matches. This direct swap is a fallback for LEGACY pendingTier
+    // rows created before the schedule-based downgrade existed. Skip it when the
+    // sub is schedule-managed — Stripe rejects a direct price update on those,
+    // and the schedule already handles the swap. Never let this fail the renewal
+    // (the entitlement swap below is what actually matters).
+    if (newPriceId && newPriceId !== priceId && !stripeSub.schedule) {
       const existingItemId = stripeSub.items.data[0]?.id;
       if (existingItemId) {
-        await stripe.subscriptions.update(stripeSubscriptionId, {
-          items: [{ id: existingItemId, price: newPriceId }],
-          proration_behavior: "none",
-        });
+        try {
+          await stripe.subscriptions.update(stripeSubscriptionId, {
+            items: [{ id: existingItemId, price: newPriceId }],
+            proration_behavior: "none",
+          });
+        } catch (err) {
+          console.error("pendingTier price swap failed (non-fatal):", err);
+        }
       }
     }
   }
@@ -388,7 +414,12 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   const stripeSubscriptionId = getInvoiceSubscriptionId(invoice);
-  if (!stripeSubscriptionId) return;
+  if (!stripeSubscriptionId) {
+    if (invoice.billing_reason?.startsWith("subscription")) {
+      console.error("Dropped subscription invoice.payment_failed — no extractable sub id", invoice.id, invoice.billing_reason);
+    }
+    return;
+  }
 
   const subscription = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId },
@@ -443,19 +474,21 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   try {
     const brokerUser = subscription.broker.user;
     if (!brokerUser?.email) return; // nothing to notify
-    const billingUrl = `${process.env.NEXTAUTH_URL || "https://mortly.ca"}/broker/billing`;
-    await sendPaymentFailedEmail(brokerUser.email, billingUrl);
 
-    // In-app notice. dedupeKey makes Stripe's invoice retries at-most-once;
-    // AdminNotice.adminId is required, so attribute system notices to the
-    // first admin account (skip the notice if none exists yet).
+    // Per-invoice dedup: Stripe sends multiple payment_failed events per invoice
+    // across its dunning window. Insert the in-app notice FIRST (it carries the
+    // unique dedupeKey) and only send the EMAIL when that insert actually
+    // created a row — otherwise the broker gets a duplicate "payment failed"
+    // email on every dunning retry. AdminNotice.adminId is required, so
+    // attribute the system notice to the first admin (skip if none exists yet).
     const sysAdmin = await prisma.user.findFirst({
       where: { role: "ADMIN" },
       select: { id: true },
     });
+    let firstNoticeForInvoice = true;
     if (sysAdmin) {
-      await prisma.adminNotice
-        .create({
+      try {
+        await prisma.adminNotice.create({
           data: {
             adminId: sysAdmin.id,
             userId: brokerUser.id,
@@ -465,13 +498,19 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
               "Your subscription payment failed and your plan credits are paused. Update your payment method to restore them.",
             dedupeKey: `payment-failed-${invoice.id}`,
           },
-        })
-        .catch((err: unknown) => {
-          const isDuplicate =
-            err && typeof err === "object" && "code" in err &&
-            (err as { code?: string }).code === "P2002";
-          if (!isDuplicate) throw err;
         });
+      } catch (err: unknown) {
+        const isDuplicate =
+          err && typeof err === "object" && "code" in err &&
+          (err as { code?: string }).code === "P2002";
+        if (!isDuplicate) throw err;
+        firstNoticeForInvoice = false; // already notified for this invoice
+      }
+    }
+
+    if (firstNoticeForInvoice) {
+      const billingUrl = `${process.env.NEXTAUTH_URL || "https://mortly.ca"}/broker/billing`;
+      await sendPaymentFailedEmail(brokerUser.email, billingUrl);
     }
   } catch (err) {
     console.error("payment-failed notification failed:", err);
@@ -560,6 +599,17 @@ async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
     if (tierChanged && tier) {
       const credits = await getCreditsForTier(tier);
       await setBrokerPlan(tx, subscription.broker.id, tier as SubscriptionTier, credits);
+    } else if (mappedStatus === "PAST_DUE" || mappedStatus === "EXPIRED" || mappedStatus === "CANCELLED") {
+      // Degraded to a non-paying status without a tier change (e.g. a
+      // dashboard/portal status change, or paused/incomplete_expired). The
+      // entitlement gate already blocks on status, but strip credits to FREE so
+      // the displayed balance stays honest and matches the payment-failed path.
+      // Bonus is left intact.
+      const freeCredits = await getCreditsForTier("FREE");
+      await tx.broker.update({
+        where: { id: subscription.broker.id },
+        data: { responseCredits: freeCredits },
+      });
     }
   });
 }
@@ -654,4 +704,32 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
     event: "subscription_disputed",
     properties: { broker_id: subscription.broker.id, tier: subscription.tier },
   });
+}
+
+async function handleCustomerDeleted(customer: Stripe.Customer) {
+  // A deleted Stripe customer leaves a stale Broker.stripeCustomerId that would
+  // 500 the billing portal / invoices / next upgrade. Clear it and reset the
+  // broker to FREE so the next checkout mints a fresh customer.
+  const broker = await prisma.broker.findUnique({
+    where: { stripeCustomerId: customer.id },
+    select: { id: true },
+  });
+  if (!broker) return;
+
+  const freeCredits = await getCreditsForTier("FREE");
+  await prisma.$transaction([
+    prisma.broker.update({
+      where: { id: broker.id },
+      data: {
+        stripeCustomerId: null,
+        subscriptionTier: "FREE",
+        responseCredits: freeCredits,
+        bonusCredits: 0,
+      },
+    }),
+    prisma.subscription.updateMany({
+      where: { brokerId: broker.id },
+      data: { status: "EXPIRED", endedAt: new Date() },
+    }),
+  ]);
 }

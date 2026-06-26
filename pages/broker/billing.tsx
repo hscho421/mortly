@@ -8,7 +8,7 @@ import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
 import posthog from "posthog-js";
-import { tierRank, isUpgrade, creditLabel } from "@/lib/tiers";
+import { tierRank, isUpgrade, creditLabel, TIER_PRICING } from "@/lib/tiers";
 
 interface PlanFeature {
   text: string;
@@ -73,8 +73,8 @@ function usePlans(
     {
       name: t("pricing.freeName"),
       tier: "FREE",
-      price: "$0",
-      originalPrice: null,
+      price: TIER_PRICING.FREE.price,
+      originalPrice: TIER_PRICING.FREE.originalPrice,
       discount: null,
       period: "",
       credits: label("FREE", t("pricing.val_none")),
@@ -87,8 +87,8 @@ function usePlans(
     {
       name: t("pricing.basicName"),
       tier: "BASIC",
-      price: "$29",
-      originalPrice: "$49",
+      price: TIER_PRICING.BASIC.price,
+      originalPrice: TIER_PRICING.BASIC.originalPrice,
       discount: "41%",
       period: t("pricing.perMonth"),
       credits: label("BASIC", t("pricing.val_5perMonth")),
@@ -101,8 +101,8 @@ function usePlans(
     {
       name: t("pricing.proName"),
       tier: "PRO",
-      price: "$69",
-      originalPrice: "$99",
+      price: TIER_PRICING.PRO.price,
+      originalPrice: TIER_PRICING.PRO.originalPrice,
       discount: "30%",
       period: t("pricing.perMonth"),
       credits: label("PRO", t("pricing.val_20perMonth")),
@@ -117,8 +117,8 @@ function usePlans(
     {
       name: t("pricing.premiumName"),
       tier: "PREMIUM",
-      price: "$129",
-      originalPrice: "$199",
+      price: TIER_PRICING.PREMIUM.price,
+      originalPrice: TIER_PRICING.PREMIUM.originalPrice,
       discount: "35%",
       period: t("pricing.perMonth"),
       credits: label("PREMIUM", t("pricing.val_unlimited")),
@@ -635,7 +635,9 @@ export default function BrokerBillingPage() {
               <div className="text-right">
                 <p className="font-body text-xs font-medium uppercase tracking-wider text-forest-700/50">{t("broker.responseCredits")}</p>
                 <p className={`font-display text-3xl tracking-tight ${responseCredits === 0 ? "text-error-600" : "text-amber-700"}`}>
-                  {currentTier === "PREMIUM" ? t("broker.unlimited", "Unlimited") : responseCredits}
+                  {currentTier === "PREMIUM" && subscription?.status === "ACTIVE"
+                    ? t("broker.unlimited", "Unlimited")
+                    : responseCredits}
                 </p>
               </div>
               {hasStripeSubscription && (

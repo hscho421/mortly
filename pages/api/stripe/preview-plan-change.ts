@@ -46,6 +46,17 @@ export default withAuth(async (req, res, session) => {
       });
     }
 
+    // If a downgrade is currently SCHEDULED, create-checkout will release that
+    // schedule before applying the upgrade, which changes the proration math.
+    // Rather than disclose a precise amount that won't match the real charge,
+    // skip the exact preview and let the UI fall back to its generic note.
+    if (sub.pendingTier) {
+      return res.status(200).json({
+        scenario: "upgrade",
+        nextBillDate: sub.currentPeriodEnd,
+      });
+    }
+
     // Upgrade → preview the proration invoice for the exact amount.
     const stripe = getStripe();
     const stripeSub = await stripe.subscriptions.retrieve(sub.stripeSubscriptionId);

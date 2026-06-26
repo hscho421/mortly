@@ -5,9 +5,12 @@ let _stripe: Stripe | null = null;
 
 export function getStripe(): Stripe {
   if (!_stripe) {
-    // Pin to a stable API version. Avoid `*.clover` preview tags — they get
-    // sunset on Stripe's release cadence and break webhook handlers without
-    // warning. Bump deliberately when upgrading the SDK.
+    // `2026-02-25.clover` is the GA API version pinned by the installed
+    // stripe-node (its LatestApiVersion / ApiMajorVersion="clover"), NOT a
+    // preview tag — it's the only value the SDK's apiVersion type accepts, and
+    // the webhook handlers depend on its v2026 payload shapes (item-level
+    // current_period_*, invoice.parent.subscription_details). Bump this together
+    // with the stripe dependency when upgrading the SDK.
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: "2026-02-25.clover",
       typescript: true,

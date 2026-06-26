@@ -122,7 +122,10 @@ export default function BrokerDashboardPage() {
   }
 
   const tier = profile.subscriptionTier || "BASIC";
-  const unlimited = tier === "PREMIUM";
+  // "Unlimited" reflects EFFECTIVE entitlement, not the tier alone — a PAST_DUE
+  // PREMIUM broker is cut off (credits reset to 0), so don't advertise unlimited.
+  const unlimited =
+    tier === "PREMIUM" && profile.subscription?.status === "ACTIVE";
   const verified = profile.verificationStatus === "VERIFIED";
   const brokerGivenName = firstName(profile.user?.name, t("broker.brokerFallback", "Broker"));
 

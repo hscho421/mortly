@@ -11,6 +11,10 @@ vi.mock("@/lib/posthog-server", () => ({
   getPostHogClient: vi.fn(() => ({ capture: vi.fn() })),
 }));
 
+vi.mock("@/lib/email", () => ({
+  sendPaymentFailedEmail: vi.fn(async () => undefined),
+}));
+
 // Keep the settings lookups deterministic so we can assert the exact credit grants.
 vi.mock("@/lib/settings", () => ({
   getSettingInt: vi.fn(async (k: string) => {
@@ -398,5 +402,89 @@ describe("POST /api/webhooks/stripe", () => {
 
     expect(res.statusCode).toBe(200);
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("checkout.session.completed with a paid-but-unmappable price → 500, not silently recorded", async () => {
+    // Price not in STRIPE_PRICE_* (env drift). The broker is charged but we can't
+    // map a tier: throw so Stripe retries + it's logged, never silently dropped.
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "checkout.session.completed",
+      data: { object: events.checkoutCompleted() },
+    } as never);
+    stripeMock.subscriptions.retrieve.mockResolvedValue(
+      events.subscription({ status: "active", priceId: "price_NOT_IN_MAP" })
+    );
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(500);
+    expect(prismaMock.processedStripeEvent.create).not.toHaveBeenCalled();
+  });
+
+  it("customer.deleted clears stripeCustomerId and resets the broker to FREE", async () => {
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "customer.deleted",
+      data: { object: { id: "cus_gone" } },
+    } as never);
+    prismaMock.broker.findUnique.mockResolvedValue({ id: "broker_1" } as never);
+    prismaMock.$transaction.mockResolvedValue([] as never);
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.broker.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { stripeCustomerId: "cus_gone" } })
+    );
+    expect(prismaMock.broker.update.mock.calls[0][0].data).toMatchObject({
+      stripeCustomerId: null,
+      subscriptionTier: "FREE",
+    });
+  });
+
+  it("payment_failed emails only on the FIRST notice per invoice (dunning dedup)", async () => {
+    const { sendPaymentFailedEmail } = await import("@/lib/email");
+    const emailMock = vi.mocked(sendPaymentFailedEmail);
+
+    const setup = (noticeCreate: () => void) => {
+      stripeMock.webhooks.constructEvent.mockReturnValue({
+        type: "invoice.payment_failed",
+        data: { object: events.invoicePaid() },
+      } as never);
+      stripeMock.subscriptions.retrieve.mockResolvedValue(
+        events.subscription({ status: "past_due" })
+      );
+      prismaMock.subscription.findUnique.mockResolvedValue({
+        ...makeSubscription(),
+        broker: { id: "broker_1", user: { id: "user_1", email: "b@test.com" } },
+      } as never);
+      prismaMock.$transaction.mockResolvedValue([] as never);
+      prismaMock.user.findFirst.mockResolvedValue({ id: "admin_1" } as never);
+      noticeCreate();
+    };
+
+    // 1st delivery: the notice is newly created → email IS sent.
+    setup(() => prismaMock.adminNotice.create.mockResolvedValue({} as never));
+    {
+      const { req, res } = postWebhook({});
+      await handler(req, res);
+      expect(res.statusCode).toBe(200);
+      expect(emailMock).toHaveBeenCalledOnce();
+    }
+
+    // 2nd delivery for the same invoice: notice is a duplicate (P2002) → NO email.
+    vi.clearAllMocks();
+    setup(() =>
+      prismaMock.adminNotice.create.mockRejectedValue(
+        Object.assign(new Error("dup"), { code: "P2002" })
+      )
+    );
+    {
+      const { req, res } = postWebhook({});
+      await handler(req, res);
+      expect(res.statusCode).toBe(200);
+      expect(emailMock).not.toHaveBeenCalled();
+    }
   });
 });

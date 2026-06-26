@@ -348,11 +348,14 @@ describe("Stripe webhook — out-of-order delivery", () => {
       broker: { id: "broker_1" },
     } as never);
     prismaMock.subscription.update.mockResolvedValue(makeSubscription());
+    prismaMock.broker.update.mockResolvedValue(makeBroker());
 
     const { req, res } = postWebhook({});
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
     expect(prismaMock.subscription.update.mock.calls[0][0].data.status).toBe(dbStatus);
+    // Degrade to a non-paying status (no tier change) strips credits to FREE (#7).
+    expect(prismaMock.broker.update.mock.calls[0][0].data).toEqual({ responseCredits: 0 });
   });
 });

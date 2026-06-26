@@ -115,6 +115,27 @@ describe("POST /api/stripe/preview-plan-change", () => {
     expect(stripeMock.subscriptions.update).not.toHaveBeenCalled();
   });
 
+  it("upgrade while a downgrade is SCHEDULED: skips the precise preview (UI uses generic note)", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue({
+      ...makeBroker({ stripeCustomerId: "cus_1", subscriptionTier: "PRO" }),
+      subscription: makeSubscription({
+        tier: "PRO",
+        status: "ACTIVE",
+        stripeSubscriptionId: "sub_stripe_1",
+        pendingTier: "BASIC", // a scheduled downgrade exists
+        currentPeriodEnd: new Date("2026-02-01T00:00:00Z"),
+      }),
+    } as never);
+    const { req, res } = makeReqRes({ method: "POST", body: { tier: "PREMIUM" } });
+    await handler(req, res);
+    expect(res.statusCode).toBe(200);
+    const body = jsonBody<{ scenario: string; prorationAmount?: number }>(res);
+    expect(body.scenario).toBe("upgrade");
+    // No precise amount (create-checkout will release the schedule first).
+    expect(body.prorationAmount).toBeUndefined();
+    expect(stripeMock.invoices.createPreview).not.toHaveBeenCalled();
+  });
+
   it("PRO → BASIC (downgrade): returns the effective date, no proration / no Stripe preview", async () => {
     prismaMock.broker.findUnique.mockResolvedValue({
       ...makeBroker({ stripeCustomerId: "cus_1", subscriptionTier: "PRO" }),

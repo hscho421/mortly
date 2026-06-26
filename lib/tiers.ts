@@ -10,6 +10,21 @@ export const TIER_RANK: Record<string, number> = {
   PREMIUM: 3,
 };
 
+// Single source of truth for the DISPLAYED plan prices, shared by the marketing
+// pricing page and the in-app billing page so the two can't drift apart.
+// IMPORTANT: these are display strings only — they MUST match the unit_amount of
+// the corresponding STRIPE_PRICE_* price objects (the real charge). Update both
+// together when changing a price in Stripe.
+export const TIER_PRICING: Record<
+  string,
+  { price: string; originalPrice: string | null }
+> = {
+  FREE: { price: "$0", originalPrice: null },
+  BASIC: { price: "$29", originalPrice: "$49" },
+  PRO: { price: "$69", originalPrice: "$99" },
+  PREMIUM: { price: "$129", originalPrice: "$199" },
+};
+
 export function tierRank(tier: string): number {
   return TIER_RANK[tier] ?? 0;
 }
