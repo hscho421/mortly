@@ -416,9 +416,27 @@ async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
   });
   if (!subscription) return;
 
+  // Terminal guard: a cancelled/expired subscription must not be revived by a
+  // later (often redelivered / out-of-order) update — mirrors handleInvoicePaid's
+  // EXPIRED/CANCELLED bail and handleSubscriptionDeleted's EXPIRED short-circuit.
+  if (subscription.status === "EXPIRED") return;
+
   const priceId = stripeSub.items.data[0]?.price.id;
   const tier = getTierForPriceId(priceId);
   const period = getSubPeriod(stripeSub);
+
+  // Recency guard: Stripe retries earlier-5xx events hours later, so a stale
+  // event can carry an OLD price/period snapshot. Ignore any update whose billing
+  // period predates what we've already committed, so a stale event can't roll
+  // status/tier/credits back to an outdated snapshot (e.g. revert a real
+  // boundary downgrade, re-granting unlimited PREMIUM that is no longer paid for).
+  if (
+    period &&
+    subscription.currentPeriodStart &&
+    period.start.getTime() < subscription.currentPeriodStart.getTime()
+  ) {
+    return;
+  }
 
   const statusMap: Record<string, string> = {
     active: "ACTIVE",
@@ -445,7 +463,12 @@ async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
         cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
         status: mappedStatus as "ACTIVE" | "CANCELLED" | "EXPIRED" | "PAST_DUE",
         ...(tier ? { tier: tier as "BASIC" | "PRO" | "PREMIUM", stripePriceId: priceId } : {}),
-        ...(period ? { currentPeriodStart: period.start, currentPeriodEnd: period.end } : {}),
+        // The billing-period cursor (currentPeriodStart/End) is owned SOLELY by
+        // invoice.paid + the initial checkout — subscription.updated must NOT
+        // advance it. Advancing it here let a subscription.updated that arrived
+        // before invoice.paid at renewal pre-move the cursor, so invoice.paid's
+        // idempotency check short-circuited and SKIPPED the monthly credit
+        // refresh, leaving a paying broker at 0 credits for the period (B2).
       },
     });
 

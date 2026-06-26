@@ -255,4 +255,80 @@ describe("Stripe webhook — out-of-order delivery", () => {
     expect(prismaMock.broker.update).not.toHaveBeenCalled();
     expect(prismaMock.subscription.update).not.toHaveBeenCalled();
   });
+
+  it("subscription.updated does NOT advance the period cursor — invoice.paid owns it (B2)", async () => {
+    // A subscription.updated arriving before invoice.paid at renewal must not
+    // move currentPeriodStart; otherwise invoice.paid's period-cursor idempotency
+    // check short-circuits and SKIPS the monthly credit refresh, stranding a
+    // paying broker at 0 credits for the whole period.
+    const renewed = events.subscription({
+      priceId: "price_basic_test",
+      tier: "BASIC",
+      periodStart: 1_769_904_000, // 2026-02-01 — the new period
+    });
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "customer.subscription.updated",
+      data: { object: renewed },
+    } as never);
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription({ tier: "BASIC", currentPeriodStart: new Date("2026-01-01T00:00:00Z") }),
+      broker: { id: "broker_1" },
+    } as never);
+    prismaMock.subscription.update.mockResolvedValue(makeSubscription());
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    const data = prismaMock.subscription.update.mock.calls[0][0].data;
+    expect(data.currentPeriodStart).toBeUndefined();
+    expect(data.currentPeriodEnd).toBeUndefined();
+    // Same tier → no credit re-grant here (that is invoice.paid's job).
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
+  });
+
+  it("subscription.updated on an already-EXPIRED sub is ignored — no resurrection (H3)", async () => {
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "customer.subscription.updated",
+      data: { object: events.subscription({ status: "active" }) },
+    } as never);
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription({ status: "EXPIRED" }),
+      broker: { id: "broker_1" },
+    } as never);
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.subscription.update).not.toHaveBeenCalled();
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
+  });
+
+  it("a stale subscription.updated carrying an OLDER period is ignored (H3 recency)", async () => {
+    // Redelivered event from a previous period whose price is now outdated:
+    // broker downgraded PREMIUM→BASIC at the boundary, then Stripe redelivers an
+    // old PREMIUM-price update. It must NOT roll the tier back to PREMIUM /
+    // re-grant unlimited credits that are no longer paid for.
+    const stale = events.subscription({
+      priceId: "price_premium_test",
+      tier: "PREMIUM",
+      periodStart: 1_767_225_600, // 2026-01-01 — the OLD period
+    });
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "customer.subscription.updated",
+      data: { object: stale },
+    } as never);
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription({ tier: "BASIC", currentPeriodStart: new Date("2026-02-01T00:00:00Z") }),
+      broker: { id: "broker_1" },
+    } as never);
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.subscription.update).not.toHaveBeenCalled();
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
+  });
 });
