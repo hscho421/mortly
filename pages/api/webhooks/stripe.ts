@@ -325,6 +325,24 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   if (!subscription) return;
 
+  // Don't demote a subscription that's already terminal in our DB.
+  if (subscription.status === "EXPIRED" || subscription.status === "CANCELLED") {
+    return;
+  }
+
+  // Stripe is the source of truth. A redelivered or out-of-order payment_failed
+  // must NOT demote a subscription that has since recovered: e.g. the first
+  // delivery 500'd (no ledger row written), the customer fixed their card,
+  // invoice.paid restored ACTIVE + credits, and Stripe then re-delivers the
+  // original failure (distinct event id → not deduped). Without this guard that
+  // stale failure would strip a fully-paid broker to FREE until the next renewal
+  // (~a month). Only proceed when Stripe still reports the sub as not-current.
+  const stripe = getStripe();
+  const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  if (stripeSub.status === "active" || stripeSub.status === "trialing") {
+    return;
+  }
+
   // Strip the broker's paid-tier credits as soon as payment fails — the
   // previous behavior left credits intact through Stripe's full grace
   // period (~3 weeks), so past-due brokers kept messaging clients while

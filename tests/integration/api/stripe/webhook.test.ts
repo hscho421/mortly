@@ -206,6 +206,10 @@ describe("POST /api/webhooks/stripe", () => {
       ...makeSubscription(),
       broker: { id: "broker_1" },
     } as never);
+    // Stripe still reports the sub as not-current → the failure is real.
+    stripeMock.subscriptions.retrieve.mockResolvedValue(
+      events.subscription({ status: "past_due" })
+    );
     prismaMock.$transaction.mockResolvedValue([
       makeSubscription({ status: "PAST_DUE" }),
       { id: "broker_1", responseCredits: 0 },
@@ -217,6 +221,30 @@ describe("POST /api/webhooks/stripe", () => {
     expect(res.statusCode).toBe(200);
     // Both writes happen in the same transaction (status flip + credit reset).
     expect(prismaMock.$transaction).toHaveBeenCalledOnce();
+  });
+
+  it("invoice.payment_failed is a NO-OP when Stripe reports the sub recovered (active)", async () => {
+    // A redelivered / out-of-order payment_failed for a subscription that has
+    // since recovered (Smart-Retry succeeded → invoice.paid restored ACTIVE)
+    // must NOT demote a paying broker. Stripe is the source of truth.
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "invoice.payment_failed",
+      data: { object: events.invoicePaid() },
+    } as never);
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription(),
+      broker: { id: "broker_1" },
+    } as never);
+    stripeMock.subscriptions.retrieve.mockResolvedValue(
+      events.subscription({ status: "active" })
+    );
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
   });
 
   it("returns 200 for event types we don't handle (don't break the webhook)", async () => {

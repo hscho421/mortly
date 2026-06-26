@@ -123,11 +123,15 @@ describe("Stripe webhook — out-of-order delivery", () => {
     // retry's invoice.paid restores them. Final state: ACTIVE, paid credits.
     const sub = events.subscription({ tier: "BASIC" });
 
-    // 1. payment_failed → status PAST_DUE + credits → FREE in one transaction
+    // 1. payment_failed → status PAST_DUE + credits → FREE in one transaction.
+    //    Stripe still reports the sub as past_due (the decline is real).
     stripeMock.webhooks.constructEvent.mockReturnValueOnce({
       type: "invoice.payment_failed",
       data: { object: events.invoicePaid({ billingReason: "subscription_cycle" }) },
     } as never);
+    stripeMock.subscriptions.retrieve.mockResolvedValueOnce(
+      events.subscription({ status: "past_due" })
+    );
     prismaMock.subscription.findUnique.mockResolvedValueOnce({
       ...makeSubscription(),
       broker: { id: "broker_1" },
