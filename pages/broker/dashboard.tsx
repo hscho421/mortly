@@ -549,7 +549,7 @@ export default function BrokerDashboardPage() {
                             </span>
                           </div>
                           <div className="mt-0.5 truncate font-mono text-[11px] text-sage-500">
-                            {getRequestTitle(c.request)}
+                            {getRequestTitle(c.request, t)}
                             {" · "}
                             {c.request.province}
                           </div>

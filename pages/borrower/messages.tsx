@@ -415,7 +415,7 @@ export default function BorrowerMessagesPage() {
       if (existing) {
         existing.convs.push(c);
       } else {
-        const group = { key, title: getRequestTitle(c.request), convs: [c] };
+        const group = { key, title: getRequestTitle(c.request, t), convs: [c] };
         byRequest.set(key, group);
         conversationGroups.push(group);
       }
@@ -587,7 +587,7 @@ export default function BorrowerMessagesPage() {
                           <div className="flex items-center gap-2 mb-1">
                             {!showGroupHeaders && (
                               <span className="inline-flex items-center rounded-full bg-cream-200 px-2 py-0.5 font-body text-[10px] font-medium text-forest-700">
-                                {getRequestTitle(conv.request)}
+                                {getRequestTitle(conv.request, t)}
                               </span>
                             )}
                             {conv.status === "CLOSED" && (

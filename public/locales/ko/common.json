@@ -429,6 +429,11 @@
     "timelineSection": "희망 일정",
     "viewDetails": "상세 보기"
   },
+  "requestTitle": {
+    "residential": "주거용 요청",
+    "commercial": "상업용 요청",
+    "inLocation": "{{location}} {{title}}"
+  },
   "messages": {
     "title": "메시지",
     "resizeList": "드래그하여 대화 목록 너비 조절 (더블클릭 시 초기화)",

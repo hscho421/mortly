@@ -429,6 +429,11 @@
     "timelineSection": "Timeline",
     "viewDetails": "View details"
   },
+  "requestTitle": {
+    "residential": "Residential Request",
+    "commercial": "Commercial Request",
+    "inLocation": "{{title}} in {{location}}"
+  },
   "messages": {
     "title": "Messages",
     "resizeList": "Drag to resize the conversation list (double-click to reset)",

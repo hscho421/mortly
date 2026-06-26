@@ -1,3 +1,5 @@
+import type { TFunction } from "i18next";
+
 // ── Product type constants ────────────────────────────────────
 
 export const RESIDENTIAL_PRODUCTS = [
@@ -145,12 +147,17 @@ export function validateProductTypes(category: string, products: string[]): bool
 // ── Display helpers ───────────────────────────────────────────
 
 /**
- * Get a display-friendly request title.
+ * Get a display-friendly, localized request title (e.g. "주거용 요청" /
+ * "Residential Request"). Requires the caller's `t` so the title is translated;
+ * to compose with a location use the `requestTitle.inLocation` key, which
+ * reorders per locale ("{{title}} in {{location}}" en / "{{location}} {{title}}"
+ * ko → "Manitoba 주거용 요청").
  */
-export function getRequestTitle(request: {
-  mortgageCategory?: string | null;
-}): string {
+export function getRequestTitle(
+  request: { mortgageCategory?: string | null },
+  t: TFunction,
+): string {
   return request.mortgageCategory === "COMMERCIAL"
-    ? "Commercial Request"
-    : "Residential Request";
+    ? t("requestTitle.commercial", "Commercial Request")
+    : t("requestTitle.residential", "Residential Request");
 }

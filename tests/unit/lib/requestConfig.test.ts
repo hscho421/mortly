@@ -51,13 +51,24 @@ describe("getProductsForCategory", () => {
 });
 
 describe("getRequestTitle", () => {
+  type TFn = Parameters<typeof getRequestTitle>[1];
+  // Stub t: return the English fallback (mirrors next-i18next t(key, fallback)).
+  const t = ((_key: string, fallback?: string) => fallback ?? _key) as unknown as TFn;
+
   it("labels COMMERCIAL correctly", () => {
-    expect(getRequestTitle({ mortgageCategory: "COMMERCIAL" })).toBe("Commercial Request");
+    expect(getRequestTitle({ mortgageCategory: "COMMERCIAL" }, t)).toBe("Commercial Request");
   });
 
   it("labels RESIDENTIAL (and unknown) as residential", () => {
-    expect(getRequestTitle({ mortgageCategory: "RESIDENTIAL" })).toBe("Residential Request");
-    expect(getRequestTitle({})).toBe("Residential Request");
-    expect(getRequestTitle({ mortgageCategory: null })).toBe("Residential Request");
+    expect(getRequestTitle({ mortgageCategory: "RESIDENTIAL" }, t)).toBe("Residential Request");
+    expect(getRequestTitle({}, t)).toBe("Residential Request");
+    expect(getRequestTitle({ mortgageCategory: null }, t)).toBe("Residential Request");
+  });
+
+  it("uses the translator for the category label", () => {
+    const ko = ((key: string) =>
+      key === "requestTitle.commercial" ? "상업용 요청" : "주거용 요청") as unknown as TFn;
+    expect(getRequestTitle({ mortgageCategory: "COMMERCIAL" }, ko)).toBe("상업용 요청");
+    expect(getRequestTitle({ mortgageCategory: "RESIDENTIAL" }, ko)).toBe("주거용 요청");
   });
 });

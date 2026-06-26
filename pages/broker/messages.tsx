@@ -458,8 +458,11 @@ export default function BrokerMessagesPage() {
                         </div>
 
                         <p className="font-body text-xs text-sage-500 mt-0.5">
-                          {getRequestTitle(conv.request)} in{" "}
-                          {conv.request.province}
+                          {t("requestTitle.inLocation", {
+                            title: getRequestTitle(conv.request, t),
+                            location: conv.request.province,
+                            defaultValue: "{{title}} in {{location}}",
+                          })}
                         </p>
 
                         {lastMessage ? (
@@ -559,8 +562,11 @@ export default function BrokerMessagesPage() {
                     </h2>
                     {activeConversation?.request && (
                       <p className="text-body-sm truncate">
-                        {getRequestTitle(activeConversation.request)}{" "}
-                        in {activeConversation.request.province}
+                        {t("requestTitle.inLocation", {
+                          title: getRequestTitle(activeConversation.request, t),
+                          location: activeConversation.request.province,
+                          defaultValue: "{{title}} in {{location}}",
+                        })}{" "}
                         {activeConversation.publicId && (
                           <span className="ml-2 font-mono text-[10px] text-sage-400">#{activeConversation.publicId}</span>
                         )}
