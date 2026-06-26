@@ -207,7 +207,7 @@
     "tooManyRequests": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
     "verificationEmailFailed": "인증 이메일을 보내지 못했습니다. 재전송을 눌러 다시 시도해 주세요.",
     "invalidCode": "잘못된 코드입니다. 다시 시도하세요.",
-    "emailVerified": "이메일 인증 완료! 로그인하세요.",
+    "emailVerified": "이메일 인증이 완료되었습니다. 다시 로그인하세요.",
     "emailNotVerified": "먼저 이메일을 인증해주세요.",
     "nameRequired": "이름을 입력해주세요",
     "invalidEmail": "유효한 이메일 주소를 입력해주세요",
