@@ -54,4 +54,4 @@ posthog-setup-report.md
 
 # OS files
 Thumbs.db
-.env.local
+.env.local 
