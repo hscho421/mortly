@@ -40,7 +40,13 @@ export default withAdmin(async (req, res, session) => {
     const [updated] = await prisma.$transaction([
       prisma.broker.update({
         where: { id: brokerId },
-        data: { responseCredits: { increment: amount } },
+        // Adjust BOTH the live balance and the standing bonus so the grant takes
+        // effect now AND survives the next renewal (renewals re-apply bonusCredits
+        // on top of the tier grant). bonusCredits is floored at 0.
+        data: {
+          responseCredits: { increment: amount },
+          bonusCredits: Math.max(0, broker.bonusCredits + amount),
+        },
         select: {
           id: true,
           responseCredits: true,

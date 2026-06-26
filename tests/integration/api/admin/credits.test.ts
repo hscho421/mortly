@@ -46,7 +46,9 @@ describe("POST /api/admin/credits", () => {
     expect(res.statusCode).toBe(200);
     expect(prismaMock.broker.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { responseCredits: { increment: 5 } },
+        // Standing bonus is bumped alongside the live balance so the grant
+        // survives the next renewal.
+        data: { responseCredits: { increment: 5 }, bonusCredits: 5 },
       })
     );
     expect(prismaMock.adminAction.create).toHaveBeenCalledOnce();
@@ -66,7 +68,8 @@ describe("POST /api/admin/credits", () => {
     expect(res.statusCode).toBe(200);
     expect(prismaMock.broker.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { responseCredits: { increment: -2 } },
+        // bonusCredits is floored at 0 (0 + -2 → 0).
+        data: { responseCredits: { increment: -2 }, bonusCredits: 0 },
       })
     );
   });

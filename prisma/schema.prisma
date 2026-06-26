@@ -146,6 +146,11 @@ model Broker {
   verificationStatus VerificationStatus   @default(PENDING)
   subscriptionTier   SubscriptionTier     @default(FREE)
   responseCredits    Int                  @default(0)
+  // Standing admin-granted bonus, re-applied ON TOP of the monthly tier grant on
+  // every renewal/tier-change so a routine billing event can't silently wipe an
+  // audited admin credit adjustment. responseCredits stays the live spendable
+  // balance (consumption is unchanged).
+  bonusCredits       Int                  @default(0)
   lastRequestsSeenAt DateTime?            @map("last_requests_seen_at")
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt

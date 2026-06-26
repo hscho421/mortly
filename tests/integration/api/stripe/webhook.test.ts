@@ -134,6 +134,33 @@ describe("POST /api/webhooks/stripe", () => {
     expect(data.responseCredits).toBe(-1);
   });
 
+  it("renewal re-applies the standing admin bonus on top of the tier grant (H5)", async () => {
+    // BASIC (5/mo) broker with a +10 admin bonus: a renewal must restore
+    // 5 + 10 = 15, not silently wipe the bonus back to 5.
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "invoice.paid",
+      data: { object: events.invoicePaid({ billingReason: "subscription_cycle" }) },
+    } as never);
+    stripeMock.subscriptions.retrieve.mockResolvedValue(events.subscription({ tier: "BASIC" }));
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription({ status: "ACTIVE", currentPeriodStart: new Date(2020, 0, 1) }),
+      broker: { id: "broker_1" },
+    } as never);
+    prismaMock.subscription.update.mockResolvedValue(makeSubscription());
+    // setBrokerPlan reads the broker's standing bonus inside the tx.
+    prismaMock.broker.findUnique.mockResolvedValue({ bonusCredits: 10 } as never);
+    prismaMock.broker.update.mockResolvedValue(makeBroker());
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.broker.update.mock.calls[0][0].data).toEqual({
+      subscriptionTier: "BASIC",
+      responseCredits: 15,
+    });
+  });
+
   it("checkout.session.completed cancels a superseded DIFFERENT live subscription (no orphan)", async () => {
     // A broker with a PAST_DUE sub (sub_stripe_OLD) completed a fresh Checkout
     // (sub_stripe_NEW). The brokerId-keyed row is about to be overwritten with
@@ -220,7 +247,8 @@ describe("POST /api/webhooks/stripe", () => {
     );
     expect(prismaMock.broker.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { subscriptionTier: "FREE", responseCredits: 0 },
+        // Full cancel → FREE and the standing admin bonus is wiped too.
+        data: { subscriptionTier: "FREE", responseCredits: 0, bonusCredits: 0 },
       })
     );
   });

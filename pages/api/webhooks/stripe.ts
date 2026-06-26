@@ -36,20 +36,34 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   return typeof sub === "string" ? sub : sub.id;
 }
 
-// Set a broker's plan tier and the matching credit balance in one place.
-// `client` is a transaction client or the base prisma client; the call is
-// returned un-awaited so it also composes into a $transaction([...]) array.
-// Credits are passed in (each caller already computed them) so no settings
-// read moves inside a transaction.
-function setBrokerPlan(
+// Set a broker's plan tier and the matching credit balance in one place. Credits
+// are passed in (each caller already computed them) so no settings read moves
+// inside a transaction. Always awaited inside a callback-style $transaction.
+//
+// H5: for finite tiers we re-apply the broker's STANDING admin bonus on top of
+// the monthly tier grant, so a routine renewal/tier-change can't silently wipe an
+// audited admin credit adjustment. responseCredits stays the live spendable
+// balance (consumption is unchanged); PREMIUM's -1 (unlimited) ignores the bonus.
+async function setBrokerPlan(
   client: Prisma.TransactionClient,
   brokerId: string,
   tier: SubscriptionTier,
   credits: number,
 ) {
+  if (credits < 0) {
+    return client.broker.update({
+      where: { id: brokerId },
+      data: { subscriptionTier: tier, responseCredits: credits },
+    });
+  }
+  const broker = await client.broker.findUnique({
+    where: { id: brokerId },
+    select: { bonusCredits: true },
+  });
+  const bonus = broker?.bonusCredits ?? 0;
   return client.broker.update({
     where: { id: brokerId },
-    data: { subscriptionTier: tier, responseCredits: credits },
+    data: { subscriptionTier: tier, responseCredits: credits + bonus },
   });
 }
 
@@ -530,7 +544,13 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
         pendingTier: null,
       },
     }),
-    setBrokerPlan(prisma, subscription.broker.id, "FREE", freeCredits),
+    // Full cancellation → FREE and a clean slate: the standing admin bonus is
+    // tied to the paid relationship and does not survive a cancel (a transient
+    // payment failure, by contrast, keeps bonusCredits so recovery restores it).
+    prisma.broker.update({
+      where: { id: subscription.broker.id },
+      data: { subscriptionTier: "FREE", responseCredits: freeCredits, bonusCredits: 0 },
+    }),
   ]);
 
   const posthog = getPostHogClient();

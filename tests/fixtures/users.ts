@@ -69,6 +69,7 @@ export function makeBroker(overrides: BrokerOverrides = {}): Broker {
     verificationStatus: "VERIFIED",
     subscriptionTier: "BASIC",
     responseCredits: 5,
+    bonusCredits: 0,
     lastRequestsSeenAt: null,
     createdAt: baseDate,
     updatedAt: baseDate,
