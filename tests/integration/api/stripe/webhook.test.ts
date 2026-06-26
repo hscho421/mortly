@@ -341,4 +341,62 @@ describe("POST /api/webhooks/stripe", () => {
     expect(res.statusCode).toBe(200);
     expect(jsonBody<{ received: boolean }>(res).received).toBe(true);
   });
+
+  it("checkout.session.completed does NOT grant when the subscription isn't active yet", async () => {
+    // Delayed/async payment → checkout completes but the sub is still incomplete;
+    // invoice.paid promotes it once the charge settles.
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "checkout.session.completed",
+      data: { object: events.checkoutCompleted() },
+    } as never);
+    stripeMock.subscriptions.retrieve.mockResolvedValue(
+      events.subscription({ tier: "BASIC", status: "incomplete" })
+    );
+    prismaMock.subscription.findUnique.mockResolvedValue(null);
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.subscription.upsert).not.toHaveBeenCalled();
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
+  });
+
+  it("charge.dispute.created revokes paid access (PAST_DUE + credits→FREE, bonus kept)", async () => {
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "charge.dispute.created",
+      data: { object: { charge: "ch_1" } },
+    } as never);
+    stripeMock.charges.retrieve.mockResolvedValue({ invoice: "in_1" } as never);
+    stripeMock.invoices.retrieve.mockResolvedValue(
+      events.invoicePaid({ subscriptionId: "sub_stripe_1" }) as never
+    );
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription(),
+      broker: { id: "broker_1" },
+    } as never);
+    prismaMock.$transaction.mockResolvedValue([] as never);
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.$transaction).toHaveBeenCalledOnce();
+    // Credits zeroed; the standing admin bonus is left intact.
+    expect(prismaMock.broker.update.mock.calls[0][0].data).toEqual({ responseCredits: 0 });
+  });
+
+  it("charge.dispute.created on a non-subscription charge is a safe no-op", async () => {
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "charge.dispute.created",
+      data: { object: { charge: "ch_1" } },
+    } as never);
+    stripeMock.charges.retrieve.mockResolvedValue({ invoice: null } as never);
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
 });

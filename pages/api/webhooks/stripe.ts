@@ -10,10 +10,26 @@ export const config = {
   api: { bodyParser: false },
 };
 
+// bodyParser is disabled on this route (raw body needed for signature
+// verification), which also removes Next's ~1MB cap. Stripe event payloads are
+// tiny, so bound the buffer ourselves — an unauthenticated caller (the URL is
+// public; signature is checked only AFTER buffering) could otherwise stream an
+// arbitrarily large body and exhaust memory.
+const MAX_WEBHOOK_BODY_BYTES = 1024 * 1024;
+
 async function getRawBody(req: NextApiRequest): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    let total = 0;
+    req.on("data", (chunk: Buffer) => {
+      total += chunk.length;
+      if (total > MAX_WEBHOOK_BODY_BYTES) {
+        req.destroy();
+        reject(new Error("Webhook body exceeds size limit"));
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
@@ -138,6 +154,9 @@ export default async function handler(
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
         break;
+      case "charge.dispute.created":
+        await handleChargeDisputeCreated(event.data.object as Stripe.Dispute);
+        break;
       default:
         break;
     }
@@ -173,6 +192,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const stripe = getStripe();
   const stripeSub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+
+  // Only grant paid access once payment is actually settled — mirrors
+  // handleInvoicePaid (250-252). Checkout can complete while the subscription is
+  // still incomplete/processing (delayed-notification methods like ACSS/SEPA, or
+  // an initial PaymentIntent needing action). For those, invoice.paid promotes
+  // the sub once the charge confirms. (no_payment_required covers a 100%-off
+  // promo, which Stripe reports as active, so it still grants — intended.)
+  if (stripeSub.status !== "active" && stripeSub.status !== "trialing") {
+    return;
+  }
+
   const brokerId = stripeSub.metadata.brokerId;
   if (!brokerId) return;
 
@@ -492,6 +522,12 @@ async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
     past_due: "PAST_DUE",
     canceled: "CANCELLED",
     unpaid: "PAST_DUE",
+    // A never-confirmed initial payment that timed out, or a paused
+    // (pause_collection) sub, must not linger ACTIVE with paid access. The
+    // entitlement gates key off subscription.status, so mapping these to a
+    // non-ACTIVE status revokes messaging without needing a credit write here.
+    incomplete_expired: "EXPIRED",
+    paused: "PAST_DUE",
   };
   const mappedStatus = statusMap[stripeSub.status] || subscription.status;
 
@@ -564,5 +600,58 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
     distinctId: subscription.broker.id,
     event: "subscription_cancelled",
     properties: { previous_tier: subscription.tier, broker_id: subscription.broker.id },
+  });
+}
+
+async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
+  // A chargeback claws the money back, so revoke paid access. The dispute object
+  // carries neither the invoice nor the subscription, so map it via
+  // charge -> invoice -> subscription. (We intentionally do NOT handle
+  // charge.refunded: a refund is often an admin goodwill gesture that shouldn't
+  // auto-revoke an ongoing subscription.) All Stripe reads happen BEFORE the tx.
+  const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
+  if (!chargeId) return;
+
+  const stripe = getStripe();
+  // `charge.invoice` is a real API field but the clover SDK type omits it (same
+  // situation as the v2026 invoice.parent accessor above).
+  const charge = (await stripe.charges.retrieve(chargeId)) as Stripe.Charge & {
+    invoice?: string | Stripe.Invoice | null;
+  };
+  const invoiceId =
+    typeof charge.invoice === "string" ? charge.invoice : charge.invoice?.id;
+  if (!invoiceId) return; // not a subscription charge (e.g. a one-off)
+
+  const invoice = await stripe.invoices.retrieve(invoiceId);
+  const stripeSubscriptionId = getInvoiceSubscriptionId(invoice);
+  if (!stripeSubscriptionId) return;
+
+  const subscription = await prisma.subscription.findUnique({
+    where: { stripeSubscriptionId },
+    include: { broker: { select: { id: true } } },
+  });
+  if (!subscription) return;
+  if (subscription.status === "EXPIRED") return; // already terminal
+
+  // Revoke access immediately and reversibly: strip credits to FREE and mark
+  // PAST_DUE so the entitlement gate blocks messaging. The standing admin bonus
+  // (bonusCredits) is left intact, mirroring the payment-failure path.
+  const freeCredits = await getCreditsForTier("FREE");
+  await prisma.$transaction([
+    prisma.subscription.update({
+      where: { stripeSubscriptionId },
+      data: { status: "PAST_DUE" },
+    }),
+    prisma.broker.update({
+      where: { id: subscription.broker.id },
+      data: { responseCredits: freeCredits },
+    }),
+  ]);
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: subscription.broker.id,
+    event: "subscription_disputed",
+    properties: { broker_id: subscription.broker.id, tier: subscription.tier },
   });
 }

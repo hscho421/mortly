@@ -334,4 +334,25 @@ describe("Stripe webhook — out-of-order delivery", () => {
     expect(prismaMock.subscription.update).not.toHaveBeenCalled();
     expect(prismaMock.broker.update).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["incomplete_expired", "EXPIRED"],
+    ["paused", "PAST_DUE"],
+  ])("subscription.updated maps Stripe status %s → %s (no lingering paid access)", async (stripeStatus, dbStatus) => {
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "customer.subscription.updated",
+      data: { object: events.subscription({ status: stripeStatus, tier: "BASIC" }) },
+    } as never);
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription({ tier: "BASIC" }),
+      broker: { id: "broker_1" },
+    } as never);
+    prismaMock.subscription.update.mockResolvedValue(makeSubscription());
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.subscription.update.mock.calls[0][0].data.status).toBe(dbStatus);
+  });
 });

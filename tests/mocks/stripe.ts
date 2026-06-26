@@ -15,6 +15,9 @@ export const stripeMock = {
     update: vi.fn(),
     cancel: vi.fn(),
   },
+  charges: {
+    retrieve: vi.fn(),
+  },
   subscriptionSchedules: {
     create: vi.fn(),
     retrieve: vi.fn(),
@@ -33,6 +36,7 @@ export const stripeMock = {
   },
   invoices: {
     list: vi.fn(),
+    retrieve: vi.fn(),
     createPreview: vi.fn(),
   },
   webhooks: {
