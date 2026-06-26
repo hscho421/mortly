@@ -13,6 +13,7 @@ export const stripeMock = {
   subscriptions: {
     retrieve: vi.fn(),
     update: vi.fn(),
+    cancel: vi.fn(),
   },
   subscriptionSchedules: {
     create: vi.fn(),

@@ -315,7 +315,14 @@ export default function BrokerBillingPage() {
 
       if (!res.ok) {
         console.error("Checkout error:", data.error);
-        setErrorMessage(t("broker.planUpdateFailed"));
+        setErrorMessage(
+          data.code === "SUBSCRIPTION_NEEDS_ATTENTION"
+            ? t(
+                "broker.subscriptionNeedsAttention",
+                "Your subscription needs attention. Please update your payment method before changing plans.",
+              )
+            : t("broker.planUpdateFailed"),
+        );
         return;
       }
 

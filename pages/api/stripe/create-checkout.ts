@@ -136,6 +136,41 @@ export default withAuth(async (req, res, session) => {
       }
     }
 
+    // B1: a non-ACTIVE local status (PAST_DUE/CANCELLED) can still have a LIVE
+    // Stripe subscription being dunned. Creating a new Checkout here would mint a
+    // SECOND billable subscription on the same customer; once its checkout
+    // completes, handleCheckoutCompleted overwrites our pointer and the old sub
+    // is orphaned but keeps charging the recovered card. If the stored sub is
+    // still live in Stripe, refuse and route the broker to fix payment instead.
+    if (
+      broker.subscription?.stripeSubscriptionId &&
+      broker.subscription.status !== "ACTIVE"
+    ) {
+      let liveStatus: string | undefined;
+      try {
+        const liveSub = await stripe.subscriptions.retrieve(
+          broker.subscription.stripeSubscriptionId,
+        );
+        liveStatus = liveSub?.status;
+      } catch {
+        liveStatus = undefined; // gone in Stripe → safe to start fresh
+      }
+      const RECOVERABLE = new Set([
+        "active",
+        "trialing",
+        "past_due",
+        "unpaid",
+        "incomplete",
+      ]);
+      if (liveStatus && RECOVERABLE.has(liveStatus)) {
+        return res.status(409).json({
+          error:
+            "Your current subscription needs attention. Update your payment method to change plans.",
+          code: "SUBSCRIPTION_NEEDS_ATTENTION",
+        });
+      }
+    }
+
     // No active subscription — create Checkout session.
     // CRITICAL: never derive `origin` from `req.headers.origin` here. That
     // header is client-controlled — an attacker submitting a forged Origin

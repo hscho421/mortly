@@ -261,11 +261,13 @@ describe("POST /api/stripe/create-checkout", () => {
     expect(stripeMock.subscriptions.update).toHaveBeenCalled();
   });
 
-  it("non-active existing subscription: falls through to Checkout flow (treated as first-time)", async () => {
+  it("non-active existing subscription that is GONE in Stripe: falls through to Checkout flow", async () => {
     prismaMock.broker.findUnique.mockResolvedValue({
       ...makeBroker({ stripeCustomerId: "cus_1" }),
       subscription: makeSubscription({ status: "EXPIRED", stripeSubscriptionId: "sub_old" }),
     } as never);
+    // Stripe retrieve is unmocked here → resolves undefined (sub gone/terminal),
+    // so we may safely start a fresh Checkout.
     stripeMock.checkout.sessions.create.mockResolvedValue({ url: "u" } as never);
 
     const { req, res } = makeReqRes({ method: "POST", body: { tier: "BASIC" } });
@@ -274,5 +276,22 @@ describe("POST /api/stripe/create-checkout", () => {
     expect(res.statusCode).toBe(200);
     expect(stripeMock.checkout.sessions.create).toHaveBeenCalledOnce();
     expect(stripeMock.subscriptions.update).not.toHaveBeenCalled();
+  });
+
+  it("PAST_DUE broker with a still-LIVE Stripe sub: 409, refuses to mint a duplicate (B1)", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue({
+      ...makeBroker({ stripeCustomerId: "cus_1" }),
+      subscription: makeSubscription({ status: "PAST_DUE", stripeSubscriptionId: "sub_live" }),
+    } as never);
+    // The old sub is still live in Stripe (being dunned).
+    stripeMock.subscriptions.retrieve.mockResolvedValue({ status: "past_due" } as never);
+
+    const { req, res } = makeReqRes({ method: "POST", body: { tier: "PREMIUM" } });
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(409);
+    expect(jsonBody<{ code: string }>(res).code).toBe("SUBSCRIPTION_NEEDS_ATTENTION");
+    // Critical: no second subscription is created.
+    expect(stripeMock.checkout.sessions.create).not.toHaveBeenCalled();
   });
 });

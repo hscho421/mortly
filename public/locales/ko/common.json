@@ -618,6 +618,7 @@
     "planUpdating": "{{tier}} 플랜으로 업데이트하는 중…",
     "planUpdatePending": "{{tier}} 플랜 업그레이드가 처리 중입니다. 반영까지 잠시 걸릴 수 있습니다 — 다시 결제하실 필요는 없습니다.",
     "planUpdateFailed": "플랜 업데이트에 실패했습니다. 결제는 청구되지 않았으니 다시 시도해 주세요.",
+    "subscriptionNeedsAttention": "구독에 확인이 필요합니다. 플랜을 변경하기 전에 결제 수단을 업데이트해 주세요.",
     "portalFailed": "결제 관리 페이지를 열 수 없습니다. 다시 시도해 주세요.",
     "planDowngraded": "{{tier}} 플랜으로 변경되었습니다. 크레딧이 조정되었습니다.",
     "planScheduled": "다음 결제 주기부터 {{tier}} 플랜으로 변경됩니다. 그때까지 현재 플랜을 유지합니다.",

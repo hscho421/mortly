@@ -169,6 +169,35 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   const credits = await getCreditsForTier(tier);
 
+  // Self-heal against duplicate subscriptions (B1/H1). The Subscription row is
+  // keyed by brokerId, so the upsert below OVERWRITES stripeSubscriptionId. If
+  // our row already points at a DIFFERENT subscription that is still live in
+  // Stripe (e.g. a broker started a new Checkout while a PAST_DUE sub was still
+  // being dunned, or completed two Checkout tabs), overwriting would orphan the
+  // old one — it keeps billing the customer and is invisible to every future
+  // webhook (they look it up by the now-replaced id). Cancel it first. Done
+  // OUTSIDE the transaction (no network call inside an open DB tx); idempotent
+  // because once the row points at the new id this branch no longer fires on a
+  // replay. Cleanup failures must never fail the webhook.
+  const priorRow = await prisma.subscription.findUnique({
+    where: { brokerId },
+    select: { stripeSubscriptionId: true },
+  });
+  if (
+    priorRow?.stripeSubscriptionId &&
+    priorRow.stripeSubscriptionId !== stripeSubscriptionId
+  ) {
+    try {
+      await stripe.subscriptions.cancel(priorRow.stripeSubscriptionId);
+    } catch (err) {
+      console.error(
+        "Failed to cancel superseded subscription",
+        priorRow.stripeSubscriptionId,
+        err,
+      );
+    }
+  }
+
   await prisma.$transaction(async (tx) => {
     // Idempotency: check inside transaction to prevent concurrent duplicate processing
     const existing = await tx.subscription.findUnique({

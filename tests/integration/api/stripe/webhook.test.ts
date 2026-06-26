@@ -134,6 +134,55 @@ describe("POST /api/webhooks/stripe", () => {
     expect(data.responseCredits).toBe(-1);
   });
 
+  it("checkout.session.completed cancels a superseded DIFFERENT live subscription (no orphan)", async () => {
+    // A broker with a PAST_DUE sub (sub_stripe_OLD) completed a fresh Checkout
+    // (sub_stripe_NEW). The brokerId-keyed row is about to be overwritten with
+    // the new id, so the old sub must be cancelled or it keeps billing the
+    // recovered card while being invisible to every future webhook.
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "checkout.session.completed",
+      data: { object: events.checkoutCompleted({ subscription: "sub_stripe_NEW" }) },
+    } as never);
+    stripeMock.subscriptions.retrieve.mockResolvedValue(
+      events.subscription({ id: "sub_stripe_NEW", tier: "BASIC", priceId: "price_basic_test" })
+    );
+    stripeMock.subscriptions.cancel.mockResolvedValue({} as never);
+    // Existing row points at a DIFFERENT old sub; period differs so the in-tx
+    // idempotency check doesn't short-circuit.
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription({ stripeSubscriptionId: "sub_stripe_OLD" }),
+      currentPeriodStart: new Date(2020, 0, 1),
+    } as never);
+    prismaMock.subscription.upsert.mockResolvedValue(makeSubscription());
+    prismaMock.broker.update.mockResolvedValue(makeBroker());
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(stripeMock.subscriptions.cancel).toHaveBeenCalledWith("sub_stripe_OLD");
+  });
+
+  it("checkout.session.completed does NOT cancel when the row already points at the same sub (replay-safe)", async () => {
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "checkout.session.completed",
+      data: { object: events.checkoutCompleted({ subscription: "sub_stripe_1" }) },
+    } as never);
+    stripeMock.subscriptions.retrieve.mockResolvedValue(events.subscription({ id: "sub_stripe_1" }));
+    prismaMock.subscription.findUnique.mockResolvedValue({
+      ...makeSubscription({ stripeSubscriptionId: "sub_stripe_1" }),
+      currentPeriodStart: new Date(2020, 0, 1),
+    } as never);
+    prismaMock.subscription.upsert.mockResolvedValue(makeSubscription());
+    prismaMock.broker.update.mockResolvedValue(makeBroker());
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(stripeMock.subscriptions.cancel).not.toHaveBeenCalled();
+  });
+
   it("invoice.paid skips first-invoice (subscription_create) — delegates to checkout handler", async () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       type: "invoice.paid",

@@ -618,6 +618,7 @@
     "planUpdating": "Updating your plan to {{tier}}…",
     "planUpdatePending": "Your upgrade to {{tier}} is processing. It may take a minute to appear — no need to pay again.",
     "planUpdateFailed": "We couldn't update your plan. You have not been charged — please try again.",
+    "subscriptionNeedsAttention": "Your subscription needs attention. Please update your payment method before changing plans.",
     "portalFailed": "We couldn't open the billing portal. Please try again.",
     "planDowngraded": "Your plan has been changed to {{tier}}. Credits have been adjusted.",
     "planScheduled": "Your plan will change to {{tier}} at the start of your next billing cycle. You'll keep your current plan until then.",
