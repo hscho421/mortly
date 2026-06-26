@@ -68,6 +68,27 @@ export function validateRuntimeEnv(
 }
 
 /**
+ * Whether the boot validator should enforce live-mode Stripe keys.
+ *
+ * True only for the real production environment (VERCEL_ENV=production), and NOT
+ * when the ALLOW_TEST_STRIPE escape hatch is set. The hatch lets us run the
+ * production deploy in Stripe TEST mode for pre-launch smoke testing (no real
+ * charges). It MUST be removed (and sk_live_ keys restored) before launch.
+ */
+export function shouldRequireLiveStripe(env: EnvLike): boolean {
+  return env.VERCEL_ENV === "production" && !isTestStripeBypassActive(env);
+}
+
+/**
+ * True when the production deploy is deliberately running Stripe in TEST mode via
+ * the ALLOW_TEST_STRIPE escape hatch. Used to emit a loud boot-time warning so the
+ * flag can't be forgotten in place after a pre-launch smoke test.
+ */
+export function isTestStripeBypassActive(env: EnvLike): boolean {
+  return env.VERCEL_ENV === "production" && env.ALLOW_TEST_STRIPE === "1";
+}
+
+/**
  * Throws with an aggregated message when the environment is invalid. Called from
  * instrumentation.register() on server boot in production.
  */

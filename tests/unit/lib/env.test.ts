@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { validateRuntimeEnv } from "@/lib/env";
+import {
+  validateRuntimeEnv,
+  shouldRequireLiveStripe,
+  isTestStripeBypassActive,
+} from "@/lib/env";
 
 const fullEnv: Record<string, string> = {
   DATABASE_URL: "postgres://x",
@@ -62,5 +66,53 @@ describe("validateRuntimeEnv", () => {
     expect(
       problems.some((p) => p.includes("STRIPE_PRICE_BASIC is not a valid Stripe price id")),
     ).toBe(true);
+  });
+});
+
+describe("shouldRequireLiveStripe", () => {
+  it("requires live keys in production by default", () => {
+    expect(shouldRequireLiveStripe({ VERCEL_ENV: "production" })).toBe(true);
+  });
+
+  it("does not require live keys for preview deploys", () => {
+    expect(shouldRequireLiveStripe({ VERCEL_ENV: "preview" })).toBe(false);
+  });
+
+  it("relaxes the live-key check when ALLOW_TEST_STRIPE=1 in production", () => {
+    expect(
+      shouldRequireLiveStripe({ VERCEL_ENV: "production", ALLOW_TEST_STRIPE: "1" }),
+    ).toBe(false);
+  });
+
+  it("ignores ALLOW_TEST_STRIPE outside production (preview is already test-mode)", () => {
+    expect(
+      shouldRequireLiveStripe({ VERCEL_ENV: "preview", ALLOW_TEST_STRIPE: "1" }),
+    ).toBe(false);
+  });
+
+  it("only honors the exact value '1' for the escape hatch", () => {
+    expect(
+      shouldRequireLiveStripe({ VERCEL_ENV: "production", ALLOW_TEST_STRIPE: "true" }),
+    ).toBe(true);
+  });
+});
+
+describe("isTestStripeBypassActive", () => {
+  it("is active only when production AND the flag is exactly '1'", () => {
+    expect(
+      isTestStripeBypassActive({ VERCEL_ENV: "production", ALLOW_TEST_STRIPE: "1" }),
+    ).toBe(true);
+    expect(
+      isTestStripeBypassActive({ VERCEL_ENV: "production", ALLOW_TEST_STRIPE: "0" }),
+    ).toBe(false);
+    expect(isTestStripeBypassActive({ VERCEL_ENV: "production" })).toBe(false);
+    expect(
+      isTestStripeBypassActive({ VERCEL_ENV: "preview", ALLOW_TEST_STRIPE: "1" }),
+    ).toBe(false);
+  });
+
+  it("lets the production env otherwise pass validation with test keys", () => {
+    const env = { ...fullEnv, STRIPE_SECRET_KEY: "sk_test_abc", VERCEL_ENV: "production", ALLOW_TEST_STRIPE: "1" };
+    expect(validateRuntimeEnv(env, { requireLiveStripe: shouldRequireLiveStripe(env) })).toEqual([]);
   });
 });
