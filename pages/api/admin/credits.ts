@@ -29,6 +29,17 @@ export default withAdmin(async (req, res, session) => {
       return res.status(404).json({ error: "Broker not found" });
     }
 
+    // PREMIUM stores responseCredits = -1 (unlimited sentinel). Arithmetic on it
+    // (e.g. +50 → 49) would silently break unlimited and strand a bonus that
+    // resurfaces on a later downgrade. Credit adjustments don't apply to an
+    // unlimited plan, so reject them outright.
+    if (broker.responseCredits < 0) {
+      return res.status(400).json({
+        error: "This broker is on an unlimited (PREMIUM) plan; credit adjustments don't apply.",
+        code: "UNLIMITED_PLAN",
+      });
+    }
+
     if (amount < 0 && broker.responseCredits + amount < 0) {
       return res.status(400).json({
         error: `Cannot remove ${Math.abs(amount)} credits. Broker only has ${broker.responseCredits}.`,
@@ -40,12 +51,14 @@ export default withAdmin(async (req, res, session) => {
     const [updated] = await prisma.$transaction([
       prisma.broker.update({
         where: { id: brokerId },
-        // Adjust BOTH the live balance and the standing bonus so the grant takes
-        // effect now AND survives the next renewal (renewals re-apply bonusCredits
-        // on top of the tier grant). bonusCredits is floored at 0.
+        // Adjust BOTH the live balance and the standing bonus atomically (both via
+        // increment, so two concurrent admin grants can't desync the fields) so
+        // the grant takes effect now AND survives the next renewal (renewals
+        // re-apply bonusCredits on top of the tier grant). A negative bonus is
+        // floored to 0 at apply-time in setBrokerPlan.
         data: {
           responseCredits: { increment: amount },
-          bonusCredits: Math.max(0, broker.bonusCredits + amount),
+          bonusCredits: { increment: amount },
         },
         select: {
           id: true,

@@ -287,23 +287,26 @@ describe("Stripe webhook — out-of-order delivery", () => {
     expect(prismaMock.broker.update).not.toHaveBeenCalled();
   });
 
-  it("subscription.updated on an already-EXPIRED sub is ignored — no resurrection (H3)", async () => {
-    stripeMock.webhooks.constructEvent.mockReturnValue({
-      type: "customer.subscription.updated",
-      data: { object: events.subscription({ status: "active" }) },
-    } as never);
-    prismaMock.subscription.findUnique.mockResolvedValue({
-      ...makeSubscription({ status: "EXPIRED" }),
-      broker: { id: "broker_1" },
-    } as never);
+  it.each([["EXPIRED"], ["CANCELLED"]])(
+    "subscription.updated on an already-%s sub is ignored — no resurrection (H3)",
+    async (terminalStatus) => {
+      stripeMock.webhooks.constructEvent.mockReturnValue({
+        type: "customer.subscription.updated",
+        data: { object: events.subscription({ status: "active" }) },
+      } as never);
+      prismaMock.subscription.findUnique.mockResolvedValue({
+        ...makeSubscription({ status: terminalStatus as "EXPIRED" | "CANCELLED" }),
+        broker: { id: "broker_1" },
+      } as never);
 
-    const { req, res } = postWebhook({});
-    await handler(req, res);
+      const { req, res } = postWebhook({});
+      await handler(req, res);
 
-    expect(res.statusCode).toBe(200);
-    expect(prismaMock.subscription.update).not.toHaveBeenCalled();
-    expect(prismaMock.broker.update).not.toHaveBeenCalled();
-  });
+      expect(res.statusCode).toBe(200);
+      expect(prismaMock.subscription.update).not.toHaveBeenCalled();
+      expect(prismaMock.broker.update).not.toHaveBeenCalled();
+    },
+  );
 
   it("a stale subscription.updated carrying an OLDER period is ignored (H3 recency)", async () => {
     // Redelivered event from a previous period whose price is now outdated:

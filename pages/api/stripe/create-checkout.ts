@@ -152,8 +152,20 @@ export default withAuth(async (req, res, session) => {
           broker.subscription.stripeSubscriptionId,
         );
         liveStatus = liveSub?.status;
-      } catch {
-        liveStatus = undefined; // gone in Stripe → safe to start fresh
+      } catch (err) {
+        // Only a definitive "not found" means the sub is truly gone → safe to
+        // start fresh. Any OTHER error (network blip / 5xx / rate-limit) is
+        // transient: fail CLOSED (assume the old sub may still be live and
+        // billing) so a Stripe outage can't let us mint a duplicate.
+        if ((err as { code?: string })?.code === "resource_missing") {
+          liveStatus = undefined;
+        } else {
+          return res.status(409).json({
+            error:
+              "We couldn't verify your current subscription. Please try again in a moment.",
+            code: "SUBSCRIPTION_NEEDS_ATTENTION",
+          });
+        }
       }
       const RECOVERABLE = new Set([
         "active",

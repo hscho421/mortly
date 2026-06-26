@@ -188,6 +188,9 @@ describe("POST /api/webhooks/stripe", () => {
 
     expect(res.statusCode).toBe(200);
     expect(stripeMock.subscriptions.cancel).toHaveBeenCalledWith("sub_stripe_OLD");
+    // The new sub is still provisioned (cancel must not skip the upsert/grant).
+    expect(prismaMock.subscription.upsert).toHaveBeenCalled();
+    expect(prismaMock.broker.update).toHaveBeenCalled();
   });
 
   it("checkout.session.completed does NOT cancel when the row already points at the same sub (replay-safe)", async () => {
@@ -298,6 +301,9 @@ describe("POST /api/webhooks/stripe", () => {
     expect(res.statusCode).toBe(200);
     // Both writes happen in the same transaction (status flip + credit reset).
     expect(prismaMock.$transaction).toHaveBeenCalledOnce();
+    // Credits are zeroed but the standing admin bonus is LEFT INTACT, so a
+    // successful retry (invoice.paid) restores tierGrant + bonus.
+    expect(prismaMock.broker.update.mock.calls[0][0].data).toEqual({ responseCredits: 0 });
   });
 
   it("invoice.payment_failed is a NO-OP when Stripe reports the sub recovered (active)", async () => {

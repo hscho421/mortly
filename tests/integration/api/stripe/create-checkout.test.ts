@@ -294,4 +294,35 @@ describe("POST /api/stripe/create-checkout", () => {
     // Critical: no second subscription is created.
     expect(stripeMock.checkout.sessions.create).not.toHaveBeenCalled();
   });
+
+  it("transient Stripe error verifying an existing sub: fails CLOSED (409, no duplicate)", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue({
+      ...makeBroker({ stripeCustomerId: "cus_1" }),
+      subscription: makeSubscription({ status: "PAST_DUE", stripeSubscriptionId: "sub_live" }),
+    } as never);
+    // A non-"resource_missing" failure is transient — the old sub may still be live.
+    stripeMock.subscriptions.retrieve.mockRejectedValue(new Error("network blip"));
+
+    const { req, res } = makeReqRes({ method: "POST", body: { tier: "PREMIUM" } });
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(409);
+    expect(stripeMock.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+
+  it("resource_missing on retrieve (sub truly gone): falls through to a fresh Checkout", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue({
+      ...makeBroker({ stripeCustomerId: "cus_1" }),
+      subscription: makeSubscription({ status: "CANCELLED", stripeSubscriptionId: "sub_gone" }),
+    } as never);
+    const missing = Object.assign(new Error("No such subscription"), { code: "resource_missing" });
+    stripeMock.subscriptions.retrieve.mockRejectedValue(missing);
+    stripeMock.checkout.sessions.create.mockResolvedValue({ url: "u" } as never);
+
+    const { req, res } = makeReqRes({ method: "POST", body: { tier: "BASIC" } });
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(stripeMock.checkout.sessions.create).toHaveBeenCalledOnce();
+  });
 });

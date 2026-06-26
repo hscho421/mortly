@@ -60,7 +60,10 @@ async function setBrokerPlan(
     where: { id: brokerId },
     select: { bonusCredits: true },
   });
-  const bonus = broker?.bonusCredits ?? 0;
+  // Floor the bonus at apply-time so a stray negative bonus (e.g. an admin
+  // removal that under-ran, or a concurrent-grant lost update) can never reduce
+  // the monthly grant below the tier amount.
+  const bonus = Math.max(0, broker?.bonusCredits ?? 0);
   return client.broker.update({
     where: { id: brokerId },
     data: { subscriptionTier: tier, responseCredits: credits + bonus },
@@ -461,8 +464,11 @@ async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
 
   // Terminal guard: a cancelled/expired subscription must not be revived by a
   // later (often redelivered / out-of-order) update — mirrors handleInvoicePaid's
-  // EXPIRED/CANCELLED bail and handleSubscriptionDeleted's EXPIRED short-circuit.
-  if (subscription.status === "EXPIRED") return;
+  // EXPIRED/CANCELLED bail. A genuine re-subscribe arrives via checkout, not an
+  // update, so neither terminal state should be flipped back to ACTIVE here.
+  if (subscription.status === "EXPIRED" || subscription.status === "CANCELLED") {
+    return;
+  }
 
   const priceId = stripeSub.items.data[0]?.price.id;
   const tier = getTierForPriceId(priceId);

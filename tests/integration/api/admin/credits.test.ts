@@ -46,9 +46,13 @@ describe("POST /api/admin/credits", () => {
     expect(res.statusCode).toBe(200);
     expect(prismaMock.broker.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        // Standing bonus is bumped alongside the live balance so the grant
+        // Standing bonus is bumped atomically alongside the live balance (both
+        // via increment, so concurrent grants can't desync) so the grant
         // survives the next renewal.
-        data: { responseCredits: { increment: 5 }, bonusCredits: 5 },
+        data: {
+          responseCredits: { increment: 5 },
+          bonusCredits: { increment: 5 },
+        },
       })
     );
     expect(prismaMock.adminAction.create).toHaveBeenCalledOnce();
@@ -68,10 +72,26 @@ describe("POST /api/admin/credits", () => {
     expect(res.statusCode).toBe(200);
     expect(prismaMock.broker.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        // bonusCredits is floored at 0 (0 + -2 → 0).
-        data: { responseCredits: { increment: -2 }, bonusCredits: 0 },
+        // Both decrement atomically; a resulting negative bonus is floored at 0
+        // at apply-time (in setBrokerPlan), not here.
+        data: { responseCredits: { increment: -2 }, bonusCredits: { increment: -2 } },
       })
     );
+  });
+
+  it("rejects credit adjustments for an unlimited (PREMIUM) broker", async () => {
+    prismaMock.broker.findUnique.mockResolvedValue({
+      ...makeBroker({ subscriptionTier: "PREMIUM", responseCredits: -1 }),
+      user: { publicId: "200000001", name: "Brenda", email: "b@test.com" },
+    } as never);
+    const { req, res } = makeReqRes({
+      method: "POST",
+      body: { brokerId: "broker_1", amount: 50 },
+    });
+    await handler(req, res);
+    expect(res.statusCode).toBe(400);
+    expect(jsonBody<{ code: string }>(res).code).toBe("UNLIMITED_PLAN");
+    expect(prismaMock.broker.update).not.toHaveBeenCalled();
   });
 
   it("refuses to go negative", async () => {
