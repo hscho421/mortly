@@ -133,6 +133,57 @@ describe("BrokerShell", () => {
     expect(await screen.findByText("Prime Mortgage")).toBeInTheDocument();
   });
 
+  it("flags a past-due plan with a small amber dot, not verbose '· 결제 필요' text", async () => {
+    // Re-stub fetch so the profile resolves as BASIC + PAST_DUE.
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.startsWith("/api/brokers/profile")) {
+        return new Response(
+          JSON.stringify({
+            id: "b1",
+            userId: "u1",
+            brokerageName: "Prime Mortgage",
+            province: "Ontario",
+            verificationStatus: "VERIFIED",
+            subscriptionTier: "BASIC",
+            subscription: { status: "PAST_DUE" },
+            responseCredits: 0,
+            mortgageCategory: "BOTH",
+            user: { id: "u1", name: "Jihoon", email: "j@x.co" },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url.startsWith("/api/requests")) {
+        return new Response(JSON.stringify({ data: [], newCount: 0 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (url.startsWith("/api/messages/unread")) {
+        return new Response(JSON.stringify({ unread: 0 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("[]", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderShell();
+
+    // The lapse is signalled by a small amber status dot (an accessible image
+    // labelled "결제 필요") sitting beside the clean tier label.
+    const dot = await screen.findByRole("img", { name: "결제 필요" });
+    expect(dot.className).toContain("bg-amber-500");
+    expect(screen.getByText("BASIC")).toBeInTheDocument();
+    // The old verbose "· 결제 필요" text must NOT be rendered next to the logo.
+    expect(screen.queryByText(/결제 필요/)).toBeNull();
+  });
+
   it("renders counter badges from the data context", async () => {
     renderShell("requests");
     // newRequests = 3, unreadMessages = 5

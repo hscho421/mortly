@@ -306,22 +306,24 @@ function Sidebar({
     >
       <div className="flex items-baseline justify-between border-b border-cream-300 px-5 py-4">
         <BrandMark href="/broker/dashboard" className="h-7 w-auto" />
-        {/* Was `${tier} · PRO` — the hardcoded "· PRO" made every plan read
-            "FREE · PRO". Show the actual tier (or the generic tagline). While
-            PAST_DUE the tier still reads "PRO", so flag the payment issue in
-            amber rather than presenting the plan as healthy. */}
-        {pastDue ? (
-          <span
-            className="font-mono text-[10px] uppercase tracking-[0.18em] text-amber-600"
-            title={t("broker.paymentDue", "결제 필요")}
-          >
-            {subscriptionTier} · {t("broker.paymentDue", "결제 필요")}
-          </span>
-        ) : (
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-sage-500">
-            {subscriptionTier || t("broker.tagline", "BROKER")}
-          </span>
-        )}
+        {/* Plan label beside the brand mark. While PAST_DUE the tier still reads
+            its paid value (e.g. "BASIC"), so the lapse is flagged with a single
+            small amber dot + tooltip rather than crowding the logo with
+            "· 결제 필요" text — the actionable detail lives in the dashboard's
+            past-due banner. */}
+        <span
+          className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-sage-500"
+          title={pastDue ? t("broker.paymentDue", "결제 필요") : undefined}
+        >
+          {subscriptionTier || t("broker.tagline", "BROKER")}
+          {pastDue && (
+            <span
+              className="h-1.5 w-1.5 rounded-full bg-amber-500"
+              role="img"
+              aria-label={t("broker.paymentDue", "결제 필요")}
+            />
+          )}
+        </span>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-2" aria-label="Broker navigation">
