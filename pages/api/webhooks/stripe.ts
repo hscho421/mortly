@@ -655,33 +655,29 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
 
 async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
   // A chargeback claws the money back, so revoke paid access. The dispute object
-  // carries neither the invoice nor the subscription, so map it via
-  // charge -> invoice -> subscription. (We intentionally do NOT handle
+  // carries neither the customer nor the subscription. Under the 2026 API the
+  // charge NO LONGER exposes an `invoice` back-pointer (verified live: a real
+  // dispute's charge has no `invoice` field), so the old charge -> invoice ->
+  // subscription mapping silently no-op'd on every real dispute. Map instead via
+  // charge -> charge.customer -> broker (stripeCustomerId is 1:1) -> its single
+  // subscription (brokerId is 1:1). (We intentionally do NOT handle
   // charge.refunded: a refund is often an admin goodwill gesture that shouldn't
   // auto-revoke an ongoing subscription.) All Stripe reads happen BEFORE the tx.
   const chargeId = typeof dispute.charge === "string" ? dispute.charge : dispute.charge?.id;
   if (!chargeId) return;
 
   const stripe = getStripe();
-  // `charge.invoice` is a real API field but the clover SDK type omits it (same
-  // situation as the v2026 invoice.parent accessor above).
-  const charge = (await stripe.charges.retrieve(chargeId)) as Stripe.Charge & {
-    invoice?: string | Stripe.Invoice | null;
-  };
-  const invoiceId =
-    typeof charge.invoice === "string" ? charge.invoice : charge.invoice?.id;
-  if (!invoiceId) return; // not a subscription charge (e.g. a one-off)
+  const charge = await stripe.charges.retrieve(chargeId);
+  const customerId =
+    typeof charge.customer === "string" ? charge.customer : charge.customer?.id;
+  if (!customerId) return; // no customer on the charge — nothing to map to a broker
 
-  const invoice = await stripe.invoices.retrieve(invoiceId);
-  const stripeSubscriptionId = getInvoiceSubscriptionId(invoice);
-  if (!stripeSubscriptionId) return;
-
-  const subscription = await prisma.subscription.findUnique({
-    where: { stripeSubscriptionId },
-    include: { broker: { select: { id: true } } },
+  const broker = await prisma.broker.findUnique({
+    where: { stripeCustomerId: customerId },
+    include: { subscription: true },
   });
-  if (!subscription) return;
-  if (subscription.status === "EXPIRED") return; // already terminal
+  if (!broker || !broker.subscription) return; // no broker / no subscription to revoke
+  if (broker.subscription.status === "EXPIRED") return; // already terminal
 
   // Revoke access immediately and reversibly: strip credits to FREE and mark
   // PAST_DUE so the entitlement gate blocks messaging. The standing admin bonus
@@ -689,20 +685,20 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
   const freeCredits = await getCreditsForTier("FREE");
   await prisma.$transaction([
     prisma.subscription.update({
-      where: { stripeSubscriptionId },
+      where: { brokerId: broker.id },
       data: { status: "PAST_DUE" },
     }),
     prisma.broker.update({
-      where: { id: subscription.broker.id },
+      where: { id: broker.id },
       data: { responseCredits: freeCredits },
     }),
   ]);
 
   const posthog = getPostHogClient();
   posthog.capture({
-    distinctId: subscription.broker.id,
+    distinctId: broker.id,
     event: "subscription_disputed",
-    properties: { broker_id: subscription.broker.id, tier: subscription.tier },
+    properties: { broker_id: broker.id, tier: broker.subscription.tier },
   });
 }
 

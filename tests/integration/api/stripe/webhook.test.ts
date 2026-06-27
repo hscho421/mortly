@@ -371,13 +371,12 @@ describe("POST /api/webhooks/stripe", () => {
       type: "charge.dispute.created",
       data: { object: { charge: "ch_1" } },
     } as never);
-    stripeMock.charges.retrieve.mockResolvedValue({ invoice: "in_1" } as never);
-    stripeMock.invoices.retrieve.mockResolvedValue(
-      events.invoicePaid({ subscriptionId: "sub_stripe_1" }) as never
-    );
-    prismaMock.subscription.findUnique.mockResolvedValue({
-      ...makeSubscription(),
-      broker: { id: "broker_1" },
+    // 2026 API: the charge has NO `invoice` back-pointer, so we map the dispute
+    // via charge.customer -> broker (stripeCustomerId is 1:1) -> its subscription.
+    stripeMock.charges.retrieve.mockResolvedValue({ customer: "cus_1" } as never);
+    prismaMock.broker.findUnique.mockResolvedValue({
+      id: "broker_1",
+      subscription: makeSubscription({ status: "ACTIVE" }),
     } as never);
     prismaMock.$transaction.mockResolvedValue([] as never);
 
@@ -385,17 +384,44 @@ describe("POST /api/webhooks/stripe", () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
+    expect(prismaMock.broker.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { stripeCustomerId: "cus_1" } }),
+    );
     expect(prismaMock.$transaction).toHaveBeenCalledOnce();
+    // Subscription flipped PAST_DUE via the 1:1 brokerId selector.
+    expect(prismaMock.subscription.update.mock.calls[0][0]).toEqual({
+      where: { brokerId: "broker_1" },
+      data: { status: "PAST_DUE" },
+    });
     // Credits zeroed; the standing admin bonus is left intact.
     expect(prismaMock.broker.update.mock.calls[0][0].data).toEqual({ responseCredits: 0 });
   });
 
-  it("charge.dispute.created on a non-subscription charge is a safe no-op", async () => {
+  it("charge.dispute.created on a charge with no customer is a safe no-op", async () => {
     stripeMock.webhooks.constructEvent.mockReturnValue({
       type: "charge.dispute.created",
       data: { object: { charge: "ch_1" } },
     } as never);
-    stripeMock.charges.retrieve.mockResolvedValue({ invoice: null } as never);
+    stripeMock.charges.retrieve.mockResolvedValue({ customer: null } as never);
+
+    const { req, res } = postWebhook({});
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(prismaMock.broker.findUnique).not.toHaveBeenCalled();
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("charge.dispute.created on an already-EXPIRED subscription is a no-op", async () => {
+    stripeMock.webhooks.constructEvent.mockReturnValue({
+      type: "charge.dispute.created",
+      data: { object: { charge: "ch_1" } },
+    } as never);
+    stripeMock.charges.retrieve.mockResolvedValue({ customer: "cus_1" } as never);
+    prismaMock.broker.findUnique.mockResolvedValue({
+      id: "broker_1",
+      subscription: makeSubscription({ status: "EXPIRED" }),
+    } as never);
 
     const { req, res } = postWebhook({});
     await handler(req, res);
