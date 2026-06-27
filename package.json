@@ -13,6 +13,7 @@
     "verify:broker": "npx tsx scripts/verify-broker.ts",
     "replay:event": "npx tsx scripts/replay-event.ts",
     "set:customer": "npx tsx scripts/set-broker-customer.ts",
+    "clean:test-data": "npx tsx scripts/clean-test-data.ts",
     "seed": "npx tsx prisma/seed.ts",
     "seed:mock": "npm run seed -- mock",
     "seed:empty": "npm run seed -- empty",
