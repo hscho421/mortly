@@ -1,5 +1,37 @@
 # Stripe test-mode smoke checklist
 
+## Verified run — 2026-06 (deployed prod in test mode)
+
+Executed end-to-end against the **live deployed site** running in Stripe **test mode** (no local `npm run dev`). It caught a real production bug. Approach + findings here; the detailed checklist follows.
+
+### Approach: run production in test mode
+- Set `ALLOW_TEST_STRIPE=1` + `sk_test_…` + test `STRIPE_PRICE_*` on the **Production** Vercel env. The escape hatch in `lib/env.ts` / `instrumentation.ts` relaxes the `sk_live_` boot check and warns loudly every boot. **Revert before launch.**
+- Register a **test-mode** webhook endpoint in the Stripe Dashboard at the **canonical `www`** URL — `https://www.mortly.ca/api/webhooks/stripe` — subscribed to the 7 events; put its `whsec_` in the Production env.
+
+### ⚠️ Gotchas that cost real time (read before re-running)
+1. **Webhook URL must be the canonical host.** The apex `mortly.ca` **307-redirects** to `www`, and **Stripe never follows redirects** → every delivery silently fails. Register the **`www`** URL.
+2. **`stripe trigger <event>` is useless here.** Its fixtures carry throwaway ids / no `metadata.brokerId`, so the handler returns 200 but changes nothing. Always drive **real** objects (real Checkout; test clock for renewals; a real dispute; real cancel/delete).
+3. **Instant-dispute race.** The dispute test card files the chargeback ~300ms after checkout, which can beat the subscription row being written. Re-deliver the event later (see `replay:event`) to test the handler cleanly.
+4. **Forcing a renewal failure.** You must set the **subscription's** `default_payment_method` — Checkout pins one there and it **overrides** the customer default. And the shared `pm_card_*` tokens can't be used as a `default_payment_method` value (Stripe spawns a fresh *unattached* instance). Create a real PM from `tok_chargeCustomerFail`, **attach** it, set it on the subscription, and **confirm** before advancing the clock.
+
+### 🐞 Bug found + fixed (would have shipped)
+`handleChargeDisputeCreated` mapped `dispute → charge → charge.invoice → subscription`, but **`charge.invoice` no longer exists** under the 2026 `clover` API — so the handler bailed on **every real chargeback** and disputes never revoked access. The mocked unit test passed only because it returned `charge { invoice: "in_1" }` (a fixture-vs-live gap). Fixed to map via `charge.customer → broker → subscription` (commit `7454893`). The sibling 2026 mapping — `invoice.parent.subscription_details.subscription` — was verified **alive** on a live invoice, so renewal / payment-fail were unaffected.
+
+### Helper scripts
+- `npm run verify:broker -- <email>` — prints a broker's live billing state (tier, credits, subscription, recent processed events, notices). The per-step oracle.
+- `npm run replay:event -- <evt_id>` — clears one `ProcessedStripeEvent` ledger row so `stripe events resend <id>` re-processes (bypasses idempotency).
+- `npm run set:customer -- <email> <cus_id>` — binds a broker to a test-clock customer before subscribing so renewals can be fast-forwarded.
+
+### Result — all paths PASS
+Subscribe ✅ · Upgrade (immediate) ✅ · Downgrade-schedule ✅ · Dispute ✅ *(after the fix)* · Renewal ✅ *(×3, period advances + re-grant)* · Payment-fail → PAST_DUE + **real dunning email via Resend** ✅ · Recovery (credits 0→5) ✅ · Cancel + customer-delete → FREE ✅.
+
+### Before launch — revert the test-mode setup
+- [ ] Remove `ALLOW_TEST_STRIPE`; restore `sk_live_…` + live `STRIPE_PRICE_*`; register a **live-mode** webhook endpoint at the **`www`** URL with a fresh `whsec_`, subscribed to all 7 events.
+- [ ] Clean the test rows from the prod DB (test brokers + their subscriptions, `ProcessedStripeEvent`, `admin_notices`).
+- [ ] Redeploy; confirm the boot warning is gone.
+
+---
+
 Run this **once in Stripe test mode** before trusting billing with real cards. Code
 review + mocked tests prove the logic in isolation; this proves the real
 integration (signature verification, webhook delivery/ordering, proration, 3DS,
@@ -74,8 +106,8 @@ Every step lists: **Do** → **Expect** (DB + UI) → _which fix it verifies_.
 
 ## 10. Chargeback (dispute) — newly handled
 
-- [ ] **Do:** Create a charge with `4000 0000 0000 0259` (or `stripe trigger charge.dispute.created`), then dispute it.
-- [ ] **Expect:** `charge.dispute.created` → broker goes **PAST_DUE**, `responseCredits=0` (bonus intact), messaging blocked. _Dispute handler._ (A `charge.refunded` does **not** auto-revoke — by design.)
+- [ ] **Do:** Subscribe a broker paying with `4000 0000 0000 0259` (the charge succeeds, then auto-disputes). Do **not** use `stripe trigger charge.dispute.created` — its synthetic charge has no customer/invoice, so the handler no-ops. The dispute can also race checkout; re-deliver it later with `replay:event` + `stripe events resend` to test cleanly.
+- [ ] **Expect:** `charge.dispute.created` → handler maps `charge.customer → broker` → broker goes **PAST_DUE**, `responseCredits=0` (bonus intact), messaging blocked. _Dispute handler (2026 `charge.customer` mapping)._ (A `charge.refunded` does **not** auto-revoke — by design.)
 
 ## 11. Webhook robustness
 
