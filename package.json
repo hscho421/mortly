@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "eslint pages components lib --ext .ts,.tsx",
     "check:rls": "npx tsx scripts/check-rls.ts",
+    "verify:broker": "npx tsx scripts/verify-broker.ts",
+    "replay:event": "npx tsx scripts/replay-event.ts",
     "seed": "npx tsx prisma/seed.ts",
     "seed:mock": "npm run seed -- mock",
     "seed:empty": "npm run seed -- empty",
