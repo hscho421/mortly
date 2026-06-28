@@ -16,6 +16,7 @@
     "imBroker": "모기지 전문가입니다",
     "signIn": "로그인",
     "signOut": "로그아웃",
+    "more": "더보기",
     "logoutConfirmTitle": "로그아웃 하시겠습니까?",
     "logoutConfirmDesc": "로그아웃하면 현재 세션이 종료됩니다. 언제든지 다시 로그인할 수 있습니다.",
     "logoutCancel": "취소",

@@ -122,9 +122,10 @@ describe("BrokerShell", () => {
   it("renders sidebar and child content for authenticated broker", async () => {
     renderShell();
     expect(await screen.findByTestId("child")).toBeInTheDocument();
-    expect(screen.getByText("대시보드")).toBeInTheDocument();
-    expect(screen.getByText("상담 요청")).toBeInTheDocument();
-    expect(screen.getByText("대화")).toBeInTheDocument();
+    // Nav labels now render in BOTH the desktop rail and the mobile tab bar.
+    expect(screen.getAllByText("대시보드").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("상담 요청").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("대화").length).toBeGreaterThan(0);
   });
 
   it("shows brand mark and broker identity once profile resolves", async () => {
@@ -188,8 +189,9 @@ describe("BrokerShell", () => {
     renderShell("requests");
     // newRequests = 3, unreadMessages = 5
     await waitFor(() => {
-      expect(screen.getByText("3")).toBeInTheDocument();
-      expect(screen.getByText("5")).toBeInTheDocument();
+      // Counter badges render in both the desktop rail and the mobile tab bar.
+      expect(screen.getAllByText("3").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("5").length).toBeGreaterThan(0);
     });
   });
 

@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "next-i18next";
 import BrandMark from "@/components/BrandMark";
 import Avatar from "@/components/Avatar";
+import MobileTabBar from "@/components/MobileTabBar";
 import { useBrokerData } from "./BrokerDataContext";
 
 /**
@@ -82,6 +83,9 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+// Bottom-tab-bar primary destinations on mobile; the rest go to the "More" sheet.
+const MOBILE_PRIMARY: BrokerNavKey[] = ["dashboard", "requests", "messages"];
+
 export interface BrokerShellProps {
   active: BrokerNavKey;
   pageTitle?: string;
@@ -103,7 +107,14 @@ export default function BrokerShell({
   const { data: session, status } = useSession();
   const { t } = useTranslation("common");
   const { profile, profileChecked, counters } = useBrokerData();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    await signOut({ callbackUrl: "/login" });
+  };
 
   // Auth gate. Using router.replace so the back button doesn't return here.
   // callbackUrl brings the visitor back after login (login.tsx honors it).
@@ -117,23 +128,6 @@ export default function BrokerShell({
       );
     }
   }, [session, status, router]);
-
-  // Close mobile nav on route change.
-  useEffect(() => {
-    const close = () => setMobileNavOpen(false);
-    router.events.on("routeChangeStart", close);
-    return () => router.events.off("routeChangeStart", close);
-  }, [router.events]);
-
-  // Escape closes the mobile nav drawer.
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileNavOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [mobileNavOpen]);
 
   const loadingAuth = status === "loading" || !session || session.user.role !== "BROKER";
 
@@ -176,63 +170,8 @@ export default function BrokerShell({
         className="hidden md:flex"
       />
 
-      {/* Mobile drawer */}
-      {mobileNavOpen && (
-        <button
-          type="button"
-          aria-label={t("broker.closeNav", "Close navigation")}
-          className="fixed inset-0 z-40 bg-forest-900/40 backdrop-blur-sm md:hidden"
-          onClick={() => setMobileNavOpen(false)}
-        />
-      )}
-      {mobileNavOpen && (
-        <div
-          className="fixed inset-y-0 left-0 z-50 md:hidden animate-[slideInLeft_0.2s_ease-out]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Broker navigation"
-        >
-          <Sidebar
-            active={active}
-            counters={counters}
-            brokerName={brokerName}
-            brokerageName={profile?.brokerageName ?? null}
-            subscriptionTier={profile?.subscriptionTier ?? null}
-            pastDue={profile?.subscription?.status === "PAST_DUE"}
-            photoPath={profile?.profilePhoto ?? null}
-            photoVersion={profile?.updatedAt ?? null}
-          />
-        </div>
-      )}
-
       {/* Main column */}
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Mobile top bar — shown only on < md */}
-        <div className="flex items-center justify-between border-b border-cream-300 bg-cream-50 px-4 py-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(true)}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 rounded-sm border border-cream-300 bg-cream-50 text-forest-700"
-            aria-label={t("broker.openNav", "Open navigation")}
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"
-              />
-            </svg>
-          </button>
-          <BrandMark href="/broker/dashboard" className="h-6 w-auto" />
-          <div className="w-9" aria-hidden />
-        </div>
-
         {/* Profile-gate banner when broker hasn't onboarded yet. */}
         {!skipProfileGate && profileChecked && !profile && (
           <div className="border-b border-amber-200 bg-amber-50 px-4 md:px-6 py-3 text-sm text-amber-800">
@@ -252,7 +191,50 @@ export default function BrokerShell({
         <main id="main-content" className="flex-1 overflow-y-auto">
           {children}
         </main>
+
+        {/* Mobile bottom tab bar — replaces the slide-over drawer below md. */}
+        <MobileTabBar
+          active={active}
+          tabs={NAV_ITEMS.filter((it) => MOBILE_PRIMARY.includes(it.key)).map((it) => ({
+            key: it.key,
+            href: it.href,
+            label: t(it.labelKey, it.fallback),
+            glyph: it.glyph,
+            badge:
+              it.badge === "newRequests"
+                ? counters.newRequests
+                : it.badge === "unreadMessages"
+                  ? counters.unreadMessages
+                  : undefined,
+          }))}
+          moreItems={NAV_ITEMS.filter((it) => !MOBILE_PRIMARY.includes(it.key)).map((it) => ({
+            key: it.key,
+            href: it.href,
+            label: t(it.labelKey, it.fallback),
+            glyph: it.glyph,
+          }))}
+          moreLabel={t("nav.more", "More")}
+          closeLabel={t("common.close", "Close")}
+          accountName={brokerName}
+          accountSubtitle={profile?.brokerageName ?? null}
+          photoPath={profile?.profilePhoto ?? null}
+          photoVersion={profile?.updatedAt ?? null}
+          signOutLabel={t("nav.signOut", "Sign Out")}
+          onSignOut={() => setSignOutOpen(true)}
+        />
       </div>
+
+      {signOutOpen && (
+        <SignOutConfirmModal
+          onCancel={() => setSignOutOpen(false)}
+          onConfirm={async () => {
+            setSignOutOpen(false);
+            await handleSignOut();
+          }}
+          busy={signingOut}
+          t={t}
+        />
+      )}
     </div>
   );
 }

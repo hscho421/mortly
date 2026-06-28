@@ -16,6 +16,7 @@
     "imBroker": "I'm a Broker",
     "signIn": "Sign in",
     "signOut": "Sign Out",
+    "more": "More",
     "logoutConfirmTitle": "Sign out of your account?",
     "logoutConfirmDesc": "You'll be signed out of your current session. You can sign back in at any time.",
     "logoutCancel": "Cancel",

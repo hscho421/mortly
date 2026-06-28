@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "next-i18next";
 import BrandMark from "@/components/BrandMark";
+import MobileTabBar from "@/components/MobileTabBar";
 import { useBorrowerData } from "./BorrowerDataContext";
 
 /**
@@ -59,6 +60,9 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+// All three borrower destinations are primary tabs; "More" holds only sign-out.
+const MOBILE_PRIMARY: BorrowerNavKey[] = ["dashboard", "messages", "profile"];
+
 export interface BorrowerShellProps {
   active: BorrowerNavKey;
   pageTitle?: string;
@@ -74,7 +78,14 @@ export default function BorrowerShell({
   const { data: session, status } = useSession();
   const { t } = useTranslation("common");
   const { profile, counters } = useBorrowerData();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    await signOut({ callbackUrl: "/login" });
+  };
 
   // Auth gate. callbackUrl brings the visitor back here after login — the
   // marketing CTAs deep-link into authed pages (e.g. /borrower/request/new).
@@ -88,23 +99,6 @@ export default function BorrowerShell({
       );
     }
   }, [session, status, router]);
-
-  // Close mobile nav on route change.
-  useEffect(() => {
-    const close = () => setMobileNavOpen(false);
-    router.events.on("routeChangeStart", close);
-    return () => router.events.off("routeChangeStart", close);
-  }, [router.events]);
-
-  // Escape closes the drawer.
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMobileNavOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [mobileNavOpen]);
 
   const loadingAuth =
     status === "loading" || !session || session.user.role !== "BORROWER";
@@ -145,60 +139,52 @@ export default function BorrowerShell({
         className="hidden md:flex"
       />
 
-      {mobileNavOpen && (
-        <button
-          type="button"
-          aria-label={t("borrower.closeNav", "Close navigation")}
-          className="fixed inset-0 z-40 bg-forest-900/40 backdrop-blur-sm md:hidden"
-          onClick={() => setMobileNavOpen(false)}
-        />
-      )}
-      {mobileNavOpen && (
-        <div
-          className="fixed inset-y-0 left-0 z-50 md:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Borrower navigation"
-        >
-          <Sidebar
-            active={active}
-            counters={counters}
-            borrowerName={borrowerName}
-            location={profile?.publicId ? `#${profile.publicId.slice(0, 6)}` : null}
-          />
-        </div>
-      )}
-
       <div className="flex flex-1 flex-col min-w-0">
-        <div className="flex items-center justify-between border-b border-cream-300 bg-cream-50 px-4 py-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(true)}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 rounded-sm border border-cream-300 bg-cream-50 text-forest-700"
-            aria-label={t("borrower.openNav", "Open navigation")}
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"
-              />
-            </svg>
-          </button>
-          <BrandMark href="/borrower/dashboard" className="h-6 w-auto" />
-          <div className="w-9" aria-hidden />
-        </div>
-
         <main id="main-content" className="flex-1 overflow-y-auto">
           {children}
         </main>
+
+        {/* Mobile bottom tab bar — replaces the slide-over drawer below md. */}
+        <MobileTabBar
+          active={active}
+          tabs={NAV_ITEMS.filter((it) => MOBILE_PRIMARY.includes(it.key)).map((it) => ({
+            key: it.key,
+            href: it.href,
+            label: t(it.labelKey, it.fallback),
+            glyph: it.glyph,
+            badge:
+              it.badge === "activeRequests"
+                ? counters.activeRequests
+                : it.badge === "unreadMessages"
+                  ? counters.unreadMessages
+                  : undefined,
+          }))}
+          moreItems={NAV_ITEMS.filter((it) => !MOBILE_PRIMARY.includes(it.key)).map((it) => ({
+            key: it.key,
+            href: it.href,
+            label: t(it.labelKey, it.fallback),
+            glyph: it.glyph,
+          }))}
+          moreLabel={t("nav.more", "More")}
+          closeLabel={t("common.close", "Close")}
+          accountName={borrowerName}
+          accountSubtitle={profile?.publicId ? `#${profile.publicId.slice(0, 6)}` : null}
+          signOutLabel={t("nav.signOut", "Sign Out")}
+          onSignOut={() => setSignOutOpen(true)}
+        />
       </div>
+
+      {signOutOpen && (
+        <SignOutConfirmModal
+          onCancel={() => setSignOutOpen(false)}
+          onConfirm={async () => {
+            setSignOutOpen(false);
+            await handleSignOut();
+          }}
+          busy={signingOut}
+          t={t}
+        />
+      )}
     </div>
   );
 }

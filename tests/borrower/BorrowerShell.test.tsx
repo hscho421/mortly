@@ -107,9 +107,10 @@ describe("BorrowerShell", () => {
   it("renders sidebar nav items + child content for authenticated borrower", async () => {
     renderShell();
     expect(await screen.findByTestId("child")).toBeInTheDocument();
-    expect(screen.getByText("대시보드")).toBeInTheDocument();
-    expect(screen.getByText("메시지")).toBeInTheDocument();
-    expect(screen.getByText("프로필")).toBeInTheDocument();
+    // Nav labels now render in both the desktop rail and the mobile tab bar.
+    expect(screen.getAllByText("대시보드").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("메시지").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("프로필").length).toBeGreaterThan(0);
   });
 
   it("renders the borrower's name once profile resolves", async () => {
@@ -120,9 +121,10 @@ describe("BorrowerShell", () => {
   it("renders counter badges (active requests + unread messages)", async () => {
     renderShell();
     await waitFor(() => {
-      // 2 active requests (r1 OPEN + r2 IN_PROGRESS), 4 unread messages
-      expect(screen.getByText("2")).toBeInTheDocument();
-      expect(screen.getByText("4")).toBeInTheDocument();
+      // 2 active requests (r1 OPEN + r2 IN_PROGRESS), 4 unread messages —
+      // rendered in both the desktop rail and the mobile tab bar.
+      expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("4").length).toBeGreaterThan(0);
     });
   });
 
