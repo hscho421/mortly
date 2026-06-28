@@ -556,7 +556,7 @@ export default function RequestForm({
 
               <div className="mb-6">
                 <label className="label-text">{t("request.purposeOfUse")}{required}</label>
-                <div className="flex gap-3 mt-2">
+                <div className="grid grid-cols-2 gap-3 mt-2">
                   {(["OWNER_OCCUPIED", "RENTAL"] as const).map((value) => {
                     const checked = ((details as ResidentialDetails).purposeOfUse || []).includes(value);
                     return (
@@ -814,7 +814,7 @@ export default function RequestForm({
                   </p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {form.productTypes.map((pt) => (
-                      <span key={pt} className="inline-flex items-center rounded-full bg-cream-200 px-2.5 py-0.5 font-body text-xs font-medium text-forest-700">
+                      <span key={pt} className="inline-flex items-center rounded-sm bg-cream-200 px-2.5 py-0.5 font-body text-xs font-medium text-forest-700">
                         {t(PRODUCT_LABEL_KEYS[pt])}
                       </span>
                     ))}

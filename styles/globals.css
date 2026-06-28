@@ -82,7 +82,7 @@
   }
 
   .card-elevated {
-    @apply rounded-sm border border-cream-300 bg-cream-50 p-7;
+    @apply rounded-sm border border-cream-300 bg-cream-50 p-6 sm:p-7;
   }
 
   .card-interactive {
@@ -154,7 +154,7 @@
 
   /* === Inputs — flat, sharp === */
   .input-field {
-    @apply w-full rounded-sm border border-cream-300 bg-cream-50 px-4 py-3 font-body text-sm text-forest-800 placeholder-sage-400 transition-all duration-200 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20;
+    @apply w-full rounded-sm border border-cream-300 bg-cream-50 px-4 py-3 font-body text-base sm:text-sm text-forest-800 placeholder-sage-400 transition-all duration-200 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/20;
   }
 
   .label-text {

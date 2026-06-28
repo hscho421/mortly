@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
       <Head>
         <title>{t("titles.forgotPassword")}</title>
       </Head>
-      <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
+      <div className="flex min-h-[calc(100dvh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           {/* Decorative top accent */}
           <div className="mb-8 flex justify-center opacity-0 animate-fade-in">

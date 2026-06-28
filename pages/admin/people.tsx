@@ -294,7 +294,7 @@ export default function AdminPeoplePage() {
       active="people"
       pageTitle={t("admin.people.pageTitle", "사용자 · mortly admin")}
     >
-      <div className="px-7 pt-6">
+      <div className="px-4 md:px-7 pt-6">
         <ASectionHead
           label={t("admin.nav.people", "사용자")}
           title={
@@ -371,7 +371,7 @@ export default function AdminPeoplePage() {
           />
         </div>
 
-        <div className="flex items-center justify-between py-2.5 text-xs text-sage-500">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between py-2.5 text-xs text-sage-500">
           <div>
             {selected.size > 0 ? (
               <>
@@ -379,7 +379,7 @@ export default function AdminPeoplePage() {
                 {t("admin.people.bulk.selected", "선택됨")} ·{" "}
                 {t("admin.people.bulk.apply", "일괄 작업: ")}
                 <button
-                  className="text-forest-800 font-semibold ml-2 hover:underline"
+                  className="text-forest-800 font-semibold ml-2 py-1.5 px-2 hover:underline"
                   onClick={() => setBulkPending("SUSPEND")}
                   data-testid="bulk-suspend"
                 >
@@ -387,7 +387,7 @@ export default function AdminPeoplePage() {
                 </button>
                 <span className="mx-1">·</span>
                 <button
-                  className="text-forest-800 font-semibold hover:underline"
+                  className="text-forest-800 font-semibold py-1.5 px-2 hover:underline"
                   onClick={() => setBulkPending("BAN")}
                   data-testid="bulk-ban"
                 >
@@ -395,7 +395,7 @@ export default function AdminPeoplePage() {
                 </button>
                 <span className="mx-1">·</span>
                 <button
-                  className="text-forest-800 font-semibold hover:underline"
+                  className="text-forest-800 font-semibold py-1.5 px-2 hover:underline"
                   onClick={() => setBulkPending("REACTIVATE")}
                   data-testid="bulk-reactivate"
                 >
@@ -403,7 +403,7 @@ export default function AdminPeoplePage() {
                 </button>
                 <span className="mx-2 text-sage-500">·</span>
                 <button
-                  className="text-sage-500 hover:underline"
+                  className="text-sage-500 py-1.5 px-2 hover:underline"
                   onClick={clearSelection}
                   data-testid="bulk-clear"
                 >
@@ -428,9 +428,9 @@ export default function AdminPeoplePage() {
         </div>
       </div>
 
-      <div className="px-7 pb-10">
-        <div className="bg-cream-50 border border-cream-300">
-          <div className="grid grid-cols-[36px_2.2fr_1fr_1.2fr_1fr_1fr_120px] gap-3.5 px-5 py-2.5 font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em] border-b border-cream-300 bg-cream-200/60">
+      <div className="px-4 md:px-7 pb-10">
+        <div className="bg-cream-50 border border-cream-300 overflow-x-auto">
+          <div className="grid min-w-[860px] grid-cols-[36px_2.2fr_1fr_1.2fr_1fr_1fr_120px] gap-3.5 px-5 py-2.5 font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em] border-b border-cream-300 bg-cream-200/60">
             <span>
               <label className="sr-only" htmlFor="admin-people-select-all">
                 {t("admin.people.col.selectAll", "전체 선택")}
@@ -481,7 +481,7 @@ export default function AdminPeoplePage() {
             ))
           )}
 
-          <div className="flex items-center justify-between px-5 py-2.5 text-xs text-sage-500 bg-cream-200/60 border-t border-cream-200">
+          <div className="flex min-w-[860px] items-center justify-between px-5 py-2.5 text-xs text-sage-500 bg-cream-200/60 border-t border-cream-200">
             <span className="font-mono">
               {t("admin.people.pageLabel", "페이지")} {pageNum}/{pagesTotal}
             </span>
@@ -561,7 +561,7 @@ const PersonRowView = memo(function PersonRowView({
 
   return (
     <div
-      className={`grid grid-cols-[36px_2.2fr_1fr_1.2fr_1fr_1fr_120px] gap-3.5 px-5 py-3.5 items-center text-[13px] ${
+      className={`grid min-w-[860px] grid-cols-[36px_2.2fr_1fr_1.2fr_1fr_1fr_120px] gap-3.5 px-5 py-3.5 items-center text-[13px] ${
         isLast ? "" : "border-b border-cream-200"
       } ${isSelected ? "bg-amber-50" : ""} ${
         isCursor ? "ring-1 ring-amber-500 ring-inset" : ""

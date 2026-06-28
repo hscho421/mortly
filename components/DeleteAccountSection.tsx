@@ -113,7 +113,7 @@ export default function DeleteAccountSection() {
           type="button"
           onClick={() => setStage("first")}
           disabled={deleting}
-          className="rounded-full border border-error-300 bg-white px-5 py-2 font-body text-sm font-semibold text-error-700 transition-colors hover:bg-error-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-sm border border-error-300 bg-white px-5 py-2 font-body text-sm font-semibold text-error-700 transition-colors hover:bg-error-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {t("settings.deleteAccount")}
         </button>
@@ -196,7 +196,7 @@ export default function DeleteAccountSection() {
                   setError("");
                 }}
                 disabled={deleting}
-                className="rounded-full border border-cream-300 bg-white px-5 py-2 font-body text-sm font-semibold text-forest-700 transition-colors hover:bg-cream-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-sm border border-cream-300 bg-white px-5 py-2 font-body text-sm font-semibold text-forest-700 transition-colors hover:bg-cream-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t("settings.deleteAccountCancel")}
               </button>
@@ -204,7 +204,7 @@ export default function DeleteAccountSection() {
                 type="button"
                 onClick={handleDeleteWithPassword}
                 disabled={deleting || !password}
-                className="rounded-full bg-error-600 px-5 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-sm bg-error-600 px-5 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting
                   ? t("settings.deleteAccountDeleting")
@@ -255,7 +255,7 @@ function ConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={deleting}
-            className="rounded-full border border-cream-300 bg-white px-5 py-2 font-body text-sm font-semibold text-forest-700 transition-colors hover:bg-cream-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-sm border border-cream-300 bg-white px-5 py-2 font-body text-sm font-semibold text-forest-700 transition-colors hover:bg-cream-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {cancelLabel}
           </button>
@@ -263,7 +263,7 @@ function ConfirmModal({
             type="button"
             onClick={onConfirm}
             disabled={deleting}
-            className="rounded-full bg-error-600 px-5 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-sm bg-error-600 px-5 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-error-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {confirmLabel}
           </button>

@@ -517,7 +517,7 @@ function ActiveRequestCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 border-b border-cream-300">
+      <div className="grid grid-cols-1 sm:grid-cols-3 border-b border-cream-300">
         <div className="px-5 py-4 border-r border-cream-300">
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-sage-500">
             {t("borrower.responses", "응답")}

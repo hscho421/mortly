@@ -96,7 +96,7 @@ export default function AvatarCropper({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="btn-secondary text-sm py-1.5 px-3"
+            className="btn-secondary text-sm py-2.5 px-3"
           >
             {t("broker.cropCancel", "Cancel")}
           </button>
@@ -104,7 +104,7 @@ export default function AvatarCropper({
             type="button"
             onClick={handleSave}
             disabled={busy || !areaPixels}
-            className="rounded-sm bg-forest-800 px-4 py-1.5 text-sm font-body font-semibold text-cream-100 hover:bg-forest-700 disabled:opacity-50"
+            className="rounded-sm bg-forest-800 px-4 py-2.5 text-sm font-body font-semibold text-cream-100 hover:bg-forest-700 disabled:opacity-50"
           >
             {busy ? t("broker.cropSaving", "Saving…") : t("broker.cropSave", "Save photo")}
           </button>

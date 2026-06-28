@@ -225,7 +225,7 @@ export default function AdminReportsPage() {
 
   return (
     <AdminShell active="reports" pageTitle={t("admin.reports.pageTitle", "신고 · mortly admin")}>
-      <div className="grid h-full min-h-0 grid-cols-[1fr_440px]">
+      <div className="grid h-full min-h-0 grid-cols-1 md:grid-cols-[1fr_440px]">
         <div className="flex flex-col min-w-0 min-h-0 overflow-auto">
           <div className="px-7 pt-6 pr-5">
             <ASectionHead
@@ -276,11 +276,11 @@ export default function AdminReportsPage() {
                     key={r.id}
                     type="button"
                     onClick={() => selectRow(r.id)}
-                    className={`w-full text-left grid grid-cols-[90px_1fr_auto] gap-3.5 items-center px-4 py-3.5 border-b border-cream-200 border-l-[3px] ${
+                    className={`w-full text-left grid grid-cols-[1fr_auto] sm:grid-cols-[90px_1fr_auto] gap-3.5 items-center px-4 py-3.5 border-b border-cream-200 border-l-[3px] ${
                       isSel ? "bg-cream-50 border-l-error-600" : "border-l-transparent hover:bg-cream-50/50"
                     }`}
                   >
-                    <span className="font-mono text-[11px] text-sage-500">
+                    <span className="hidden sm:inline font-mono text-[11px] text-sage-500">
                       REP-{r.id.slice(-4).toUpperCase()}
                     </span>
                     <div className="min-w-0">
@@ -302,7 +302,7 @@ export default function AdminReportsPage() {
         </div>
 
         {/* Drawer */}
-        <div className="border-l border-cream-300 bg-cream-50 overflow-auto">
+        <div className="hidden md:block border-l border-cream-300 bg-cream-50 overflow-auto">
           {detailState.state === "ready" ? (
             <ReportDrawer
               detail={detailState.data}

@@ -246,7 +246,7 @@ export default function AdminInboxPage() {
       </div>
 
       {/* Queue + drawer */}
-      <div className="grid grid-cols-[1fr_400px] gap-0 min-h-0 mt-1">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-0 min-h-0 mt-1">
         <div className="px-7 pb-10">
           {error ? (
             <div className="p-10 text-center">
@@ -294,7 +294,7 @@ export default function AdminInboxPage() {
         </div>
 
         {/* Drawer — detail for the selected row */}
-        <div className="border-l border-cream-300 bg-cream-50 overflow-auto">
+        <div className="hidden md:block border-l border-cream-300 bg-cream-50 overflow-auto">
           {selected ? (
             <InboxDetail row={selected} busy={busy || Boolean(pending)} onApprove={() => requestDecision(selected, "approve")} onReject={() => requestDecision(selected, "reject")} />
           ) : (
@@ -360,17 +360,17 @@ const QueueRow = memo(function QueueRow({
   return (
     <div
       onClick={onFocus}
-      className={`py-3.5 px-4 grid grid-cols-[22px_72px_92px_1fr_auto_190px] gap-3.5 items-center border-b border-cream-200 transition-colors ${
+      className={`py-3.5 px-4 grid grid-cols-[auto_1fr_auto] md:grid-cols-[22px_72px_92px_1fr_auto_190px] gap-3.5 items-center border-b border-cream-200 transition-colors ${
         selected
           ? "bg-cream-50 border border-forest-800 border-l-[3px] border-l-amber-500"
           : "border-l-[3px] border-l-transparent hover:bg-cream-50/50"
       }`}
     >
-      <span className="font-mono text-[10px] text-sage-500 text-right">
+      <span className="hidden md:block font-mono text-[10px] text-sage-500 text-right">
         {String(index + 1).padStart(2, "0")}
       </span>
       <ABadge tone={meta.tone}>{meta.labelKo}</ABadge>
-      <span className="font-mono text-[10px] text-sage-500 truncate">{row.publicId}</span>
+      <span className="hidden md:block font-mono text-[10px] text-sage-500 truncate">{row.publicId}</span>
       <div className="min-w-0">
         <div className="text-[14px] font-medium text-forest-800 truncate flex items-center gap-2">
           {summary.title}
@@ -382,18 +382,18 @@ const QueueRow = memo(function QueueRow({
           {summary.subtitle}
         </div>
       </div>
-      <div className="text-right">
+      <div className="hidden md:block text-right">
         <div className="font-mono text-[13px] text-amber-600 font-semibold">{summary.amountOrTag}</div>
         <div className="font-mono text-[10px] text-sage-500 mt-0.5">{formatAge(row.createdAt)} 전</div>
       </div>
-      <div className="flex gap-1.5 justify-end">
+      <div className="flex gap-2 justify-end">
         <ABtn size="sm" variant={selected ? "success" : "ghost"} disabled={busy} onClick={(e) => { e.stopPropagation(); onApprove(); }}>
           ✓ 승인
         </ABtn>
-        <ABtn size="sm" variant="ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onReject(); }} className="!text-error-700 !border-error-100">
+        <ABtn size="sm" variant="ghost" disabled={busy} onClick={(e) => { e.stopPropagation(); onReject(); }} className="!text-error-700 !border-error-100 min-h-[40px] min-w-[40px]">
           ✕
         </ABtn>
-        <ABtn size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetail(); }}>
+        <ABtn size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onOpenDetail(); }} className="min-h-[40px] min-w-[40px]">
           ⋯
         </ABtn>
       </div>

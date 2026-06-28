@@ -309,7 +309,7 @@ export default function RequestDetail() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {isEditable && !isEditing && (
               <>
                 <button
@@ -600,6 +600,7 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
           {typeof (details as CommercialDetails).corporateAnnualIncome === "object" ? (
             <div className="py-3 border-b border-cream-200">
               <p className="text-body-sm mb-2">{t("request.corporateFinancials")}</p>
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-cream-200">
@@ -618,6 +619,7 @@ function V2ReadOnlyView({ request }: { request: RequestData }) {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           ) : (
             <>

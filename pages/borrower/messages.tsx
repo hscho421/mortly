@@ -465,7 +465,7 @@ export default function BorrowerMessagesPage() {
 
       {/* Error toast */}
       {error && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-sm bg-error-50 border border-error-500/20 px-5 py-3 shadow-lg " role="alert">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 max-w-[min(92vw,28rem)] rounded-sm bg-error-50 border border-error-500/20 px-5 py-3 shadow-lg " role="alert">
           <p className="font-body text-sm text-error-700">
             {error}
             <button
@@ -665,7 +665,7 @@ export default function BorrowerMessagesPage() {
                   {/* Mobile back button */}
                   <button
                     onClick={() => setMobileShowChat(false)}
-                    className="md:hidden shrink-0 rounded-sm p-1.5 text-forest-600 hover:bg-cream-200 transition-colors"
+                    className="md:hidden shrink-0 inline-flex items-center justify-center min-h-11 min-w-11 rounded-sm p-2.5 -m-1 text-forest-600 hover:bg-cream-200 transition-colors"
                     aria-label={t("chat.backToConversations")}
                   >
                     <svg
@@ -722,9 +722,24 @@ export default function BorrowerMessagesPage() {
                   {!isClosed && (
                     <button
                       onClick={() => setShowCloseConfirm(true)}
-                      className="btn-secondary !py-2 !px-3 !text-xs shrink-0"
+                      className="btn-secondary !py-2 !px-3 !text-xs shrink-0 inline-flex items-center gap-1.5"
+                      aria-label={t("messages.closeConversation")}
                     >
-                      {t("messages.closeConversation")}
+                      <svg
+                        className="h-4 w-4 shrink-0 sm:hidden"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18 18 6M6 6l12 12"
+                        />
+                      </svg>
+                      <span className="hidden sm:inline">{t("messages.closeConversation")}</span>
                     </button>
                   )}
                   {isClosed && (
@@ -739,7 +754,7 @@ export default function BorrowerMessagesPage() {
                     onClick={() => setContextOpen((v) => !v)}
                     aria-expanded={contextOpen}
                     aria-controls="borrower-request-context"
-                    className="shrink-0 rounded-sm border border-cream-300 bg-cream-50 p-1.5 text-forest-700 transition-colors hover:bg-cream-200 lg:hidden"
+                    className="shrink-0 inline-flex items-center justify-center min-h-11 min-w-11 rounded-sm border border-cream-300 bg-cream-50 p-2.5 -m-1 text-forest-700 transition-colors hover:bg-cream-200 lg:hidden"
                     title={t("borrower.requestContext", "Request context")}
                     aria-label={t("borrower.requestContext", "Request context")}
                   >

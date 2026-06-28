@@ -95,7 +95,7 @@ export default function HowItWorks() {
       <section className="section-padding bg-cream-100">
         <div className="max-w-5xl mx-auto">
           <div className="mb-16 animate-fade-in-up opacity-0">
-            <span className="inline-block px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-forest-700 bg-forest-100 rounded-full mb-5 font-body">
+            <span className="inline-block px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-forest-700 bg-forest-100 rounded-sm mb-5 font-body">
               {t("howItWorks.forBorrowers")}
             </span>
             <h2 className="heading-lg">{t("howItWorks.borrowerTitle")}</h2>

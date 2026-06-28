@@ -154,7 +154,7 @@ export default function BorrowerProfilePage() {
 
         {/* Account stats */}
         {profile && (
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-8">
             <div className="card-elevated !p-3 sm:!p-5 text-center">
               <p className="heading-md text-amber-600">{profile._count.borrowerRequests}</p>
               <p className="text-body-sm mt-1">{t("settings.requests", "Requests")}</p>

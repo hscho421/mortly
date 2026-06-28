@@ -247,11 +247,12 @@ export default function AdminSystemPage() {
                                   <input
                                     id={field.key}
                                     type={field.type}
+                                    inputMode={field.type === "number" ? "numeric" : undefined}
                                     value={draft[field.key] ?? ""}
                                     onChange={(e) =>
                                       setDraft((p) => ({ ...p, [field.key]: e.target.value }))
                                     }
-                                    className={`w-40 rounded-sm px-3 py-1.5 font-mono text-sm text-right ${
+                                    className={`w-28 sm:w-40 rounded-sm px-3 py-1.5 font-mono text-sm text-right ${
                                       modified
                                         ? "bg-amber-50 border border-amber-200 text-forest-800"
                                         : "bg-cream-50 border border-cream-300 text-forest-800"
@@ -300,24 +301,28 @@ export default function AdminSystemPage() {
                   {t("admin.system.auditEmpty", "아직 기록된 관리자 작업이 없습니다.")}
                 </div>
               ) : (
-                actions.map((a, i) => (
-                  <div
-                    key={a.id}
-                    className={`px-6 py-3 grid grid-cols-[80px_110px_140px_100px_1fr] gap-3 items-center text-[12px] ${i < actions.length - 1 ? "border-b border-cream-200" : ""}`}
-                  >
-                    <span className="font-mono text-[10px] text-sage-500">
-                      {formatTimeShort(a.createdAt)}
-                    </span>
-                    <span className="font-medium truncate">{a.admin.name || a.admin.email}</span>
-                    <span className="font-mono text-[10px] text-amber-700 font-semibold tracking-wide">
-                      {a.action}
-                    </span>
-                    <span className="font-mono text-[10px] text-sage-500 truncate">
-                      {a.targetId.slice(0, 10)}
-                    </span>
-                    <span className="text-forest-700 truncate">{a.reason || a.details || ""}</span>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[640px]">
+                    {actions.map((a, i) => (
+                      <div
+                        key={a.id}
+                        className={`px-6 py-3 grid grid-cols-[80px_110px_140px_100px_1fr] gap-3 items-center text-[12px] ${i < actions.length - 1 ? "border-b border-cream-200" : ""}`}
+                      >
+                        <span className="font-mono text-[10px] text-sage-500">
+                          {formatTimeShort(a.createdAt)}
+                        </span>
+                        <span className="font-medium truncate">{a.admin.name || a.admin.email}</span>
+                        <span className="font-mono text-[10px] text-amber-700 font-semibold tracking-wide">
+                          {a.action}
+                        </span>
+                        <span className="font-mono text-[10px] text-sage-500 truncate">
+                          {a.targetId.slice(0, 10)}
+                        </span>
+                        <span className="text-forest-700 truncate">{a.reason || a.details || ""}</span>
+                      </div>
+                    ))}
                   </div>
-                ))
+                </div>
               )}
             </ACard>
           )}

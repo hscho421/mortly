@@ -334,7 +334,7 @@ function FilterBar({
 }) {
   const { t } = useTranslation("common");
   return (
-    <div className="sticky top-[73px] z-10 flex flex-wrap items-center gap-2 border-b border-cream-300 bg-cream-50 px-5 py-3 sm:px-8">
+    <div className="sticky top-[57px] sm:top-[73px] z-10 flex flex-wrap items-center gap-2 border-b border-cream-300 bg-cream-50 px-5 py-3 sm:px-8">
       <ChipSelect
         value={province}
         onChange={setProvince}
@@ -364,7 +364,7 @@ function FilterBar({
         type="button"
         onClick={() => setOnlyUnresponded(!onlyUnresponded)}
         aria-pressed={onlyUnresponded}
-        className={`rounded-sm border px-3 py-1.5 font-body text-[12px] transition-colors ${
+        className={`rounded-sm border px-3 py-2 sm:py-1.5 font-body text-[12px] transition-colors ${
           onlyUnresponded
             ? "border-amber-500 bg-amber-50 text-amber-700"
             : "border-cream-300 bg-cream-50 text-forest-700/80 hover:bg-cream-200"
@@ -388,7 +388,7 @@ function ChipSelect({
   options: { value: string; label: string }[];
 }) {
   return (
-    <label className="relative inline-flex cursor-pointer items-center gap-1 rounded-sm border border-cream-300 bg-cream-50 px-3 py-1.5 font-body text-[12px] text-forest-700/80 transition-colors hover:bg-cream-200">
+    <label className="relative inline-flex cursor-pointer items-center gap-1 rounded-sm border border-cream-300 bg-cream-50 px-3 py-2 sm:py-1.5 font-body text-[12px] text-forest-700/80 transition-colors hover:bg-cream-200">
       {label}
       <svg
         className="h-3 w-3 text-sage-400"

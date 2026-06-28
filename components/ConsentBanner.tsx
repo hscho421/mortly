@@ -64,7 +64,7 @@ export default function ConsentBanner() {
       aria-label={t("consent.title", "Analytics consent")}
       className="fixed inset-x-0 bottom-0 z-[80] border-t border-cream-300 bg-cream-50/95 backdrop-blur-sm"
     >
-      <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p className="font-body text-[13px] leading-relaxed text-forest-700/80">
           {t(
             "consent.body",

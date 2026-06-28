@@ -174,7 +174,7 @@ export default function BorrowerShell({
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            className="p-2 rounded-sm border border-cream-300 bg-cream-50 text-forest-700"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 rounded-sm border border-cream-300 bg-cream-50 text-forest-700"
             aria-label={t("borrower.openNav", "Open navigation")}
           >
             <svg
@@ -314,7 +314,7 @@ function Sidebar({
           type="button"
           onClick={() => setConfirmOpen(true)}
           disabled={signingOut}
-          className="mt-1 flex w-full items-center gap-2 rounded-sm px-3 py-2 text-[12px] text-forest-700/70 transition-colors hover:bg-cream-200 hover:text-forest-800 disabled:opacity-60"
+          className="mt-1 flex max-md:min-h-[44px] w-full items-center gap-2 rounded-sm px-3 py-2.5 text-[12px] text-forest-700/70 transition-colors hover:bg-cream-200 hover:text-forest-800 disabled:opacity-60"
         >
           <span className="font-mono text-sage-400" aria-hidden>
             ⇥

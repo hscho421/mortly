@@ -13,7 +13,7 @@ export default function ServerError() {
         <title>{`${t("serverError.title")} — mortly`}</title>
       </Head>
 
-      <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4">
+      <div className="flex min-h-[calc(100dvh-160px)] items-center justify-center px-4">
         <div className="text-center animate-fade-in-up">
           <p className="font-display text-6xl text-forest-800 sm:text-8xl lg:text-9xl">500</p>
           <h1 className="mt-4 heading-lg">{t("serverError.heading")}</h1>

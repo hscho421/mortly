@@ -533,7 +533,7 @@ export default function BrokerMessagesPage() {
                       setActiveConversation(null);
                       setMessages([]);
                     }}
-                    className="md:hidden shrink-0 rounded-sm p-1.5 text-forest-600 transition-colors hover:bg-cream-200"
+                    className="md:hidden shrink-0 rounded-sm p-2.5 text-forest-600 transition-colors hover:bg-cream-200"
                     aria-label={t("chat.backToConversations")}
                   >
                     <svg
@@ -593,7 +593,7 @@ export default function BrokerMessagesPage() {
                     onClick={() => setContextOpen((v) => !v)}
                     aria-expanded={contextOpen}
                     aria-controls="broker-request-context"
-                    className="shrink-0 rounded-sm border border-cream-300 bg-cream-50 p-1.5 text-forest-700 transition-colors hover:bg-cream-200 lg:hidden"
+                    className="shrink-0 rounded-sm border border-cream-300 bg-cream-50 p-2.5 text-forest-700 transition-colors hover:bg-cream-200 lg:hidden"
                     title={t("broker.requestContext", "Request context")}
                     aria-label={t("broker.requestContext", "Request context")}
                   >
@@ -701,7 +701,7 @@ export default function BrokerMessagesPage() {
               )}
 
               {/* Message input */}
-              <div className="shrink-0 border-t border-cream-300 bg-white px-5 py-3.5">
+              <div className="shrink-0 border-t border-cream-300 bg-white px-5 py-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))]">
                 {isClosed ? (
                   <div className="text-center py-2">
                     <p className="font-body text-sm text-sage-500">

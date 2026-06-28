@@ -142,7 +142,7 @@ export default function VerifyEmailPage() {
       <Head>
         <title>{t("titles.verifyEmail")}</title>
       </Head>
-      <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
+      <div className="flex min-h-[calc(100dvh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           {/* Decorative top accent */}
           <div className="mb-8 flex justify-center opacity-0 animate-fade-in">
@@ -196,7 +196,7 @@ export default function VerifyEmailPage() {
                 <label className="label-text text-center block mb-3">
                   {t("auth.verificationCode")}
                 </label>
-                <div className="flex justify-center gap-2">
+                <div className="flex justify-center gap-1.5 sm:gap-2">
                   {code.map((digit, index) => (
                     <input
                       key={index}
@@ -207,7 +207,7 @@ export default function VerifyEmailPage() {
                       value={digit}
                       onChange={(e) => handleChange(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(index, e)}
-                      className="h-12 w-12 rounded-sm border-2 border-cream-300 bg-white text-center font-mono text-xl font-bold text-forest-800 transition-all duration-200 focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-200"
+                      className="h-12 w-10 sm:w-12 rounded-sm border-2 border-cream-300 bg-white text-center font-mono text-xl font-bold text-forest-800 transition-all duration-200 focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-200"
                     />
                   ))}
                 </div>

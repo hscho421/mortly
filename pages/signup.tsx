@@ -136,7 +136,7 @@ export default function SignupPage() {
       <Head>
         <title>{t("titles.signup")}</title>
       </Head>
-      <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
+      <div className="flex min-h-[calc(100dvh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           {/* Card */}
           <div className="card-elevated opacity-0 animate-fade-in-up stagger-1">
@@ -283,7 +283,7 @@ export default function SignupPage() {
                     onChange={(e) => setAgreedToTerms(e.target.checked)}
                     className="mt-0.5 h-4 w-4 rounded border-cream-400 text-forest-700 focus:ring-forest-500 cursor-pointer"
                   />
-                  <span className="font-body text-xs text-forest-700/70 leading-relaxed">
+                  <span className="font-body text-[13px] sm:text-xs text-forest-700/70 leading-relaxed">
                     {t("auth.agreeToTermsPrefix")}{" "}
                     <Link href="/terms" target="_blank" className="font-semibold text-forest-700 underline underline-offset-2 hover:text-amber-600 transition-colors">
                       {t("auth.termsOfService")}

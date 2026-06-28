@@ -245,7 +245,7 @@ export default function Privacy() {
       {/* When Identity Is Shared */}
       <section className="section-padding bg-cream-50">
         <div className="max-w-4xl mx-auto">
-          <div className="grid lg:grid-cols-12 gap-16 items-start">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
             <div className="lg:col-span-5 animate-fade-in-up opacity-0">
               <span className="font-body text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 mb-4 block">
                 {t("privacy.controlBadge")}

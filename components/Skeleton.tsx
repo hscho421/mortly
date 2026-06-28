@@ -96,7 +96,7 @@ export function SkeletonAdminDashboard() {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className={`grid grid-cols-[90px_110px_1fr_auto] gap-4 items-center px-5 py-4 ${i !== 0 ? "border-t border-cream-200" : ""}`}
+            className={`grid grid-cols-1 sm:grid-cols-[90px_110px_1fr_auto] gap-4 items-center px-5 py-4 ${i !== 0 ? "border-t border-cream-200" : ""}`}
           >
             <Skeleton className="h-5 w-14" />
             <Skeleton className="h-3 w-20" />
@@ -371,7 +371,7 @@ export function SkeletonForm() {
 
 export function SkeletonChat() {
   return (
-    <div className="flex" style={{ height: "calc(100vh - 80px)" }}>
+    <div className="flex" style={{ height: "calc(100dvh - 80px)" }}>
       {/* Sidebar */}
       <div className="w-80 border-r border-cream-300 bg-cream-50 hidden md:flex md:flex-col">
         <div className="p-5 border-b border-cream-300 space-y-2">

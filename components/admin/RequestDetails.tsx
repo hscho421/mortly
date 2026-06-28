@@ -73,7 +73,7 @@ export default function RequestDetails({
   return (
     <div>
       <div className={`${surface} ${innerPad}`}>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {basePairs.map(([k, v]) => (
             <Field key={k} label={k} value={v} />
           ))}

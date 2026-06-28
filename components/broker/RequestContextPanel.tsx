@@ -214,7 +214,7 @@ function PanelHeader({
           type="button"
           onClick={onClose}
           aria-label={t("common.close", "Close")}
-          className="rounded-sm p-1.5 text-sage-500 transition-colors hover:bg-cream-200 hover:text-forest-800"
+          className="rounded-sm p-2.5 text-sage-500 transition-colors hover:bg-cream-200 hover:text-forest-800"
         >
           <svg
             className="h-4 w-4"

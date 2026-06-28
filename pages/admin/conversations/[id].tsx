@@ -217,7 +217,7 @@ function ConversationBody({
 }) {
   const { t } = useTranslation("common");
   return (
-    <div className="px-7 pt-6 pb-10 max-w-4xl">
+    <div className="px-4 md:px-7 pt-6 pb-10 max-w-4xl">
       <Link
         href={{ pathname: "/admin/activity", query: { type: "CONV" } }}
         data-testid="conversation-back-link"

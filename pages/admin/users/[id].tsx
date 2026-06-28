@@ -540,7 +540,7 @@ function UserDetailBody({
               type="button"
               onClick={() => setPhotoOpen(false)}
               aria-label={t("admin.userDetail.close", "닫기")}
-              className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-forest-800 shadow-md hover:bg-cream-100"
+              className="absolute top-2 right-2 sm:-top-3 sm:-right-3 flex h-11 w-11 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-white text-forest-800 shadow-md hover:bg-cream-100"
             >
               ✕
             </button>
@@ -572,7 +572,7 @@ function UserInformation({ user }: { user: UserDetail }) {
           {t("admin.userDetail.infoTitle", "정보")}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 sm:p-6">
         {pairs.map(([k, v]) => (
           <div key={k}>
             <div className="font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em]">{k}</div>
@@ -771,7 +771,7 @@ function BrokerDetails({
           <ABadge tone={toneForTier(broker.subscriptionTier)}>{broker.subscriptionTier}</ABadge>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 sm:p-6">
         {pairs.map(([k, v]) => (
           <div key={k}>
             <div className="font-mono text-[10px] text-sage-500 uppercase tracking-[0.15em]">{k}</div>
@@ -859,7 +859,7 @@ function RecentRequestsTable({
             key={r.id}
             href={`/admin/activity?req=${r.publicId}`}
             data-testid="user-request-row"
-            className={`grid grid-cols-[110px_1fr_auto_140px] items-center gap-3 px-5 py-3 hover:bg-cream-100 transition-colors ${
+            className={`grid grid-cols-[90px_1fr_auto] sm:grid-cols-[110px_1fr_auto_140px] items-center gap-3 px-5 py-3 hover:bg-cream-100 transition-colors ${
               i < requests.length - 1 ? "border-b border-cream-200" : ""
             }`}
           >
@@ -872,7 +872,7 @@ function RecentRequestsTable({
                 : t("request.residential", "주거용")}
             </span>
             <ABadge tone={toneForRequestStatus(r.status)}>{r.status}</ABadge>
-            <span className="font-mono text-[11px] text-sage-500 text-right truncate">
+            <span className="hidden sm:block font-mono text-[11px] text-sage-500 text-right truncate">
               {formatAdminDate(r.createdAt, "short")}
             </span>
           </Link>
@@ -911,7 +911,7 @@ function RecentConversationsTable({
               key={c.id}
               href={`/admin/activity?id=${c.id}`}
               data-testid="user-conversation-row"
-              className={`grid grid-cols-[110px_1fr_auto_140px] items-center gap-3 px-5 py-3 hover:bg-cream-100 transition-colors ${
+              className={`grid grid-cols-[90px_1fr_auto] sm:grid-cols-[110px_1fr_auto_140px] items-center gap-3 px-5 py-3 hover:bg-cream-100 transition-colors ${
                 i < conversations.length - 1 ? "border-b border-cream-200" : ""
               }`}
             >
@@ -920,7 +920,7 @@ function RecentConversationsTable({
                 {other} · {c._count.messages} {t("admin.userDetail.conversations.messages", "메시지")}
               </span>
               <ABadge tone={toneForConversationStatus(c.status)}>{c.status}</ABadge>
-              <span className="font-mono text-[11px] text-sage-500 text-right truncate">
+              <span className="hidden sm:block font-mono text-[11px] text-sage-500 text-right truncate">
                 {formatAdminDate(c.updatedAt, "short")}
               </span>
             </Link>

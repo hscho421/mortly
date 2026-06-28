@@ -24,7 +24,7 @@ export default function ASectionHead({
           <div className="eyebrow">— {label}</div>
         )}
         <h1
-          className={`${big ? "text-4xl" : "text-2xl"} font-display font-semibold text-forest-800 tracking-tight mt-1.5 leading-tight`}
+          className={`${big ? "text-3xl sm:text-4xl" : "text-xl sm:text-2xl"} font-display font-semibold text-forest-800 tracking-tight mt-1.5 leading-tight`}
         >
           {title}
         </h1>

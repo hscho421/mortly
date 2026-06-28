@@ -76,7 +76,7 @@ export default function SelectRolePage() {
         <Head>
           <title>{t("titles.selectRole")}</title>
         </Head>
-        <div className="flex min-h-[calc(100vh-160px)] items-center justify-center">
+        <div className="flex min-h-[calc(100dvh-160px)] items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-forest-300 border-t-forest-700" />
         </div>
       </Layout>
@@ -88,7 +88,7 @@ export default function SelectRolePage() {
       <Head>
         <title>{t("titles.selectRole")}</title>
       </Head>
-      <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
+      <div className="flex min-h-[calc(100dvh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           <div className="mb-8 flex justify-center opacity-0 animate-fade-in">
             <div className="flex items-center gap-3">
@@ -114,7 +114,7 @@ export default function SelectRolePage() {
 
             <div className="opacity-0 animate-fade-in-up stagger-2">
               <label className="label-text">{t("auth.role")}</label>
-              <div className="mt-2 grid grid-cols-2 gap-3">
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole("BORROWER")}

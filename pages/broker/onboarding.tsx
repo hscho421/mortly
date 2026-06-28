@@ -181,7 +181,7 @@ export default function BrokerOnboardingPage() {
       {cropSrc && (
         <AvatarCropper imageSrc={cropSrc} onCancel={closeCropper} onCropped={onCropped} />
       )}
-      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-16 lg:px-8">
         {/* Header */}
         <div className="mb-10 text-center ">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-sm bg-forest-100">
@@ -303,7 +303,7 @@ export default function BrokerOnboardingPage() {
               {t("broker.phone")} <span className="text-amber-600">*</span>
             </label>
             <div className="flex">
-              <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-cream-300 bg-cream-50 font-body text-sm text-forest-700/70">
+              <span className="inline-flex items-center px-4 rounded-l-sm border border-r-0 border-cream-300 bg-cream-50 font-body text-sm text-forest-700/70">
                 +1
               </span>
               <input
@@ -339,7 +339,7 @@ export default function BrokerOnboardingPage() {
                     onClick={() =>
                       setForm((prev) => ({ ...prev, mortgageCategory: cat }))
                     }
-                    className={`rounded-sm border-2 px-3 py-3 text-center font-body text-sm font-medium transition-all ${
+                    className={`rounded-sm border-2 px-2 py-2.5 text-center font-body text-[13px] font-medium transition-all sm:px-3 sm:py-3 sm:text-sm ${
                       isSelected
                         ? "border-forest-600 bg-forest-50 text-forest-800"
                         : "border-cream-200 bg-white text-sage-500 hover:border-forest-300 hover:bg-cream-50"

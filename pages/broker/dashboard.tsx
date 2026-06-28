@@ -266,7 +266,7 @@ export default function BrokerDashboardPage() {
             </div>
             <button
               onClick={() => setShowVerifiedBanner(false)}
-              className="text-success-700/60 hover:text-success-700"
+              className="-m-1.5 p-1.5 text-success-700/60 hover:text-success-700"
               aria-label={t("common.dismiss", "Dismiss")}
             >
               <svg

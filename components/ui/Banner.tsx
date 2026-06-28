@@ -77,7 +77,7 @@ export default function Banner({
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss"
-          className={`shrink-0 -mr-1 -mt-1 p-1 transition-colors ${ICON_CLASS[tone]} hover:opacity-70`}
+          className={`shrink-0 -mr-1 -mt-1 p-2 transition-colors ${ICON_CLASS[tone]} hover:opacity-70`}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />

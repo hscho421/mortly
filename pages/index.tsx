@@ -69,7 +69,7 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                 <br />
                 {t("home.subtitle2")}
               </p>
-              <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-start gap-3">
+              <div className="animate-fade-in-up opacity-0 stagger-4 mt-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 {!authReady ? (
                   // Invisible spacer matching the button height (py-3.5 + text)
                   // so the hero doesn't shift when the session resolves.
@@ -77,21 +77,21 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                 ) : session ? (
                   <Link
                     href={dashboardHref}
-                    className="inline-flex items-center justify-center gap-2 rounded-sm bg-amber-500 px-7 py-3.5 font-body text-sm font-semibold text-white transition-all duration-200 hover:bg-amber-600 min-w-[180px]"
+                    className="inline-flex items-center justify-center gap-2 rounded-sm bg-amber-500 px-7 py-3.5 font-body text-sm font-semibold text-white transition-all duration-200 hover:bg-amber-600 w-full sm:w-auto min-w-[180px]"
                   >
                     {t("home.goToDashboard")} →
                   </Link>
                 ) : (
                   <Link
                     href="/signup"
-                    className="inline-flex items-center justify-center gap-2 rounded-sm bg-amber-500 px-7 py-3.5 font-body text-sm font-semibold text-white transition-all duration-200 hover:bg-amber-600 min-w-[180px]"
+                    className="inline-flex items-center justify-center gap-2 rounded-sm bg-amber-500 px-7 py-3.5 font-body text-sm font-semibold text-white transition-all duration-200 hover:bg-amber-600 w-full sm:w-auto min-w-[180px]"
                   >
                     {t("home.getStartedNow")} →
                   </Link>
                 )}
                 <Link
                   href="/how-it-works"
-                  className="inline-flex items-center justify-center rounded-sm border border-cream-300/25 px-7 py-3.5 font-body text-sm font-semibold text-cream-100 transition-all duration-200 hover:bg-cream-100/5 hover:border-cream-300/50 min-w-[180px]"
+                  className="inline-flex items-center justify-center rounded-sm border border-cream-300/25 px-7 py-3.5 font-body text-sm font-semibold text-cream-100 transition-all duration-200 hover:bg-cream-100/5 hover:border-cream-300/50 w-full sm:w-auto min-w-[180px]"
                 >
                   {t("home.submitRequest")}
                 </Link>
@@ -125,7 +125,7 @@ export default function Home({ liveRequests }: InferGetStaticPropsType<typeof ge
                   ].map((item, i) => (
                     <div
                       key={item.label}
-                      className={`grid grid-cols-[1fr_1.1fr] gap-3 py-2.5 items-center text-[13px] ${i ? "border-t border-cream-100/[0.06]" : ""}`}
+                      className={`grid grid-cols-1 gap-0.5 sm:grid-cols-[1fr_1.1fr] sm:gap-3 py-2.5 items-center ${i ? "border-t border-cream-100/[0.06]" : ""}`}
                     >
                       <div className="text-cream-100">{item.label}</div>
                       <div className="text-cream-200/60 text-xs">{item.desc}</div>

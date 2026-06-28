@@ -400,7 +400,7 @@ export default function BrokerProfilePage() {
               {t("broker.phone")} <span className="text-amber-600">*</span>
             </label>
             <div className="flex">
-              <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-cream-300 bg-cream-50 font-body text-sm text-forest-700/70">
+              <span className="inline-flex items-center px-4 rounded-l-sm border border-r-0 border-cream-300 bg-cream-50 font-body text-sm text-forest-700/70">
                 +1
               </span>
               <input
@@ -436,7 +436,7 @@ export default function BrokerProfilePage() {
                     onClick={() =>
                       setForm((prev) => ({ ...prev, mortgageCategory: cat }))
                     }
-                    className={`rounded-sm border-2 px-3 py-3 text-center font-body text-sm font-medium transition-all ${
+                    className={`rounded-sm border-2 px-2 py-2.5 text-[13px] sm:px-3 sm:py-3 sm:text-sm text-center font-body font-medium transition-all ${
                       isSelected
                         ? "border-forest-600 bg-forest-50 text-forest-800"
                         : "border-cream-200 bg-white text-sage-500 hover:border-forest-300 hover:bg-cream-50"

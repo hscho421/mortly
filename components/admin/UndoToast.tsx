@@ -63,7 +63,7 @@ export default function UndoToast({ label, graceMs = 3000, onCommit, onUndo }: U
   return (
     <div
       role="status"
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[360px] bg-forest-800 text-cream-100 border border-forest-700 rounded-sm shadow-xl overflow-hidden"
+      className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 w-[360px] max-w-[calc(100vw-2rem)] bg-forest-800 text-cream-100 border border-forest-700 rounded-sm shadow-xl overflow-hidden"
     >
       <div className="flex items-center gap-3 px-4 py-3">
         <span className="font-display text-amber-500">✓</span>

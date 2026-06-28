@@ -17,7 +17,7 @@ export interface ATabsProps {
 
 export default function ATabs({ items, active, onChange, right }: ATabsProps) {
   return (
-    <div className="flex items-end border-b border-cream-300">
+    <div className="flex items-end border-b border-cream-300 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none] [scrollbar-width:none]">
       {items.map((it) => {
         const on = active === it.key;
         return (

@@ -316,7 +316,7 @@ export default function Navbar() {
           {/* Mobile hamburger */}
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-sm p-2 text-forest-600 transition-colors hover:bg-cream-200 md:hidden"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm p-2 text-forest-600 transition-colors hover:bg-cream-200 md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-expanded={mobileOpen}
             aria-controls="mobile-menu"
@@ -345,7 +345,7 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center rounded-sm px-3 py-2.5 font-body text-[13px] transition-all duration-200 ${
+                className={`flex items-center rounded-sm px-3 py-3 font-body text-[13px] transition-all duration-200 ${
                   isActive(link.href) || (link.href === messagesHref && isMessagesActive)
                     ? "bg-cream-200 text-forest-800 font-medium border-l-2 border-amber-500"
                     : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
@@ -366,10 +366,10 @@ export default function Navbar() {
           {/* Mobile language switcher */}
           <div className="flex items-center gap-3 px-3 py-1.5">
             <span className="mono-label">{t("misc.language")}</span>
-            <div className="flex items-center gap-2 font-mono text-[11px] tracking-[0.12em]">
+            <div className="flex items-center gap-3 font-mono text-[11px] tracking-[0.12em]">
               <button
                 onClick={() => { switchLocale("ko"); setMobileOpen(false); }}
-                className={`transition-colors duration-200 ${
+                className={`px-3 py-2.5 transition-colors duration-200 ${
                   router.locale === "ko" ? "text-forest-800 font-semibold" : "text-sage-400"
                 }`}
               >
@@ -378,7 +378,7 @@ export default function Navbar() {
               <span className="text-sage-300">·</span>
               <button
                 onClick={() => { switchLocale("en"); setMobileOpen(false); }}
-                className={`transition-colors duration-200 ${
+                className={`px-3 py-2.5 transition-colors duration-200 ${
                   router.locale === "en" ? "text-forest-800 font-semibold" : "text-sage-400"
                 }`}
               >
@@ -399,7 +399,7 @@ export default function Navbar() {
               {showUserLinks && (
                 <button
                   onClick={() => { setMobileOpen(false); setNoticeOpen(!noticeOpen); }}
-                  className="flex w-full items-center gap-3 rounded-sm px-3 py-2.5 font-body text-[13px] font-medium text-forest-600/70 transition-all duration-200 hover:bg-cream-200 hover:text-forest-800"
+                  className="flex w-full items-center gap-3 rounded-sm px-3 py-3 font-body text-[13px] font-medium text-forest-600/70 transition-all duration-200 hover:bg-cream-200 hover:text-forest-800"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
@@ -416,7 +416,7 @@ export default function Navbar() {
               <Link
                 href={profileHref}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 rounded-sm px-3 py-2.5 font-body text-[13px] font-medium transition-all duration-200 ${
+                className={`flex items-center gap-3 rounded-sm px-3 py-3 font-body text-[13px] font-medium transition-all duration-200 ${
                   isProfileActive
                     ? "bg-cream-200 text-forest-800 border-l-2 border-amber-500"
                     : "text-forest-600/70 hover:bg-cream-200 hover:text-forest-800"
@@ -436,7 +436,7 @@ export default function Navbar() {
                   setMobileOpen(false);
                   setShowLogoutConfirm(true);
                 }}
-                className="flex w-full items-center gap-3 rounded-sm px-3 py-2.5 font-body text-[13px] font-medium text-red-500/80 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
+                className="flex w-full items-center gap-3 rounded-sm px-3 py-3 font-body text-[13px] font-medium text-red-500/80 transition-all duration-200 hover:bg-red-50 hover:text-red-600"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
@@ -471,7 +471,7 @@ export default function Navbar() {
         container, so on mobile the button used to do nothing visible. */}
     {noticeOpen && (
       <div
-        className="md:hidden fixed inset-x-0 top-[57px] bottom-0 z-50 bg-black/30"
+        className="md:hidden fixed inset-x-0 top-16 bottom-0 z-50 bg-black/30"
         onClick={() => setNoticeOpen(false)}
       >
         <div
@@ -486,7 +486,7 @@ export default function Navbar() {
             </p>
             <button
               onClick={() => setNoticeOpen(false)}
-              className="rounded-sm p-1 text-forest-500 hover:bg-cream-200"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm p-2.5 text-forest-500 hover:bg-cream-200"
               aria-label={t("common.close", "Close")}
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

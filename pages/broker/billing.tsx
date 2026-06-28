@@ -766,27 +766,27 @@ export default function BrokerBillingPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b-2 border-cream-300">
-                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceDate")}</th>
-                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceNumber")}</th>
-                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceAmount")}</th>
-                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceStatus")}</th>
-                  <th className="px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceDownload")}</th>
+                  <th className="px-4 sm:px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceDate")}</th>
+                  <th className="px-4 sm:px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceNumber")}</th>
+                  <th className="px-4 sm:px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceAmount")}</th>
+                  <th className="px-4 sm:px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceStatus")}</th>
+                  <th className="px-4 sm:px-6 py-4 font-body text-xs font-semibold uppercase tracking-wider text-forest-700/50">{t("broker.invoiceDownload")}</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.map((inv, index) => (
                   <tr key={inv.id} className={`border-b border-cream-200 ${index % 2 === 0 ? "bg-cream-50/50" : ""}`}>
-                    <td className="px-6 py-3 font-body text-sm text-forest-700">{formatInvoiceDate(inv.created, router.locale || "ko")}</td>
-                    <td className="px-6 py-3 font-body text-sm text-forest-700">{inv.number || "—"}</td>
-                    <td className="px-6 py-3 font-body text-sm font-medium text-forest-800">{formatCurrency(inv.amountPaid, inv.currency)}</td>
-                    <td className="px-6 py-3">
+                    <td className="px-4 sm:px-6 py-3 font-body text-sm text-forest-700">{formatInvoiceDate(inv.created, router.locale || "ko")}</td>
+                    <td className="px-4 sm:px-6 py-3 font-body text-sm text-forest-700">{inv.number || "—"}</td>
+                    <td className="px-4 sm:px-6 py-3 font-body text-sm font-medium text-forest-800">{formatCurrency(inv.amountPaid, inv.currency)}</td>
+                    <td className="px-4 sm:px-6 py-3">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${
                         inv.status === "paid" ? "bg-forest-100 text-forest-700" : "bg-amber-100 text-amber-800"
                       }`}>
                         {inv.status}
                       </span>
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-4 sm:px-6 py-3">
                       {inv.invoicePdf && (
                         <a
                           href={inv.invoicePdf}

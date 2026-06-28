@@ -29,7 +29,7 @@ export default function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs border transition-colors ${
+      className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-sm text-xs border transition-colors ${
         active
           ? "bg-forest-800 text-cream-100 border-forest-800 font-semibold"
           : "bg-cream-50 text-forest-700 border-cream-300 hover:border-forest-300"

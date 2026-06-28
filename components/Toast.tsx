@@ -68,7 +68,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       {/* Toast container */}
       <div
-        className="fixed top-16 sm:top-20 right-4 z-[70] flex flex-col gap-3 max-w-sm w-full pointer-events-none"
+        className="fixed top-16 sm:top-20 inset-x-4 w-auto sm:inset-x-auto sm:right-4 sm:w-full z-[70] flex flex-col gap-3 max-w-sm pointer-events-none"
         aria-live="polite"
       >
         {toasts.map((t) => (
@@ -94,7 +94,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       <p className="font-body text-sm flex-1">{toast.message}</p>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="shrink-0 opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+        className="shrink-0 p-1.5 -m-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
         aria-label="Dismiss"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

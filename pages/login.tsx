@@ -123,7 +123,7 @@ export default function LoginPage() {
       <Head>
         <title>{t("titles.login")}</title>
       </Head>
-      <div className="flex min-h-[calc(100vh-160px)] items-center justify-center px-4 py-16">
+      <div className="flex min-h-[calc(100dvh-160px)] items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           {/* Card */}
           <div className="card-elevated opacity-0 animate-fade-in-up stagger-1">

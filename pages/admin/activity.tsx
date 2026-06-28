@@ -423,10 +423,10 @@ export default function AdminActivityPage() {
   return (
     <AdminShell active="activity" pageTitle={t("admin.activity.pageTitle", "활동 · mortly admin")}>
       <div
-        className={`grid h-full min-h-0 ${showDrawer ? "grid-cols-[1fr_520px]" : "grid-cols-1"}`}
+        className={`grid h-full min-h-0 ${showDrawer ? "grid-cols-1 md:grid-cols-[1fr_520px]" : "grid-cols-1"}`}
       >
         <div className="flex flex-col min-w-0 min-h-0 overflow-auto">
-          <div className="px-7 pt-6 pr-5">
+          <div className="px-4 md:px-7 pt-6 pr-4 md:pr-5">
             <ASectionHead
               label={t("admin.nav.activity", "활동")}
               title={t("admin.activity.title", "상담 요청 · 대화")}
@@ -449,7 +449,7 @@ export default function AdminActivityPage() {
             </div>
           </div>
 
-          <div className="px-7 pb-10 pr-5">
+          <div className="px-4 md:px-7 pb-10 pr-4 md:pr-5">
             {loading ? (
               <div className="p-10 text-center text-sm text-sage-500">{t("common.loading", "로딩 중…")}</div>
             ) : visible.length === 0 ? (
@@ -607,12 +607,12 @@ const ActivityRow = memo(function ActivityRow({
       <button
         type="button"
         onClick={onOpen}
-        className={`w-full text-left grid grid-cols-[48px_90px_1fr_auto] gap-3.5 items-center px-4 py-3.5 border-b border-cream-200 border-l-[3px] ${
+        className={`w-full text-left grid grid-cols-[44px_1fr_auto] sm:grid-cols-[48px_90px_1fr_auto] gap-3.5 items-center px-4 py-3.5 border-b border-cream-200 border-l-[3px] ${
           selected ? "bg-cream-50 border-l-amber-500" : "border-l-transparent hover:bg-cream-50/50"
         }`}
       >
         <ABadge tone="accent">REQ</ABadge>
-        <span className="font-mono text-[10px] text-sage-500">{r.publicId}</span>
+        <span className="hidden sm:inline font-mono text-[10px] text-sage-500">{r.publicId}</span>
         <div className="min-w-0">
           <div className="text-[13px] font-medium text-forest-800 truncate">
             {r.borrower.name || r.borrower.email} · {r._count.conversations} 전문가 응답
@@ -636,12 +636,12 @@ const ActivityRow = memo(function ActivityRow({
     <button
       type="button"
       onClick={onOpen}
-      className={`w-full text-left grid grid-cols-[48px_90px_1fr_auto] gap-3.5 items-center px-4 py-3.5 border-b border-cream-200 border-l-[3px] ${
+      className={`w-full text-left grid grid-cols-[44px_1fr_auto] sm:grid-cols-[48px_90px_1fr_auto] gap-3.5 items-center px-4 py-3.5 border-b border-cream-200 border-l-[3px] ${
         selected ? "bg-cream-50 border-l-amber-500" : "border-l-transparent hover:bg-cream-50/50"
       }`}
     >
       <ABadge tone="info">CONV</ABadge>
-      <span className="font-mono text-[10px] text-sage-500">{c.publicId}</span>
+      <span className="hidden sm:inline font-mono text-[10px] text-sage-500">{c.publicId}</span>
       <div className="min-w-0">
         <div className="text-[13px] font-medium text-forest-800 truncate">
           {other} ↔ {broker}

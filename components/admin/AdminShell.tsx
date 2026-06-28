@@ -160,7 +160,7 @@ function AdminShellChrome({
   const { badges, badgesLoaded, error } = useAdminData();
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-cream-100 text-forest-800">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-cream-100 text-forest-800">
       {/* ── Left rail ─────────────────────────────────── */}
       <aside className="w-[72px] shrink-0 flex flex-col items-center py-4 bg-forest-800 text-cream-100">
         <Link
@@ -212,7 +212,7 @@ function AdminShellChrome({
 
       {/* ── Main column ───────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-center justify-between gap-5 px-7 py-3.5 border-b border-cream-300 bg-cream-50">
+        <div className="flex items-center justify-between gap-5 px-4 py-3 sm:px-7 sm:py-3.5 border-b border-cream-300 bg-cream-50">
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}

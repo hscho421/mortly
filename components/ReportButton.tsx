@@ -73,7 +73,7 @@ export default function ReportButton({ targetType, targetId }: ReportButtonProps
           setFeedback(null);
         }}
         title={t("report.title")}
-        className="inline-flex items-center justify-center rounded-sm p-1.5 text-sage-400 hover:text-amber-600 hover:bg-amber-50 transition-colors duration-200"
+        className="inline-flex items-center justify-center rounded-sm p-2.5 -m-1 text-sage-400 hover:text-amber-600 hover:bg-amber-50 transition-colors duration-200"
       >
         <svg
           className="h-4 w-4"
