@@ -302,7 +302,7 @@ function Sidebar({
 
   return (
     <aside
-      className={`flex w-[240px] shrink-0 flex-col border-r border-cream-300 bg-cream-50 ${className}`}
+      className={`flex h-full w-[240px] shrink-0 flex-col border-r border-cream-300 bg-cream-50 ${className}`}
     >
       <div className="flex items-baseline justify-between border-b border-cream-300 px-5 py-4">
         <BrandMark href="/broker/dashboard" className="h-7 w-auto" />
