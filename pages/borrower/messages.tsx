@@ -759,7 +759,7 @@ export default function BorrowerMessagesPage() {
                     aria-label={t("borrower.requestContext", "Request context")}
                   >
                     <svg
-                      className="h-4 w-4"
+                      className="h-5 w-5"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.8}
@@ -768,7 +768,7 @@ export default function BorrowerMessagesPage() {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M11.25 4.5h1.5m-1.5 4.5h1.5m-1.5 4.5h1.5M5.25 19.5h13.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H5.25A1.5 1.5 0 0 0 3.75 6v12a1.5 1.5 0 0 0 1.5 1.5Z"
+                        d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
                       />
                     </svg>
                   </button>
@@ -926,7 +926,7 @@ export default function BorrowerMessagesPage() {
               onClick={() => setContextOpen(false)}
               className="fixed inset-0 z-40 bg-forest-900/40 backdrop-blur-sm lg:hidden"
             />
-            <div className="fixed inset-y-0 right-0 z-50 w-[min(100vw,360px)] lg:hidden">
+            <div className="fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] flex-col overflow-hidden rounded-t-sm border-t border-cream-300 bg-cream-50 pb-[env(safe-area-inset-bottom)] animate-fade-in-up lg:hidden">
               {chatLoading ? (
                 <RequestContextSkeleton />
               ) : (

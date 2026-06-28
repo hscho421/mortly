@@ -57,7 +57,7 @@ export default function RequestContextPanel({
   if (!request) {
     return (
       <aside
-        className="flex h-full w-full flex-col border-l border-cream-300 bg-cream-50"
+        className="flex h-full w-full flex-col border-cream-300 bg-cream-50 lg:border-l"
         aria-label={t("broker.requestContext", "Request context")}
       >
         <PanelHeader onClose={onClose} t={t} />
