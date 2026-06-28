@@ -11,6 +11,24 @@
  */
 import { summarizeProbe } from "../lib/rls";
 
+// Self-load env (tsx doesn't read .env, and these are NEXT_PUBLIC_ vars not
+// otherwise exported). Node 20.12+/21.7+ ships process.loadEnvFile; skip if the
+// var is already in the environment (e.g. CI).
+function loadEnv(): void {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) return;
+  const loader = (process as unknown as { loadEnvFile?: (p: string) => void }).loadEnvFile;
+  if (typeof loader !== "function") return;
+  for (const file of [".env.local", ".env"]) {
+    try {
+      loader.call(process, file);
+      if (process.env.NEXT_PUBLIC_SUPABASE_URL) return;
+    } catch {
+      /* file absent — try the next one */
+    }
+  }
+}
+loadEnv();
+
 const TABLES = ["messages", "conversations"] as const;
 
 async function probe(baseUrl: string, anonKey: string, table: string) {
