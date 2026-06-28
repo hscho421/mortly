@@ -228,7 +228,7 @@ export default function BrokerDashboardPage() {
             <Badge tone={tier === "PRO" || tier === "PREMIUM" ? "accent" : "neutral"}>
               {tier}
             </Badge>
-            <div className="hidden sm:flex items-center gap-1 rounded-sm border border-cream-300 bg-cream-50 px-3 py-1 font-mono text-[11px] text-sage-500">
+            <div className="flex items-center gap-1 rounded-sm border border-cream-300 bg-cream-50 px-3 py-1 font-mono text-[11px] text-sage-500">
               <span className="text-amber-600">●</span>
               {t("broker.responseCredits", "Credits")}:{" "}
               <span className="font-semibold text-forest-800">

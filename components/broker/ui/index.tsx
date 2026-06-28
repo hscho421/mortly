@@ -252,7 +252,7 @@ export function AppTopbar({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-cream-300 bg-cream-100/95 backdrop-blur-sm px-5 py-4 sm:px-8 sm:py-5">
+    <div className="sticky top-0 z-20 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 border-b border-cream-300 bg-cream-100/95 backdrop-blur-sm px-5 py-4 sm:px-8 sm:py-5">
       <div className="min-w-0 flex-1">
         {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
         <h1 className="mt-1 font-display font-semibold text-2xl sm:text-3xl leading-tight tracking-tight text-forest-800 truncate">
@@ -265,7 +265,7 @@ export function AppTopbar({
         )}
       </div>
       {actions && (
-        <div className="flex items-center gap-2 shrink-0">{actions}</div>
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">{actions}</div>
       )}
     </div>
   );
