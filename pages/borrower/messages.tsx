@@ -926,7 +926,7 @@ export default function BorrowerMessagesPage() {
               onClick={() => setContextOpen(false)}
               className="fixed inset-0 z-40 bg-forest-900/40 backdrop-blur-sm lg:hidden"
             />
-            <div className="fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] flex-col overflow-hidden rounded-t-sm border-t border-cream-300 bg-cream-50 pb-[env(safe-area-inset-bottom)] animate-fade-in-up lg:hidden">
+            <div className="fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] flex-col overflow-hidden rounded-t-sm border-t border-cream-300 bg-cream-50 pb-[env(safe-area-inset-bottom)] animate-slide-up lg:hidden">
               {chatLoading ? (
                 <RequestContextSkeleton />
               ) : (
