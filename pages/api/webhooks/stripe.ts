@@ -2,7 +2,6 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type Stripe from "stripe";
 import { getStripe, getTierForPriceId, getPriceIdForTier, getCreditsForTier } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
-import { getPostHogClient } from "@/lib/posthog-server";
 import { sendPaymentFailedEmail } from "@/lib/email";
 import type { Prisma, SubscriptionTier } from "@prisma/client";
 
@@ -296,13 +295,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     });
     await setBrokerPlan(tx, brokerId, tier as SubscriptionTier, credits);
   });
-
-  const posthog = getPostHogClient();
-  posthog.capture({
-    distinctId: brokerId,
-    event: "subscription_checkout_completed",
-    properties: { tier, broker_id: brokerId },
-  });
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
@@ -402,13 +394,6 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
       },
     });
     await setBrokerPlan(tx, subscription.broker.id, tier as SubscriptionTier, credits);
-  });
-
-  const posthog = getPostHogClient();
-  posthog.capture({
-    distinctId: subscription.broker.id,
-    event: "subscription_renewed",
-    properties: { tier, broker_id: subscription.broker.id },
   });
 }
 
@@ -515,13 +500,6 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   } catch (err) {
     console.error("payment-failed notification failed:", err);
   }
-
-  const posthog = getPostHogClient();
-  posthog.capture({
-    distinctId: subscription.broker.id,
-    event: "subscription_payment_failed",
-    properties: { tier: subscription.tier, broker_id: subscription.broker.id },
-  });
 }
 
 async function handleSubscriptionUpdated(stripeSub: Stripe.Subscription) {
@@ -644,13 +622,6 @@ async function handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
       data: { subscriptionTier: "FREE", responseCredits: freeCredits, bonusCredits: 0 },
     }),
   ]);
-
-  const posthog = getPostHogClient();
-  posthog.capture({
-    distinctId: subscription.broker.id,
-    event: "subscription_cancelled",
-    properties: { previous_tier: subscription.tier, broker_id: subscription.broker.id },
-  });
 }
 
 async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
@@ -693,13 +664,6 @@ async function handleChargeDisputeCreated(dispute: Stripe.Dispute) {
       data: { responseCredits: freeCredits },
     }),
   ]);
-
-  const posthog = getPostHogClient();
-  posthog.capture({
-    distinctId: broker.id,
-    event: "subscription_disputed",
-    properties: { broker_id: broker.id, tier: broker.subscription.tier },
-  });
 }
 
 async function handleCustomerDeleted(customer: Stripe.Customer) {

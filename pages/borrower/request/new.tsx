@@ -14,7 +14,6 @@ import RequestForm, {
   type RequestFormSnapshot,
 } from "@/components/RequestForm";
 import type { CreateRequestInput } from "@/types";
-import posthog from "posthog-js";
 
 export const getStaticProps: GetStaticProps = async ({ locale }) => ({
   props: {
@@ -85,10 +84,6 @@ export default function NewRequestPage() {
     }
 
     const created = await res.json();
-    posthog.capture("loan_request_submitted", {
-      mortgage_category: data.mortgageCategory,
-      province: data.province,
-    });
     // Invalidate the cached borrower lists so the dashboard sees the new
     // request immediately (without waiting for the 30s context poll).
     refreshBorrowerData().catch(() => {

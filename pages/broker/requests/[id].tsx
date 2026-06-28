@@ -18,7 +18,6 @@ import {
   CommercialBlocks,
 } from "@/components/broker/RequestDetailBlocks";
 import { useTranslation } from "next-i18next";
-import posthog from "posthog-js";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import nextI18NextConfig from "@/next-i18next.config.js";
 import type { GetStaticProps, GetStaticPaths } from "next";
@@ -122,9 +121,6 @@ export default function BrokerRequestDetailPage() {
       }
 
       const conversation = await res.json();
-      posthog.capture("broker_conversation_started", {
-        request_id: request.publicId,
-      });
       // Refresh shell context so the topbar credit chip and sidebar
       // counters reflect the post-deduction state without waiting for the
       // 30s poll. Fire-and-forget; the navigation below doesn't depend on
@@ -135,8 +131,7 @@ export default function BrokerRequestDetailPage() {
       router.push(`/broker/messages?id=${conversation.id}`, undefined, {
         locale: router.locale,
       });
-    } catch (err) {
-      posthog.captureException(err);
+    } catch {
       setActionError({ message: t("common.unexpectedError") });
       setIsStartingChat(false);
     }

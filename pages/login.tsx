@@ -6,7 +6,6 @@ import Head from "next/head";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import posthog from "posthog-js";
 
 const ROLE_REDIRECTS: Record<string, string> = {
   BORROWER: "/borrower/dashboard",
@@ -101,18 +100,10 @@ export default function LoginPage() {
       const session = await sessionRes.json();
       const role = session?.user?.role;
 
-      // Key analytics on the opaque publicId, never the raw email (PII in the
-      // distinct_id leaks into every event and the PostHog UI).
-      if (session?.user?.publicId) {
-        posthog.identify(session.user.publicId, { role });
-      }
-      posthog.capture("user_logged_in", { role, method: "credentials" });
-
       const callbackUrl = router.query.callbackUrl as string | undefined;
       const redirectUrl = callbackUrl || ROLE_REDIRECTS[role] || "/";
       router.push(redirectUrl, undefined, { locale: router.locale });
-    } catch (err) {
-      posthog.captureException(err);
+    } catch {
       setError(t("common.unexpectedError"));
       setIsLoading(false);
     }

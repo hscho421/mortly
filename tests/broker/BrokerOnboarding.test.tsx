@@ -27,10 +27,6 @@ vi.mock("next/router", () => ({
   }),
 }));
 
-// posthog — no-op
-vi.mock("posthog-js", () => ({
-  default: { capture: vi.fn(), captureException: vi.fn() },
-}));
 
 // Toast
 vi.mock("@/components/Toast", () => ({

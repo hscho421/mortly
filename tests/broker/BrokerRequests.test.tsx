@@ -32,13 +32,6 @@ vi.mock("next/router", () => ({
   }),
 }));
 
-// posthog — no-op in tests
-vi.mock("posthog-js", () => ({
-  default: {
-    capture: vi.fn(),
-    captureException: vi.fn(),
-  },
-}));
 
 // Prevent the ReportButton from firing its own fetches.
 vi.mock("@/components/ReportButton", () => ({

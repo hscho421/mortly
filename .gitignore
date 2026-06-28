@@ -46,7 +46,6 @@ PROJECT.md
 
 # build/review artifacts that shouldn't be committed
 mortly.pptx
-posthog-setup-report.md
 /test-results
 
 # claude code - machine-specific settings

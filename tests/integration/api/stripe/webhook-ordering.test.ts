@@ -20,9 +20,6 @@ import { makeSubscription } from "@/tests/fixtures/requests";
 import { makeBroker } from "@/tests/fixtures/users";
 import * as events from "@/tests/fixtures/stripe-events";
 
-vi.mock("@/lib/posthog-server", () => ({
-  getPostHogClient: vi.fn(() => ({ capture: vi.fn() })),
-}));
 vi.mock("@/lib/settings", () => ({
   getSettingInt: vi.fn(async (k: string) => {
     const map: Record<string, number> = {

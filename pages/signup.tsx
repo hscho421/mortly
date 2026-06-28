@@ -6,7 +6,6 @@ import Head from "next/head";
 import Layout from "@/components/Layout";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import posthog from "posthog-js";
 import {
   CURRENT_LEGAL_VERSION,
   LEGAL_ACCEPTANCE_COOKIE,
@@ -98,12 +97,6 @@ export default function SignupPage() {
         return;
       }
 
-      // Key on the opaque publicId, not the raw email (no PII in distinct_id).
-      if (data.user?.publicId) {
-        posthog.identify(data.user.publicId, { role });
-      }
-      posthog.capture("user_signed_up", { role });
-
       // Redirect to email verification page. If the verification email failed
       // to send (data.emailSent === false), tell the verify page to surface a
       // "resend" prompt instead of leaving the user staring at a code that
@@ -115,8 +108,7 @@ export default function SignupPage() {
         undefined,
         { locale: router.locale }
       );
-    } catch (err) {
-      posthog.captureException(err);
+    } catch {
       setError(t("common.unexpectedError"));
       setIsLoading(false);
     }

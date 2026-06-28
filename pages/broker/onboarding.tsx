@@ -10,7 +10,6 @@ import { useTranslation } from "next-i18next";
 import { useToast } from "@/components/Toast";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import posthog from "posthog-js";
 import { PROVINCES } from "@/lib/requestConfig";
 import { uploadBrokerAvatar } from "@/lib/uploadAvatar";
 import AvatarCropper from "@/components/AvatarCropper";
@@ -138,11 +137,6 @@ export default function BrokerOnboardingPage() {
         return;
       }
 
-      posthog.capture("broker_onboarding_completed", {
-        province: form.province,
-        mortgage_category: form.mortgageCategory,
-      });
-
       // Deferred avatar upload: the broker row now exists, so run the upload.
       // A failure here is NON-FATAL — onboarding already succeeded; we just
       // route the broker to their profile so they can retry, instead of
@@ -168,8 +162,7 @@ export default function BrokerOnboardingPage() {
       } else {
         router.push("/broker/dashboard", undefined, { locale: router.locale });
       }
-    } catch (err) {
-      posthog.captureException(err);
+    } catch {
       setError(t("common.unexpectedError"));
       setIsSubmitting(false);
     }

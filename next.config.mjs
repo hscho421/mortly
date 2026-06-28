@@ -45,18 +45,6 @@ const nextConfig = {
       { source: "/admin/settings", destination: "/admin/system", permanent: false },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
-      },
-    ];
-  },
   // Security headers applied to every response.
   // CSP `script-src` keeps `'unsafe-inline'` for now because Next.js inlines a
   // small bootstrap script per page; tightening to nonces is a separate
@@ -81,11 +69,11 @@ const nextConfig = {
     // (wss://*.supabase.co).
     const directives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://us.i.posthog.com https://us-assets.i.posthog.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
-      "connect-src 'self' https://api.stripe.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.supabase.co wss://*.supabase.co",
+      "connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co",
       "frame-src https://js.stripe.com https://hooks.stripe.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -106,7 +94,7 @@ const nextConfig = {
           // Cross-origin isolation against XS-Leaks. `allow-popups` is used
           // (not bare `same-origin`) so redirect/popup-based OAuth and Stripe
           // flows keep their window references. COEP/CORP are intentionally
-          // omitted — they break the Stripe.js + PostHog cross-origin embeds.
+          // omitted — they break the Stripe.js cross-origin embeds.
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
           { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
           { key: "Permissions-Policy", value: "geolocation=(), microphone=(), camera=(), payment=(self \"https://js.stripe.com\")" },

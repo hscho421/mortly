@@ -7,7 +7,6 @@ import { SkeletonBilling } from "@/components/Skeleton";
 import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import type { GetStaticProps } from "next";
-import posthog from "posthog-js";
 import { tierRank, isUpgrade, creditLabel, TIER_PRICING } from "@/lib/tiers";
 
 interface PlanFeature {
@@ -254,11 +253,6 @@ export default function BrokerBillingPage() {
     if (tier === currentTier || actionLoading) return;
 
     const isDowngrade = tierRank(tier) < tierRank(currentTier);
-    posthog.capture("billing_plan_selected", {
-      selected_tier: tier,
-      current_tier: currentTier,
-      is_upgrade: !isDowngrade,
-    });
 
     // Downgrade to FREE → open portal to cancel
     if (tier === "FREE" && hasStripeSubscription) {
@@ -397,7 +391,6 @@ export default function BrokerBillingPage() {
   const handleResume = async () => {
     setActionLoading("resume");
     setErrorMessage("");
-    posthog.capture("billing_subscription_resumed", { current_tier: currentTier });
     try {
       const res = await fetch("/api/stripe/resume-subscription", { method: "POST" });
       if (!res.ok) {
@@ -440,7 +433,6 @@ export default function BrokerBillingPage() {
         setSuccessMessage(t("broker.resumePending"));
       }
     } catch (err) {
-      posthog.captureException(err);
       console.error("Failed to resume subscription:", err);
       setErrorMessage(t("broker.resumeFailed"));
     } finally {
@@ -451,7 +443,6 @@ export default function BrokerBillingPage() {
   const handleManageSubscription = async () => {
     setActionLoading("portal");
     setErrorMessage("");
-    posthog.capture("billing_portal_opened", { current_tier: currentTier });
     try {
       const res = await fetch("/api/stripe/create-portal", {
         method: "POST",
@@ -463,7 +454,6 @@ export default function BrokerBillingPage() {
       }
       setErrorMessage(t("broker.portalFailed"));
     } catch (err) {
-      posthog.captureException(err);
       console.error("Failed to open portal:", err);
       setErrorMessage(t("broker.portalFailed"));
     } finally {
