@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "next-i18next";
 import { useAdminData } from "@/lib/admin/AdminDataContext";
+import MobileTabBar from "@/components/MobileTabBar";
 
 /**
  * Unified admin chrome. Owns:
@@ -161,8 +162,8 @@ function AdminShellChrome({
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-cream-100 text-forest-800">
-      {/* ── Left rail ─────────────────────────────────── */}
-      <aside className="w-[72px] shrink-0 flex flex-col items-center py-4 bg-forest-800 text-cream-100">
+      {/* ── Left rail (desktop only; mobile uses the bottom tab bar) ── */}
+      <aside className="hidden w-[72px] shrink-0 md:flex flex-col items-center py-4 bg-forest-800 text-cream-100">
         <Link
           href="/admin/inbox"
           className="font-display text-[22px] font-medium leading-none tracking-tight"
@@ -222,7 +223,7 @@ function AdminShellChrome({
             <span className="flex-1 truncate">
               {t("admin.commandHint", "ID, 이메일, 이름 검색 · 빠른 작업 실행…")}
             </span>
-            <span className="ml-auto font-mono text-[10px] px-1.5 py-0.5 bg-cream-50 border border-cream-300 rounded-sm">
+            <span className="ml-auto hidden sm:inline-block font-mono text-[10px] px-1.5 py-0.5 bg-cream-50 border border-cream-300 rounded-sm">
               ⌘K
             </span>
           </button>
@@ -232,7 +233,7 @@ function AdminShellChrome({
                 was static JSX backed by no health check, so it would have read
                 "normal" during a real outage. Reinstate only when wired to an
                 actual health probe. */}
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border border-amber-200 bg-amber-50 text-amber-700 font-mono text-[10px] font-semibold tracking-[0.1em] uppercase">
+            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border border-amber-200 bg-amber-50 text-amber-700 font-mono text-[10px] font-semibold tracking-[0.1em] uppercase">
               {adminName} · ADMIN
             </span>
           </div>
@@ -251,6 +252,30 @@ function AdminShellChrome({
         ) : null}
 
         <div className="flex-1 overflow-auto min-h-0">{children}</div>
+
+        {/* Mobile bottom tab bar — the dark rail is desktop-only. */}
+        <MobileTabBar
+          active={active}
+          tabs={NAV_ITEMS.filter((it) => it.k !== "system").map((it) => ({
+            key: it.k,
+            href: it.href,
+            label: t(it.labelKey, it.fallback),
+            glyph: it.icon,
+            badge: it.badgeKey && badgesLoaded ? badges[it.badgeKey] : undefined,
+          }))}
+          moreItems={NAV_ITEMS.filter((it) => it.k === "system").map((it) => ({
+            key: it.k,
+            href: it.href,
+            label: t(it.labelKey, it.fallback),
+            glyph: it.icon,
+          }))}
+          moreLabel={t("nav.more", "More")}
+          closeLabel={t("common.close", "Close")}
+          accountName={adminName}
+          accountSubtitle="ADMIN"
+          signOutLabel={t("admin.shell.signOut", "로그아웃")}
+          onSignOut={() => signOut({ callbackUrl: "/login" })}
+        />
       </div>
     </div>
   );
