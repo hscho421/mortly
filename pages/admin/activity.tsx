@@ -425,7 +425,7 @@ export default function AdminActivityPage() {
       <div
         className={`grid h-full min-h-0 ${showDrawer ? "grid-cols-1 md:grid-cols-[1fr_520px]" : "grid-cols-1"}`}
       >
-        <div className="flex flex-col min-w-0 min-h-0 overflow-auto">
+        <div className={`flex flex-col min-w-0 min-h-0 overflow-auto ${showDrawer ? "hidden md:flex" : ""}`}>
           <div className="px-4 md:px-7 pt-6 pr-4 md:pr-5">
             <ASectionHead
               label={t("admin.nav.activity", "활동")}
@@ -494,8 +494,28 @@ export default function AdminActivityPage() {
         {showDrawer && (
           <div
             key={drawerKey}
-            className="border-l border-cream-300 bg-cream-50 flex flex-col min-h-0"
+            className={`${showDrawer ? "fixed inset-0 z-40 overflow-auto bg-cream-50" : "hidden"} border-l border-cream-300 bg-cream-50 flex flex-col min-h-0 md:static md:inset-auto md:z-auto md:overflow-visible`}
           >
+            <button
+              type="button"
+              onClick={closeDrawer}
+              className="md:hidden flex items-center gap-2 w-full border-b border-cream-300 px-4 py-3 text-[13px] font-medium text-forest-700 bg-cream-50"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 19.5 8.25 12l7.5-7.5"
+                />
+              </svg>
+              {t("common.back", "Back")}
+            </button>
             {selectedConvId ? (
               convDrawerState.state === "ready" ? (
                 <ConversationDrawer

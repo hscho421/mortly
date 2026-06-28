@@ -56,6 +56,9 @@ export default function AdminInboxPage() {
   const [filter, setFilter] = useState<FilterKey>("ALL");
   const [cursor, setCursor] = useState(0);
   const [busy, setBusy] = useState(false);
+  // Mobile-only: whether the detail drawer covers the screen. Desktop ignores
+  // this entirely (md: classes override) so the cursor-driven layout is unchanged.
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   // Pending destructive action — shown as an UndoToast. If the 3s timer
   // elapses without undo we commit via `applyDecision`. If the admin hits
@@ -247,7 +250,7 @@ export default function AdminInboxPage() {
 
       {/* Queue + drawer */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-0 min-h-0 mt-1">
-        <div className="px-7 pb-10">
+        <div className={`px-7 pb-10 ${mobileDetailOpen ? "hidden md:block" : ""}`}>
           {error ? (
             <div className="p-10 text-center">
               <div className="text-3xl font-display text-error-700">!</div>
@@ -280,7 +283,7 @@ export default function AdminInboxPage() {
                 index={i}
                 selected={cursor === i}
                 busy={busy || Boolean(pending)}
-                onFocus={() => setCursor(i)}
+                onFocus={() => { setCursor(i); setMobileDetailOpen(true); }}
                 onApprove={() => requestDecision(row, "approve")}
                 onReject={() => requestDecision(row, "reject")}
                 onOpenDetail={() => openDetail(row, router)}
@@ -293,10 +296,27 @@ export default function AdminInboxPage() {
           </div>
         </div>
 
-        {/* Drawer — detail for the selected row */}
-        <div className="hidden md:block border-l border-cream-300 bg-cream-50 overflow-auto">
+        {/* Drawer — detail for the selected row. On mobile it becomes a
+            full-screen overlay when a row is open; md: classes neutralise the
+            fixed positioning so the desktop column is byte-for-byte unchanged. */}
+        <div
+          className={`${
+            mobileDetailOpen ? "fixed inset-0 z-40 overflow-auto bg-cream-50" : "hidden"
+          } md:block border-l border-cream-300 bg-cream-50 overflow-auto md:static md:inset-auto md:z-auto`}
+        >
+          {/* Mobile-only back affordance — returns to the list. */}
+          <button
+            type="button"
+            onClick={() => setMobileDetailOpen(false)}
+            className="md:hidden flex items-center gap-2 w-full border-b border-cream-300 px-4 py-3 text-[13px] font-medium text-forest-700 bg-cream-50"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+            {t("common.back", "Back")}
+          </button>
           {selected ? (
-            <InboxDetail row={selected} busy={busy || Boolean(pending)} onApprove={() => requestDecision(selected, "approve")} onReject={() => requestDecision(selected, "reject")} />
+            <InboxDetail row={selected} busy={busy || Boolean(pending)} onApprove={() => { requestDecision(selected, "approve"); setMobileDetailOpen(false); }} onReject={() => { requestDecision(selected, "reject"); setMobileDetailOpen(false); }} />
           ) : (
             <div className="p-10 text-center text-sage-500 text-sm">
               {t("admin.inbox.selectHint", "항목을 선택하면 상세 정보가 표시됩니다.")}

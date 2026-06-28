@@ -1898,7 +1898,8 @@
     "dismiss": "Dismiss",
     "open": "Open",
     "refresh": "Refresh",
-    "retry": "Retry"
+    "retry": "Retry",
+    "back": "Back"
   },
   "borrowerProfile": {
     "failedToFetch": "Failed to fetch profile",

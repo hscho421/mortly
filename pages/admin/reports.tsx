@@ -68,6 +68,11 @@ export default function AdminReportsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Mobile-only: whether the detail overlay covers the list. selectedId is a
+  // desktop cursor (auto-set to the first row on load), so it can't double as
+  // the mobile open-state — that would land mobile users on the detail instead
+  // of the list. Desktop never reads this (md: classes override the mobile gate).
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -144,7 +149,10 @@ export default function AdminReportsPage() {
   // Deep-link support: ?id=<reportId> opens that report.
   useEffect(() => {
     const q = router.query.id;
-    if (typeof q === "string" && q !== selectedId) setSelectedId(q);
+    if (typeof q === "string" && q !== selectedId) {
+      setSelectedId(q);
+      setMobileDetailOpen(true);
+    }
   }, [router.query.id, selectedId]);
 
   const selectRow = (id: string) => {
@@ -226,7 +234,11 @@ export default function AdminReportsPage() {
   return (
     <AdminShell active="reports" pageTitle={t("admin.reports.pageTitle", "신고 · mortly admin")}>
       <div className="grid h-full min-h-0 grid-cols-1 md:grid-cols-[1fr_440px]">
-        <div className="flex flex-col min-w-0 min-h-0 overflow-auto">
+        <div
+          className={`flex flex-col min-w-0 min-h-0 overflow-auto ${
+            mobileDetailOpen ? "hidden md:flex" : ""
+          }`}
+        >
           <div className="px-7 pt-6 pr-5">
             <ASectionHead
               label={t("admin.nav.reports", "신고")}
@@ -275,7 +287,10 @@ export default function AdminReportsPage() {
                   <button
                     key={r.id}
                     type="button"
-                    onClick={() => selectRow(r.id)}
+                    onClick={() => {
+                      selectRow(r.id);
+                      setMobileDetailOpen(true);
+                    }}
                     className={`w-full text-left grid grid-cols-[1fr_auto] sm:grid-cols-[90px_1fr_auto] gap-3.5 items-center px-4 py-3.5 border-b border-cream-200 border-l-[3px] ${
                       isSel ? "bg-cream-50 border-l-error-600" : "border-l-transparent hover:bg-cream-50/50"
                     }`}
@@ -302,7 +317,21 @@ export default function AdminReportsPage() {
         </div>
 
         {/* Drawer */}
-        <div className="hidden md:block border-l border-cream-300 bg-cream-50 overflow-auto">
+        <div
+          className={`${
+            mobileDetailOpen ? "fixed inset-0 z-40 overflow-auto bg-cream-50" : "hidden"
+          } md:block border-l border-cream-300 bg-cream-50 overflow-auto md:static md:inset-auto md:z-auto`}
+        >
+          <button
+            type="button"
+            onClick={() => setMobileDetailOpen(false)}
+            className="md:hidden flex items-center gap-2 w-full border-b border-cream-300 px-4 py-3 text-[13px] font-medium text-forest-700 bg-cream-50"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+            {t("common.back", "Back")}
+          </button>
           {detailState.state === "ready" ? (
             <ReportDrawer
               detail={detailState.data}

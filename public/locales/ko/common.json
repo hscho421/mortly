@@ -1898,7 +1898,8 @@
     "dismiss": "닫기",
     "open": "열기",
     "refresh": "새로고침",
-    "retry": "다시 시도"
+    "retry": "다시 시도",
+    "back": "이전"
   },
   "borrowerProfile": {
     "failedToFetch": "프로필을 가져오지 못했습니다",
