@@ -343,7 +343,7 @@ export default function BrokerMessagesPage() {
   const isClosed = activeConversation?.status === "CLOSED";
 
   return (
-    <BrokerShell active="messages" pageTitle={t("titles.brokerMessages")}>
+    <BrokerShell active="messages" pageTitle={t("titles.brokerMessages")} hideMobileTabBar={mobileView === "chat"}>
       <Head><title>{t("titles.brokerMessages")}</title></Head>
 
       {/* Chat disclaimer */}

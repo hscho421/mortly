@@ -67,12 +67,15 @@ export interface BorrowerShellProps {
   active: BorrowerNavKey;
   pageTitle?: string;
   children: ReactNode;
+  /** Hide the mobile bottom tab bar (e.g. the chat detail view owns the bottom). */
+  hideMobileTabBar?: boolean;
 }
 
 export default function BorrowerShell({
   active,
   pageTitle,
   children,
+  hideMobileTabBar = false,
 }: BorrowerShellProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -144,7 +147,9 @@ export default function BorrowerShell({
           {children}
         </main>
 
-        {/* Mobile bottom tab bar — replaces the slide-over drawer below md. */}
+        {/* Mobile bottom tab bar — replaces the slide-over drawer below md.
+            Hidden on the chat detail view so the composer owns the bottom edge. */}
+        {!hideMobileTabBar && (
         <MobileTabBar
           active={active}
           tabs={NAV_ITEMS.filter((it) => MOBILE_PRIMARY.includes(it.key)).map((it) => ({
@@ -172,6 +177,7 @@ export default function BorrowerShell({
           signOutLabel={t("nav.signOut", "Sign Out")}
           onSignOut={() => setSignOutOpen(true)}
         />
+        )}
       </div>
 
       {signOutOpen && (

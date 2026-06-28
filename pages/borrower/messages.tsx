@@ -428,7 +428,7 @@ export default function BorrowerMessagesPage() {
   /* ────────────────────────────────────────────── */
 
   return (
-    <BorrowerShell active="messages" pageTitle={t("titles.borrowerMessages")}>
+    <BorrowerShell active="messages" pageTitle={t("titles.borrowerMessages")} hideMobileTabBar={mobileShowChat}>
       <Head><title>{t("titles.borrowerMessages")}</title></Head>
 
       {/* Chat disclaimer */}

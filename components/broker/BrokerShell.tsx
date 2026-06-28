@@ -95,6 +95,8 @@ export interface BrokerShellProps {
    * Set true on /broker/onboarding so we don't loop redirect onto itself.
    */
   skipProfileGate?: boolean;
+  /** Hide the mobile bottom tab bar (e.g. the chat detail view owns the bottom). */
+  hideMobileTabBar?: boolean;
 }
 
 export default function BrokerShell({
@@ -102,6 +104,7 @@ export default function BrokerShell({
   pageTitle,
   children,
   skipProfileGate = false,
+  hideMobileTabBar = false,
 }: BrokerShellProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -192,7 +195,9 @@ export default function BrokerShell({
           {children}
         </main>
 
-        {/* Mobile bottom tab bar — replaces the slide-over drawer below md. */}
+        {/* Mobile bottom tab bar — replaces the slide-over drawer below md.
+            Hidden on the chat detail view so the composer owns the bottom edge. */}
+        {!hideMobileTabBar && (
         <MobileTabBar
           active={active}
           tabs={NAV_ITEMS.filter((it) => MOBILE_PRIMARY.includes(it.key)).map((it) => ({
@@ -222,6 +227,7 @@ export default function BrokerShell({
           signOutLabel={t("nav.signOut", "Sign Out")}
           onSignOut={() => setSignOutOpen(true)}
         />
+        )}
       </div>
 
       {signOutOpen && (
