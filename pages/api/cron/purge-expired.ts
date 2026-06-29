@@ -29,7 +29,7 @@ const REDACTED = "[redacted for privacy]";
  * Principle 5). Exported so the daily cron dispatcher (/api/cron/daily) can run
  * it inline; the standalone route below remains for manual/external triggering.
  */
-export async function runPurgeExpired(): Promise<{ purgedRequests: number; redactedMessages: number }> {
+export async function runPurgeExpired(): Promise<{ purgedRequests: number; redactedMessages: number; purgedGeoVisits: number }> {
   const retentionDays = await getSettingInt("request_retention_days");
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - retentionDays);
@@ -78,10 +78,17 @@ export async function runPurgeExpired(): Promise<{ purgedRequests: number; redac
     if (stale.length < BATCH) break;
   }
 
-  return { purgedRequests, redactedMessages };
+  // Cookieless geo-analytics retention: drop visitor rows past 90 days.
+  const geoCutoff = new Date();
+  geoCutoff.setDate(geoCutoff.getDate() - 90);
+  const purgedGeoVisits = (
+    await prisma.geoVisit.deleteMany({ where: { createdAt: { lt: geoCutoff } } })
+  ).count;
+
+  return { purgedRequests, redactedMessages, purgedGeoVisits };
 }
 
 export default withCron(async (_req, res) => {
-  const { purgedRequests, redactedMessages } = await runPurgeExpired();
-  return res.status(200).json({ success: true, purgedRequests, redactedMessages });
+  const { purgedRequests, redactedMessages, purgedGeoVisits } = await runPurgeExpired();
+  return res.status(200).json({ success: true, purgedRequests, redactedMessages, purgedGeoVisits });
 });

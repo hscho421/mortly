@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { SessionProvider, useSession } from "next-auth/react";
 import { appWithTranslation, useTranslation } from "next-i18next";
 import { Analytics } from "@vercel/analytics/react";
+import GeoBeacon from "@/components/GeoBeacon";
 import { ToastProvider } from "@/components/Toast";
 import { AdminDataProvider } from "@/lib/admin/AdminDataContext";
 import { BrokerDataProvider } from "@/components/broker/BrokerDataContext";
@@ -176,6 +177,7 @@ function App({
         </ErrorBoundary>
       </ToastProvider>
       <Analytics />
+      <GeoBeacon />
     </SessionProvider>
   );
 }

@@ -401,3 +401,25 @@ enum ReportStatus {
   RESOLVED
   DISMISSED
 }
+
+// Cookieless visitor geography, derived from Vercel edge IP-geo headers. One row
+// per session — NO IP, NO cookie, NO PII; just an approximate city/province for
+// aggregate analytics. Purged after 90 days by the daily cron (PIPEDA retention).
+model GeoVisit {
+  id        String   @id @default(cuid())
+  country   String // ISO-3166-1 alpha-2, e.g. "CA"
+  region    String? // ISO-3166-2 subdivision (province), e.g. "ON"
+  city      String?
+  lat       Float?
+  lng       Float?
+  timezone  String?
+  device    String? // "mobile" | "tablet" | "desktop"
+  referrer  String? // referrer host, or "direct"
+  path      String? // landing path of the session
+  role      String   @default("anon") // anon | borrower | broker | admin
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([country, region])
+  @@map("geo_visits")
+}
