@@ -1261,7 +1261,11 @@
         "legendSessions": "세션",
         "legendCity": "도시",
         "ariaLabel": "캐나다 주별 세션 분포 지도",
-        "unitSessions": "세션"
+        "unitSessions": "세션",
+        "zoomIn": "확대",
+        "zoomOut": "축소",
+        "reset": "초기화",
+        "hint": "드래그 · 스크롤 확대 · 모서리로 크기조절"
       },
       "role": {
         "anon": "익명",

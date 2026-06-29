@@ -243,7 +243,10 @@ export default function AdminGeographyPage() {
 
             <div className="mt-5">
               {view === "map" ? (
-                <div className="grid grid-cols-1 gap-5">
+                // Two columns on desktop: the (resizable/draggable) map on the
+                // left, its ranking — the data-table fallback — on the right.
+                // The grid keeps the map from sprawling to the full width.
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
                   <ACard>
                     <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                       <ASectionHead
@@ -266,16 +269,10 @@ export default function AdminGeographyPage() {
                         />
                       </div>
                     </div>
-                    {/* Cap + center the map so it doesn't sprawl to full width
-                        on large screens (still full-width/responsive on mobile). */}
                     {scope === "world" ? (
-                      <div className="mx-auto w-full max-w-2xl">
-                        <WorldMap countries={data.byCountry} />
-                      </div>
+                      <WorldMap countries={data.byCountry} />
                     ) : (
-                      <div className="mx-auto w-full max-w-lg">
-                        <CanadaMap provinces={data.byProvince} cities={data.caCities} />
-                      </div>
+                      <CanadaMap provinces={data.byProvince} cities={data.caCities} />
                     )}
                   </ACard>
                   {/* Ranking ALWAYS rendered with the map — the data-table

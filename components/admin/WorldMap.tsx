@@ -3,6 +3,8 @@ import { useTranslation } from "next-i18next";
 import { geoNaturalEarth1, geoPath, geoCentroid } from "d3-geo";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { countryName, COUNTRY_CENTROID_FALLBACK } from "@/lib/geo/countries";
+import { usePanZoom } from "@/components/admin/usePanZoom";
+import MapControls from "@/components/admin/MapControls";
 
 /**
  * WorldMap — a self-contained, client-only world map drawn with d3-geo.
@@ -22,7 +24,6 @@ import { countryName, COUNTRY_CENTROID_FALLBACK } from "@/lib/geo/countries";
 
 const VB_W = 900;
 const VB_H = 460;
-const TOP_LABELS = 6;
 
 export interface WorldMapCountry {
   code: string;
@@ -73,6 +74,8 @@ export default function WorldMap({ countries }: WorldMapProps) {
   const [failed, setFailed] = useState(false);
   const [tip, setTip] = useState<Tooltip | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const pz = usePanZoom(svgRef, VB_W, VB_H);
 
   useEffect(() => {
     let cancelled = false;
@@ -139,22 +142,8 @@ export default function WorldMap({ countries }: WorldMapProps) {
     return out.sort((a, b) => b.count - a.count);
   }, [geo, projection, countByCode, countries, lang]);
 
-  // Greedily pick up to TOP_LABELS labels, skipping any whose anchor is too
-  // close to an already-placed one — avoids unreadable overlap when the top
-  // countries cluster (e.g. several European countries near each other).
-  const labelBubbles = useMemo(() => {
-    const placed: Array<{ x: number; y: number }> = [];
-    const out: typeof bubbles = [];
-    for (const b of bubbles) {
-      if (placed.some((p) => Math.abs(p.x - b.x) < 46 && Math.abs(p.y - b.y) < 11)) continue;
-      placed.push({ x: b.x, y: b.y });
-      out.push(b);
-      if (out.length >= TOP_LABELS) break;
-    }
-    return out;
-  }, [bubbles]);
-
   function showTip(e: { clientX: number; clientY: number }, label: string, count: number) {
+    if (pz.panning) return; // don't flicker tooltips mid-drag
     const rect = wrapRef.current?.getBoundingClientRect();
     if (!rect) {
       setTip({ x: 0, y: 0, label, count });
@@ -195,79 +184,74 @@ export default function WorldMap({ countries }: WorldMapProps) {
 
   return (
     <div ref={wrapRef} className="relative w-full">
-      <svg
-        viewBox={`0 0 ${VB_W} ${VB_H}`}
-        className="w-full h-auto"
-        role="img"
-        aria-label={t("admin.geography.worldMap.ariaLabel", "전 세계 국가별 세션 분포 지도")}
+      {/* Resizable, draggable, zoomable map frame. aspect-* sets a clean default
+          height; the native resize handle lets the user override it. */}
+      <div
+        className="relative w-full aspect-[900/460] resize overflow-hidden rounded-sm border border-cream-200 bg-cream-50"
+        style={{ minHeight: 180, minWidth: 240, maxWidth: "100%" }}
       >
-        {/* Country backdrop */}
-        <g>
-          {features.map((f, i) => {
-            const d = path(f);
-            if (!d) return null;
-            return (
-              <path
-                key={f.properties?.a2 || f.properties?.name || i}
-                d={d}
-                fill="#f0eeea"
-                stroke="#e5e2dc"
-                strokeWidth={0.4}
-              />
-            );
-          })}
-        </g>
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="h-full w-full touch-none select-none"
+          style={{ cursor: pz.panning ? "grabbing" : "grab" }}
+          role="img"
+          aria-label={t("admin.geography.worldMap.ariaLabel", "전 세계 국가별 세션 분포 지도")}
+          {...pz.bind}
+        >
+          <g transform={pz.transform}>
+            {/* Country backdrop */}
+            <g>
+              {features.map((f, i) => {
+                const d = path(f);
+                if (!d) return null;
+                return (
+                  <path
+                    key={f.properties?.a2 || f.properties?.name || i}
+                    d={d}
+                    fill="#f0eeea"
+                    stroke="#e5e2dc"
+                    strokeWidth={0.4}
+                  />
+                );
+              })}
+            </g>
 
-        {/* Session bubbles (one per country with data) */}
-        <g>
-          {bubbles.map((b, i) => {
-            const r = radiusFor(b.count);
-            return (
-              <circle
-                key={`${b.code}-${i}`}
-                cx={b.x}
-                cy={b.y}
-                r={r}
-                fill="#c49a3a"
-                fillOpacity={0.55}
-                stroke="#a8812e"
-                strokeWidth={1}
-                tabIndex={0}
-                className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
-                onMouseMove={(e) => showTip(e, b.name, b.count)}
-                onMouseLeave={() => setTip(null)}
-                onFocus={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  showTip({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }, b.name, b.count);
-                }}
-                onBlur={() => setTip(null)}
-              >
-                <title>{`${b.name} · ${b.count.toLocaleString()} ${unit}`}</title>
-              </circle>
-            );
-          })}
-        </g>
+            {/* Session bubbles (one per country with data) */}
+            <g>
+              {bubbles.map((b, i) => {
+                const r = radiusFor(b.count);
+                return (
+                  <circle
+                    key={`${b.code}-${i}`}
+                    cx={b.x}
+                    cy={b.y}
+                    r={r}
+                    fill="#c49a3a"
+                    fillOpacity={0.55}
+                    stroke="#a8812e"
+                    strokeWidth={1}
+                    tabIndex={0}
+                    className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
+                    onMouseMove={(e) => showTip(e, b.name, b.count)}
+                    onMouseLeave={() => setTip(null)}
+                    onFocus={(e) => {
+                      const rr = e.currentTarget.getBoundingClientRect();
+                      showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, b.name, b.count);
+                    }}
+                    onBlur={() => setTip(null)}
+                  >
+                    <title>{`${b.name} · ${b.count.toLocaleString()} ${unit}`}</title>
+                  </circle>
+                );
+              })}
+            </g>
+          </g>
+        </svg>
 
-        {/* Top-country labels — drawn last so they sit above bubbles */}
-        <g className="pointer-events-none">
-          {labelBubbles.map((b, i) => (
-            <text
-              key={`label-${b.code}-${i}`}
-              x={b.x + radiusFor(b.count) + 3}
-              y={b.y + 3}
-              className="font-mono"
-              fontSize={9}
-              fill="#0f1729"
-              stroke="#fefefe"
-              strokeWidth={2.5}
-              paintOrder="stroke"
-              strokeLinejoin="round"
-            >
-              {b.name}
-            </text>
-          ))}
-        </g>
-      </svg>
+        <MapControls zoomIn={pz.zoomIn} zoomOut={pz.zoomOut} reset={pz.reset} isZoomed={pz.isZoomed} />
+      </div>
 
       {/* Tooltip */}
       {tip && (
@@ -284,8 +268,8 @@ export default function WorldMap({ countries }: WorldMapProps) {
         </div>
       )}
 
-      {/* Legend */}
-      <div className="mt-3 flex items-center gap-3">
+      {/* Legend + interaction hint */}
+      <div className="mt-3 flex items-center gap-3 flex-wrap">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-500">
           {t("admin.geography.map.legendSessions", "세션")}
         </span>
@@ -295,6 +279,9 @@ export default function WorldMap({ countries }: WorldMapProps) {
             style={{ background: "#c49a3a", opacity: 0.55, border: "1px solid #a8812e" }}
           />
           {t("admin.geography.worldMap.legendCountry", "국가")}
+        </span>
+        <span className="ml-auto font-mono text-[10px] text-sage-400">
+          {t("admin.geography.map.hint", "드래그 · 스크롤 확대 · 모서리로 크기조절")}
         </span>
       </div>
     </div>

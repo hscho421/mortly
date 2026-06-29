@@ -1261,7 +1261,11 @@
         "legendSessions": "Sessions",
         "legendCity": "City",
         "ariaLabel": "Map of sessions by Canadian province",
-        "unitSessions": "sessions"
+        "unitSessions": "sessions",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "reset": "Reset view",
+        "hint": "Drag to pan · scroll to zoom · resize from the corner"
       },
       "role": {
         "anon": "Anonymous",

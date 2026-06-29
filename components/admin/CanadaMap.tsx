@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "next-i18next";
 import { geoMercator, geoPath } from "d3-geo";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+import { usePanZoom } from "@/components/admin/usePanZoom";
+import MapControls from "@/components/admin/MapControls";
 
 /**
  * CanadaMap — a self-contained, client-only choropleth of Canadian provinces
@@ -22,8 +24,6 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 
 const VB_W = 800;
 const VB_H = 600;
-
-const TOP_CITY_LABELS = 6;
 
 export interface CanadaMapProvince {
   name: string;
@@ -121,6 +121,8 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
   const [failed, setFailed] = useState(false);
   const [tip, setTip] = useState<Tooltip | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const pz = usePanZoom(svgRef, VB_W, VB_H);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +173,7 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
   }, [geo]);
 
   function showTip(e: { clientX: number; clientY: number }, label: string, count: number) {
+    if (pz.panning) return; // don't flicker tooltips mid-drag
     const rect = wrapRef.current?.getBoundingClientRect();
     if (!rect) {
       setTip({ x: 0, y: 0, label, count });
@@ -212,102 +215,91 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
 
   return (
     <div ref={wrapRef} className="relative w-full">
-      <svg
-        viewBox={`0 0 ${VB_W} ${VB_H}`}
-        className="w-full h-auto"
-        role="img"
-        aria-label={t("admin.geography.map.ariaLabel", "캐나다 주별 세션 분포 지도")}
+      {/* Resizable, draggable, zoomable map frame. */}
+      <div
+        className="relative w-full aspect-[4/3] resize overflow-hidden rounded-sm border border-cream-200 bg-cream-50"
+        style={{ minHeight: 200, minWidth: 240, maxWidth: "100%" }}
       >
-        {/* Choropleth provinces */}
-        <g>
-          {features.map((f, i) => {
-            const d = path(f);
-            if (!d) return null;
-            const name = f.properties?.name ?? "";
-            const count = countByName.get(name) ?? 0;
-            const fill =
-              count <= 0 ? EMPTY_FILL : rampColor(maxProvince > 0 ? count / maxProvince : 0);
-            return (
-              <path
-                key={name || i}
-                d={d}
-                fill={fill}
-                stroke="#e5e2dc"
-                strokeWidth={0.5}
-                tabIndex={0}
-                className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-80 focus-visible:opacity-80"
-                onMouseMove={(e) => showTip(e, name, count)}
-                onMouseLeave={() => setTip(null)}
-                onFocus={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  showTip({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }, name, count);
-                }}
-                onBlur={() => setTip(null)}
-              >
-                <title>{`${name} · ${count.toLocaleString()} ${unit}`}</title>
-              </path>
-            );
-          })}
-        </g>
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="h-full w-full touch-none select-none"
+          style={{ cursor: pz.panning ? "grabbing" : "grab" }}
+          role="img"
+          aria-label={t("admin.geography.map.ariaLabel", "캐나다 주별 세션 분포 지도")}
+          {...pz.bind}
+        >
+          <g transform={pz.transform}>
+            {/* Choropleth provinces */}
+            <g>
+              {features.map((f, i) => {
+                const d = path(f);
+                if (!d) return null;
+                const name = f.properties?.name ?? "";
+                const count = countByName.get(name) ?? 0;
+                const fill =
+                  count <= 0 ? EMPTY_FILL : rampColor(maxProvince > 0 ? count / maxProvince : 0);
+                return (
+                  <path
+                    key={name || i}
+                    d={d}
+                    fill={fill}
+                    stroke="#e5e2dc"
+                    strokeWidth={0.5}
+                    tabIndex={0}
+                    className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-80 focus-visible:opacity-80"
+                    onMouseMove={(e) => showTip(e, name, count)}
+                    onMouseLeave={() => setTip(null)}
+                    onFocus={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      showTip({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }, name, count);
+                    }}
+                    onBlur={() => setTip(null)}
+                  >
+                    <title>{`${name} · ${count.toLocaleString()} ${unit}`}</title>
+                  </path>
+                );
+              })}
+            </g>
 
-        {/* City bubbles */}
-        <g>
-          {drawableCities.map((c, i) => {
-            const xy = projection([c.lng, c.lat]);
-            if (!xy) return null;
-            const [x, y] = xy;
-            const r = radiusFor(c.count);
-            return (
-              <circle
-                key={`${c.city}-${i}`}
-                cx={x}
-                cy={y}
-                r={r}
-                fill="#c49a3a"
-                fillOpacity={0.55}
-                stroke="#a8812e"
-                strokeWidth={1}
-                tabIndex={0}
-                className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
-                onMouseMove={(e) => showTip(e, c.city, c.count)}
-                onMouseLeave={() => setTip(null)}
-                onFocus={(e) => {
-                  const rr = e.currentTarget.getBoundingClientRect();
-                  showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, c.city, c.count);
-                }}
-                onBlur={() => setTip(null)}
-              >
-                <title>{`${c.city} · ${c.count.toLocaleString()} ${unit}`}</title>
-              </circle>
-            );
-          })}
-        </g>
+            {/* City bubbles */}
+            <g>
+              {drawableCities.map((c, i) => {
+                const xy = projection([c.lng, c.lat]);
+                if (!xy) return null;
+                const [x, y] = xy;
+                const r = radiusFor(c.count);
+                return (
+                  <circle
+                    key={`${c.city}-${i}`}
+                    cx={x}
+                    cy={y}
+                    r={r}
+                    fill="#c49a3a"
+                    fillOpacity={0.55}
+                    stroke="#a8812e"
+                    strokeWidth={1}
+                    tabIndex={0}
+                    className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
+                    onMouseMove={(e) => showTip(e, c.city, c.count)}
+                    onMouseLeave={() => setTip(null)}
+                    onFocus={(e) => {
+                      const rr = e.currentTarget.getBoundingClientRect();
+                      showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, c.city, c.count);
+                    }}
+                    onBlur={() => setTip(null)}
+                  >
+                    <title>{`${c.city} · ${c.count.toLocaleString()} ${unit}`}</title>
+                  </circle>
+                );
+              })}
+            </g>
+          </g>
+        </svg>
 
-        {/* Top city labels — drawn last so they sit above bubbles */}
-        <g className="pointer-events-none">
-          {drawableCities.slice(0, TOP_CITY_LABELS).map((c, i) => {
-            const xy = projection([c.lng, c.lat]);
-            if (!xy) return null;
-            const [x, y] = xy;
-            return (
-              <text
-                key={`label-${c.city}-${i}`}
-                x={x + radiusFor(c.count) + 3}
-                y={y + 3}
-                className="font-mono"
-                fontSize={9}
-                fill="#0f1729"
-                stroke="#fefefe"
-                strokeWidth={2.5}
-                paintOrder="stroke"
-                strokeLinejoin="round"
-              >
-                {c.city}
-              </text>
-            );
-          })}
-        </g>
-      </svg>
+        <MapControls zoomIn={pz.zoomIn} zoomOut={pz.zoomOut} reset={pz.reset} isZoomed={pz.isZoomed} />
+      </div>
 
       {/* Tooltip */}
       {tip && (
@@ -348,6 +340,9 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
           />
           {t("admin.geography.map.legendCity", "도시")}
         </span>
+      </div>
+      <div className="mt-1.5 font-mono text-[10px] text-sage-400">
+        {t("admin.geography.map.hint", "드래그 · 스크롤 확대 · 모서리로 크기조절")}
       </div>
     </div>
   );
