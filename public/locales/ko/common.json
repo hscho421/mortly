@@ -1226,7 +1226,7 @@
     "geography": {
       "pageTitle": "지역 분석 · mortly admin",
       "title": "지역 분석",
-      "subtitle": "쿠키 없이 수집된 방문자 지역 데이터입니다.",
+      "subtitle": "방문자 지역 데이터입니다.",
       "lastNDays": "지난 {{n}}일",
       "error": "지역 데이터를 불러올 수 없습니다.",
       "direct": "직접 방문",
