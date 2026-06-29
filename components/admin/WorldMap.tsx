@@ -173,7 +173,7 @@ export default function WorldMap({ countries }: WorldMapProps) {
 
   if (!geo && !failed) {
     return (
-      <div className="w-full aspect-[900/460] min-h-[360px] rounded-sm bg-cream-100 border border-cream-200 animate-pulse flex items-center justify-center">
+      <div className="w-full aspect-[900/460] rounded-sm bg-cream-100 border border-cream-200 animate-pulse flex items-center justify-center">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-400">
           {t("admin.geography.map.loading", "지도 불러오는 중…")}
         </span>
@@ -183,7 +183,7 @@ export default function WorldMap({ countries }: WorldMapProps) {
 
   if (failed || !geo || !path || !projection) {
     return (
-      <div className="w-full aspect-[900/460] min-h-[360px] rounded-sm bg-cream-100 border border-cream-200 flex items-center justify-center">
+      <div className="w-full aspect-[900/460] rounded-sm bg-cream-100 border border-cream-200 flex items-center justify-center">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-400">
           {t("admin.geography.map.failed", "지도를 불러올 수 없습니다")}
         </span>

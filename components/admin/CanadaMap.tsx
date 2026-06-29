@@ -190,7 +190,7 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
   // ── Loading skeleton (geojson not fetched yet) ───────────────
   if (!geo && !failed) {
     return (
-      <div className="w-full aspect-[4/3] min-h-[420px] rounded-sm bg-cream-100 border border-cream-200 animate-pulse flex items-center justify-center">
+      <div className="w-full aspect-[4/3] rounded-sm bg-cream-100 border border-cream-200 animate-pulse flex items-center justify-center">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-400">
           {t("admin.geography.map.loading", "지도 불러오는 중…")}
         </span>
@@ -200,7 +200,7 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
 
   if (failed || !geo || !path || !projection) {
     return (
-      <div className="w-full aspect-[4/3] min-h-[420px] rounded-sm bg-cream-100 border border-cream-200 flex items-center justify-center">
+      <div className="w-full aspect-[4/3] rounded-sm bg-cream-100 border border-cream-200 flex items-center justify-center">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-400">
           {t("admin.geography.map.failed", "지도를 불러올 수 없습니다")}
         </span>

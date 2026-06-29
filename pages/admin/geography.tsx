@@ -28,14 +28,14 @@ import { continentOf, countryName } from "@/lib/geo/countries";
 const WorldMap = dynamic(() => import("@/components/admin/WorldMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full aspect-[900/460] min-h-[360px] rounded-sm bg-cream-100 border border-cream-200 animate-pulse" />
+    <div className="w-full aspect-[900/460] rounded-sm bg-cream-100 border border-cream-200 animate-pulse" />
   ),
 });
 
 const CanadaMap = dynamic(() => import("@/components/admin/CanadaMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full aspect-[4/3] min-h-[420px] rounded-sm bg-cream-100 border border-cream-200 animate-pulse" />
+    <div className="w-full aspect-[4/3] rounded-sm bg-cream-100 border border-cream-200 animate-pulse" />
   ),
 });
 
@@ -266,10 +266,16 @@ export default function AdminGeographyPage() {
                         />
                       </div>
                     </div>
+                    {/* Cap + center the map so it doesn't sprawl to full width
+                        on large screens (still full-width/responsive on mobile). */}
                     {scope === "world" ? (
-                      <WorldMap countries={data.byCountry} />
+                      <div className="mx-auto w-full max-w-2xl">
+                        <WorldMap countries={data.byCountry} />
+                      </div>
                     ) : (
-                      <CanadaMap provinces={data.byProvince} cities={data.caCities} />
+                      <div className="mx-auto w-full max-w-lg">
+                        <CanadaMap provinces={data.byProvince} cities={data.caCities} />
+                      </div>
                     )}
                   </ACard>
                   {/* Ranking ALWAYS rendered with the map — the data-table
