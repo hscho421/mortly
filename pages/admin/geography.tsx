@@ -12,18 +12,26 @@ import {
   FilterChip,
 } from "@/components/admin/primitives";
 import type { TabItem } from "@/components/admin/primitives";
+import { continentOf, countryName } from "@/lib/geo/countries";
 
 /**
  * /admin/geography — cookieless visitor-geography analytics.
  *
  * Client-fetches GET /api/admin/geography?days=7|30|90 (admin-auth'd) and
- * renders a KPI row, a Map ⇄ List toggle, and ranking blocks. The choropleth
- * lives in CanadaMap, loaded ssr:false because d3-geo + the geojson fetch run
- * client-side. The province ranking list is ALWAYS shown under the map so the
- * map is never the only representation of the data (a11y / data-table fallback).
+ * renders a KPI row, a Map ⇄ List toggle, and ranking blocks. The map has a
+ * World ⇄ Canada scope: World shows gold session bubbles per country
+ * (WorldMap); Canada keeps the province choropleth + city bubbles (CanadaMap).
+ * Both maps load ssr:false (d3-geo + the geojson fetch run client-side). A
+ * ranking list always renders under the map so the map is never the sole view.
  */
 
-// d3-geo + the geojson fetch are client-only — never SSR the map.
+const WorldMap = dynamic(() => import("@/components/admin/WorldMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full aspect-[900/460] min-h-[360px] rounded-sm bg-cream-100 border border-cream-200 animate-pulse" />
+  ),
+});
+
 const CanadaMap = dynamic(() => import("@/components/admin/CanadaMap"), {
   ssr: false,
   loading: () => (
@@ -33,9 +41,10 @@ const CanadaMap = dynamic(() => import("@/components/admin/CanadaMap"), {
 
 type Days = 7 | 30 | 90;
 type ViewTab = "map" | "list";
+type MapScope = "world" | "canada";
 
 interface CountryRow {
-  country: string;
+  code: string;
   count: number;
 }
 interface ProvinceRow {
@@ -43,12 +52,17 @@ interface ProvinceRow {
   name: string;
   count: number;
 }
-interface CityRow {
+interface CaCityRow {
   city: string;
   region: string | null;
   province: string;
   lat: number | null;
   lng: number | null;
+  count: number;
+}
+interface GlobalCityRow {
+  city: string;
+  country: string;
   count: number;
 }
 interface DailyRow {
@@ -60,11 +74,13 @@ interface GeoData {
   days: number;
   total: number;
   mobilePct: number;
+  countriesReached: number;
   provincesReached: number;
   citiesReached: number;
   byCountry: CountryRow[];
   byProvince: ProvinceRow[];
-  topCities: CityRow[];
+  caCities: CaCityRow[];
+  topCities: GlobalCityRow[];
   byDevice: Array<{ device: string; count: number }>;
   byReferrer: Array<{ referrer: string; count: number }>;
   byRole: Array<{ role: string; count: number }>;
@@ -86,9 +102,11 @@ const DEVICE_FALLBACK: Record<string, string> = {
 };
 
 export default function AdminGeographyPage() {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
+  const lang = i18n.language?.startsWith("ko") ? "ko" : "en";
   const [days, setDays] = useState<Days>(7);
   const [view, setView] = useState<ViewTab>("map");
+  const [scope, setScope] = useState<MapScope>("world");
   const [data, setData] = useState<GeoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,6 +139,22 @@ export default function AdminGeographyPage() {
 
   const total = data?.total ?? 0;
   const isEmpty = !loading && !error && data != null && total === 0;
+
+  // Continent rollup is derived client-side from the country counts.
+  const byContinent = useMemo(() => {
+    if (!data) return [] as Array<{ slug: string; count: number }>;
+    const m = new Map<string, number>();
+    for (const c of data.byCountry) {
+      const slug = continentOf(c.code);
+      m.set(slug, (m.get(slug) ?? 0) + c.count);
+    }
+    return [...m.entries()]
+      .map(([slug, count]) => ({ slug, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [data]);
+
+  const countryRows = (rows: CountryRow[]) =>
+    rows.map((c) => ({ label: countryName(c.code, lang, c.code), count: c.count }));
 
   return (
     <AdminShell active="geography" pageTitle={t("admin.geography.pageTitle", "지역 분석 · mortly admin")}>
@@ -189,8 +223,8 @@ export default function AdminGeographyPage() {
                 </div>
               </ACard>
               <ACard pad={18}>
-                <KpiLabel>{t("admin.geography.kpi.provinces", "지역(주) 수")}</KpiLabel>
-                <KpiValue className="mt-1">{data.provincesReached.toLocaleString()}</KpiValue>
+                <KpiLabel>{t("admin.geography.kpi.countries", "국가 수")}</KpiLabel>
+                <KpiValue className="mt-1">{data.countriesReached.toLocaleString()}</KpiValue>
               </ACard>
               <ACard pad={18}>
                 <KpiLabel>{t("admin.geography.kpi.cities", "도시 수")}</KpiLabel>
@@ -211,30 +245,76 @@ export default function AdminGeographyPage() {
               {view === "map" ? (
                 <div className="grid grid-cols-1 gap-5">
                   <ACard>
-                    <CanadaMap provinces={data.byProvince} cities={data.topCities} />
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                      <ASectionHead
+                        title={
+                          scope === "world"
+                            ? t("admin.geography.scope.world", "전 세계")
+                            : t("admin.geography.scope.canada", "캐나다")
+                        }
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <FilterChip
+                          label={t("admin.geography.scope.world", "전 세계")}
+                          active={scope === "world"}
+                          onClick={() => setScope("world")}
+                        />
+                        <FilterChip
+                          label={t("admin.geography.scope.canada", "캐나다")}
+                          active={scope === "canada"}
+                          onClick={() => setScope("canada")}
+                        />
+                      </div>
+                    </div>
+                    {scope === "world" ? (
+                      <WorldMap countries={data.byCountry} />
+                    ) : (
+                      <CanadaMap provinces={data.byProvince} cities={data.caCities} />
+                    )}
                   </ACard>
-                  {/* Province ranking ALWAYS rendered with the map — the
-                      data-table fallback so the map is never the sole view. */}
-                  <RankBlock
-                    title={t("admin.geography.section.provinces", "지역(주)")}
-                    rows={data.byProvince.map((p) => ({ label: p.name, count: p.count }))}
-                    total={total}
-                  />
+                  {/* Ranking ALWAYS rendered with the map — the data-table
+                      fallback so the map is never the sole representation. */}
+                  {scope === "world" ? (
+                    <RankBlock
+                      title={t("admin.geography.section.countries", "국가")}
+                      rows={countryRows(data.byCountry)}
+                      total={total}
+                    />
+                  ) : (
+                    <RankBlock
+                      title={t("admin.geography.section.provinces", "지역(주)")}
+                      rows={data.byProvince.map((p) => ({ label: p.name, count: p.count }))}
+                      total={total}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   <RankBlock
-                    title={t("admin.geography.section.provinces", "지역(주)")}
-                    rows={data.byProvince.map((p) => ({ label: p.name, count: p.count }))}
+                    title={t("admin.geography.section.countries", "국가")}
+                    rows={countryRows(data.byCountry)}
+                    total={total}
+                  />
+                  <RankBlock
+                    title={t("admin.geography.section.continents", "대륙")}
+                    rows={byContinent.map((c) => ({
+                      label: t(`admin.geography.continent.${c.slug}`, c.slug),
+                      count: c.count,
+                    }))}
                     total={total}
                   />
                   <RankBlock
                     title={t("admin.geography.section.cities", "주요 도시")}
                     rows={data.topCities.slice(0, 25).map((c) => ({
                       label: c.city,
-                      sub: c.province,
+                      sub: countryName(c.country, lang, c.country),
                       count: c.count,
                     }))}
+                    total={total}
+                  />
+                  <RankBlock
+                    title={t("admin.geography.section.provincesCa", "지역(주) · 캐나다")}
+                    rows={data.byProvince.map((p) => ({ label: p.name, count: p.count }))}
                     total={total}
                   />
                   <RankBlock
@@ -264,13 +344,6 @@ export default function AdminGeographyPage() {
                     }))}
                     total={total}
                   />
-                  {data.byCountry.length > 1 && (
-                    <RankBlock
-                      title={t("admin.geography.section.countries", "국가")}
-                      rows={data.byCountry.map((c) => ({ label: c.country, count: c.count }))}
-                      total={total}
-                    />
-                  )}
                 </div>
               )}
             </div>

@@ -1238,7 +1238,8 @@
         "sessions": "Total Sessions",
         "provinces": "Provinces",
         "cities": "Cities",
-        "mobile": "Mobile"
+        "mobile": "Mobile",
+        "countries": "Countries"
       },
       "tabs": {
         "map": "Map",
@@ -1250,7 +1251,9 @@
         "devices": "Devices",
         "referrers": "Referrers",
         "roles": "Visitor Type",
-        "countries": "Countries"
+        "countries": "Countries",
+        "continents": "Continents",
+        "provincesCa": "Provinces · Canada"
       },
       "map": {
         "loading": "Loading map…",
@@ -1271,7 +1274,25 @@
         "tablet": "Tablet",
         "unknown": "Unknown"
       },
-      "noData": "No data"
+      "noData": "No data",
+      "scope": {
+        "world": "World",
+        "canada": "Canada"
+      },
+      "worldMap": {
+        "ariaLabel": "Map of sessions by country",
+        "legendCountry": "Country"
+      },
+      "continent": {
+        "africa": "Africa",
+        "antarctica": "Antarctica",
+        "asia": "Asia",
+        "europe": "Europe",
+        "northAmerica": "North America",
+        "oceania": "Oceania",
+        "southAmerica": "South America",
+        "other": "Other"
+      }
     }
   },
   "manual": {

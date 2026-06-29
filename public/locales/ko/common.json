@@ -1238,7 +1238,8 @@
         "sessions": "총 세션",
         "provinces": "지역(주) 수",
         "cities": "도시 수",
-        "mobile": "모바일"
+        "mobile": "모바일",
+        "countries": "국가 수"
       },
       "tabs": {
         "map": "지도",
@@ -1250,7 +1251,9 @@
         "devices": "기기",
         "referrers": "유입 경로",
         "roles": "방문자 유형",
-        "countries": "국가"
+        "countries": "국가",
+        "continents": "대륙",
+        "provincesCa": "지역(주) · 캐나다"
       },
       "map": {
         "loading": "지도 불러오는 중…",
@@ -1271,7 +1274,25 @@
         "tablet": "태블릿",
         "unknown": "알 수 없음"
       },
-      "noData": "데이터 없음"
+      "noData": "데이터 없음",
+      "scope": {
+        "world": "전 세계",
+        "canada": "캐나다"
+      },
+      "worldMap": {
+        "ariaLabel": "전 세계 국가별 세션 분포 지도",
+        "legendCountry": "국가"
+      },
+      "continent": {
+        "africa": "아프리카",
+        "antarctica": "남극",
+        "asia": "아시아",
+        "europe": "유럽",
+        "northAmerica": "북아메리카",
+        "oceania": "오세아니아",
+        "southAmerica": "남아메리카",
+        "other": "기타"
+      }
     }
   },
   "manual": {

@@ -89,6 +89,31 @@ interface Tooltip {
   count: number;
 }
 
+// Module-level cache so toggling World⇄Canada (which unmounts this component)
+// doesn't re-fetch and re-parse the backdrop every time — the parsed
+// FeatureCollection is reused across mounts; only the first mount hits network.
+let canadaGeoCache: FeatureCollection | null = null;
+let canadaGeoPromise: Promise<FeatureCollection> | null = null;
+function loadCanadaGeo(): Promise<FeatureCollection> {
+  if (canadaGeoCache) return Promise.resolve(canadaGeoCache);
+  if (!canadaGeoPromise) {
+    canadaGeoPromise = fetch("/geo/canada-provinces.geo.json")
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data: FeatureCollection) => {
+        canadaGeoCache = data;
+        return data;
+      })
+      .catch((e) => {
+        canadaGeoPromise = null; // allow a retry on the next mount
+        throw e;
+      });
+  }
+  return canadaGeoPromise;
+}
+
 export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
   const { t } = useTranslation("common");
   const unit = t("admin.geography.map.unitSessions", "세션");
@@ -99,12 +124,8 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/geo/canada-provinces.geo.json")
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((data: FeatureCollection) => {
+    loadCanadaGeo()
+      .then((data) => {
         if (!cancelled) setGeo(data);
       })
       .catch(() => {
@@ -151,12 +172,14 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
 
   function showTip(e: { clientX: number; clientY: number }, label: string, count: number) {
     const rect = wrapRef.current?.getBoundingClientRect();
-    setTip({
-      x: rect ? e.clientX - rect.left : 0,
-      y: rect ? e.clientY - rect.top : 0,
-      label,
-      count,
-    });
+    if (!rect) {
+      setTip({ x: 0, y: 0, label, count });
+      return;
+    }
+    // Clamp x so the centered tooltip stays inside the map rather than clipping
+    // off the left/right edge.
+    const x = Math.min(rect.width - 56, Math.max(56, e.clientX - rect.left));
+    setTip({ x, y: e.clientY - rect.top, label, count });
   }
 
   function radiusFor(count: number): number {
@@ -212,7 +235,7 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
                 stroke="#e5e2dc"
                 strokeWidth={0.5}
                 tabIndex={0}
-                className="cursor-pointer outline-none transition-opacity duration-200 hover:opacity-80 focus-visible:opacity-80"
+                className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-80 focus-visible:opacity-80"
                 onMouseMove={(e) => showTip(e, name, count)}
                 onMouseLeave={() => setTip(null)}
                 onFocus={(e) => {
@@ -245,12 +268,13 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
                 stroke="#a8812e"
                 strokeWidth={1}
                 tabIndex={0}
-                className="cursor-pointer outline-none transition-opacity duration-200 hover:opacity-90 focus-visible:opacity-90"
+                className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
                 onMouseMove={(e) => showTip(e, c.city, c.count)}
                 onMouseLeave={() => setTip(null)}
-                onFocus={() =>
-                  showTip({ clientX: 0, clientY: 0 }, c.city, c.count)
-                }
+                onFocus={(e) => {
+                  const rr = e.currentTarget.getBoundingClientRect();
+                  showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, c.city, c.count);
+                }}
                 onBlur={() => setTip(null)}
               >
                 <title>{`${c.city} · ${c.count.toLocaleString()} ${unit}`}</title>
