@@ -18,7 +18,7 @@ import MobileTabBar from "@/components/MobileTabBar";
  * shared across all admin pages — see lib/admin/AdminDataContext.tsx).
  */
 
-type NavKey = "inbox" | "people" | "activity" | "reports" | "system";
+type NavKey = "inbox" | "people" | "activity" | "reports" | "geography" | "system";
 
 interface NavItem {
   k: NavKey;
@@ -36,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { k: "people",   href: "/admin/people",   icon: "◉", labelKey: "admin.nav.people",   fallback: "사용자" },
   { k: "activity", href: "/admin/activity", icon: "⧉", labelKey: "admin.nav.activity", fallback: "활동" },
   { k: "reports",  href: "/admin/reports",  icon: "△", labelKey: "admin.nav.reports",  fallback: "신고",   badgeKey: "openReports",         urgent: true },
+  { k: "geography",href: "/admin/geography",icon: "◎", labelKey: "admin.nav.geography", fallback: "지역" },
   { k: "system",   href: "/admin/system",   icon: "⚙", labelKey: "admin.nav.system",   fallback: "시스템" },
 ];
 
@@ -256,14 +257,14 @@ function AdminShellChrome({
         {/* Mobile bottom tab bar — the dark rail is desktop-only. */}
         <MobileTabBar
           active={active}
-          tabs={NAV_ITEMS.filter((it) => it.k !== "system").map((it) => ({
+          tabs={NAV_ITEMS.filter((it) => it.k !== "system" && it.k !== "geography").map((it) => ({
             key: it.k,
             href: it.href,
             label: t(it.labelKey, it.fallback),
             glyph: it.icon,
             badge: it.badgeKey && badgesLoaded ? badges[it.badgeKey] : undefined,
           }))}
-          moreItems={NAV_ITEMS.filter((it) => it.k === "system").map((it) => ({
+          moreItems={NAV_ITEMS.filter((it) => it.k === "system" || it.k === "geography").map((it) => ({
             key: it.k,
             href: it.href,
             label: t(it.labelKey, it.fallback),

@@ -1214,7 +1214,65 @@
     "systemSettingsAccount": "Your account",
     "labelBrokerVerify": "Broker · Pending",
     "labelRequestApprove": "Request · Pending",
-    "labelReportOpen": "Report · Open"
+    "labelReportOpen": "Report · Open",
+    "nav": {
+      "inbox": "Inbox",
+      "people": "Users",
+      "activity": "Activity",
+      "reports": "Reports",
+      "geography": "Region",
+      "system": "System"
+    },
+    "geography": {
+      "pageTitle": "Region Analytics · mortly admin",
+      "title": "Region Analytics",
+      "subtitle": "Cookieless visitor location data.",
+      "lastNDays": "Last {{n}} days",
+      "error": "Couldn't load location data.",
+      "direct": "Direct",
+      "empty": {
+        "title": "No visit data yet",
+        "body": "Visits will appear here once they come in."
+      },
+      "kpi": {
+        "sessions": "Total Sessions",
+        "provinces": "Provinces",
+        "cities": "Cities",
+        "mobile": "Mobile"
+      },
+      "tabs": {
+        "map": "Map",
+        "list": "List"
+      },
+      "section": {
+        "provinces": "Provinces",
+        "cities": "Top Cities",
+        "devices": "Devices",
+        "referrers": "Referrers",
+        "roles": "Visitor Type",
+        "countries": "Countries"
+      },
+      "map": {
+        "loading": "Loading map…",
+        "failed": "Couldn't load the map",
+        "legendSessions": "Sessions",
+        "legendCity": "City",
+        "ariaLabel": "Map of sessions by Canadian province",
+        "unitSessions": "sessions"
+      },
+      "role": {
+        "anon": "Anonymous",
+        "borrower": "Borrower",
+        "broker": "Broker"
+      },
+      "device": {
+        "mobile": "Mobile",
+        "desktop": "Desktop",
+        "tablet": "Tablet",
+        "unknown": "Unknown"
+      },
+      "noData": "No data"
+    }
   },
   "manual": {
     "loading": "Loading...",
