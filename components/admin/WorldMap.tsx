@@ -178,7 +178,7 @@ export default function WorldMap({ countries }: WorldMapProps) {
 
   if (!geo && !failed) {
     return (
-      <div className="w-full aspect-[900/460] rounded-sm bg-cream-100 border border-cream-200 animate-pulse flex items-center justify-center">
+      <div className="mx-auto w-full max-w-[860px] aspect-[900/460] rounded-sm bg-cream-50 animate-pulse flex items-center justify-center">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-400">
           {t("admin.geography.map.loading", "지도 불러오는 중…")}
         </span>
@@ -188,7 +188,7 @@ export default function WorldMap({ countries }: WorldMapProps) {
 
   if (failed || !geo || !path || !projection) {
     return (
-      <div className="w-full aspect-[900/460] rounded-sm bg-cream-100 border border-cream-200 flex items-center justify-center">
+      <div className="mx-auto w-full max-w-[860px] aspect-[900/460] rounded-sm bg-cream-50 flex items-center justify-center">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-400">
           {t("admin.geography.map.failed", "지도를 불러올 수 없습니다")}
         </span>
@@ -200,17 +200,14 @@ export default function WorldMap({ countries }: WorldMapProps) {
 
   return (
     <div ref={wrapRef} className="relative w-full">
-      {/* Resizable, draggable, zoomable map frame. aspect-* sets a clean default
-          height; the native resize handle lets the user override it. */}
-      <div
-        className="relative w-full aspect-[900/460] resize overflow-hidden rounded-sm border border-cream-200 bg-cream-50"
-        style={{ minHeight: 180, minWidth: 240, maxWidth: "100%" }}
-      >
+      {/* Draggable / zoomable map frame — a flush, borderless panel (the card
+          around it provides the only border). */}
+      <div className="relative mx-auto w-full max-w-[860px] aspect-[900/460] overflow-hidden rounded-sm bg-cream-50">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VB_W} ${VB_H}`}
           preserveAspectRatio="xMidYMid meet"
-          className="h-full w-full touch-none select-none"
+          className="h-full w-full touch-pan-y select-none"
           style={{ cursor: pz.panning ? "grabbing" : "grab" }}
           role="img"
           aria-label={t("admin.geography.worldMap.ariaLabel", "전 세계 국가별 세션 분포 지도")}
@@ -246,15 +243,9 @@ export default function WorldMap({ countries }: WorldMapProps) {
                   fillOpacity={0.55}
                   stroke="#a8812e"
                   strokeWidth={1 / k}
-                  tabIndex={0}
-                  className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
+                  className="cursor-pointer transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90"
                   onMouseMove={(e) => showTip(e, b.name, b.count)}
                   onMouseLeave={() => setTip(null)}
-                  onFocus={(e) => {
-                    const rr = e.currentTarget.getBoundingClientRect();
-                    showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, b.name, b.count);
-                  }}
-                  onBlur={() => setTip(null)}
                 >
                   <title>{`${b.name} · ${b.count.toLocaleString()} ${unit}`}</title>
                 </circle>
@@ -286,10 +277,12 @@ export default function WorldMap({ countries }: WorldMapProps) {
         <MapControls zoomIn={pz.zoomIn} zoomOut={pz.zoomOut} reset={pz.reset} isZoomed={pz.isZoomed} />
       </div>
 
-      {/* Tooltip */}
+      {/* Tooltip — flips below the point when near the top so it isn't clipped. */}
       {tip && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[calc(100%+8px)] rounded-sm border border-forest-700 bg-forest-800 px-2.5 py-1.5 shadow-lg"
+          className={`pointer-events-none absolute z-10 -translate-x-1/2 rounded-sm border border-forest-700 bg-forest-800 px-2.5 py-1.5 shadow-lg ${
+            tip.y < 64 ? "translate-y-2" : "-translate-y-[calc(100%+8px)]"
+          }`}
           style={{ left: tip.x, top: tip.y }}
         >
           <div className="font-body text-[12px] font-semibold leading-tight text-cream-100">
@@ -314,7 +307,7 @@ export default function WorldMap({ countries }: WorldMapProps) {
           {t("admin.geography.worldMap.legendCountry", "국가")}
         </span>
         <span className="ml-auto font-mono text-[10px] text-sage-400">
-          {t("admin.geography.map.hint", "드래그 · 스크롤 확대 · 모서리로 크기조절")}
+          {t("admin.geography.map.hint", "드래그로 이동 · ⌘/Ctrl+스크롤 또는 핀치로 확대")}
         </span>
       </div>
     </div>

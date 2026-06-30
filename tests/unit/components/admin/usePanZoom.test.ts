@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clampTransform, zoomToward, MIN_K, MAX_K } from "@/components/admin/usePanZoom";
+import { clampTransform, zoomToward, wheelZoomFactor, MIN_K, MAX_K } from "@/components/admin/usePanZoom";
 
 const VB_W = 900;
 const VB_H = 460;
@@ -51,6 +51,22 @@ describe("usePanZoom math", () => {
     it("never zooms in past MAX_K", () => {
       const next = zoomToward({ k: 6, x: 0, y: 0 }, { x: 450, y: 230 }, 4, VB_W, VB_H);
       expect(next.k).toBe(MAX_K);
+    });
+  });
+
+  describe("wheelZoomFactor", () => {
+    it("zooms in for upward (negative) delta and out for downward", () => {
+      expect(wheelZoomFactor(-100)).toBeGreaterThan(1);
+      expect(wheelZoomFactor(100)).toBeLessThan(1);
+    });
+
+    it("is a no-op at zero delta", () => {
+      expect(wheelZoomFactor(0)).toBe(1);
+    });
+
+    it("is monotonic in delta", () => {
+      expect(wheelZoomFactor(-50)).toBeLessThan(wheelZoomFactor(-100));
+      expect(wheelZoomFactor(50)).toBeGreaterThan(wheelZoomFactor(100));
     });
   });
 });

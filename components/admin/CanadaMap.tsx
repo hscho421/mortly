@@ -225,7 +225,7 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
   // ── Loading skeleton (geojson not fetched yet) ───────────────
   if (!geo && !failed) {
     return (
-      <div className="w-full aspect-[4/3] rounded-sm bg-cream-100 border border-cream-200 animate-pulse flex items-center justify-center">
+      <div className="mx-auto w-full max-w-[600px] aspect-[4/3] rounded-sm bg-cream-50 animate-pulse flex items-center justify-center">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-400">
           {t("admin.geography.map.loading", "지도 불러오는 중…")}
         </span>
@@ -235,7 +235,7 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
 
   if (failed || !geo || !path || !projection) {
     return (
-      <div className="w-full aspect-[4/3] rounded-sm bg-cream-100 border border-cream-200 flex items-center justify-center">
+      <div className="mx-auto w-full max-w-[600px] aspect-[4/3] rounded-sm bg-cream-50 flex items-center justify-center">
         <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-sage-400">
           {t("admin.geography.map.failed", "지도를 불러올 수 없습니다")}
         </span>
@@ -247,16 +247,14 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
 
   return (
     <div ref={wrapRef} className="relative w-full">
-      {/* Resizable, draggable, zoomable map frame. */}
-      <div
-        className="relative w-full aspect-[4/3] resize overflow-hidden rounded-sm border border-cream-200 bg-cream-50"
-        style={{ minHeight: 200, minWidth: 240, maxWidth: "100%" }}
-      >
+      {/* Draggable / zoomable map frame — a flush, borderless panel (the card
+          around it provides the only border). */}
+      <div className="relative mx-auto w-full max-w-[600px] aspect-[4/3] overflow-hidden rounded-sm bg-cream-50">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VB_W} ${VB_H}`}
           preserveAspectRatio="xMidYMid meet"
-          className="h-full w-full touch-none select-none"
+          className="h-full w-full touch-pan-y select-none"
           style={{ cursor: pz.panning ? "grabbing" : "grab" }}
           role="img"
           aria-label={t("admin.geography.map.ariaLabel", "캐나다 주별 세션 분포 지도")}
@@ -279,15 +277,9 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
                     fill={fill}
                     stroke="#e5e2dc"
                     strokeWidth={0.5 / k}
-                    tabIndex={0}
-                    className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-80 focus-visible:opacity-80"
+                    className="cursor-pointer transition-opacity duration-200 motion-reduce:transition-none hover:opacity-80"
                     onMouseMove={(e) => showTip(e, name, count)}
                     onMouseLeave={() => setTip(null)}
-                    onFocus={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      showTip({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }, name, count);
-                    }}
-                    onBlur={() => setTip(null)}
                   >
                     <title>{`${name} · ${count.toLocaleString()} ${unit}`}</title>
                   </path>
@@ -308,15 +300,9 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
                   fillOpacity={0.55}
                   stroke="#a8812e"
                   strokeWidth={1 / k}
-                  tabIndex={0}
-                  className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
+                  className="cursor-pointer transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90"
                   onMouseMove={(e) => showTip(e, p.city, p.count)}
                   onMouseLeave={() => setTip(null)}
-                  onFocus={(e) => {
-                    const rr = e.currentTarget.getBoundingClientRect();
-                    showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, p.city, p.count);
-                  }}
-                  onBlur={() => setTip(null)}
                 >
                   <title>{`${p.city} · ${p.count.toLocaleString()} ${unit}`}</title>
                 </circle>
@@ -349,10 +335,12 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
         <MapControls zoomIn={pz.zoomIn} zoomOut={pz.zoomOut} reset={pz.reset} isZoomed={pz.isZoomed} />
       </div>
 
-      {/* Tooltip */}
+      {/* Tooltip — flips below the point when near the top so it isn't clipped. */}
       {tip && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[calc(100%+8px)] rounded-sm border border-forest-700 bg-forest-800 px-2.5 py-1.5 shadow-lg"
+          className={`pointer-events-none absolute z-10 -translate-x-1/2 rounded-sm border border-forest-700 bg-forest-800 px-2.5 py-1.5 shadow-lg ${
+            tip.y < 64 ? "translate-y-2" : "-translate-y-[calc(100%+8px)]"
+          }`}
           style={{ left: tip.x, top: tip.y }}
         >
           <div className="font-body text-[12px] font-semibold leading-tight text-cream-100">
@@ -390,7 +378,7 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
         </span>
       </div>
       <div className="mt-1.5 font-mono text-[10px] text-sage-400">
-        {t("admin.geography.map.hint", "드래그 · 스크롤 확대 · 모서리로 크기조절")}
+        {t("admin.geography.map.hint", "드래그로 이동 · ⌘/Ctrl+스크롤 또는 핀치로 확대")}
       </div>
     </div>
   );

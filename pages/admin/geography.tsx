@@ -28,14 +28,14 @@ import { continentOf, countryName } from "@/lib/geo/countries";
 const WorldMap = dynamic(() => import("@/components/admin/WorldMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full aspect-[900/460] rounded-sm bg-cream-100 border border-cream-200 animate-pulse" />
+    <div className="mx-auto w-full max-w-[860px] aspect-[900/460] rounded-sm bg-cream-50 animate-pulse" />
   ),
 });
 
 const CanadaMap = dynamic(() => import("@/components/admin/CanadaMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full aspect-[4/3] rounded-sm bg-cream-100 border border-cream-200 animate-pulse" />
+    <div className="mx-auto w-full max-w-[600px] aspect-[4/3] rounded-sm bg-cream-50 animate-pulse" />
   ),
 });
 
@@ -247,12 +247,11 @@ export default function AdminGeographyPage() {
 
             <div className="mt-5">
               {view === "map" ? (
-                // Two columns on desktop: the (resizable/draggable) map on the
-                // left, its ranking — the data-table fallback — on the right.
-                // The grid keeps the map from sprawling to the full width.
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-                  <ACard>
-                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <div className="grid grid-cols-1 gap-5">
+                  {/* Map hero — full-width card, the map sits flush inside (the
+                      card provides the only border). */}
+                  <ACard pad={0} className="overflow-hidden">
+                    <div className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-cream-200 flex-wrap gap-2">
                       <ASectionHead
                         title={
                           scope === "world"
@@ -273,27 +272,53 @@ export default function AdminGeographyPage() {
                         />
                       </div>
                     </div>
-                    {scope === "world" ? (
-                      <WorldMap countries={data.byCountry} />
-                    ) : (
-                      <CanadaMap provinces={data.byProvince} cities={data.caCities} />
-                    )}
+                    <div className="p-3 md:p-4">
+                      {scope === "world" ? (
+                        <WorldMap countries={data.byCountry} />
+                      ) : (
+                        <CanadaMap provinces={data.byProvince} cities={data.caCities} />
+                      )}
+                    </div>
                   </ACard>
-                  {/* Ranking ALWAYS rendered with the map — the data-table
-                      fallback so the map is never the sole representation. */}
-                  {scope === "world" ? (
-                    <RankBlock
-                      title={t("admin.geography.section.countries", "국가")}
-                      rows={countryRows(data.byCountry)}
-                      total={total}
-                    />
-                  ) : (
-                    <RankBlock
-                      title={t("admin.geography.section.provinces", "지역(주)")}
-                      rows={data.byProvince.map((p) => ({ label: p.name, count: p.count }))}
-                      total={total}
-                    />
-                  )}
+
+                  {/* Rankings below the map — the data-table fallback so the map
+                      is never the sole representation of the data. */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {scope === "world" ? (
+                      <>
+                        <RankBlock
+                          title={t("admin.geography.section.countries", "국가")}
+                          rows={countryRows(data.byCountry)}
+                          total={total}
+                        />
+                        <RankBlock
+                          title={t("admin.geography.section.continents", "대륙")}
+                          rows={byContinent.map((c) => ({
+                            label: t(`admin.geography.continent.${c.slug}`, c.slug),
+                            count: c.count,
+                          }))}
+                          total={total}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <RankBlock
+                          title={t("admin.geography.section.provinces", "지역(주)")}
+                          rows={data.byProvince.map((p) => ({ label: p.name, count: p.count }))}
+                          total={total}
+                        />
+                        <RankBlock
+                          title={t("admin.geography.section.cities", "주요 도시")}
+                          rows={data.caCities.slice(0, 25).map((c) => ({
+                            label: c.city,
+                            sub: c.province,
+                            count: c.count,
+                          }))}
+                          total={total}
+                        />
+                      </>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
