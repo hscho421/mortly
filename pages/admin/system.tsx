@@ -22,12 +22,10 @@ interface SettingField {
   key: string;
   label: string;
   type: "text" | "number" | "toggle";
-  group: "general" | "credits" | "premium" | "requests" | "operations";
+  group: "credits" | "premium" | "requests" | "operations";
 }
 
 const SETTING_FIELDS: SettingField[] = [
-  { key: "platform_name",                 label: "Platform name",        type: "text",    group: "general" },
-  { key: "support_email",                 label: "Support email",        type: "text",    group: "general" },
   { key: "free_tier_credits",             label: "FREE monthly",         type: "number",  group: "credits" },
   { key: "basic_tier_credits",            label: "BASIC monthly",        type: "number",  group: "credits" },
   { key: "pro_tier_credits",              label: "PRO monthly",          type: "number",  group: "credits" },
@@ -44,7 +42,6 @@ const SETTING_FIELDS: SettingField[] = [
 ];
 
 const GROUP_LABEL_KO: Record<SettingField["group"], string> = {
-  general: "일반",
   credits: "크레딧",
   premium: "프리미엄 우선 공개",
   requests: "요청",
@@ -194,7 +191,7 @@ export default function AdminSystemPage() {
                     {t("admin.loadingSettings", "로딩 중…")}
                   </div>
                 ) : (
-                  (["general", "credits", "premium", "requests", "operations"] as const).map((grp) => {
+                  (["credits", "premium", "requests", "operations"] as const).map((grp) => {
                     const fields = SETTING_FIELDS.filter((f) => f.group === grp);
                     if (fields.length === 0) return null;
                     return (
