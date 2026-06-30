@@ -13,7 +13,7 @@ import {
  * can upload the resized avatar DIRECTLY to Storage (the bytes never pass
  * through this serverless function — Vercel caps bodies ~4.5MB). Only a
  * VERIFIED broker may request one, and the path is deterministic per user
- * (brokers/<userId>.webp), so a broker can only ever write their own avatar.
+ * (brokers/<userId>.jpg), so a broker can only ever write their own avatar.
  */
 export default withAuth(
   async (req, res, session) => {

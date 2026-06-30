@@ -7,18 +7,18 @@ import { makeReqRes, jsonBody } from "@/tests/utils/apiHelpers";
 
 // Mock the server-only storage admin so no real Supabase client is created.
 const createSignedUploadUrl = vi.fn(async () => ({
-  data: { path: "brokers/user_broker_1.webp", token: "tok", signedUrl: "https://signed.example" },
+  data: { path: "brokers/user_broker_1.jpg", token: "tok", signedUrl: "https://signed.example" },
   error: null,
 }));
 const remove = vi.fn(async () => ({ error: null }));
-// Default: the confirm step finds a valid small WebP at the broker's path.
+// Default: the confirm step finds a valid small JPEG at the broker's path.
 const list = vi.fn(async () => ({
-  data: [{ name: "user_broker_1.webp", metadata: { mimetype: "image/webp", size: 24000 } }],
+  data: [{ name: "user_broker_1.jpg", metadata: { mimetype: "image/jpeg", size: 24000 } }],
   error: null,
 }));
 vi.mock("@/lib/supabaseAdmin", () => ({
   AVATAR_BUCKET: "avatars",
-  brokerAvatarPath: (id: string) => `brokers/${id}.webp`,
+  brokerAvatarPath: (id: string) => `brokers/${id}.jpg`,
   avatarPublicUrl: (p: string) => `https://x.supabase.co/storage/v1/object/public/avatars/${p}`,
   isAvatarStorageConfigured: true,
   getSupabaseAdmin: () => ({
@@ -72,11 +72,11 @@ describe("POST /api/brokers/avatar/upload-url", () => {
     await uploadUrlHandler(req, res);
     expect(res.statusCode).toBe(200);
     const body = jsonBody<{ path: string; token: string; signedUrl: string }>(res);
-    expect(body.path).toBe("brokers/user_broker_1.webp");
+    expect(body.path).toBe("brokers/user_broker_1.jpg");
     expect(body.token).toBe("tok");
     // Path is derived server-side from the session user — not client-supplied.
     expect(createSignedUploadUrl).toHaveBeenCalledWith(
-      "brokers/user_broker_1.webp",
+      "brokers/user_broker_1.jpg",
       { upsert: true },
     );
   });
@@ -90,25 +90,25 @@ describe("POST/DELETE /api/brokers/avatar", () => {
   });
 
   it("confirm (POST) stores the server-derived path on profilePhoto", async () => {
-    prismaMock.broker.update.mockResolvedValue({ profilePhoto: "brokers/user_broker_1.webp" } as never);
+    prismaMock.broker.update.mockResolvedValue({ profilePhoto: "brokers/user_broker_1.jpg" } as never);
     const { req, res } = makeReqRes({ method: "POST" });
     await avatarHandler(req, res);
     expect(res.statusCode).toBe(200);
     const updateArgs = prismaMock.broker.update.mock.calls[0][0];
-    expect(updateArgs.data.profilePhoto).toBe("brokers/user_broker_1.webp");
-    expect(jsonBody<{ url: string }>(res).url).toContain("brokers/user_broker_1.webp");
+    expect(updateArgs.data.profilePhoto).toBe("brokers/user_broker_1.jpg");
+    expect(jsonBody<{ url: string }>(res).url).toContain("brokers/user_broker_1.jpg");
   });
 
-  it("confirm rejects a non-WebP object (e.g. HTML uploaded via the signed URL) and cleans it up", async () => {
+  it("confirm rejects a non-JPEG object (e.g. HTML uploaded via the signed URL) and cleans it up", async () => {
     list.mockResolvedValueOnce({
-      data: [{ name: "user_broker_1.webp", metadata: { mimetype: "text/html", size: 2000 } }],
+      data: [{ name: "user_broker_1.jpg", metadata: { mimetype: "text/html", size: 2000 } }],
       error: null,
     } as never);
     const { req, res } = makeReqRes({ method: "POST" });
     await avatarHandler(req, res);
     expect(res.statusCode).toBe(400);
     expect(jsonBody<{ code: string }>(res).code).toBe("INVALID_IMAGE_TYPE");
-    expect(remove).toHaveBeenCalledWith(["brokers/user_broker_1.webp"]);
+    expect(remove).toHaveBeenCalledWith(["brokers/user_broker_1.jpg"]);
     expect(prismaMock.broker.update).not.toHaveBeenCalled();
   });
 
@@ -123,7 +123,7 @@ describe("POST/DELETE /api/brokers/avatar", () => {
 
   it("confirm rejects an oversize object", async () => {
     list.mockResolvedValueOnce({
-      data: [{ name: "user_broker_1.webp", metadata: { mimetype: "image/webp", size: 5 * 1024 * 1024 } }],
+      data: [{ name: "user_broker_1.jpg", metadata: { mimetype: "image/jpeg", size: 5 * 1024 * 1024 } }],
       error: null,
     } as never);
     const { req, res } = makeReqRes({ method: "POST" });
@@ -138,7 +138,7 @@ describe("POST/DELETE /api/brokers/avatar", () => {
     const { req, res } = makeReqRes({ method: "DELETE" });
     await avatarHandler(req, res);
     expect(res.statusCode).toBe(200);
-    expect(remove).toHaveBeenCalledWith(["brokers/user_broker_1.webp"]);
+    expect(remove).toHaveBeenCalledWith(["brokers/user_broker_1.jpg"]);
     expect(prismaMock.broker.update.mock.calls[0][0].data.profilePhoto).toBeNull();
   });
 

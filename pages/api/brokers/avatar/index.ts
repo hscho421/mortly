@@ -39,10 +39,10 @@ export default withAuth(
       // nothing) to its own avatar path — and the bucket is public-read, so that
       // content would be served from our storage domain (phishing/malware under
       // our brand). Gate on the stored object's metadata via the service-role
-      // client; reject (and clean up) anything that isn't a small WebP.
+      // client; reject (and clean up) anything that isn't a small JPEG.
       const verifier = getSupabaseAdmin();
       if (verifier) {
-        const fileName = `${session.user.id}.webp`;
+        const fileName = `${session.user.id}.jpg`;
         const { data: objects, error: listErr } = await verifier.storage
           .from(AVATAR_BUCKET)
           .list("brokers", { search: fileName, limit: 1 });
@@ -60,10 +60,10 @@ export default withAuth(
             code: "UPLOAD_MISSING",
           });
         }
-        if (meta.mimetype !== "image/webp") {
+        if (meta.mimetype !== "image/jpeg") {
           await verifier.storage.from(AVATAR_BUCKET).remove([path]).catch(() => {});
           return res.status(400).json({
-            error: "Profile photo must be a WebP image.",
+            error: "Profile photo must be a JPEG image.",
             code: "INVALID_IMAGE_TYPE",
           });
         }

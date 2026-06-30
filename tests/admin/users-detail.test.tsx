@@ -237,7 +237,7 @@ describe("/admin/users/[id]", () => {
 
   it("a broker photo is clickable and opens a full-size lightbox", async () => {
     const u = makeBrokerUser("VERIFIED");
-    u.broker!.profilePhoto = "brokers/usr_1.webp";
+    u.broker!.profilePhoto = "brokers/usr_1.jpg";
     mockFetchWith(u);
     render(<AdminUserDetailPage />);
     const btn = await screen.findByTestId("user-avatar-button");
@@ -247,7 +247,7 @@ describe("/admin/users/[id]", () => {
     const lightbox = await screen.findByTestId("user-avatar-lightbox");
     const img = within(lightbox).getByRole("img") as HTMLImageElement;
     // full public object, NOT the small header transform
-    expect(img.getAttribute("src")).toContain("/public/brokers/usr_1.webp");
+    expect(img.getAttribute("src")).toContain("/public/brokers/usr_1.jpg");
   });
 
   it("request rows link to /admin/activity?req=<publicId>", async () => {

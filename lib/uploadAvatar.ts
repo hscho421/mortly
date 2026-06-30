@@ -1,7 +1,7 @@
 import { supabase, AVATAR_BUCKET, avatarPublicUrl } from "@/lib/supabase";
 
 /**
- * Run the broker avatar upload flow for an already-resized WebP blob:
+ * Run the broker avatar upload flow for an already-resized JPEG blob:
  *   1. ask our API for a path-scoped signed upload URL
  *   2. upload the blob directly to Supabase Storage
  *   3. confirm — persist the object path on the broker row
@@ -22,7 +22,7 @@ export async function uploadBrokerAvatar(
 
   const { error: upErr } = await supabase.storage
     .from(AVATAR_BUCKET)
-    .uploadToSignedUrl(path, token, blob, { contentType: "image/webp" });
+    .uploadToSignedUrl(path, token, blob, { contentType: "image/jpeg" });
   if (upErr) throw new Error("Upload failed");
 
   const confirmRes = await fetch("/api/brokers/avatar", { method: "POST" });

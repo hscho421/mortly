@@ -44,5 +44,5 @@ export const isAvatarStorageConfigured = Boolean(
 
 /** Deterministic object key for a broker's avatar (overwrites in place). */
 export function brokerAvatarPath(userId: string): string {
-  return `brokers/${userId}.webp`;
+  return `brokers/${userId}.jpg`;
 }

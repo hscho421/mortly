@@ -2,7 +2,7 @@ import { useState, useCallback, type ComponentType } from "react";
 import dynamic from "next/dynamic";
 import { useTranslation } from "next-i18next";
 import type { Area, CropperProps } from "react-easy-crop";
-import { getCroppedWebp } from "@/lib/resizeImage";
+import { getCroppedAvatar } from "@/lib/resizeImage";
 
 // Dynamic import keeps react-easy-crop out of the main bundle — it only loads
 // when a broker actually opens the cropper. Cast to Partial props: next/dynamic
@@ -16,7 +16,7 @@ const Cropper = dynamic(() => import("react-easy-crop"), {
 /**
  * Modal that lets the user position + zoom a square crop over their picked
  * image before it becomes their avatar (previously we blindly center-cropped,
- * which could cut off a face). On save, produces a ≤512px WebP blob.
+ * which could cut off a face). On save, produces a ≤512px JPEG blob.
  */
 export default function AvatarCropper({
   imageSrc,
@@ -41,7 +41,7 @@ export default function AvatarCropper({
     if (!areaPixels) return;
     setBusy(true);
     try {
-      const blob = await getCroppedWebp(imageSrc, areaPixels);
+      const blob = await getCroppedAvatar(imageSrc, areaPixels);
       onCropped(blob);
     } catch {
       // Surface nothing fancy here; the caller shows upload errors. Re-enable

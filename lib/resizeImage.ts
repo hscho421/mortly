@@ -3,9 +3,11 @@
  *
  * The user chooses the crop region in the cropper UI (react-easy-crop), which
  * yields a pixel rect in the image's natural coordinates. We draw that rect
- * into a square canvas at most `size`×`size` and re-encode to WebP — which
- * caps storage (~100–200KB) AND strips EXIF/GPS (canvas re-encode drops all
- * original metadata).
+ * into a square canvas at most `size`×`size` and re-encode to JPEG — which
+ * caps storage AND strips EXIF/GPS (canvas re-encode drops all original
+ * metadata). JPEG (not WebP) because Safari/iOS can't encode WebP via
+ * canvas.toBlob — it silently returns PNG, which then fails upload validation.
+ * JPEG's canvas encoding is universally supported.
  */
 export interface PixelArea {
   x: number;
@@ -14,7 +16,7 @@ export interface PixelArea {
   height: number;
 }
 
-export async function getCroppedWebp(
+export async function getCroppedAvatar(
   imageSrc: string,
   area: PixelArea,
   { size = 512, quality = 0.85 }: { size?: number; quality?: number } = {},
@@ -29,7 +31,7 @@ export async function getCroppedWebp(
   if (!ctx) throw new Error("Canvas not supported");
   ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, target, target);
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/webp", quality),
+    canvas.toBlob(resolve, "image/jpeg", quality),
   );
   if (!blob) throw new Error("Could not process the image");
   return blob;
