@@ -270,7 +270,7 @@ export async function sendPaymentFailedEmail(
         </div>
       </div>
       <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 24px;">
-        mortly · 결제 관련 문의는 이 이메일에 회신해 주세요. / Reply to this email for billing questions.
+        mortly · 결제 관련 문의는 <a href="mailto:support@mortly.ca" style="color: #1f3528;">support@mortly.ca</a> 로 연락해 주세요. / For billing questions, email <a href="mailto:support@mortly.ca" style="color: #1f3528;">support@mortly.ca</a>.
       </p>
     </div>
   `;
