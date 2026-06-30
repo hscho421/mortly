@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "eslint pages components lib --ext .ts,.tsx",
     "check:rls": "npx tsx scripts/check-rls.ts",
+    "create:admin": "npx tsx scripts/create-admin.ts",
     "verify:broker": "npx tsx scripts/verify-broker.ts",
     "replay:event": "npx tsx scripts/replay-event.ts",
     "set:customer": "npx tsx scripts/set-broker-customer.ts",
