@@ -1296,7 +1296,8 @@
         "oceania": "Oceania",
         "southAmerica": "South America",
         "other": "Other"
-      }
+      },
+      "last24h": "Last 24h"
     }
   },
   "manual": {

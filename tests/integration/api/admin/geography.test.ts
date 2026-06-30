@@ -119,6 +119,14 @@ describe("GET /api/admin/geography (global geography)", () => {
     expect(b.topCities.find((c) => c.city === "Seoul")).toMatchObject({ country: "KR" });
   });
 
+  it("accepts the 1-day (last 24h) window", async () => {
+    seedAggregates();
+    const { req, res } = makeReqRes({ method: "GET", query: { days: "1" } });
+    await handler(req, res);
+    expect(res.statusCode).toBe(200);
+    expect(jsonBody<GeoResponse>(res).days).toBe(1);
+  });
+
   it("clamps an out-of-range days param to the 30-day default", async () => {
     seedAggregates();
     const { req, res } = makeReqRes({ method: "GET", query: { days: "999" } });

@@ -160,6 +160,22 @@ export default function WorldMap({ countries }: WorldMapProps) {
     return Math.min(22, 4 + Math.sqrt(count / maxCount) * 16);
   }
 
+  const k = pz.k;
+
+  // Country labels appear progressively while zooming (fixed screen gap / k).
+  const countryLabels = useMemo(() => {
+    const gap = 52 / k;
+    const placed: Array<{ x: number; y: number }> = [];
+    const out: typeof bubbles = [];
+    for (const b of bubbles) {
+      if (placed.some((q) => Math.abs(q.x - b.x) < gap && Math.abs(q.y - b.y) < gap * 0.5)) continue;
+      placed.push({ x: b.x, y: b.y });
+      out.push(b);
+      if (out.length >= 14) break;
+    }
+    return out;
+  }, [bubbles, k]);
+
   if (!geo && !failed) {
     return (
       <div className="w-full aspect-[900/460] rounded-sm bg-cream-100 border border-cream-200 animate-pulse flex items-center justify-center">
@@ -212,40 +228,57 @@ export default function WorldMap({ countries }: WorldMapProps) {
                     d={d}
                     fill="#f0eeea"
                     stroke="#e5e2dc"
-                    strokeWidth={0.4}
+                    strokeWidth={0.4 / k}
                   />
                 );
               })}
             </g>
 
-            {/* Session bubbles (one per country with data) */}
+            {/* Session bubbles — constant screen size (radius / k). */}
             <g>
-              {bubbles.map((b, i) => {
-                const r = radiusFor(b.count);
-                return (
-                  <circle
-                    key={`${b.code}-${i}`}
-                    cx={b.x}
-                    cy={b.y}
-                    r={r}
-                    fill="#c49a3a"
-                    fillOpacity={0.55}
-                    stroke="#a8812e"
-                    strokeWidth={1}
-                    tabIndex={0}
-                    className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
-                    onMouseMove={(e) => showTip(e, b.name, b.count)}
-                    onMouseLeave={() => setTip(null)}
-                    onFocus={(e) => {
-                      const rr = e.currentTarget.getBoundingClientRect();
-                      showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, b.name, b.count);
-                    }}
-                    onBlur={() => setTip(null)}
-                  >
-                    <title>{`${b.name} · ${b.count.toLocaleString()} ${unit}`}</title>
-                  </circle>
-                );
-              })}
+              {bubbles.map((b, i) => (
+                <circle
+                  key={`${b.code}-${i}`}
+                  cx={b.x}
+                  cy={b.y}
+                  r={radiusFor(b.count) / k}
+                  fill="#c49a3a"
+                  fillOpacity={0.55}
+                  stroke="#a8812e"
+                  strokeWidth={1 / k}
+                  tabIndex={0}
+                  className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
+                  onMouseMove={(e) => showTip(e, b.name, b.count)}
+                  onMouseLeave={() => setTip(null)}
+                  onFocus={(e) => {
+                    const rr = e.currentTarget.getBoundingClientRect();
+                    showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, b.name, b.count);
+                  }}
+                  onBlur={() => setTip(null)}
+                >
+                  <title>{`${b.name} · ${b.count.toLocaleString()} ${unit}`}</title>
+                </circle>
+              ))}
+            </g>
+
+            {/* Country labels — counter-scaled; more appear as you zoom in. */}
+            <g className="pointer-events-none">
+              {countryLabels.map((b, i) => (
+                <text
+                  key={`label-${b.code}-${i}`}
+                  x={b.x + (radiusFor(b.count) + 3) / k}
+                  y={b.y + 3.5 / k}
+                  className="font-mono"
+                  fontSize={11 / k}
+                  fill="#0f1729"
+                  stroke="#fefefe"
+                  strokeWidth={2.5 / k}
+                  paintOrder="stroke"
+                  strokeLinejoin="round"
+                >
+                  {b.name}
+                </text>
+              ))}
             </g>
           </g>
         </svg>

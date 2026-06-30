@@ -17,7 +17,8 @@ export interface Transform {
 }
 
 export const MIN_K = 1;
-export const MAX_K = 8;
+// High enough to separate dense city clusters (e.g. the GTA) when drilling in.
+export const MAX_K = 20;
 
 // How far the scaled content may be dragged past the viewport edge, as a
 // fraction of the viewport. Keeps some map visible while still feeling draggable

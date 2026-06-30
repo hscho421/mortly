@@ -190,6 +190,38 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
     return Math.min(18, 3 + Math.sqrt(count / maxCity) * 14);
   }
 
+  const k = pz.k;
+
+  // Project every city once. Markers are kept a constant SCREEN size (radius/k)
+  // so a dense cluster (e.g. Toronto + Richmond Hill + Markham) separates as you
+  // zoom in instead of merging into one blob.
+  const cityPoints = useMemo(() => {
+    if (!projection) return [] as Array<{ city: string; count: number; x: number; y: number }>;
+    const out: Array<{ city: string; count: number; x: number; y: number }> = [];
+    for (const c of drawableCities) {
+      const xy = projection([c.lng, c.lat]);
+      if (!xy || !Number.isFinite(xy[0]) || !Number.isFinite(xy[1])) continue;
+      out.push({ city: c.city, count: c.count, x: xy[0], y: xy[1] });
+    }
+    return out;
+  }, [drawableCities, projection]);
+
+  // City labels appear progressively while zooming: the gap is a fixed screen
+  // distance, so dividing by k lets more (closer-together) cities get a label
+  // the further you drill into a region.
+  const cityLabels = useMemo(() => {
+    const gap = 26 / k;
+    const placed: Array<{ x: number; y: number }> = [];
+    const out: typeof cityPoints = [];
+    for (const p of cityPoints) {
+      if (placed.some((q) => Math.abs(q.x - p.x) < gap && Math.abs(q.y - p.y) < gap * 0.5)) continue;
+      placed.push({ x: p.x, y: p.y });
+      out.push(p);
+      if (out.length >= 16) break;
+    }
+    return out;
+  }, [cityPoints, k]);
+
   // ── Loading skeleton (geojson not fetched yet) ───────────────
   if (!geo && !failed) {
     return (
@@ -246,7 +278,7 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
                     d={d}
                     fill={fill}
                     stroke="#e5e2dc"
-                    strokeWidth={0.5}
+                    strokeWidth={0.5 / k}
                     tabIndex={0}
                     className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-80 focus-visible:opacity-80"
                     onMouseMove={(e) => showTip(e, name, count)}
@@ -263,37 +295,53 @@ export default function CanadaMap({ provinces, cities }: CanadaMapProps) {
               })}
             </g>
 
-            {/* City bubbles */}
+            {/* City bubbles — constant screen size (radius / k) so clusters
+                separate when zooming instead of overlapping. */}
             <g>
-              {drawableCities.map((c, i) => {
-                const xy = projection([c.lng, c.lat]);
-                if (!xy) return null;
-                const [x, y] = xy;
-                const r = radiusFor(c.count);
-                return (
-                  <circle
-                    key={`${c.city}-${i}`}
-                    cx={x}
-                    cy={y}
-                    r={r}
-                    fill="#c49a3a"
-                    fillOpacity={0.55}
-                    stroke="#a8812e"
-                    strokeWidth={1}
-                    tabIndex={0}
-                    className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
-                    onMouseMove={(e) => showTip(e, c.city, c.count)}
-                    onMouseLeave={() => setTip(null)}
-                    onFocus={(e) => {
-                      const rr = e.currentTarget.getBoundingClientRect();
-                      showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, c.city, c.count);
-                    }}
-                    onBlur={() => setTip(null)}
-                  >
-                    <title>{`${c.city} · ${c.count.toLocaleString()} ${unit}`}</title>
-                  </circle>
-                );
-              })}
+              {cityPoints.map((p, i) => (
+                <circle
+                  key={`${p.city}-${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={radiusFor(p.count) / k}
+                  fill="#c49a3a"
+                  fillOpacity={0.55}
+                  stroke="#a8812e"
+                  strokeWidth={1 / k}
+                  tabIndex={0}
+                  className="cursor-pointer outline-none transition-opacity duration-200 motion-reduce:transition-none hover:opacity-90 focus-visible:opacity-90"
+                  onMouseMove={(e) => showTip(e, p.city, p.count)}
+                  onMouseLeave={() => setTip(null)}
+                  onFocus={(e) => {
+                    const rr = e.currentTarget.getBoundingClientRect();
+                    showTip({ clientX: rr.left + rr.width / 2, clientY: rr.top + rr.height / 2 }, p.city, p.count);
+                  }}
+                  onBlur={() => setTip(null)}
+                >
+                  <title>{`${p.city} · ${p.count.toLocaleString()} ${unit}`}</title>
+                </circle>
+              ))}
+            </g>
+
+            {/* City labels — counter-scaled (size / k) to stay readable; more
+                appear as you zoom in (see cityLabels). */}
+            <g className="pointer-events-none">
+              {cityLabels.map((p, i) => (
+                <text
+                  key={`label-${p.city}-${i}`}
+                  x={p.x + (radiusFor(p.count) + 3) / k}
+                  y={p.y + 3.5 / k}
+                  className="font-mono"
+                  fontSize={11 / k}
+                  fill="#0f1729"
+                  stroke="#fefefe"
+                  strokeWidth={2.5 / k}
+                  paintOrder="stroke"
+                  strokeLinejoin="round"
+                >
+                  {p.city}
+                </text>
+              ))}
             </g>
           </g>
         </svg>

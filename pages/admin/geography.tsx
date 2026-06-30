@@ -39,7 +39,7 @@ const CanadaMap = dynamic(() => import("@/components/admin/CanadaMap"), {
   ),
 });
 
-type Days = 7 | 30 | 90;
+type Days = 1 | 7 | 30 | 90;
 type ViewTab = "map" | "list";
 type MapScope = "world" | "canada";
 
@@ -169,10 +169,14 @@ export default function AdminGeographyPage() {
           )}
           right={
             <div className="flex items-center gap-1.5">
-              {([7, 30, 90] as const).map((d) => (
+              {([1, 7, 30, 90] as const).map((d) => (
                 <FilterChip
                   key={d}
-                  label={t("admin.geography.lastNDays", "지난 {{n}}일", { n: d })}
+                  label={
+                    d === 1
+                      ? t("admin.geography.last24h", "지난 24시간")
+                      : t("admin.geography.lastNDays", "지난 {{n}}일", { n: d })
+                  }
                   active={days === d}
                   onClick={() => setDays(d)}
                 />

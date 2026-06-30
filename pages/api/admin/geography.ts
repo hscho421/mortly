@@ -11,7 +11,7 @@ import { provinceName } from "@/lib/geo/provinces";
  * CA cities (with lat/lng for the Canada choropleth bubbles).
  */
 
-const ALLOWED_DAYS = [7, 30, 90];
+const ALLOWED_DAYS = [1, 7, 30, 90];
 
 export default withAdmin(async (req, res) => {
   if (req.method !== "GET") {

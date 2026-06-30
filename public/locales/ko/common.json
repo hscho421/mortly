@@ -1296,7 +1296,8 @@
         "oceania": "오세아니아",
         "southAmerica": "남아메리카",
         "other": "기타"
-      }
+      },
+      "last24h": "지난 24시간"
     }
   },
   "manual": {
