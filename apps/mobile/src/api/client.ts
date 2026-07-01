@@ -71,6 +71,22 @@ export async function getMe(token: string) {
   );
 }
 
+/** POST /api/auth/select-role → picks BORROWER/BROKER once; returns a refreshed token. */
+export async function selectRole(token: string, role: "BORROWER" | "BROKER") {
+  return api<{ success: boolean; role: string; sessionToken?: string }>(
+    "/api/auth/select-role",
+    { method: "POST", token, body: { role } },
+  );
+}
+
+/** PATCH /api/users/me → sets the display name; returns a refreshed token + user. */
+export async function updateName(token: string, name: string) {
+  return api<{ success: boolean; sessionToken?: string; user: import("@/auth/session").SessionUser }>(
+    "/api/users/me",
+    { method: "PATCH", token, body: { name } },
+  );
+}
+
 /** POST /api/auth/mobile-oauth → { sessionToken, user }. */
 export async function loginWithOAuth(
   provider: "google" | "apple",

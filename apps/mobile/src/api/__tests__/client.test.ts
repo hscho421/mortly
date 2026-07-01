@@ -1,4 +1,4 @@
-import { api, ApiError, loginWithPassword } from "@/api/client";
+import { api, ApiError, loginWithPassword, selectRole, updateName } from "@/api/client";
 
 describe("api client", () => {
   const fetchMock = jest.fn();
@@ -44,5 +44,34 @@ describe("api client", () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
     await expect(api("/api/x")).rejects.toMatchObject({ code: "REQUEST_FAILED", status: 500 });
     await expect(api("/api/x")).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("selectRole POSTs the chosen role authenticated", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, role: "BROKER", sessionToken: "new" }),
+    });
+    const res = await selectRole("tok", "BROKER");
+    expect(res).toMatchObject({ role: "BROKER", sessionToken: "new" });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/api/auth/select-role");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ role: "BROKER" });
+    expect(init.headers["Cookie"]).toContain("tok");
+  });
+
+  it("updateName PATCHes the name and returns the refreshed user", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, sessionToken: "new", user: { id: "u1" } }),
+    });
+    const res = await updateName("tok", "Hyun Seok");
+    expect(res.user).toMatchObject({ id: "u1" });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/api/users/me");
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body)).toEqual({ name: "Hyun Seok" });
   });
 });

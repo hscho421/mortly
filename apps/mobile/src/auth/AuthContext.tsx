@@ -10,6 +10,8 @@ interface AuthState {
   token: string | null;
   signInWithPassword: (email: string, password: string) => Promise<void>;
   signInWithOAuth: (provider: "google" | "apple", idToken: string, name?: string | null) => Promise<void>;
+  /** Persist a refreshed token + user (e.g. after onboarding role/name changes). */
+  updateSession: (token: string, user: SessionUser) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -53,6 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [commit],
   );
 
+  const updateSession = useCallback(
+    async (token: string, user: SessionUser) => {
+      await commit({ token, user });
+    },
+    [commit],
+  );
+
   const signOut = useCallback(async () => {
     await clearSession();
     setSession(null);
@@ -67,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token: session?.token ?? null,
         signInWithPassword,
         signInWithOAuth,
+        updateSession,
         signOut,
       }}
     >

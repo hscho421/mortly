@@ -20,16 +20,25 @@ function RootNavigator() {
   useEffect(() => {
     if (status === "loading") return;
     const group = segments[0];
+    const screen = segments[1];
     if (group === "kitchen-sink") return; // dev reference route — ungated
     if (status === "guest") {
       if (group !== "(auth)") router.replace("/(auth)/login");
       return;
     }
-    // authed → route to the role home (onboarding gates are a follow-up)
+    // authed → onboarding gates first (name, then role), then the role home
+    if (user?.needsNameEntry) {
+      if (!(group === "(onboarding)" && screen === "name")) router.replace("/(onboarding)/name");
+      return;
+    }
+    if (user?.needsRoleSelection) {
+      if (!(group === "(onboarding)" && screen === "role")) router.replace("/(onboarding)/role");
+      return;
+    }
     const target =
       user?.role === "BROKER" ? "(broker)" : user?.role === "ADMIN" ? "(admin)" : "(borrower)";
     if (group !== target) router.replace(`/${target}`);
-  }, [status, user?.role, segments, router]);
+  }, [status, user?.needsNameEntry, user?.needsRoleSelection, user?.role, segments, router]);
 
   return <Slot />;
 }
