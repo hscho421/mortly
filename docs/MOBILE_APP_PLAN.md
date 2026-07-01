@@ -2762,16 +2762,14 @@ Ship-gate for each screen (owned by the design + engineering DoD, aligning with 
 
 ### Open questions
 
-**Resolved (2026-07-01) — see the Resolved decisions table in §0:**
+**All product questions resolved (2026-07-01):**
 1. ~~Billing CTA policy~~ → **status-only, neutral copy** (no prices/steering).
 2. ~~Mobile auth~~ → **yes**: credentials endpoint + mobile JWT in Keychain/Keystore, `tokenVersion` logout, optional biometric unlock.
 3. ~~Admin v1 scope~~ → **moderation-first** (inbox approve/reject/resolve + read-only context + push; management deferred to web).
 4. ~~Repo shape~~ → **monorepo** (`apps/web` + `apps/mobile` + `packages/core`); extract `packages/core` first as the low-risk path.
 5. ~~Borrower on mobile~~ → **full peer** (create requests + chat + browse at launch).
-
-**Still open:**
-6. **Notifications granularity:** per-category toggles (new response, new message, request approved/expired, admin alerts) or a single on/off?
-7. **App identity:** one app in both stores, or separate builds? Store listing name/keywords, and do brokers/admins get any special onboarding at install?
+6. ~~Notifications granularity~~ → **per-category toggles + a master switch**: New response · New message · Request status (approved/rejected/expired) · New matching request (broker) · Admin alerts.
+7. ~~App identity~~ → **one app, both stores** (single Expo codebase → App Store + Google Play), listing "Mortly" (bilingual KR/EN). **No** role-specific install onboarding — role is resolved at login and the app adapts post-auth.
 
 *(A fuller list of facet-level open questions surfaced during the codebase audit is appended at the end.)*
 
