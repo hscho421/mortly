@@ -67,6 +67,39 @@ export function invalidateSessionDbCache(userId: string): void {
   sessionDbCache.delete(userId);
 }
 
+/**
+ * Verify email + password credentials. Timing-safe: always runs a bcrypt
+ * compare (against the user's real hash, or a dummy when the account is
+ * missing / OAuth-only) so failure paths don't leak account existence via
+ * latency. Throws sentinel Error codes on failure — MISSING_CREDENTIALS,
+ * INVALID_CREDENTIALS, GOOGLE_ACCOUNT, EMAIL_NOT_VERIFIED, ACCOUNT_SUSPENDED,
+ * ACCOUNT_BANNED — and returns the full user row on success.
+ *
+ * Single source of truth shared by the NextAuth credentials provider (web)
+ * and the /api/auth/mobile-login endpoint (mobile), so the two can never drift.
+ */
+export async function verifyCredentials(
+  emailRaw: string | undefined | null,
+  password: string | undefined | null,
+) {
+  if (!emailRaw || !password) {
+    throw new Error("MISSING_CREDENTIALS");
+  }
+  const email = normalizeEmail(emailRaw);
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  const isValid = await compare(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
+
+  if (!user) throw new Error("INVALID_CREDENTIALS");
+  if (!user.passwordHash) throw new Error("GOOGLE_ACCOUNT");
+  if (!isValid) throw new Error("INVALID_CREDENTIALS");
+  if (!user.emailVerified) throw new Error("EMAIL_NOT_VERIFIED");
+  if (user.status === "SUSPENDED") throw new Error("ACCOUNT_SUSPENDED");
+  if (user.status === "BANNED") throw new Error("ACCOUNT_BANNED");
+
+  return user;
+}
+
 export function createAuthOptions(acceptedLegalVersion?: string | null): NextAuthOptions {
   return {
     providers: [
@@ -89,48 +122,7 @@ export function createAuthOptions(acceptedLegalVersion?: string | null): NextAut
           password: { label: "Password", type: "password" },
         },
         async authorize(credentials) {
-          if (!credentials?.email || !credentials?.password) {
-            throw new Error("MISSING_CREDENTIALS");
-          }
-
-          const email = normalizeEmail(credentials.email);
-          const user = await prisma.user.findUnique({
-            where: { email },
-          });
-
-          // Always run a bcrypt compare — against the user's real hash, or the
-          // dummy hash when the account is missing / OAuth-only — so the
-          // failure paths take constant time and don't leak account existence
-          // via response latency.
-          const isValid = await compare(
-            credentials.password,
-            user?.passwordHash ?? DUMMY_PASSWORD_HASH,
-          );
-
-          if (!user) {
-            throw new Error("INVALID_CREDENTIALS");
-          }
-
-          if (!user.passwordHash) {
-            throw new Error("GOOGLE_ACCOUNT");
-          }
-
-          if (!isValid) {
-            throw new Error("INVALID_CREDENTIALS");
-          }
-
-          if (!user.emailVerified) {
-            throw new Error("EMAIL_NOT_VERIFIED");
-          }
-
-          if (user.status === "SUSPENDED") {
-            throw new Error("ACCOUNT_SUSPENDED");
-          }
-
-          if (user.status === "BANNED") {
-            throw new Error("ACCOUNT_BANNED");
-          }
-
+          const user = await verifyCredentials(credentials?.email, credentials?.password);
           return {
             id: user.id,
             publicId: user.publicId,
