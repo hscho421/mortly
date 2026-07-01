@@ -154,6 +154,64 @@ export async function getRequest(token: string, id: string) {
   return api<BorrowerRequest>(`/api/requests/${id}`, { token });
 }
 
+// ── Broker ───────────────────────────────────────────────────────────────────
+export interface BrokerProfile {
+  id: string;
+  userId: string;
+  brokerageName: string;
+  province: string;
+  verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
+  subscriptionTier: "FREE" | "BASIC" | "PRO" | "PREMIUM";
+  responseCredits: number;
+  mortgageCategory: string | null;
+  profilePhoto: string | null;
+  subscription: { status: string; tier: string } | null;
+  user: { id: string; publicId: string; name: string | null; email: string };
+}
+
+/** A request in the broker feed — base fields + broker enrichment. */
+export interface BrokerFeedRequest extends BorrowerRequest {
+  isNew: boolean;
+  hasMyConversation: boolean;
+  isPremiumExclusive: boolean;
+  premiumWindowEndsAt: string | null;
+}
+
+/** GET /api/brokers/profile → the broker's own profile (404 → not onboarded). */
+export async function getBrokerProfile(token: string) {
+  return api<BrokerProfile>("/api/brokers/profile", { token });
+}
+
+/** GET /api/requests (broker branch) → the feed of OPEN requests + enrichment. */
+export async function getBrokerFeed(
+  token: string,
+  opts: { province?: string; mortgageCategory?: string; page?: number } = {},
+) {
+  const p = new URLSearchParams();
+  if (opts.province) p.set("province", opts.province);
+  if (opts.mortgageCategory) p.set("mortgageCategory", opts.mortgageCategory);
+  if (opts.page) p.set("page", String(opts.page));
+  const qs = p.toString();
+  return api<{
+    data: BrokerFeedRequest[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+    newCount?: number;
+  }>(`/api/requests${qs ? `?${qs}` : ""}`, { token });
+}
+
+/** POST /api/conversations → respond to a request (201 new / 200 existing). */
+export async function respondToRequest(token: string, requestId: string, message?: string) {
+  return api<{ id: string; publicId: string; requestId: string; status: string }>(
+    "/api/conversations",
+    { method: "POST", token, body: { requestId, ...(message ? { message } : {}) } },
+  );
+}
+
+/** POST /api/brokers/requests/:id/mark-seen — mark one request seen (on detail open). */
+export async function markRequestSeen(token: string, id: string) {
+  return api<{ success: boolean }>(`/api/brokers/requests/${id}/mark-seen`, { method: "POST", token });
+}
+
 // ── Conversations / chat (shared borrower + broker) ──────────────────────────
 export interface ChatMessage {
   id: string;
