@@ -173,6 +173,12 @@ export interface BrokerProfile {
   userId: string;
   brokerageName: string;
   province: string;
+  phone: string | null;
+  licenseNumber: string | null;
+  bio: string | null;
+  yearsExperience: number | null;
+  areasServed: string | null;
+  specialties: string | null;
   verificationStatus: "PENDING" | "VERIFIED" | "REJECTED";
   subscriptionTier: "FREE" | "BASIC" | "PRO" | "PREMIUM";
   responseCredits: number;
@@ -180,6 +186,23 @@ export interface BrokerProfile {
   profilePhoto: string | null;
   subscription: { status: string; tier: string } | null;
   user: { id: string; publicId: string; name: string | null; email: string };
+}
+
+export interface BrokerProfileUpdate {
+  brokerageName?: string;
+  province?: string;
+  phone?: string;
+  licenseNumber?: string;
+  bio?: string;
+  areasServed?: string;
+  specialties?: string;
+  yearsExperience?: number | null;
+  mortgageCategory?: string;
+}
+
+/** PUT /api/brokers/profile — edit the broker's own profile (partial). */
+export async function updateBrokerProfile(token: string, fields: BrokerProfileUpdate) {
+  return api<BrokerProfile>("/api/brokers/profile", { method: "PUT", token, body: fields });
 }
 
 /** A request in the broker feed — base fields + broker enrichment. */

@@ -113,6 +113,11 @@ export default function BrokerHome() {
           variant="light"
           onPress={() => router.push("/(broker)/messages")}
         />
+        <Button
+          title={t("broker.nav.profile", "프로필")}
+          variant="light"
+          onPress={() => router.push("/(broker)/profile")}
+        />
       </ScrollView>
     </Screen>
   );

@@ -3,7 +3,9 @@ import {
   getBrokerProfile,
   getBrokerFeed,
   respondToRequest,
+  updateBrokerProfile,
   ApiError,
+  type BrokerProfileUpdate,
 } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
 
@@ -25,6 +27,16 @@ export function useBrokerFeed(opts: { province?: string; mortgageCategory?: stri
     queryKey: ["brokerFeed", opts],
     enabled: !!token,
     queryFn: () => getBrokerFeed(token as string, opts),
+  });
+}
+
+/** Edit the broker's own profile; refreshes the cached profile on success. */
+export function useUpdateBrokerProfile() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (fields: BrokerProfileUpdate) => updateBrokerProfile(token as string, fields),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["brokerProfile"] }),
   });
 }
 
