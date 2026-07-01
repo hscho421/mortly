@@ -21,14 +21,15 @@ and the existing Next.js API with the web.
   authed users → their role stack `(borrower|broker|admin)`, each showing a
   placeholder home (the Phase 0 exit proof).
 
-## Run it (on a Mac with Xcode / Android Studio)
+## Install & run (on a Mac with Xcode / Android Studio)
+This app installs **standalone** (its own `node_modules`), NOT as part of the
+root workspace — the web is on React 19 and Expo SDK 52 is on React 18, so they
+must not share a hoisted tree. `@mortly/core` is linked via a `file:` dependency
+and Metro resolves it from the monorepo.
 ```bash
-# from the repo root — installs the whole workspace incl. this app
-npm install
-
-# start Metro + the dev client
-npm run start -w @mortly/mobile     # then press i (iOS) or a (Android)
-# or:  cd apps/mobile && npx expo start
+cd apps/mobile
+npm install          # installs the RN toolchain + links @mortly/core
+npx expo start       # then press i (iOS) or a (Android)
 ```
 
 Point it at a backend with `EXPO_PUBLIC_API_URL` (defaults to `https://mortly.ca`):
@@ -36,13 +37,15 @@ Point it at a backend with `EXPO_PUBLIC_API_URL` (defaults to `https://mortly.ca
 EXPO_PUBLIC_API_URL=http://<your-LAN-ip>:3000 npx expo start   # local `next dev`
 ```
 
-## ⚠️ Before pushing (Vercel)
-Adding this app pulls the React-Native toolchain into the workspace. In the
-Vercel project → **Settings → Build & Development → Install Command**, set:
+Verify the bundle without a device:
+```bash
+npx expo export --platform ios   # Metro-bundles the whole app to disk
+npx expo-doctor                  # dependency sanity (18/18)
 ```
-npm install --include-workspace-root -w packages/core
-```
-so the web deploy installs only the web + `@mortly/core`, not the mobile app.
+
+## Vercel
+No action needed. The root workspace is **web + `packages/core` only** — the RN
+toolchain never enters the web install, so the production deploy is unaffected.
 
 ## Next (Phase 1+)
 Onboarding + role selection, device-locale detection (`expo-localization`),
