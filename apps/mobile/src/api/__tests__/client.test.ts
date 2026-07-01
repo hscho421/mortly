@@ -27,15 +27,15 @@ describe("api client", () => {
     expect(init.headers["x-mortly-mobile"]).toBe("1");
   });
 
-  it("attaches the session cookie only when a token is provided", async () => {
+  it("attaches Authorization: Bearer only when a token is provided", async () => {
     fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
     await api("/api/x", { token: "jwt123" });
-    expect(fetchMock.mock.calls[0][1].headers["Cookie"]).toContain("jwt123");
+    expect(fetchMock.mock.calls[0][1].headers["Authorization"]).toContain("jwt123");
 
     fetchMock.mockClear();
     fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
     await api("/api/x");
-    expect(fetchMock.mock.calls[0][1].headers["Cookie"]).toBeUndefined();
+    expect(fetchMock.mock.calls[0][1].headers["Authorization"]).toBeUndefined();
   });
 
   it("throws ApiError with the backend sentinel code + status on failure", async () => {
@@ -69,7 +69,7 @@ describe("api client", () => {
     expect(url).toContain("/api/auth/select-role");
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body)).toEqual({ role: "BROKER" });
-    expect(init.headers["Cookie"]).toContain("tok");
+    expect(init.headers["Authorization"]).toContain("tok");
   });
 
   it("updateName PATCHes the name and returns the refreshed user", async () => {

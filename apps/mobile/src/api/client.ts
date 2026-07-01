@@ -1,11 +1,12 @@
-import { API_URL, SESSION_COOKIE_NAME } from "@/config";
+import { API_URL } from "@/config";
 
 /**
  * Typed API client for the existing Next.js backend (pages/api/*).
  *
- * Auth: the app's minted next-auth JWT is sent as the session COOKIE, so every
- * existing endpoint authenticates it via getServerSession unchanged. (React
- * Native fetch — unlike a browser — allows setting the Cookie header.)
+ * Auth: the app's minted next-auth JWT is sent as `Authorization: Bearer`. RN
+ * (iOS) won't reliably send a manual Cookie header, so a tiny Next middleware
+ * translates the Bearer token into the session cookie that getServerSession
+ * reads — every existing endpoint authenticates the app with no per-route change.
  *
  * Errors: the backend returns `{ error: "<SENTINEL_CODE>" }`; we surface that
  * code on ApiError so screens map it to the shared i18n copy.
@@ -41,7 +42,7 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
     "x-mortly-mobile": "1",
   };
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
-  if (opts.token) headers["Cookie"] = `${SESSION_COOKIE_NAME}=${opts.token}`;
+  if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
 
   const res = await fetch(`${API_URL}${path}`, {
     method: opts.method ?? "GET",
