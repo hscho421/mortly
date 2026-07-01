@@ -6,20 +6,28 @@ and the existing Next.js API with the web.
 ## Phase 0 foundation (what's wired)
 - **Monorepo** — this app lives in `apps/mobile`; shared logic + tokens + i18n
   config come from `@mortly/core`.
-- **Design tokens** — NativeWind pulls the Midnight & Gold palette/fonts from
-  `@mortly/core/tokens` (one source with the web).
-- **Auth** — `src/auth`: email/password via `POST /api/auth/mobile-login`
-  (+ Apple/Google stubs → `/api/auth/mobile-oauth`); the minted next-auth JWT is
-  stored in the device Keychain (`expo-secure-store`) and sent as the session
-  **cookie**, so every existing endpoint authenticates it via `getServerSession`
-  unchanged.
-- **API client** — `src/api/client.ts`: typed, surfaces the backend's sentinel
-  error codes.
-- **i18n** — `src/i18n.ts`: loads the SAME `public/locales/{ko,en}/common.json`
-  the web serves (ko-default).
+- **Design tokens + primitives** — NativeWind pulls the Midnight & Gold palette
+  from `@mortly/core` (one source with the web); `src/components` has the §3
+  primitives (Button/Input/Card/Badge/Avatar/Header) + Loading/Empty/Error
+  states. `app/kitchen-sink.tsx` shows them all (dev link on the role home).
+- **Auth** — `src/auth`: email/password via `POST /api/auth/mobile-login`; native
+  **Sign in with Apple** (lazy-loaded, dev-build only) → `/api/auth/mobile-oauth`;
+  Google is a documented stub. The minted next-auth JWT is stored in the device
+  Keychain (`expo-secure-store`) and sent as the session **cookie**, so every
+  existing endpoint authenticates it via `getServerSession` unchanged.
+- **API client + data** — `src/api/client.ts` (typed, sends `x-mortly-mobile: 1`,
+  surfaces sentinel codes); `useMe()` (TanStack Query) proves the authed loop and
+  signs out on 401.
+- **Realtime** — `src/lib/supabase.ts` (anon client) + `useConversationSync()`:
+  content-free "sync" broadcast, real content over the authed API — mirrors the
+  web's RLS-deny-all model exactly.
+- **i18n** — loads the SAME `public/locales/{ko,en}/common.json` the web serves;
+  ko-default, en when the device is English (`expo-localization`).
 - **Role router** — `app/_layout.tsx` redirects guests → `(auth)/login` and
-  authed users → their role stack `(borrower|broker|admin)`, each showing a
-  placeholder home (the Phase 0 exit proof).
+  authed users → their role stack `(borrower|broker|admin)`, each a placeholder
+  home (the Phase 0 exit proof) that live-calls `/api/users/me`.
+- **CI** — `.github/workflows/mobile-ci.yml`: tsc · expo-doctor · Metro bundle ·
+  jest, on any `apps/mobile` / `packages/core` / locale change.
 
 ## Install & run (on a Mac with Xcode / Android Studio)
 **Expo SDK 54** (React 19.1, RN 0.81, Reanimated 4). This app installs
@@ -39,10 +47,15 @@ npm install          # installs the RN toolchain + links @mortly/core
 npx expo start       # scan the QR with Expo Go, or press i (simulator) / a
 ```
 
-Point it at a backend with `EXPO_PUBLIC_API_URL` (defaults to `https://mortly.ca`):
+Point it at a backend + Supabase Realtime with public env vars (all safe to ship
+— `EXPO_PUBLIC_*` are the same anon values the web uses):
 ```bash
-EXPO_PUBLIC_API_URL=http://<your-LAN-ip>:3000 npx expo start   # local `next dev`
+EXPO_PUBLIC_API_URL=http://<your-LAN-ip>:3000 \
+EXPO_PUBLIC_SUPABASE_URL=<same as web NEXT_PUBLIC_SUPABASE_URL> \
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<same as web NEXT_PUBLIC_SUPABASE_ANON_KEY> \
+npx expo start
 ```
+Without the Supabase vars the app still runs; Realtime just reports "off".
 
 Verify the bundle without a device:
 ```bash
@@ -54,7 +67,17 @@ npx expo-doctor                  # dependency sanity (18/18)
 No action needed. The root workspace is **web + `packages/core` only** — the RN
 toolchain never enters the web install, so the production deploy is unaffected.
 
-## Next (Phase 1+)
-Onboarding + role selection, device-locale detection (`expo-localization`),
-native Apple/Google sign-in, then the borrower/broker/admin screens, push
-notifications, and Supabase Realtime chat. See `docs/MOBILE_APP_PLAN.md`.
+## Remaining for Phase 0 (needs your machine / accounts)
+These are wired in code but can't be finished/verified from CI — they need a
+device, an EAS account, or your OAuth credentials:
+- **Dev build** — `npx expo run:ios` (or `eas build --profile development`) to
+  test **Apple sign-in** and later push (Expo Go can't run native modules).
+- **EAS build on iOS + Android** from `eas.json` (needs your Expo account).
+- **Google sign-in** — add client IDs + `@react-native-google-signin` (or
+  `expo-auth-session`) in a dev build; server verify already exists.
+- **On-device Realtime smoke** — set the `EXPO_PUBLIC_SUPABASE_*` vars and
+  confirm the `chat-<id>` broadcast nudge arrives.
+
+## Next (Phase 1)
+Onboarding + role selection, then the borrower/broker/admin screens, chat, and
+push notifications. See `docs/MOBILE_APP_PLAN.md`.
