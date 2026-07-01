@@ -19,6 +19,8 @@ export class ApiError extends Error {
   constructor(
     public code: string,
     public status: number,
+    /** The parsed response body (e.g. to read a `code: "ACTIVE_REQUEST_CAP"`). */
+    public body?: Record<string, unknown>,
   ) {
     super(code);
     this.name = "ApiError";
@@ -50,7 +52,7 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
 
   const data = (await res.json().catch(() => ({}))) as { error?: string } & Record<string, unknown>;
   if (!res.ok) {
-    throw new ApiError(typeof data.error === "string" ? data.error : "REQUEST_FAILED", res.status);
+    throw new ApiError(typeof data.error === "string" ? data.error : "REQUEST_FAILED", res.status, data);
   }
   return data as T;
 }
@@ -85,6 +87,71 @@ export async function updateName(token: string, name: string) {
     "/api/users/me",
     { method: "PATCH", token, body: { name } },
   );
+}
+
+// ── Borrower requests ────────────────────────────────────────────────────────
+export interface ConversationSummary {
+  id: string;
+  createdAt: string;
+  status: "ACTIVE" | "CLOSED";
+  brokerId: string;
+  broker: {
+    id: string;
+    brokerageName: string;
+    verificationStatus: string;
+    yearsExperience: number | null;
+    specialties: string | null;
+    bio: string | null;
+    profilePhoto: string | null;
+    user: { id: string; publicId: string; name: string | null };
+  };
+  _count: { messages: number };
+}
+
+export interface BorrowerRequest {
+  id: string;
+  publicId: string;
+  mortgageCategory: "RESIDENTIAL" | "COMMERCIAL";
+  productTypes: string[];
+  province: string;
+  city: string | null;
+  desiredTimeline: string | null;
+  notes: string | null;
+  details: Record<string, unknown> | null;
+  status: string;
+  rejectionReason?: string | null;
+  createdAt: string;
+  _count?: { conversations: number };
+  /** Present on the detail endpoint (GET /api/requests/:id) — broker responses. */
+  conversations?: ConversationSummary[];
+}
+
+export interface CreateRequestInput {
+  mortgageCategory: "RESIDENTIAL" | "COMMERCIAL";
+  productTypes: string[];
+  province: string;
+  city?: string;
+  desiredTimeline?: string;
+  notes?: string;
+  details?: Record<string, unknown>;
+}
+
+/** GET /api/requests → the signed-in borrower's own requests. */
+export async function getMyRequests(token: string) {
+  return api<{
+    data: BorrowerRequest[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }>("/api/requests", { token });
+}
+
+/** POST /api/requests → create a borrower request (201 → the created request). */
+export async function createRequest(token: string, input: CreateRequestInput) {
+  return api<BorrowerRequest>("/api/requests", { method: "POST", token, body: input });
+}
+
+/** GET /api/requests/[id] → one request (borrower detail). */
+export async function getRequest(token: string, id: string) {
+  return api<BorrowerRequest>(`/api/requests/${id}`, { token });
 }
 
 /** POST /api/auth/mobile-oauth → { sessionToken, user }. */
