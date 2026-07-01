@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ScrollView, View, Text } from "react-native";
+import { ScrollView, View, Text, Linking } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
 import { Screen, Header, Input, Button, Eyebrow } from "@/components/ui";
 import { useAuth } from "@/auth/AuthContext";
 import { updateName } from "@/api/client";
+import { API_URL } from "@/config";
 
 export default function Account() {
   const { t } = useTranslation();
@@ -57,6 +58,20 @@ export default function Account() {
         <View className="gap-3">
           <Eyebrow>{t("account.session", "세션")}</Eyebrow>
           <Button title={t("mobile.signOut", "로그아웃")} variant="light" onPress={() => void signOut()} />
+        </View>
+
+        <View className="gap-3">
+          <Eyebrow>{t("account.legal", "약관 및 정책")}</Eyebrow>
+          <Button
+            title={t("account.privacy", "개인정보 처리방침")}
+            variant="light"
+            onPress={() => void Linking.openURL(`${API_URL}/privacy`)}
+          />
+          <Button
+            title={t("account.terms", "이용약관")}
+            variant="light"
+            onPress={() => void Linking.openURL(`${API_URL}/terms`)}
+          />
         </View>
 
         <View className="gap-3">
