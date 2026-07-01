@@ -117,6 +117,7 @@ export interface ConversationSummary {
     specialties: string | null;
     bio: string | null;
     profilePhoto: string | null;
+    updatedAt: string;
     user: { id: string; publicId: string; name: string | null };
   };
   _count: { messages: number };
@@ -462,6 +463,207 @@ export async function moderateUser(token: string, id: string, status: string, re
     token,
     body: { status, ...(reason ? { reason } : {}) },
   });
+}
+
+// Admin — user detail
+export interface AdminConvItem {
+  id: string;
+  publicId: string;
+  status: string;
+  updatedAt: string;
+  _count: { messages: number };
+  broker: { id: string; user: { name: string | null; email: string } } | null;
+  borrower: { id: string; name: string | null; email: string } | null;
+  request: { id: string; province: string; mortgageCategory: string } | null;
+}
+export interface AdminReqItem {
+  id: string;
+  publicId: string;
+  province: string;
+  city: string | null;
+  status: string;
+  mortgageCategory: string;
+  createdAt: string;
+}
+export interface AdminUserDetail {
+  id: string;
+  publicId: string;
+  email: string;
+  name: string | null;
+  role: "BORROWER" | "BROKER" | "ADMIN";
+  status: "ACTIVE" | "SUSPENDED" | "BANNED";
+  emailVerified: string | null;
+  createdAt: string;
+  broker: {
+    id: string;
+    brokerageName: string;
+    province: string;
+    phone: string | null;
+    licenseNumber: string | null;
+    bio: string | null;
+    yearsExperience: number | null;
+    verificationStatus: string;
+    subscriptionTier: string;
+    responseCredits: number;
+    profilePhoto: string | null;
+    areasServed: string | null;
+    specialties: string | null;
+    updatedAt: string;
+    _count: { conversations: number };
+  } | null;
+  borrowerRequests: AdminReqItem[];
+  conversations: AdminConvItem[];
+  _count: { borrowerRequests: number; conversations: number; reports: number };
+}
+export async function getAdminUser(token: string, id: string) {
+  return api<AdminUserDetail>(`/api/admin/users/${id}`, { token });
+}
+export async function sendAdminNotice(token: string, userId: string, subject: string, body: string) {
+  return api("/api/admin/notices", { method: "POST", token, body: { userId, subject, body } });
+}
+
+// Admin — requests moderation
+export interface AdminRequestListItem extends BorrowerRequest {
+  borrower: { id: string; name: string | null; email: string; status: string };
+}
+export async function getAdminRequests(
+  token: string,
+  opts: { search?: string; status?: string; type?: string; page?: number } = {},
+) {
+  const p = new URLSearchParams();
+  if (opts.search) p.set("search", opts.search);
+  if (opts.status) p.set("status", opts.status);
+  if (opts.type) p.set("type", opts.type);
+  if (opts.page) p.set("page", String(opts.page));
+  const qs = p.toString();
+  return api<{ data: AdminRequestListItem[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(
+    `/api/admin/requests${qs ? `?${qs}` : ""}`,
+    { token },
+  );
+}
+export async function getAdminRequest(token: string, id: string) {
+  return api<AdminRequestListItem & { conversations: ConversationSummary[] }>(`/api/admin/requests/${id}`, { token });
+}
+export async function moderateAdminRequest(token: string, id: string, status: string, reason?: string) {
+  return api(`/api/admin/requests/${id}`, { method: "PUT", token, body: { status, ...(reason ? { reason } : {}) } });
+}
+export async function deleteAdminRequest(token: string, id: string, reason?: string) {
+  return api<{ success: boolean }>(`/api/admin/requests/${id}`, {
+    method: "DELETE",
+    token,
+    body: reason ? { reason } : {},
+  });
+}
+
+// Admin — reports
+export interface AdminReport {
+  id: string;
+  targetType: string;
+  targetId: string;
+  reason: string;
+  status: string;
+  adminNotes: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  reporter: { id: string; name: string | null; email: string } | null;
+}
+export async function getAdminReports(
+  token: string,
+  opts: { search?: string; status?: string; targetType?: string; page?: number } = {},
+) {
+  const p = new URLSearchParams();
+  if (opts.search) p.set("search", opts.search);
+  if (opts.status) p.set("status", opts.status);
+  if (opts.targetType) p.set("targetType", opts.targetType);
+  if (opts.page) p.set("page", String(opts.page));
+  const qs = p.toString();
+  return api<{ data: AdminReport[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(
+    `/api/admin/reports${qs ? `?${qs}` : ""}`,
+    { token },
+  );
+}
+export async function getAdminReport(token: string, id: string) {
+  return api<AdminReport & { targetDetails: Record<string, unknown> | null }>(`/api/admin/reports/${id}`, { token });
+}
+export async function getAdminReportSummary(token: string) {
+  return api<{ OPEN: number; REVIEWED: number; RESOLVED: number; DISMISSED: number }>(
+    "/api/admin/reports/summary",
+    { token },
+  );
+}
+export async function moderateAdminReport(token: string, id: string, body: { status?: string; adminNotes?: string }) {
+  return api(`/api/admin/reports/${id}`, { method: "PUT", token, body });
+}
+
+// Admin — conversations (chat history moderation)
+export interface AdminConversationListItem {
+  id: string;
+  publicId: string;
+  status: string;
+  updatedAt: string;
+  borrower: { id: string; name: string | null; email: string; status: string };
+  broker: { id: string; brokerageName: string; user: { id: string; name: string | null; email: string; status: string } };
+  request: { id: string; province: string; city: string | null; status: string; mortgageCategory: string };
+  _count: { messages: number };
+  messages: { body: string; createdAt: string; sender: { name: string | null } }[];
+}
+export interface AdminConversationThread {
+  id: string;
+  publicId: string;
+  status: string;
+  borrower: { id: string; name: string | null };
+  broker: { brokerageName: string; user: { name: string | null } };
+  messages: (ChatMessage & { sender: { id: string; name: string | null; email: string; role: string } })[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+export async function getAdminConversations(
+  token: string,
+  opts: { search?: string; status?: string; page?: number } = {},
+) {
+  const p = new URLSearchParams();
+  if (opts.search) p.set("search", opts.search);
+  if (opts.status) p.set("status", opts.status);
+  if (opts.page) p.set("page", String(opts.page));
+  const qs = p.toString();
+  return api<{ data: AdminConversationListItem[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(
+    `/api/admin/conversations${qs ? `?${qs}` : ""}`,
+    { token },
+  );
+}
+export async function getAdminConversation(token: string, id: string, before?: string) {
+  const qs = before ? `?messagesBefore=${before}` : "";
+  return api<AdminConversationThread>(`/api/admin/conversations/${id}${qs}`, { token });
+}
+export async function closeAdminConversation(token: string, id: string, reason?: string) {
+  return api(`/api/admin/conversations/${id}`, {
+    method: "PUT",
+    token,
+    body: { status: "CLOSED", ...(reason ? { reason } : {}) },
+  });
+}
+
+// Admin — stats
+export interface AdminStats {
+  users: number;
+  totalBorrowers: number;
+  totalBrokers: number;
+  pendingVerifications: number;
+  verifiedBrokers: number;
+  requestsByStatus: {
+    pendingApproval: number;
+    open: number;
+    inProgress: number;
+    closed: number;
+    expired: number;
+    rejected: number;
+    total: number;
+  };
+  activeConversations: number;
+  openReports: number;
+}
+export async function getAdminStats(token: string) {
+  return api<AdminStats>("/api/admin/stats", { token });
 }
 
 /** POST /api/auth/mobile-oauth → { sessionToken, user }. */

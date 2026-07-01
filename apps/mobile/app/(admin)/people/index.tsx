@@ -125,10 +125,11 @@ function UserRow({
   onReactivate: () => void;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const isAdmin = u.role === "ADMIN";
   const active = u.status === "ACTIVE";
   return (
-    <Card>
+    <Card onPress={() => router.push({ pathname: "/(admin)/user/[id]", params: { id: u.id } })}>
       <View className="flex-row items-center gap-3">
         <Avatar name={u.name} size={40} />
         <View className="flex-1">

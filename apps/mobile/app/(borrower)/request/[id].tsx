@@ -6,6 +6,7 @@ import { Screen, Header, Badge, Card, Avatar, Eyebrow } from "@/components/ui";
 import { Loading, ErrorState } from "@/components/states";
 import { RequestFields } from "@/components/RequestFields";
 import { statusMeta } from "@/lib/requestStatus";
+import { avatarUrl } from "@/lib/avatar";
 import { useRequest } from "@/hooks/useRequests";
 import type { ConversationSummary } from "@/api/client";
 
@@ -86,7 +87,7 @@ function BrokerResponse({ convo }: { convo: ConversationSummary }) {
       }
     >
       <View className="flex-row items-center gap-3">
-        <Avatar name={convo.broker.user.name} uri={convo.broker.profilePhoto} size={44} />
+        <Avatar name={convo.broker.user.name} uri={avatarUrl(convo.broker.profilePhoto, convo.broker.updatedAt)} size={44} />
         <View className="flex-1">
           <Text className="font-display text-[15px] font-semibold text-forest-800">
             {convo.broker.brokerageName}

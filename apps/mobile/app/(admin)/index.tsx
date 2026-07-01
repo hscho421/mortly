@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { getRequestTitle } from "@mortly/core/requestConfig";
 import { Screen, Header, Card, Button, Eyebrow } from "@/components/ui";
 import { Loading, EmptyState, ErrorState } from "@/components/states";
-import { useAdminQueue, useModerateQueue } from "@/hooks/useAdmin";
+import { useAdminQueue, useModerateQueue, useAdminStats } from "@/hooks/useAdmin";
 
 type Action = { label: string; variant: "gold" | "light"; onPress: () => void };
 
@@ -13,6 +13,7 @@ export default function AdminHome() {
   const { t } = useTranslation();
   const router = useRouter();
   const q = useAdminQueue();
+  const stats = useAdminStats();
   const mod = useModerateQueue();
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -60,13 +61,25 @@ export default function AdminHome() {
     <Screen>
       {header}
       <ScrollView contentContainerStyle={{ padding: 16, gap: 20 }}>
-        <View className="flex-row">
-          <View className="flex-1">
-            <Button
-              title={t("admin.nav.people", "사용자")}
-              variant="light"
-              onPress={() => router.push("/(admin)/people")}
-            />
+        {stats.data ? (
+          <Text className="font-mono text-[11px] text-sage-500">
+            {t("admin.totalUsers", "사용자")} {stats.data.users} · {t("admin.pendingVerifications", "인증대기")}{" "}
+            {stats.data.pendingVerifications} · {t("admin.openReports", "신고")} {stats.data.openReports}
+          </Text>
+        ) : null}
+
+        <View className="flex-row flex-wrap gap-2">
+          <View className="w-[48%]">
+            <Button title={t("admin.nav.requests", "요청")} variant="light" onPress={() => router.push("/(admin)/requests")} />
+          </View>
+          <View className="w-[48%]">
+            <Button title={t("admin.nav.reports", "신고")} variant="light" onPress={() => router.push("/(admin)/reports")} />
+          </View>
+          <View className="w-[48%]">
+            <Button title={t("admin.nav.people", "사용자")} variant="light" onPress={() => router.push("/(admin)/people")} />
+          </View>
+          <View className="w-[48%]">
+            <Button title={t("admin.nav.messages", "대화")} variant="light" onPress={() => router.push("/(admin)/conversations")} />
           </View>
         </View>
 

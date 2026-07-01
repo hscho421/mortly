@@ -2,6 +2,7 @@ import { View, Text, FlatList } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Card, Avatar, Badge } from "@/components/ui";
 import { Loading, EmptyState, ErrorState } from "@/components/states";
+import { avatarUrl } from "@/lib/avatar";
 import { useConversations } from "@/hooks/useChat";
 import { useAuth } from "@/auth/AuthContext";
 import type { ConversationListItem } from "@/api/client";
@@ -58,7 +59,7 @@ function Row({
   return (
     <Card onPress={onPress}>
       <View className="flex-row items-center gap-3">
-        <Avatar name={other} uri={isBroker ? null : item.broker.profilePhoto} size={44} />
+        <Avatar name={other} uri={isBroker ? null : avatarUrl(item.broker.profilePhoto)} size={44} />
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
             <Text className="flex-1 font-display text-[15px] font-semibold text-forest-800" numberOfLines={1}>
