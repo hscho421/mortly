@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mortly · Mobile UI — v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ Midnight & Gold tokens (from tailwind.config.ts) ============ */
+:root{
+  --forest-900:#080c18; --forest-800:#0f1729; --forest-700:#1f2d52; --forest-600:#2e3d68;
+  --forest-500:#3d4f82; --forest-400:#5d6da3; --forest-300:#8a96be; --forest-200:#b8c0d9; --forest-100:#dde1ed; --forest-50:#f0f2f7;
+  --cream-50:#fefefe; --cream-100:#f8f7f4; --cream-200:#f0eeea; --cream-300:#e5e2dc; --cream-400:#d5d0c7; --cream-500:#c0b9ad;
+  --amber-700:#8a6825; --amber-600:#a8812e; --amber-500:#c49a3a; --amber-400:#d4a853; --amber-300:#e6c96e; --amber-200:#f2dfa8; --amber-100:#f9f0d5; --amber-50:#fdf9ef;
+  --sage-600:#454e6b; --sage-500:#576285; --sage-400:#7681a1; --sage-300:#9ea6bd; --sage-200:#c5cad9; --sage-100:#e2e5ed;
+  --success:#16a34a; --error:#dc2626; --warning:#d97706;
+  --font-d:"Outfit","Noto Sans KR",system-ui,sans-serif;
+  --font-b:"Outfit","Noto Sans KR",system-ui,sans-serif;
+  --font-m:"IBM Plex Mono",ui-monospace,monospace;
+  --hair:rgba(15,23,41,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  font-family:var(--font-b);
+  background:
+    radial-gradient(1200px 700px at 15% -10%, #172038 0%, transparent 55%),
+    radial-gradient(1000px 600px at 100% 110%, #14213f 0%, transparent 50%),
+    #0a0f1e;
+  color:#fff;min-height:100vh;padding:56px 24px 96px;
+}
+/* ---- page chrome ---- */
+.page-head{max-width:1400px;margin:0 auto 44px;text-align:center}
+.wordmark{font-family:var(--font-d);font-weight:600;font-size:15px;letter-spacing:-.01em;color:var(--amber-400);
+  display:inline-flex;align-items:center;gap:8px;margin-bottom:18px}
+.wordmark .dot{width:6px;height:6px;background:var(--amber-500);border-radius:50%;box-shadow:0 0 14px var(--amber-500)}
+.page-head h1{font-family:var(--font-d);font-weight:300;font-size:34px;letter-spacing:-.02em;color:#f4f6fb;margin-bottom:12px}
+.page-head h1 b{font-weight:600;color:#fff}
+.page-head p{color:#8893ad;font-size:14px;max-width:620px;margin:0 auto;line-height:1.6}
+.legend{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.legend span{font-family:var(--font-m);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7c88a5;
+  border:1px solid rgba(255,255,255,.09);padding:6px 11px;border-radius:3px;background:rgba(255,255,255,.02)}
+.gallery{max-width:1400px;margin:0 auto;display:flex;flex-wrap:wrap;gap:56px 44px;justify-content:center;align-items:flex-start}
+.frame-wrap{display:flex;flex-direction:column;align-items:center;gap:16px}
+.frame-label{font-family:var(--font-m);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8893ad}
+.frame-label b{color:var(--amber-400);font-weight:500}
+
+/* ============ iPhone frame ============ */
+.phone{
+  width:346px;height:750px;background:#000;border-radius:52px;padding:11px;
+  box-shadow:0 0 0 2px #23262d, 0 30px 60px -20px rgba(0,0,0,.7), 0 0 0 11px #0c0f16;position:relative;
+}
+.screen{width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:var(--cream-100);
+  font-size:15px;color:var(--forest-800);display:flex;flex-direction:column}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:104px;height:30px;background:#000;border-radius:16px;z-index:60}
+/* status bar */
+.status{height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 26px 8px;font-family:var(--font-d);font-weight:600;font-size:14px;position:relative;z-index:20}
+.status .r{display:flex;align-items:center;gap:6px}
+.status svg{display:block}
+/* home indicator */
+.home-ind{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:128px;height:5px;border-radius:3px;background:rgba(15,23,41,.28);z-index:60}
+.home-ind.light{background:rgba(255,255,255,.55)}
+
+/* scroll body */
+.body{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.scroll{flex:1;overflow-y:auto;padding-bottom:12px}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ============ nav bars ============ */
+.nav{padding:6px 20px 12px;display:flex;flex-direction:column;gap:2px;position:relative;z-index:15}
+.nav-top{height:44px;display:flex;align-items:center;justify-content:space-between}
+.nav-title-lg{font-family:var(--font-d);font-weight:700;font-size:30px;letter-spacing:-.03em;color:var(--forest-800);margin-top:2px}
+.nav-sub{font-size:13px;color:var(--sage-400);margin-top:2px;font-weight:400}
+.nav-inline{backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(248,247,244,.82);
+  border-bottom:.5px solid var(--hair);padding:0 8px;height:52px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:15}
+.nav-inline .t{font-family:var(--font-d);font-weight:600;font-size:17px;letter-spacing:-.01em}
+.ic-btn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;color:var(--forest-700);border-radius:8px}
+.ic-btn.back{color:var(--forest-700);font-size:17px;font-weight:500;gap:3px;width:auto;padding:0 6px 0 2px}
+.badge-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;background:var(--amber-500);border-radius:50%;border:1.5px solid var(--cream-100)}
+
+/* ============ typography helpers ============ */
+.eyebrow{font-family:var(--font-m);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage-400);font-weight:500}
+.h2{font-family:var(--font-d);font-weight:600;font-size:19px;letter-spacing:-.02em}
+.muted{color:var(--sage-400)}
+.mono{font-family:var(--font-m)}
+.section-h{display:flex;align-items:center;justify-content:space-between;padding:22px 20px 10px}
+.section-h .eyebrow{color:var(--sage-500)}
+.section-h a{color:var(--amber-600);font-size:13px;font-weight:500;text-decoration:none}
+
+/* ============ cards / lists ============ */
+.px{padding-left:20px;padding-right:20px}
+.card{background:var(--cream-50);border:.5px solid var(--cream-300);border-radius:4px;
+  box-shadow:0 1px 3px rgba(15,23,41,.04),0 1px 2px rgba(15,23,41,.05)}
+.list{background:var(--cream-50);border:.5px solid var(--cream-300);border-radius:4px;overflow:hidden;
+  box-shadow:0 1px 3px rgba(15,23,41,.04)}
+.row{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:.5px solid var(--cream-200);position:relative}
+.row:last-child{border-bottom:0}
+.row .chev{margin-left:auto;color:var(--sage-300);flex:0 0 auto}
+.row-t{font-weight:500;font-size:15px;letter-spacing:-.01em}
+.row-s{font-size:12.5px;color:var(--sage-400);margin-top:2px}
+
+/* avatar */
+.av{border-radius:50%;object-fit:cover;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-d);font-weight:600;color:#fff;background:linear-gradient(135deg,var(--forest-600),var(--forest-800))}
+.av.g{background:linear-gradient(135deg,var(--amber-400),var(--amber-600))}
+.av-44{width:44px;height:44px;font-size:15px}.av-40{width:40px;height:40px;font-size:14px}.av-52{width:52px;height:52px;font-size:17px}
+
+/* chips + badges */
+.chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-m);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:500;padding:5px 9px;border-radius:3px;background:var(--cream-200);color:var(--sage-500)}
+.chip.gold{background:var(--amber-50);color:var(--amber-700);border:.5px solid var(--amber-200)}
+.chip.ok{background:var(--success);color:#fff}.chip.ok-s{background:#eafaf0;color:var(--success)}
+.chip.warn{background:#fdf4e6;color:var(--warning)}
+.chip.forest{background:var(--forest-800);color:var(--cream-100)}
+.verified{display:inline-flex;align-items:center;gap:3px;color:var(--amber-600);font-size:11px;font-weight:600}
+.pill-status{font-family:var(--font-m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:3px}
+
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:5px;font-family:var(--font-d);
+  font-weight:600;font-size:16px;letter-spacing:-.01em;border:none;width:100%;cursor:pointer}
+.btn.primary{background:var(--forest-800);color:#fff;box-shadow:0 6px 16px -6px rgba(15,23,41,.5)}
+.btn.gold{background:var(--amber-500);color:var(--forest-900)}
+.btn.light{background:var(--cream-50);color:var(--forest-800);border:.5px solid var(--cream-300)}
+.btn.sm{height:38px;font-size:14px;border-radius:4px;width:auto;padding:0 16px}
+.btn.ghost{background:transparent;color:var(--forest-700)}
+
+/* segmented control */
+.seg{display:flex;background:var(--cream-200);border-radius:5px;padding:3px;gap:2px}
+.seg button{flex:1;height:34px;border:0;background:transparent;font-family:var(--font-b);font-weight:500;font-size:13px;
+  color:var(--sage-500);border-radius:3px}
+.seg button.on{background:var(--cream-50);color:var(--forest-800);box-shadow:0 1px 2px rgba(15,23,41,.12);font-weight:600}
+
+/* inputs */
+.field{margin-bottom:16px}
+.field label{display:block;font-family:var(--font-m);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--sage-500);margin-bottom:7px;font-weight:500}
+.input{width:100%;height:50px;background:var(--cream-50);border:.5px solid var(--cream-300);border-radius:4px;
+  padding:0 15px;font-family:var(--font-b);font-size:16px;color:var(--forest-800);display:flex;align-items:center}
+.input.amount{font-family:var(--font-d);font-weight:600;font-size:20px}
+.input .ph{color:var(--sage-300)}
+.input.focus{border-color:var(--amber-500);box-shadow:0 0 0 3px var(--amber-50)}
+.input textarea{width:100%;background:transparent;border:0;resize:none;font-family:inherit;font-size:15px;color:inherit}
+
+/* ============ bottom tab bar ============ */
+.tabbar{flex:0 0 auto;height:74px;padding-bottom:16px;display:flex;background:rgba(254,254,254,.9);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:.5px solid var(--hair);position:relative;z-index:30}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;position:relative;color:var(--sage-400)}
+.tab.on{color:var(--amber-600)}
+.tab .lb{font-family:var(--font-m);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
+.tab.on::before{content:"";position:absolute;top:0;left:24px;right:24px;height:2px;background:var(--amber-500);border-radius:2px}
+.tab .tbadge{position:absolute;top:6px;left:50%;margin-left:6px;min-width:16px;height:16px;background:var(--amber-500);
+  border-radius:8px;color:var(--forest-900);font-family:var(--font-m);font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* misc */
+.spacer{height:14px}.spacer-lg{height:26px}
+.divider{height:.5px;background:var(--cream-300);margin:0 20px}
+.gauge{height:8px;background:var(--cream-200);border-radius:4px;overflow:hidden}
+.gauge>i{display:block;height:100%;background:linear-gradient(90deg,var(--amber-400),var(--amber-600));border-radius:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+
+/* chat */
+.chat-wrap{flex:1;overflow-y:auto;padding:16px 16px 8px;background:var(--cream-100);display:flex;flex-direction:column;gap:8px}
+.chat-wrap::-webkit-scrollbar{display:none}
+.day{align-self:center;font-family:var(--font-m);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--sage-400);margin:6px 0}
+.bub{max-width:74%;padding:10px 13px;font-size:14.5px;line-height:1.42;border-radius:16px;position:relative}
+.bub.them{align-self:flex-start;background:var(--cream-50);border:.5px solid var(--cream-300);border-bottom-left-radius:5px;color:var(--forest-800)}
+.bub.me{align-self:flex-end;background:var(--forest-800);color:#fff;border-bottom-right-radius:5px}
+.bub .tm{font-size:10px;margin-top:4px;opacity:.55;font-family:var(--font-m)}
+.ctxbar{padding:10px 16px;background:var(--amber-50);border-bottom:.5px solid var(--amber-200);display:flex;align-items:center;gap:10px}
+.composer{flex:0 0 auto;padding:10px 14px calc(10px + 12px);background:rgba(254,254,254,.92);backdrop-filter:blur(20px);
+  border-top:.5px solid var(--hair);display:flex;align-items:center;gap:10px}
+.composer .ci{flex:1;height:42px;background:var(--cream-100);border:.5px solid var(--cream-300);border-radius:21px;padding:0 16px;display:flex;align-items:center;color:var(--sage-300);font-size:15px}
+.composer .send{width:42px;height:42px;flex:0 0 auto;border-radius:50%;background:var(--forest-800);color:#fff;display:flex;align-items:center;justify-content:center}
+
+/* login */
+.login{background:radial-gradient(120% 80% at 50% 0%,#1a2542 0%,#0f1729 46%,#0a0f1e 100%);color:#fff;flex:1;display:flex;flex-direction:column;padding:0 26px}
+.login .brand{margin-top:26px;font-family:var(--font-d);font-weight:600;font-size:19px;letter-spacing:-.01em;color:#fff;display:flex;align-items:center;gap:8px}
+.login .brand .dot{width:7px;height:7px;background:var(--amber-500);border-radius:50%;box-shadow:0 0 16px var(--amber-500)}
+.login .hero{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.login .hero .eb{font-family:var(--font-m);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber-400)}
+.login .hero h2{font-family:var(--font-d);font-weight:300;font-size:33px;line-height:1.25;letter-spacing:-.02em;color:#f4f6fb}
+.login .hero h2 b{font-weight:600;color:#fff}
+.login .hero p{color:#9aa6c2;font-size:14px;line-height:1.6;max-width:280px}
+.login .actions{display:flex;flex-direction:column;gap:11px;margin-bottom:8px}
+.login .btnw{height:52px;border-radius:5px;display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--font-d);font-weight:600;font-size:16px}
+.login .apple{background:#fff;color:#000}.login .google{background:rgba(255,255,255,.08);color:#fff;border:.5px solid rgba(255,255,255,.16)}
+.login .email{background:var(--amber-500);color:var(--forest-900)}
+.login .foot{text-align:center;color:#7c88a5;font-size:13px;padding:14px 0 4px}
+.login .foot b{color:#fff;font-weight:600}
+
+/* empty/section note */
+.note{font-size:12px;color:var(--sage-400);line-height:1.55}
+.iconwrap{width:36px;height:36px;flex:0 0 auto;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--cream-200);color:var(--forest-600)}
+.iconwrap.gold{background:var(--amber-50);color:var(--amber-600)}
+.iconwrap.dur{background:#fdecec;color:var(--error)}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <div class="wordmark"><span class="dot"></span>mortly</div>
+  <h1>Mobile UI — <b>Design Direction v1</b></h1>
+  <p>Native iOS chrome (status bar · Dynamic Island · large titles · blurred nav & tab bars · inset lists · iMessage-style chat) rendered in the real Midnight &amp; Gold system — sharp corners, gold accents, IBM Plex Mono micro-labels, Outfit + Noto Sans KR. Not a website conversion.</p>
+  <div class="legend"><span>Real design tokens</span><span>Korean · ko-default</span><span>Borrower · Broker · Admin</span><span>No in-app billing</span></div>
+</div>
+
+<div class="gallery">
+
+<!-- ============================================================= LOGIN -->
+<div class="frame-wrap">
+<div class="phone"><div class="island"></div><div class="screen">
+  <div class="status" style="color:#fff">
+    <span>9:41</span>
+    <span class="r">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="#fff"><path d="M8.5 2.4c2.3 0 4.4.9 6 2.3l1.2-1.4C13.8 1.5 11.3.5 8.5.5S3.2 1.5 1.3 3.3l1.2 1.4c1.6-1.4 3.7-2.3 6-2.3z" opacity=".9"/><path d="M8.5 6c1.3 0 2.5.5 3.4 1.3l1.2-1.3C11.9 4.8 10.3 4.1 8.5 4.1S5.1 4.8 3.9 6l1.2 1.3C6 6.5 7.2 6 8.5 6z"/><circle cx="8.5" cy="10" r="1.6"/></svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".7" y=".7" width="21" height="11.6" rx="3" stroke="#fff" opacity=".5"/><rect x="2.4" y="2.4" width="16" height="8.2" rx="1.6" fill="#fff"/><rect x="23" y="4" width="1.8" height="5" rx=".9" fill="#fff" opacity=".5"/></svg>
+    </span>
+  </div>
+  <div class="login">
+    <div class="brand"><span class="dot"></span>mortly</div>
+    <div class="hero">
+      <span class="eb">Mortgage, made human</span>
+      <h2>믿을 수 있는<br><b>모기지 전문가</b>를<br>지금 만나보세요</h2>
+      <p>상담 요청을 남기면 인증된 전문가들이 직접 응답합니다. 비교하고, 대화하고, 결정하세요.</p>
+    </div>
+    <div class="actions">
+      <div class="btnw apple"><svg width="15" height="18" viewBox="0 0 15 18" fill="#000"><path d="M12.3 9.6c0-2 1.6-2.9 1.7-3-.9-1.4-2.4-1.5-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.2 2C-.9 9.4.1 13 1.4 15c.6 1 1.4 2.1 2.4 2 .9-.03 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6 1 0 1.6-1 2.3-2 .7-1.1 1-2.1 1-2.2 0 0-1.9-.8-1.9-3.2zM10.5 3.3c.5-.6.9-1.5.8-2.4-.8 0-1.7.5-2.2 1.2-.5.5-.9 1.4-.8 2.3.9.1 1.8-.5 2.3-1.1z"/></svg>Apple로 계속하기</div>
+      <div class="btnw google"><svg width="17" height="17" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1.1-.8 2-1.8 2.6v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.4z"/><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3C2.4 15.9 5.4 18 9 18z"/><path fill="#FBBC05" d="M3.9 10.7c-.2-.5-.3-1.1-.3-1.7s.1-1.2.3-1.7V5H.9C.3 6.2 0 7.5 0 9s.3 2.8.9 4l3-2.3z"/><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6C13.5.9 11.4 0 9 0 5.4 0 2.4 2.1.9 5l3 2.3C4.6 5.1 6.6 3.6 9 3.6z"/></svg>Google로 계속하기</div>
+      <div class="btnw email">이메일로 계속하기</div>
+    </div>
+    <div class="foot">이미 계정이 있으신가요? <b>로그인</b></div>
+    <div class="home-ind light"></div>
+  </div>
+</div></div>
+<div class="frame-label"><b>01</b> · Welcome / Sign in</div>
+</div>
+
+<!-- ============================================================= BORROWER HOME -->
+<div class="frame-wrap">
+<div class="phone"><div class="island"></div><div class="screen">
+  <div class="status">
+    <span>9:41</span>
+    <span class="r">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="var(--forest-800)"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="var(--forest-800)"><path d="M8.5 2.4c2.3 0 4.4.9 6 2.3l1.2-1.4C13.8 1.5 11.3.5 8.5.5S3.2 1.5 1.3 3.3l1.2 1.4c1.6-1.4 3.7-2.3 6-2.3z" opacity=".9"/><circle cx="8.5" cy="10" r="1.6"/></svg>
+      <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".7" y=".7" width="21" height="11.6" rx="3" stroke="var(--forest-800)" opacity=".4"/><rect x="2.4" y="2.4" width="16" height="8.2" rx="1.6" fill="var(--forest-800)"/></svg>
+    </span>
+  </div>
+  <div class="body">
+    <div class="scroll">
+      <div class="nav">
+        <div class="nav-top">
+          <div><div class="eyebrow" style="color:var(--amber-600)">HELLO</div></div>
+          <div class="ic-btn" style="position:relative">
+            <svg width="21" height="21" fill="none" stroke="var(--forest-700)" stroke-width="1.6"><path d="M10.5 3a5 5 0 0 1 5 5v3l1.5 2.5h-13L5.5 11V8a5 5 0 0 1 5-5zM8.5 16.5a2 2 0 0 0 4 0"/></svg>
+            <span class="badge-dot"></span>
+          </div>
+        </div>
+        <div class="nav-title-lg">안녕하세요, 지훈님</div>
+        <div class="nav-sub">진행 중인 상담 요청 1건 · 새 응답 3</div>
+      </div>
+
+      <div class="px" style="margin-top:6px">
+        <!-- active request hero card -->
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="background:linear-gradient(135deg,var(--forest-700),var(--forest-800));padding:17px 17px 15px;color:#fff">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div class="chip forest" style="background:rgba(255,255,255,.12);color:var(--amber-300)">진행 중</div>
+              <div class="mono" style="font-size:10px;letter-spacing:.1em;color:var(--forest-200)">#100482</div>
+            </div>
+            <div style="font-family:var(--font-d);font-weight:600;font-size:19px;margin-top:12px;letter-spacing:-.01em">내 집 마련 대출</div>
+            <div style="font-size:13px;color:var(--forest-200);margin-top:3px">서울 강남구 · 아파트 · ₩ 4.5억 희망</div>
+          </div>
+          <div style="display:flex;align-items:center;padding:13px 17px;gap:12px">
+            <div style="display:flex">
+              <div class="av av-40" style="border:2px solid var(--cream-50)">김</div>
+              <div class="av av-40 g" style="margin-left:-12px;border:2px solid var(--cream-50)">박</div>
+              <div class="av av-40" style="margin-left:-12px;border:2px solid var(--cream-50);background:var(--sage-400)">이</div>
+            </div>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px">전문가 3명이 응답했어요</div>
+              <div class="row-s">응답을 비교하고 대화를 시작하세요</div>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 9 15" fill="none" stroke="var(--sage-300)" stroke-width="2"><path d="M1.5 1.5 7 7.5l-5.5 6"/></svg>
+          </div>
+        </div>
+
+        <div class="spacer-lg"></div>
+        <button class="btn primary"><svg width="18" height="18" fill="none" stroke="#fff" stroke-width="1.8"><path d="M9 3.5v11M3.5 9h11"/></svg>새 상담 요청</button>
+      </div>
+
+      <div class="section-h"><span class="eyebrow">추천 전문가</span><a>전체 보기</a></div>
+      <div class="px">
+        <div class="list">
+          <div class="row">
+            <div class="av av-44 g">민</div>
+            <div style="flex:1"><div class="row-t">김민서 <span class="verified"><svg width="12" height="12" viewBox="0 0 14 14" fill="var(--amber-500)"><path d="M7 0l1.8 1.3 2.2-.2.6 2.1 1.9 1.1-.8 2 .8 2-1.9 1.1-.6 2.1-2.2-.2L7 14l-1.8-1.3-2.2.2-.6-2.1L.5 9.6l.8-2-.8-2 1.9-1.1.6-2.1 2.2.2z"/><path d="M4.7 7l1.6 1.6L9.4 5.4" stroke="#fff" stroke-width="1.4" fill="none"/></svg>인증</span></div><div class="row-s">우리금융 · 강남 · 응답률 98%</div></div>
+            <div class="chip gold">4.9 ★</div>
+          </div>
+          <div class="row">
+            <div class="av av-44">준</div>
+            <div style="flex:1"><div class="row-t">이준호 <span class="verified"><svg width="12" height="12" viewBox="0 0 14 14" fill="var(--amber-500)"><path d="M7 0l1.8 1.3 2.2-.2.6 2.1 1.9 1.1-.8 2 .8 2-1.9 1.1-.6 2.1-2.2-.2L7 14l-1.8-1.3-2.2.2-.6-2.1L.5 9.6l.8-2-.8-2 1.9-1.1.6-2.1 2.2.2z"/><path d="M4.7 7l1.6 1.6L9.4 5.4" stroke="#fff" stroke-width="1.4" fill="none"/></svg>인증</span></div><div class="row-s">신한은행 · 서초 · 응답률 95%</div></div>
+            <div class="chip gold">4.8 ★</div>
+          </div>
+        </div>
+      </div>
+      <div class="spacer-lg"></div>
+    </div>
+
+    <!-- tab bar -->
+    <div class="tabbar">
+      <div class="tab on"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9.5 11 3l8 6.5V19H3z"/></svg><span class="lb">홈</span></div>
+      <div class="tab"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="14" height="16" rx="2"/><path d="M7 8h8M7 12h8M7 16h4"/></svg><span class="lb">요청</span></div>
+      <div class="tab"><span class="tbadge">3</span><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 5h16v11H8l-4 3z"/></svg><span class="lb">메시지</span></div>
+      <div class="tab"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="7" r="3.5"/><path d="M4.5 19a6.5 6.5 0 0 1 13 0"/></svg><span class="lb">프로필</span></div>
+    </div>
+  </div>
+  <div class="home-ind"></div>
+</div></div>
+<div class="frame-label"><b>02</b> · Borrower — Home</div>
+</div>
+
+<!-- ============================================================= CREATE REQUEST -->
+<div class="frame-wrap">
+<div class="phone"><div class="island"></div><div class="screen">
+  <div class="status">
+    <span>9:41</span>
+    <span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="var(--forest-800)"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".7" y=".7" width="21" height="11.6" rx="3" stroke="var(--forest-800)" opacity=".4"/><rect x="2.4" y="2.4" width="16" height="8.2" rx="1.6" fill="var(--forest-800)"/></svg></span>
+  </div>
+  <div class="body">
+    <div class="nav-inline">
+      <div class="ic-btn back"><svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="var(--forest-700)" stroke-width="2"><path d="M8.5 1.5 2 8.5l6.5 7"/></svg>취소</div>
+      <div class="t">상담 요청</div>
+      <div class="ic-btn" style="width:auto;padding:0 6px;color:var(--sage-300);font-size:15px;font-weight:500">임시저장</div>
+    </div>
+    <!-- progress -->
+    <div style="padding:12px 20px 4px"><div class="gauge" style="height:4px"><i style="width:40%"></i></div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px"><span class="mono" style="font-size:10px;color:var(--sage-400);letter-spacing:.1em">2 / 5 단계</span><span class="mono" style="font-size:10px;color:var(--amber-600)">기본 정보</span></div>
+    </div>
+    <div class="scroll" style="padding:14px 20px 0">
+      <div class="field">
+        <label>대출 목적</label>
+        <div class="seg"><button class="on">주택 구입</button><button>전세 자금</button><button>갈아타기</button></div>
+      </div>
+      <div class="field">
+        <label>대출 희망 금액</label>
+        <div class="input amount focus"><span style="color:var(--sage-400);margin-right:8px;font-weight:500">₩</span>450,000,000<span style="flex:1"></span><span class="mono" style="font-size:11px;color:var(--sage-300)">4.5억</span></div>
+      </div>
+      <div class="field">
+        <label>대상 지역</label>
+        <div class="input"><svg width="15" height="15" fill="none" stroke="var(--sage-400)" stroke-width="1.6" style="margin-right:9px"><path d="M7.5 1.5C4.7 1.5 2.5 3.7 2.5 6.5c0 3.5 5 7 5 7s5-3.5 5-7c0-2.8-2.2-5-5-5z"/><circle cx="7.5" cy="6.5" r="1.6"/></svg>서울특별시 강남구<span style="flex:1"></span><svg width="11" height="7" viewBox="0 0 11 7" fill="none" stroke="var(--sage-300)" stroke-width="1.8"><path d="M1 1l4.5 4.5L10 1"/></svg></div>
+      </div>
+      <div class="field">
+        <label>주택 유형</label>
+        <div class="grid2">
+          <div class="input" style="justify-content:center;border-color:var(--amber-500);background:var(--amber-50);color:var(--amber-700);font-weight:600">아파트</div>
+          <div class="input" style="justify-content:center;color:var(--sage-500)">오피스텔</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>연 소득 (세전)</label>
+        <div class="input amount"><span style="color:var(--sage-400);margin-right:8px;font-weight:500">₩</span><span class="ph">예) 65,000,000</span></div>
+      </div>
+      <div class="field">
+        <label>추가 메모 <span style="color:var(--sage-300);text-transform:none;letter-spacing:0">선택</span></label>
+        <div class="input" style="height:78px;align-items:flex-start;padding-top:13px"><textarea placeholder="전문가에게 전하고 싶은 내용을 적어주세요."></textarea></div>
+      </div>
+      <div class="note" style="display:flex;gap:8px;padding:0 2px 18px"><svg width="14" height="14" fill="none" stroke="var(--sage-400)" stroke-width="1.5" style="flex:0 0 auto;margin-top:1px"><circle cx="7" cy="7" r="6"/><path d="M7 4v3.5M7 10h.01"/></svg><span>제출 후 관리자 검토를 거쳐 인증된 전문가에게 공개됩니다. 연락처는 공개되지 않습니다.</span></div>
+    </div>
+    <div style="padding:12px 20px calc(12px + 14px);background:rgba(254,254,254,.92);backdrop-filter:blur(20px);border-top:.5px solid var(--hair)">
+      <button class="btn gold">다음 단계</button>
+    </div>
+  </div>
+  <div class="home-ind"></div>
+</div></div>
+<div class="frame-label"><b>03</b> · Borrower — Create request</div>
+</div>
+
+<!-- ============================================================= CHAT -->
+<div class="frame-wrap">
+<div class="phone"><div class="island"></div><div class="screen">
+  <div class="status">
+    <span>9:41</span>
+    <span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="var(--forest-800)"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".7" y=".7" width="21" height="11.6" rx="3" stroke="var(--forest-800)" opacity=".4"/><rect x="2.4" y="2.4" width="16" height="8.2" rx="1.6" fill="var(--forest-800)"/></svg></span>
+  </div>
+  <div class="body">
+    <div class="nav-inline">
+      <div class="ic-btn back"><svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="var(--forest-700)" stroke-width="2"><path d="M8.5 1.5 2 8.5l6.5 7"/></svg></div>
+      <div style="display:flex;align-items:center;gap:9px">
+        <div class="av av-40 g" style="width:32px;height:32px;font-size:12px">민</div>
+        <div><div class="t" style="font-size:15px;line-height:1.1">김민서</div><div style="font-size:11px;color:var(--sage-400)">모기지 전문가 · 온라인</div></div>
+      </div>
+      <div class="ic-btn"><svg width="20" height="20" fill="var(--forest-700)"><circle cx="10" cy="4" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="10" cy="16" r="1.7"/></svg></div>
+    </div>
+    <!-- request context bar -->
+    <div class="ctxbar">
+      <div class="iconwrap gold" style="width:30px;height:30px;border-radius:6px"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="2" width="9" height="11" rx="1.5"/><path d="M5.5 5.5h4M5.5 8h4"/></svg></div>
+      <div style="flex:1"><div style="font-weight:600;font-size:13px;color:var(--amber-800)">내 집 마련 대출 · ₩ 4.5억</div><div style="font-size:11px;color:var(--amber-700);opacity:.8">서울 강남구 · 아파트</div></div>
+      <svg width="8" height="13" viewBox="0 0 9 15" fill="none" stroke="var(--amber-600)" stroke-width="2"><path d="M1.5 1.5 7 7.5l-5.5 6"/></svg>
+    </div>
+    <div class="chat-wrap">
+      <div class="day">오늘</div>
+      <div class="bub them">안녕하세요 지훈님, 요청 잘 확인했습니다. 강남구 아파트 4.5억이면 보금자리·특례 상품도 검토 가능해 보여요.<div class="tm">오후 2:14</div></div>
+      <div class="bub them">현재 다니시는 직장과 재직 기간을 알려주실 수 있을까요?<div class="tm">오후 2:14</div></div>
+      <div class="bub me">네, IT 회사 4년차입니다. 연 소득은 6,500만원 정도예요.<div class="tm" style="opacity:.6">오후 2:20</div></div>
+      <div class="bub them">좋습니다. 그 조건이면 우대금리 적용해서 시중보다 0.3%p 정도 낮게 잡아드릴 수 있을 것 같아요. 상세 견적 정리해서 보내드릴게요 🙂<div class="tm">오후 2:22</div></div>
+    </div>
+    <div class="composer">
+      <div class="ci">메시지 입력…</div>
+      <div class="send"><svg width="18" height="18" viewBox="0 0 20 20" fill="#fff"><path d="M2 9L18 2l-7 16-2.5-6.5z" opacity=".95"/></svg></div>
+    </div>
+  </div>
+  <div class="home-ind"></div>
+</div></div>
+<div class="frame-label"><b>04</b> · Chat (realtime)</div>
+</div>
+
+<!-- ============================================================= BROKER REQUESTS -->
+<div class="frame-wrap">
+<div class="phone"><div class="island"></div><div class="screen">
+  <div class="status">
+    <span>9:41</span>
+    <span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="var(--forest-800)"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".7" y=".7" width="21" height="11.6" rx="3" stroke="var(--forest-800)" opacity=".4"/><rect x="2.4" y="2.4" width="16" height="8.2" rx="1.6" fill="var(--forest-800)"/></svg></span>
+  </div>
+  <div class="body">
+    <div class="scroll">
+      <div class="nav">
+        <div class="nav-top">
+          <div class="chip gold" style="align-self:center">PRO · 크레딧 12</div>
+          <div class="ic-btn"><svg width="20" height="20" fill="none" stroke="var(--forest-700)" stroke-width="1.7"><path d="M3 5h14M6 10h11M9 15h8"/></svg></div>
+        </div>
+        <div class="nav-title-lg">새 요청</div>
+        <div class="nav-sub">내 전문 분야에 맞는 상담 요청 8건</div>
+      </div>
+      <div class="px" style="margin-top:4px">
+        <!-- premium embargo card -->
+        <div class="card" style="padding:15px 16px;position:relative;overflow:hidden;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="chip" style="background:var(--forest-800);color:var(--amber-300)"><svg width="10" height="10" fill="currentColor" style="margin-right:1px"><path d="M5 0l1.3 1 1.6-.1.4 1.5 1.4.8-.6 1.5.6 1.5-1.4.8-.4 1.5-1.6-.1L5 12l-1.3-1-1.6.1-.4-1.5L.3 8.8l.6-1.5-.6-1.5 1.4-.8.4-1.5 1.6.1z"/></svg>PREMIUM 우선 공개</div>
+            <span class="mono" style="font-size:10px;color:var(--sage-400)">잠금</span>
+          </div>
+          <div style="filter:blur(4px);opacity:.5;pointer-events:none">
+            <div style="font-family:var(--font-d);font-weight:600;font-size:16px">아파트 갈아타기 · 3.2억</div>
+            <div class="row-s">서울 마포구 · 방금 등록</div>
+          </div>
+          <div style="position:absolute;inset:auto 16px 15px 16px;display:flex;align-items:center;gap:9px;background:var(--amber-50);border:.5px solid var(--amber-200);padding:9px 11px;border-radius:4px">
+            <svg width="15" height="15" fill="none" stroke="var(--amber-700)" stroke-width="1.6"><rect x="3" y="7" width="9" height="6.5" rx="1.2"/><path d="M5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+            <span style="font-size:12px;color:var(--amber-800);font-weight:500;flex:1">12시간 후 공개 · PREMIUM은 지금 열람</span>
+          </div>
+        </div>
+        <!-- normal request card -->
+        <div class="card" style="padding:15px 16px;margin-bottom:11px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="chip ok-s">신규 매칭</div>
+            <span class="mono" style="font-size:10px;color:var(--sage-400)">3시간 전</span>
+          </div>
+          <div style="font-family:var(--font-d);font-weight:600;font-size:17px;margin-top:11px">내 집 마련 대출 · ₩ 4.5억</div>
+          <div class="row-s" style="margin-top:2px">서울 강남구 · 아파트 · 연소득 6,500만</div>
+          <div class="divider" style="margin:13px 0 12px 0;background:var(--cream-200)"></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="chip">크레딧 1 사용</span>
+            <span class="row-s" style="margin:0">응답 2명</span>
+            <button class="btn gold sm" style="margin-left:auto">응답하기</button>
+          </div>
+        </div>
+        <div class="card" style="padding:15px 16px;margin-bottom:11px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="chip" style="background:var(--cream-200);color:var(--sage-500)">전세 자금</div>
+            <span class="mono" style="font-size:10px;color:var(--sage-400)">어제</span>
+          </div>
+          <div style="font-family:var(--font-d);font-weight:600;font-size:17px;margin-top:11px">전세 자금 대출 · ₩ 2.8억</div>
+          <div class="row-s" style="margin-top:2px">경기 성남시 분당구 · 아파트</div>
+          <div class="divider" style="margin:13px 0 12px 0;background:var(--cream-200)"></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="chip">크레딧 1 사용</span><span class="row-s" style="margin:0">응답 5명</span>
+            <button class="btn light sm" style="margin-left:auto">보기</button>
+          </div>
+        </div>
+      </div>
+      <div class="spacer-lg"></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="16" height="14" rx="2"/><path d="M3 8h16"/></svg><span class="lb">요청</span></div>
+      <div class="tab"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 18V9m5 9V4m5 14v-7m5 7V7"/></svg><span class="lb">대시보드</span></div>
+      <div class="tab"><span class="tbadge">2</span><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 5h16v11H8l-4 3z"/></svg><span class="lb">메시지</span></div>
+      <div class="tab"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="7" r="3.5"/><path d="M4.5 19a6.5 6.5 0 0 1 13 0"/></svg><span class="lb">더보기</span></div>
+    </div>
+  </div>
+  <div class="home-ind"></div>
+</div></div>
+<div class="frame-label"><b>05</b> · Broker — Browse requests</div>
+</div>
+
+<!-- ============================================================= BROKER SUBSCRIPTION (read-only) -->
+<div class="frame-wrap">
+<div class="phone"><div class="island"></div><div class="screen">
+  <div class="status">
+    <span>9:41</span>
+    <span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="var(--forest-800)"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".7" y=".7" width="21" height="11.6" rx="3" stroke="var(--forest-800)" opacity=".4"/><rect x="2.4" y="2.4" width="16" height="8.2" rx="1.6" fill="var(--forest-800)"/></svg></span>
+  </div>
+  <div class="body">
+    <div class="nav-inline">
+      <div class="ic-btn back"><svg width="10" height="17" viewBox="0 0 10 17" fill="none" stroke="var(--forest-700)" stroke-width="2"><path d="M8.5 1.5 2 8.5l6.5 7"/></svg></div>
+      <div class="t">구독</div><div style="width:38px"></div>
+    </div>
+    <div class="scroll" style="padding:16px 20px 0">
+      <!-- plan card -->
+      <div class="card" style="padding:0;overflow:hidden;background:linear-gradient(150deg,var(--forest-700),var(--forest-800))">
+        <div style="padding:20px 20px 18px;color:#fff">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="eyebrow" style="color:var(--amber-300)">현재 플랜</span>
+            <span class="chip" style="background:rgba(255,255,255,.12);color:#fff">활성</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:12px">
+            <span style="font-family:var(--font-d);font-weight:700;font-size:32px;letter-spacing:-.02em">PRO</span>
+            <span style="color:var(--forest-200);font-size:13px">₩ 99,000 / 월</span>
+          </div>
+          <div style="margin-top:20px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--forest-100);margin-bottom:7px"><span class="mono" style="letter-spacing:.08em">이번 달 크레딧</span><span><b style="color:#fff;font-weight:600">12</b> / 20</span></div>
+            <div class="gauge" style="background:rgba(255,255,255,.14)"><i style="width:60%"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spacer-lg"></div>
+      <div class="list">
+        <div class="row"><div class="iconwrap gold"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8.5 2v6.5l4 2"/><circle cx="8.5" cy="8.5" r="7"/></svg></div><div style="flex:1"><div class="row-t">다음 갱신일</div></div><div class="mono" style="font-size:13px;color:var(--sage-500)">2026. 07. 28</div></div>
+        <div class="row"><div class="iconwrap"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 7h13M2 7v6.5h13V4H2z"/></svg></div><div style="flex:1"><div class="row-t">결제 수단</div><div class="row-s">Visa •••• 4242</div></div></div>
+        <div class="row"><div class="iconwrap"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3" width="12" height="11" rx="1.5"/><path d="M2.5 6.5h12M5 1.5v3M12 1.5v3"/></svg></div><div style="flex:1"><div class="row-t">결제 내역</div></div><svg class="chev" width="8" height="13" viewBox="0 0 9 15" fill="none" stroke="var(--sage-300)" stroke-width="2"><path d="M1.5 1.5 7 7.5l-5.5 6"/></svg></div>
+      </div>
+
+      <div class="spacer-lg"></div>
+      <button class="btn light"><svg width="16" height="16" fill="none" stroke="var(--forest-700)" stroke-width="1.7"><path d="M9 2H3v11h11V7"/><path d="M7 9l7-7M10 1.5h4v4"/></svg>웹에서 플랜 관리</button>
+      <div class="note" style="text-align:center;padding:12px 12px 0">플랜 변경·결제는 안전한 웹에서 진행됩니다.<br>mortly.ca 로 이동합니다.</div>
+      <div class="spacer-lg"></div>
+    </div>
+  </div>
+  <div class="home-ind"></div>
+</div></div>
+<div class="frame-label"><b>06</b> · Broker — Subscription <span style="color:var(--sage-400)">(read-only)</span></div>
+</div>
+
+<!-- ============================================================= ADMIN INBOX -->
+<div class="frame-wrap">
+<div class="phone"><div class="island"></div><div class="screen">
+  <div class="status">
+    <span>9:41</span>
+    <span class="r"><svg width="18" height="12" viewBox="0 0 18 12" fill="var(--forest-800)"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".7" y=".7" width="21" height="11.6" rx="3" stroke="var(--forest-800)" opacity=".4"/><rect x="2.4" y="2.4" width="16" height="8.2" rx="1.6" fill="var(--forest-800)"/></svg></span>
+  </div>
+  <div class="body">
+    <div class="scroll">
+      <div class="nav">
+        <div class="nav-top">
+          <div class="eyebrow" style="color:var(--amber-600)">ADMIN</div>
+          <div class="seg" style="width:112px;padding:2px"><button class="on" style="height:28px;font-size:11px">인박스</button><button style="height:28px;font-size:11px">활동</button></div>
+        </div>
+        <div class="nav-title-lg">모더레이션</div>
+        <div class="nav-sub">인증 대기 2 · 미해결 신고 1</div>
+      </div>
+
+      <div class="section-h"><span class="eyebrow">전문가 인증 대기</span><span class="chip warn">2</span></div>
+      <div class="px">
+        <div class="card" style="padding:15px 16px;margin-bottom:11px">
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="av av-44">서</div>
+            <div style="flex:1"><div class="row-t">박서준</div><div class="row-s">우리금융 · 라이선스 #A-20481 · 2시간 전</div></div>
+          </div>
+          <div class="grid2" style="margin-top:13px">
+            <button class="btn light sm" style="width:100%;color:var(--error);border-color:#f3d3d3">거절</button>
+            <button class="btn sm" style="width:100%;background:var(--success);color:#fff">승인</button>
+          </div>
+        </div>
+        <div class="card" style="padding:15px 16px">
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="av av-44 g">현</div>
+            <div style="flex:1"><div class="row-t">최지현</div><div class="row-s">KB국민 · 라이선스 #A-20477 · 5시간 전</div></div>
+          </div>
+          <div class="grid2" style="margin-top:13px">
+            <button class="btn light sm" style="width:100%;color:var(--error);border-color:#f3d3d3">거절</button>
+            <button class="btn sm" style="width:100%;background:var(--success);color:#fff">승인</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-h"><span class="eyebrow">신고</span><span class="chip" style="background:#fdecec;color:var(--error)">1 긴급</span></div>
+      <div class="px">
+        <div class="card" style="padding:15px 16px">
+          <div style="display:flex;gap:11px">
+            <div class="iconwrap dur"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8.5 1.5 1 14.5h15z"/><path d="M8.5 6.5v3.5M8.5 12h.01"/></svg></div>
+            <div style="flex:1"><div class="row-t">부적절한 메시지 신고</div><div class="row-s" style="margin-top:3px">신고자: 김지훈 (신청인) · 대상: 이도현 (전문가)</div>
+              <div style="font-size:12.5px;color:var(--forest-700);background:var(--cream-100);border:.5px solid var(--cream-300);border-radius:4px;padding:9px 11px;margin-top:10px;line-height:1.45">“대화 중 외부 연락처로 유도하는 메시지를 받았습니다.”</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:9px;margin-top:13px">
+            <button class="btn light sm" style="flex:1">대화 보기</button>
+            <button class="btn sm" style="flex:1;background:var(--forest-800);color:#fff">해결 처리</button>
+          </div>
+        </div>
+      </div>
+      <div class="spacer-lg"></div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><span class="tbadge">3</span><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 5h16v11H8l-4 3z"/></svg><span class="lb">인박스</span></div>
+      <div class="tab"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="7" r="3"/><path d="M2.5 18a5.5 5.5 0 0 1 11 0M15 5.5a3 3 0 0 1 0 5.6M19 18a5 5 0 0 0-3-4.6"/></svg><span class="lb">사용자</span></div>
+      <div class="tab"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 18V9m5 9V4m5 14v-7m5 7V7"/></svg><span class="lb">활동</span></div>
+      <div class="tab"><span class="tbadge" style="background:var(--error);color:#fff">1</span><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M11 2 1.5 18.5h19z"/><path d="M11 8v4M11 15h.01"/></svg><span class="lb">신고</span></div>
+    </div>
+  </div>
+  <div class="home-ind"></div>
+</div></div>
+<div class="frame-label"><b>07</b> · Admin — Moderation inbox</div>
+</div>
+
+</div>
+
+<div class="page-head" style="margin:60px auto 0">
+  <p style="font-size:13px;color:#6b7690">Design direction v1 · borrower · broker · admin. Next: iterate on the direction, then add request-detail, onboarding, settings, and empty/error/loading states.</p>
+</div>
+
+</body>
+</html>
