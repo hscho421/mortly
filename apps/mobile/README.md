@@ -22,14 +22,21 @@ and the existing Next.js API with the web.
   placeholder home (the Phase 0 exit proof).
 
 ## Install & run (on a Mac with Xcode / Android Studio)
-This app installs **standalone** (its own `node_modules`), NOT as part of the
-root workspace — the web is on React 19 and Expo SDK 52 is on React 18, so they
-must not share a hoisted tree. `@mortly/core` is linked via a `file:` dependency
-and Metro resolves it from the monorepo.
+**Expo SDK 54** (React 19.1, RN 0.81, Reanimated 4). This app installs
+**standalone** (its own `node_modules`), NOT as part of the root workspace —
+Expo pins `react` to an exact version that differs from the web's range, and
+keeping the RN toolchain out of the web install keeps the Vercel deploy clean.
+`@mortly/core` is linked via a `file:` dependency; Metro resolves it from the
+monorepo.
+
+> **Expo Go works right now** (SDK 54) — the Apple/Google sign-in buttons are
+> still stubs, so no custom native code is bundled yet (only `expo-secure-store`,
+> which Expo Go includes). Once native auth/push are wired, switch to a
+> **development build** (`npx expo run:ios`).
 ```bash
 cd apps/mobile
 npm install          # installs the RN toolchain + links @mortly/core
-npx expo start       # then press i (iOS) or a (Android)
+npx expo start       # scan the QR with Expo Go, or press i (simulator) / a
 ```
 
 Point it at a backend with `EXPO_PUBLIC_API_URL` (defaults to `https://mortly.ca`):
