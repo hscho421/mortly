@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Mortly",
+    "slug": "mortly",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "mortly",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.mortly.mobile",
+      "usesAppleSignIn": true
+    },
+    "android": {
+      "package": "app.mortly.mobile"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-apple-authentication"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "https://mortly.ca"
+    }
+  }
+}
