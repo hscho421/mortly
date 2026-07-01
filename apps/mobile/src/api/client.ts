@@ -299,6 +299,97 @@ export async function closeConversation(token: string, id: string) {
   });
 }
 
+// ── Admin (moderation) ───────────────────────────────────────────────────────
+export interface AdminQueue {
+  pendingBrokers: {
+    id: string;
+    publicId: string;
+    brokerageName: string;
+    province: string;
+    subscriptionTier: string;
+    createdAt: string;
+    user: { publicId: string; name: string | null; email: string };
+  }[];
+  openReports: {
+    id: string;
+    publicId: string;
+    reason: string;
+    targetType: string;
+    targetId: string;
+    status: string;
+    createdAt: string;
+    reporter: { id: string; name: string | null; email: string } | null;
+  }[];
+  pendingRequests: {
+    id: string;
+    publicId: string;
+    status: string;
+    mortgageCategory: string;
+    productTypes: string[];
+    province: string;
+    city: string | null;
+    createdAt: string;
+    borrower: { id: string; name: string | null; email: string };
+  }[];
+  counts: { pendingBrokers: number; openReports: number; pendingRequests: number; total: number };
+}
+
+export interface AdminUser {
+  id: string;
+  publicId: string;
+  email: string;
+  name: string | null;
+  role: "BORROWER" | "BROKER" | "ADMIN";
+  status: "ACTIVE" | "SUSPENDED" | "BANNED";
+  createdAt: string;
+  broker: { verificationStatus: string; subscriptionTier: string; brokerageName: string } | null;
+  _count: { borrowerRequests: number; conversations: number };
+}
+
+export async function getAdminQueue(token: string) {
+  return api<AdminQueue>("/api/admin/queue", { token });
+}
+
+export async function moderateRequest(token: string, id: string, status: string, reason?: string) {
+  return api(`/api/admin/requests/${id}`, { method: "PUT", token, body: { status, ...(reason ? { reason } : {}) } });
+}
+
+/** Returns { status: "PENDING_SECOND_REVIEW" } (202) under the two-admin gate. */
+export async function moderateBroker(token: string, id: string, verificationStatus: string, reason?: string) {
+  return api<{ status?: string; message?: string; verificationStatus?: string }>(
+    `/api/admin/brokers/${id}`,
+    { method: "PUT", token, body: { verificationStatus, ...(reason ? { reason } : {}) } },
+  );
+}
+
+export async function moderateReport(token: string, id: string, status: string, adminNotes?: string) {
+  return api(`/api/admin/reports/${id}`, { method: "PUT", token, body: { status, ...(adminNotes ? { adminNotes } : {}) } });
+}
+
+export async function getAdminUsers(
+  token: string,
+  opts: { search?: string; role?: string; status?: string; page?: number } = {},
+) {
+  const p = new URLSearchParams();
+  if (opts.search) p.set("search", opts.search);
+  if (opts.role) p.set("role", opts.role);
+  if (opts.status) p.set("status", opts.status);
+  if (opts.page) p.set("page", String(opts.page));
+  const qs = p.toString();
+  return api<{ data: AdminUser[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(
+    `/api/admin/users${qs ? `?${qs}` : ""}`,
+    { token },
+  );
+}
+
+export async function moderateUser(token: string, id: string, status: string, reason?: string) {
+  return api<{ id: string; status: string }>(`/api/admin/users/${id}`, {
+    method: "PUT",
+    token,
+    body: { status, ...(reason ? { reason } : {}) },
+  });
+}
+
 /** POST /api/auth/mobile-oauth → { sessionToken, user }. */
 export async function loginWithOAuth(
   provider: "google" | "apple",

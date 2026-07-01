@@ -91,7 +91,12 @@ export function withAdmin(
       // CSRF + rate limit on destructive verbs. GET is unrestricted
       // (read-heavy admin UIs poll frequently).
       if (req.method && MUTATING_METHODS.has(req.method)) {
-        if (!isAllowedOrigin(req)) {
+        // Same-origin browser requests OR a trusted native client. The mobile
+        // header is a valid CSRF defense (mirrors withAuth): a cross-site page
+        // cannot set a custom header without a CORS preflight the API rejects,
+        // so only our RN app (which sends no browser Origin) uses this path.
+        const isMobile = req.headers["x-mortly-mobile"] === "1";
+        if (!isMobile && !isAllowedOrigin(req)) {
           res.status(403).json({ error: "Cross-origin request rejected" });
           return;
         }

@@ -28,10 +28,12 @@ function makeReq(opts: {
   host: string;
   origin?: string;
   referer?: string;
+  mobile?: boolean;
 }): NextApiRequest {
   const headers: Record<string, string> = { host: opts.host };
   if (opts.origin) headers.origin = opts.origin;
   if (opts.referer) headers.referer = opts.referer;
+  if (opts.mobile) headers["x-mortly-mobile"] = "1";
   return {
     method: opts.method,
     headers,
@@ -108,6 +110,24 @@ describe("withAdmin CSRF gate", () => {
     const res = makeRes();
     await wrapped(req, res as unknown as NextApiResponse);
     expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows a mutation from a trusted mobile client (x-mortly-mobile, no Origin)", async () => {
+    // The RN admin app sends no browser Origin; the custom header is the CSRF
+    // defense (a cross-site page can't set it without a rejected preflight).
+    const req = makeReq({ method: "POST", host: "example.com", mobile: true });
+    const res = makeRes();
+    await wrapped(req, res as unknown as NextApiResponse);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("still rejects a cross-origin browser POST that lacks the mobile header", async () => {
+    const req = makeReq({ method: "POST", host: "example.com", origin: "https://attacker.com" });
+    const res = makeRes();
+    await wrapped(req, res as unknown as NextApiResponse);
+    expect(handler).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(403);
   });
 
   it("falls back to Referer when Origin is absent", async () => {
