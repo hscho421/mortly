@@ -1,0 +1,48 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/core/**"
+      - "public/locales/**"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/core/**"
+      - "public/locales/**"
+      - ".github/workflows/mobile-ci.yml"
+
+concurrency:
+  group: mobile-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile:
+    name: Typecheck · Doctor · Bundle · Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      # The app installs standalone (own node_modules + lockfile, legacy-peer-deps
+      # via apps/mobile/.npmrc); @mortly/core is linked from the checkout via file:.
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Dependency doctor
+        run: npx expo-doctor
+      - name: Bundle (Metro export)
+        run: npx expo export --platform ios --output-dir /tmp/export
+      - name: Unit tests
+        run: npm test -- --ci
