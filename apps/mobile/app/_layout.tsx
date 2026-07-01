@@ -20,6 +20,7 @@ function RootNavigator() {
   useEffect(() => {
     if (status === "loading") return;
     const group = segments[0];
+    if (group === "kitchen-sink") return; // dev reference route — ungated
     if (status === "guest") {
       if (group !== "(auth)") router.replace("/(auth)/login");
       return;

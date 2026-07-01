@@ -1,5 +1,6 @@
 import { View, Text, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useRouter } from "expo-router";
 import { Screen, Button, Eyebrow } from "@/components/ui";
 import { useAuth } from "@/auth/AuthContext";
 import { useMe } from "@/hooks/useMe";
@@ -13,6 +14,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 export function RoleHome({ label }: { label: string }) {
   const { user, signOut } = useAuth();
   const { t } = useTranslation();
+  const router = useRouter();
   const me = useMe(); // fresh user from GET /api/users/me — proves the authed loop
 
   return (
@@ -48,8 +50,16 @@ export function RoleHome({ label }: { label: string }) {
         </View>
       </View>
 
-      <View className="mt-4">
+      <View className="mt-4 gap-2">
         <Button title={t("mobile.signOut", "로그아웃")} variant="light" onPress={signOut} />
+        {__DEV__ ? (
+          <Button
+            title="Kitchen sink (dev)"
+            variant="ghost"
+            size="sm"
+            onPress={() => router.push("/kitchen-sink")}
+          />
+        ) : null}
       </View>
     </Screen>
   );
