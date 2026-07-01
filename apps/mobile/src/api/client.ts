@@ -510,6 +510,7 @@ export interface AdminUserDetail {
     specialties: string | null;
     updatedAt: string;
     _count: { conversations: number };
+    conversations: AdminConvItem[];
   } | null;
   borrowerRequests: AdminReqItem[];
   conversations: AdminConvItem[];

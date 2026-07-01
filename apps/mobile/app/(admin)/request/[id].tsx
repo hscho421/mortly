@@ -27,7 +27,9 @@ export default function AdminRequestDetail() {
   const status = statusMeta(r.status, t);
   const convos = r.conversations ?? [];
   const busy = mod.setStatus.isPending || mod.remove.isPending;
-  const canDelete = (r.status === "OPEN" || r.status === "PENDING_APPROVAL") && convos.length === 0;
+  // Authoritative count from the server (not just the embedded list length).
+  const convCount = r._count?.conversations ?? convos.length;
+  const canDelete = (r.status === "OPEN" || r.status === "PENDING_APPROVAL") && convCount === 0;
 
   const confirm = (msg: string, onYes: () => void) =>
     Alert.alert(msg, "", [

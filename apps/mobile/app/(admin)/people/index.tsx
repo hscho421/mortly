@@ -152,7 +152,7 @@ function UserRow({
           {active ? (
             <>
               <View className="flex-1">
-                <Button title={t("admin.suspend", "정지")} variant="light" size="sm" disabled={busy} onPress={onSuspend} />
+                <Button title={t("admin.suspend", "정지")} variant="light" size="sm" loading={busy} disabled={busy} onPress={onSuspend} />
               </View>
               <View className="flex-1">
                 <Button

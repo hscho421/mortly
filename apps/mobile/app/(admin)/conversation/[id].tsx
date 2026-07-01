@@ -1,8 +1,8 @@
 import { View, Text, FlatList, Pressable, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Screen, Header, Badge } from "@/components/ui";
-import { Loading, ErrorState } from "@/components/states";
+import { Screen, Header, Badge, Button } from "@/components/ui";
+import { Loading, EmptyState, ErrorState } from "@/components/states";
 import { useAdminConversation, useCloseAdminConversation } from "@/hooks/useAdmin";
 
 export default function AdminConversationDetail() {
@@ -12,7 +12,10 @@ export default function AdminConversationDetail() {
   const q = useAdminConversation(id ?? null);
   const close = useCloseAdminConversation();
 
-  const closed = q.data?.status === "CLOSED";
+  const first = q.data?.pages[0];
+  // Pages go newest-batch first; reverse so the flattened list is oldest→newest.
+  const messages = q.data ? [...q.data.pages].reverse().flatMap((p) => p.messages) : [];
+  const closed = first?.status === "CLOSED";
 
   function confirmClose() {
     if (!id) return;
@@ -24,10 +27,10 @@ export default function AdminConversationDetail() {
 
   const header = (
     <Header
-      title={q.data ? `${q.data.broker.brokerageName} · ${q.data.borrower.name ?? "—"}` : t("admin.nav.messages", "대화")}
+      title={first ? `${first.broker.brokerageName} · ${first.borrower.name ?? "—"}` : t("admin.nav.messages", "대화")}
       onBack={() => router.back()}
       right={
-        q.data && !closed ? (
+        first && !closed ? (
           <Pressable accessibilityRole="button" onPress={confirmClose} hitSlop={8}>
             <Text className="text-[13px] text-error-600">{t("admin.close", "종료")}</Text>
           </Pressable>
@@ -37,7 +40,7 @@ export default function AdminConversationDetail() {
   );
 
   if (q.isPending) return <Screen>{header}<Loading /></Screen>;
-  if (q.isError || !q.data) {
+  if (q.isError || !first) {
     return <Screen>{header}<ErrorState title={t("borrowerChat.failedToLoad", "대화를 불러오지 못했습니다")} onRetry={() => q.refetch()} retryLabel={t("common.retry", "다시 시도")} /></Screen>;
   }
 
@@ -49,24 +52,41 @@ export default function AdminConversationDetail() {
           <Text className="text-center font-mono text-[11px] text-sage-400">{t("status.closed", "종료됨")}</Text>
         </View>
       ) : null}
-      <FlatList
-        data={q.data.messages}
-        keyExtractor={(m) => m.id}
-        contentContainerStyle={{ padding: 16, gap: 10 }}
-        renderItem={({ item }) =>
-          item.isSystem ? (
-            <Text className="my-1 text-center text-[11px] text-sage-400">{item.body}</Text>
-          ) : (
-            <View className="gap-0.5">
-              <View className="flex-row items-center gap-2">
-                <Text className="font-display text-[12px] font-semibold text-forest-700">{item.sender.name ?? item.sender.email}</Text>
-                <Badge label={item.sender.role} tone={item.sender.role === "BROKER" ? "info" : "neutral"} />
+      {messages.length === 0 ? (
+        <EmptyState title={t("borrower.noActivity", "메시지가 없습니다")} />
+      ) : (
+        <FlatList
+          data={messages}
+          keyExtractor={(m) => m.id}
+          contentContainerStyle={{ padding: 16, gap: 10 }}
+          ListHeaderComponent={
+            q.hasNextPage ? (
+              <View className="pb-2">
+                <Button
+                  title={t("admin.loadOlder", "이전 메시지 더 보기")}
+                  variant="light"
+                  size="sm"
+                  loading={q.isFetchingNextPage}
+                  onPress={() => q.fetchNextPage()}
+                />
               </View>
-              <Text className="text-[14px] leading-5 text-forest-800">{item.body}</Text>
-            </View>
-          )
-        }
-      />
+            ) : null
+          }
+          renderItem={({ item }) =>
+            item.isSystem ? (
+              <Text className="my-1 text-center text-[11px] text-sage-400">{item.body}</Text>
+            ) : (
+              <View className="gap-0.5">
+                <View className="flex-row items-center gap-2">
+                  <Text className="font-display text-[12px] font-semibold text-forest-700">{item.sender.name ?? item.sender.email}</Text>
+                  <Badge label={item.sender.role} tone={item.sender.role === "BROKER" ? "info" : "neutral"} />
+                </View>
+                <Text className="text-[14px] leading-5 text-forest-800">{item.body}</Text>
+              </View>
+            )
+          }
+        />
+      )}
     </Screen>
   );
 }

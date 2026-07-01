@@ -247,16 +247,9 @@ function QueueCard({
         {subtitle}
       </Text>
       <View className="mt-3 flex-row gap-2">
-        {actions.map((a, i) => (
+        {actions.map((a) => (
           <View key={a.label} className="flex-1">
-            <Button
-              title={a.label}
-              variant={a.variant}
-              size="sm"
-              loading={busy && i === 0}
-              disabled={busy}
-              onPress={a.onPress}
-            />
+            <Button title={a.label} variant={a.variant} size="sm" disabled={busy} onPress={a.onPress} />
           </View>
         ))}
       </View>

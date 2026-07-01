@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, View, Text, TextInput } from "react-native";
+import { ScrollView, View, Text, TextInput, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Screen, Header, Card, Button, Badge, Eyebrow } from "@/components/ui";
@@ -38,8 +38,13 @@ function ReportBody({ report }: { report: AdminReport }) {
   const mod = useModerateReport();
   const [notes, setNotes] = useState(report.adminNotes ?? "");
 
-  const act = (status?: string) =>
+  const doAct = (status?: string) =>
     mod.mutate({ id: report.id, status, adminNotes: notes.trim() || undefined });
+  const confirmAct = (msg: string, status: string) =>
+    Alert.alert(msg, "", [
+      { text: t("request.cancel", "취소"), style: "cancel" },
+      { text: t("common.confirm", "확인"), onPress: () => doAct(status) },
+    ]);
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
@@ -70,18 +75,18 @@ function ReportBody({ report }: { report: AdminReport }) {
           multiline
           maxLength={2000}
         />
-        <Button title={t("admin.saveNotes", "메모만 저장")} variant="light" size="sm" loading={mod.isPending} onPress={() => act(undefined)} />
+        <Button title={t("admin.saveNotes", "메모만 저장")} variant="light" size="sm" loading={mod.isPending} disabled={!notes.trim()} onPress={() => doAct(undefined)} />
       </View>
 
       <View className="gap-2">
         {report.status !== "RESOLVED" ? (
-          <Button title={t("admin.resolve", "해결됨으로 표시")} variant="gold" size="sm" loading={mod.isPending} onPress={() => act("RESOLVED")} />
+          <Button title={t("admin.resolve", "해결됨으로 표시")} variant="gold" size="sm" loading={mod.isPending} onPress={() => confirmAct(t("admin.resolveReportConfirm", "이 신고를 해결 처리하시겠습니까?"), "RESOLVED")} />
         ) : null}
         {report.status === "OPEN" ? (
-          <Button title={t("admin.markReviewed", "검토됨으로 표시")} variant="light" size="sm" loading={mod.isPending} onPress={() => act("REVIEWED")} />
+          <Button title={t("admin.markReviewed", "검토됨으로 표시")} variant="light" size="sm" loading={mod.isPending} onPress={() => confirmAct(t("admin.reviewReportConfirm", "이 신고를 검토됨으로 표시하시겠습니까?"), "REVIEWED")} />
         ) : null}
         {report.status !== "DISMISSED" ? (
-          <Button title={t("admin.dismiss", "기각")} variant="light" size="sm" loading={mod.isPending} onPress={() => act("DISMISSED")} />
+          <Button title={t("admin.dismiss", "기각")} variant="light" size="sm" loading={mod.isPending} onPress={() => confirmAct(t("admin.dismissReportConfirm", "이 신고를 기각하시겠습니까?"), "DISMISSED")} />
         ) : null}
       </View>
     </ScrollView>

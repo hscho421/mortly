@@ -52,6 +52,10 @@ export default function AdminUserDetail() {
   const isSelf = u.id === me?.id;
   const isAdmin = u.role === "ADMIN";
   const active = u.status === "ACTIVE";
+  // Broker conversations live on the broker relation; the top-level relation is
+  // the borrower side (empty for brokers).
+  const convCount = b ? b._count.conversations : u._count.conversations;
+  const convList = b ? b.conversations : u.conversations;
 
   const confirm = (msg: string, onYes: () => void, destructive = true) =>
     Alert.alert(msg, "", [
@@ -151,7 +155,7 @@ export default function AdminUserDetail() {
         {/* Counts */}
         <View className="flex-row gap-2">
           <Stat label={t("admin.userDetail.borrowerRequests", "요청")} value={u._count.borrowerRequests} />
-          <Stat label={t("admin.nav.messages", "대화")} value={u._count.conversations} />
+          <Stat label={t("admin.nav.messages", "대화")} value={convCount} />
           <Stat label={t("admin.queue.openReports", "신고")} value={u._count.reports} />
         </View>
 
@@ -173,10 +177,10 @@ export default function AdminUserDetail() {
         ) : null}
 
         {/* Recent conversations */}
-        {u.conversations.length ? (
+        {convList.length ? (
           <View className="gap-2">
             <Eyebrow>{t("admin.nav.messages", "최근 대화")}</Eyebrow>
-            {u.conversations.map((c) => (
+            {convList.map((c) => (
               <Card key={c.id} onPress={() => router.push({ pathname: "/(admin)/conversation/[id]", params: { id: c.id } })}>
                 <View className="flex-row items-center justify-between">
                   <Text className="flex-1 text-[14px] text-forest-800" numberOfLines={1}>

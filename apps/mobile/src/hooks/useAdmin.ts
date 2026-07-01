@@ -241,10 +241,13 @@ export function useAdminConversations(opts: ListOpts) {
 }
 export function useAdminConversation(id: string | null) {
   const { token } = useAuth();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["adminConversation", id],
     enabled: !!token && !!id,
-    queryFn: () => getAdminConversation(token as string, id as string),
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => getAdminConversation(token as string, id as string, pageParam),
+    // Each page is a batch of 50; nextCursor points at OLDER history.
+    getNextPageParam: (last) => (last.hasMore ? last.nextCursor ?? undefined : undefined),
   });
 }
 export function useCloseAdminConversation() {
