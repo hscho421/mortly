@@ -117,14 +117,19 @@ A. Monorepo & shared core ─┬─> B. Mobile app scaffold ─┐
 ---
 
 ## Phase 0 — Definition of Done
-- [ ] Monorepo live (`packages/core` + `apps/mobile`); **web still builds, tests pass, and deploys from Vercel unchanged**.
-- [ ] Design tokens, i18n JSON, tier/credit constants, request config, validation, sentinel codes shared from `@mortly/core` (no duplication).
-- [ ] Dev client boots on iOS **and** Android from `eas build`.
-- [ ] A user can sign in with **email/password, Apple, and Google**; token persists in Keychain/Keystore; `tokenVersion` logout works; optional biometric unlock.
-- [ ] Typed API calls against the existing backend work, with sentinel errors surfaced and localizable.
-- [ ] Supabase Realtime authorizes correctly under RLS on device.
-- [ ] Strings render ko-default / en; design-system primitives + all states match §3 and the shared tokens.
-- [ ] Role router lands borrower/broker/admin on correct placeholder homes; CI (tsc/lint/test) green for mobile + core.
+
+_Status: **code-complete** as of 2026-07-02 (Expo SDK 54). Everything verifiable
+without a device/EAS account/OAuth credentials is done + green; the three ◐
+items are inherently on-device / account-gated._
+
+- [x] Monorepo live (`packages/core` + `apps/mobile`); **web still builds, tests pass, and deploys from Vercel unchanged**. _(Refinement: `apps/mobile` installs **standalone** — own lockfile, `@mortly/core` via `file:` — not as a web workspace, because the web is React 19 and Expo pins react exactly. This keeps the RN toolchain out of the web/Vercel install entirely.)_
+- [x] Design tokens, tier/credit constants, request config, validation, sentinel codes shared from `@mortly/core`. _(i18n JSON stays in `public/locales` — the live web serves/caches/traces it; the app imports that same JSON, so keys+copy are unified without relocating files.)_
+- [ ] ◐ Dev client boots on iOS **and** Android from `eas build`. _`eas.json` profiles ready; **Expo Go boots today**; the EAS build needs your Expo account._
+- [~] Sign in with **email/password** ✓, **Apple** ✓ (wired lazily — runs in a dev build), **Google** ◐ (stub; needs client IDs). Token persists in Keychain ✓; `tokenVersion` logout works ✓ (401 → sign-out). Biometric unlock deferred (optional).
+- [x] Typed API calls against the existing backend work, with sentinel errors surfaced and localizable. _(`GET /api/users/me` + `useMe()`; `x-mortly-mobile` bypasses CSRF for mutations.)_
+- [~] ◐ Supabase Realtime under RLS. _Anon client + `useConversationSync()` built, mirroring the web's deny-all + content-free-broadcast model; on-device smoke needs `EXPO_PUBLIC_SUPABASE_*` + a real conversation._
+- [x] Strings render ko-default / en (device locale); design-system primitives + all states match §3 (kitchen-sink).
+- [x] Role router lands borrower/broker/admin on correct placeholder homes; CI (tsc/doctor/bundle/jest) green for mobile + core.
 
 ## Phase 0 risks (resolve here, before feature work)
 | Ref | Risk | Where it's resolved |
