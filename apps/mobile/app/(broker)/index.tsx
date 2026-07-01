@@ -5,22 +5,20 @@ import { Screen, Header, Button, Card, Badge, Eyebrow } from "@/components/ui";
 import { Loading } from "@/components/states";
 import { useBrokerProfile } from "@/hooks/useBroker";
 import { ApiError } from "@/api/client";
-import { useAuth } from "@/auth/AuthContext";
 
 const LAPSED = ["PAST_DUE", "EXPIRED", "CANCELLED"];
 
 export default function BrokerHome() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { signOut } = useAuth();
   const q = useBrokerProfile();
 
   const header = (
     <Header
       title={t("broker.nav.dashboard", "대시보드")}
       right={
-        <Pressable accessibilityRole="button" onPress={signOut} hitSlop={8}>
-          <Text className="text-[13px] text-sage-500">{t("mobile.signOut", "로그아웃")}</Text>
+        <Pressable accessibilityRole="button" onPress={() => router.push("/account")} hitSlop={8}>
+          <Text className="text-[13px] text-sage-500">{t("account.title", "계정")}</Text>
         </Pressable>
       }
     />

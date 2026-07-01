@@ -5,12 +5,10 @@ import { Screen, Header, Button } from "@/components/ui";
 import { Loading, EmptyState, ErrorState } from "@/components/states";
 import { RequestCard } from "@/components/RequestCard";
 import { useMyRequests } from "@/hooks/useRequests";
-import { useAuth } from "@/auth/AuthContext";
 
 export default function BorrowerHome() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { signOut } = useAuth();
   const q = useMyRequests();
 
   const openNew = () => router.push("/(borrower)/new-request");
@@ -20,8 +18,8 @@ export default function BorrowerHome() {
       <Header
         title={t("borrower.nav.dashboard", "내 요청")}
         right={
-          <Pressable accessibilityRole="button" onPress={signOut} hitSlop={8}>
-            <Text className="text-[13px] text-sage-500">{t("mobile.signOut", "로그아웃")}</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push("/account")} hitSlop={8}>
+            <Text className="text-[13px] text-sage-500">{t("account.title", "계정")}</Text>
           </Pressable>
         }
       />

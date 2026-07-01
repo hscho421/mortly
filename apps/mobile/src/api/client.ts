@@ -89,6 +89,19 @@ export async function updateName(token: string, name: string) {
   );
 }
 
+/**
+ * DELETE /api/users/me → in-app account deletion (App Store 5.1.1). Credentials
+ * accounts must supply `currentPassword`; OAuth-only accounts use `ack`. We send
+ * both so the server applies whichever branch fits.
+ */
+export async function deleteAccount(token: string, currentPassword?: string) {
+  return api<{ success: boolean }>("/api/users/me", {
+    method: "DELETE",
+    token,
+    body: { ...(currentPassword ? { currentPassword } : {}), ack: "DELETE_MY_ACCOUNT" },
+  });
+}
+
 // ── Borrower requests ────────────────────────────────────────────────────────
 export interface ConversationSummary {
   id: string;

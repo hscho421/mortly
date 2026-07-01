@@ -21,7 +21,7 @@ function RootNavigator() {
     if (status === "loading") return;
     const group = segments[0];
     const screen = segments[1];
-    if (group === "kitchen-sink") return; // dev reference route — ungated
+    if (group === "kitchen-sink" || group === "account") return; // ungated (dev + self-service)
     if (status === "guest") {
       if (group !== "(auth)") router.replace("/(auth)/login");
       return;

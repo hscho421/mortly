@@ -6,14 +6,12 @@ import { getRequestTitle } from "@mortly/core/requestConfig";
 import { Screen, Header, Card, Button, Eyebrow } from "@/components/ui";
 import { Loading, EmptyState, ErrorState } from "@/components/states";
 import { useAdminQueue, useModerateQueue } from "@/hooks/useAdmin";
-import { useAuth } from "@/auth/AuthContext";
 
 type Action = { label: string; variant: "gold" | "light"; onPress: () => void };
 
 export default function AdminHome() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { signOut } = useAuth();
   const q = useAdminQueue();
   const mod = useModerateQueue();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -22,8 +20,8 @@ export default function AdminHome() {
     <Header
       title={t("admin.nav.inbox", "관리")}
       right={
-        <Pressable accessibilityRole="button" onPress={signOut} hitSlop={8}>
-          <Text className="text-[13px] text-sage-500">{t("mobile.signOut", "로그아웃")}</Text>
+        <Pressable accessibilityRole="button" onPress={() => router.push("/account")} hitSlop={8}>
+          <Text className="text-[13px] text-sage-500">{t("account.title", "계정")}</Text>
         </Pressable>
       }
     />

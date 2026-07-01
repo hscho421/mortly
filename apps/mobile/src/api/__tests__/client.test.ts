@@ -1,4 +1,4 @@
-import { api, ApiError, loginWithPassword, selectRole, updateName } from "@/api/client";
+import { api, ApiError, loginWithPassword, selectRole, updateName, deleteAccount } from "@/api/client";
 
 describe("api client", () => {
   const fetchMock = jest.fn();
@@ -73,5 +73,20 @@ describe("api client", () => {
     expect(url).toContain("/api/users/me");
     expect(init.method).toBe("PATCH");
     expect(JSON.parse(init.body)).toEqual({ name: "Hyun Seok" });
+  });
+
+  it("deleteAccount DELETEs with the ack + password (credentials account)", async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true }) });
+    await deleteAccount("tok", "pw123");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/api/users/me");
+    expect(init.method).toBe("DELETE");
+    expect(JSON.parse(init.body)).toEqual({ currentPassword: "pw123", ack: "DELETE_MY_ACCOUNT" });
+  });
+
+  it("deleteAccount omits the password for OAuth-only accounts", async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true }) });
+    await deleteAccount("tok");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ ack: "DELETE_MY_ACCOUNT" });
   });
 });
