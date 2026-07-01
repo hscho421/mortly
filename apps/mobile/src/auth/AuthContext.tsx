@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { clearSession, loadSession, saveSession, type Session, type SessionUser } from "@/auth/session";
 import { loginWithOAuth, loginWithPassword } from "@/api/client";
+import { unregisterForPush } from "@/notifications/push";
 
 type Status = "loading" | "authed" | "guest";
 
@@ -63,10 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // Release this device's push token before the session token is cleared.
+    if (session?.token) await unregisterForPush(session.token).catch(() => {});
     await clearSession();
     setSession(null);
     setStatus("guest");
-  }, []);
+  }, [session?.token]);
 
   return (
     <AuthCtx.Provider

@@ -349,6 +349,29 @@ export async function blockUser(token: string, publicId: string) {
   });
 }
 
+// ── Push notifications ───────────────────────────────────────────────────────
+export interface DeviceRegistration {
+  token: string; // Expo push token
+  platform: "IOS" | "ANDROID";
+  locale?: string;
+  deviceName?: string;
+  appVersion?: string;
+}
+
+/** POST /api/notifications/register-device (204). 409 = token owned by another account. */
+export async function registerDevice(sessionToken: string, reg: DeviceRegistration) {
+  return api("/api/notifications/register-device", { method: "POST", token: sessionToken, body: reg });
+}
+
+/** DELETE /api/notifications/register-device — unregister this device's push token. */
+export async function unregisterDevice(sessionToken: string, pushToken: string) {
+  return api("/api/notifications/register-device", {
+    method: "DELETE",
+    token: sessionToken,
+    body: { token: pushToken },
+  });
+}
+
 // ── Admin (moderation) ───────────────────────────────────────────────────────
 export interface AdminQueue {
   pendingBrokers: {

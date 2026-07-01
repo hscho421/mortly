@@ -7,6 +7,8 @@ import {
   deleteAccount,
   reportTarget,
   blockUser,
+  registerDevice,
+  unregisterDevice,
 } from "@/api/client";
 
 describe("api client", () => {
@@ -118,5 +120,30 @@ describe("api client", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain("/api/users/200000001/block");
     expect(init.method).toBe("POST");
+  });
+
+  it("registerDevice POSTs the Expo token (handles the 204 no-body response)", async () => {
+    // 204 has no JSON body → res.json() rejects; the client tolerates it.
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 204,
+      json: async () => {
+        throw new Error("no body");
+      },
+    });
+    await registerDevice("tok", { token: "ExponentPushToken[x]", platform: "IOS", locale: "ko" });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/api/notifications/register-device");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toMatchObject({ token: "ExponentPushToken[x]", platform: "IOS" });
+  });
+
+  it("unregisterDevice DELETEs the token", async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 204, json: async () => ({}) });
+    await unregisterDevice("tok", "ExponentPushToken[x]");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/api/notifications/register-device");
+    expect(init.method).toBe("DELETE");
+    expect(JSON.parse(init.body)).toEqual({ token: "ExponentPushToken[x]" });
   });
 });

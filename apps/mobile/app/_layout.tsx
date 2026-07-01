@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/auth/AuthContext";
+import { usePushRegistration } from "@/notifications/usePush";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -16,6 +17,7 @@ function RootNavigator() {
   const { status, user } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  usePushRegistration();
 
   useEffect(() => {
     if (status === "loading") return;

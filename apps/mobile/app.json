@@ -21,7 +21,8 @@
       "expo-apple-authentication",
       "expo-asset",
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
