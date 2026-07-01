@@ -55,7 +55,18 @@ export default function BorrowerHome() {
           keyExtractor={(r) => r.id}
           contentContainerStyle={{ padding: 20, gap: 12 }}
           ListHeaderComponent={
-            <Button title={t("borrowerDashboard.newRequest", "+ 새 요청")} variant="gold" onPress={openNew} />
+            <View className="flex-row gap-2">
+              <View className="flex-1">
+                <Button
+                  title={t("borrower.nav.messages", "메시지")}
+                  variant="light"
+                  onPress={() => router.push("/(borrower)/messages")}
+                />
+              </View>
+              <View className="flex-1">
+                <Button title={t("borrowerDashboard.newRequest", "+ 새 요청")} variant="gold" onPress={openNew} />
+              </View>
+            </View>
           }
           renderItem={({ item }) => <RequestCard request={item} />}
           refreshing={q.isRefetching}

@@ -154,6 +154,93 @@ export async function getRequest(token: string, id: string) {
   return api<BorrowerRequest>(`/api/requests/${id}`, { token });
 }
 
+// ── Conversations / chat (shared borrower + broker) ──────────────────────────
+export interface ChatMessage {
+  id: string;
+  body: string;
+  createdAt: string;
+  senderId: string;
+  conversationId: string;
+  isSystem: boolean;
+  sender?: { id: string; name: string | null; role: string };
+}
+
+interface ChatParty {
+  id: string;
+  publicId?: string;
+  name: string | null;
+}
+interface ChatBroker extends ChatParty {
+  brokerageName: string;
+  verificationStatus: string;
+  profilePhoto: string | null;
+  userId?: string;
+  user: { id: string; publicId: string; name: string | null };
+}
+interface ChatRequestRef {
+  id: string;
+  publicId: string;
+  province: string;
+  city: string | null;
+  status: string;
+  mortgageCategory: string;
+  productTypes: string[];
+}
+
+/** GET /api/conversations list item (last message + unread count). */
+export interface ConversationListItem {
+  id: string;
+  publicId: string;
+  status: "ACTIVE" | "CLOSED";
+  updatedAt: string;
+  messages: { body: string; createdAt: string; senderId: string }[];
+  broker: ChatBroker;
+  borrower: ChatParty;
+  request: ChatRequestRef;
+  unreadCount: number;
+}
+
+/** GET /api/conversations/:id — the full thread (messages oldest→newest). */
+export interface ConversationThread {
+  id: string;
+  publicId: string;
+  status: "ACTIVE" | "CLOSED";
+  requestId: string;
+  borrowerId: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: ChatMessage[];
+  broker: ChatBroker;
+  borrower: ChatParty;
+  request: ChatRequestRef & { desiredTimeline: string | null; notes: string | null };
+  hasMore: boolean;
+}
+
+export async function getConversations(token: string) {
+  return api<ConversationListItem[]>("/api/conversations", { token });
+}
+
+export async function getConversation(token: string, id: string) {
+  return api<ConversationThread>(`/api/conversations/${id}`, { token });
+}
+
+/** POST /api/messages → the created message. Errors carry code (turn/entitlement limits). */
+export async function sendMessage(token: string, conversationId: string, body: string) {
+  return api<ChatMessage>("/api/messages", {
+    method: "POST",
+    token,
+    body: { conversationId, body },
+  });
+}
+
+export async function closeConversation(token: string, id: string) {
+  return api<ConversationThread>(`/api/conversations/${id}`, {
+    method: "PUT",
+    token,
+    body: { status: "CLOSED" },
+  });
+}
+
 /** POST /api/auth/mobile-oauth → { sessionToken, user }. */
 export async function loginWithOAuth(
   provider: "google" | "apple",

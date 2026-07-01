@@ -118,9 +118,14 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 function BrokerResponse({ convo }: { convo: ConversationSummary }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const verified = convo.broker.verificationStatus === "VERIFIED";
   return (
-    <Card>
+    <Card
+      onPress={() =>
+        router.push({ pathname: "/(borrower)/messages/[id]", params: { id: convo.id } })
+      }
+    >
       <View className="flex-row items-center gap-3">
         <Avatar name={convo.broker.user.name} uri={convo.broker.profilePhoto} size={44} />
         <View className="flex-1">
