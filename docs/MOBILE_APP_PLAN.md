@@ -23,6 +23,17 @@ Mortly is a bilingual (Korean-default / English) two-sided mortgage marketplace.
 | 5 | **Reuse Supabase Realtime + RLS** for chat | `supabase-js` runs in RN; the row-level-security that keeps conversations confidential carries over unchanged. |
 | 6 | **Brand parity** — reuse "Midnight & Gold" tokens via NativeWind | Forest/navy `#0f1729`, sage `#9ea6bd`, cream surfaces, amber/gold `#c49a3a`; sharp corners; Outfit + Noto Sans KR. Korean-default bilingual (react-i18next, already a dependency). No in-app language switcher (web convention). |
 
+### Resolved decisions (2026-07-01)
+These five product questions from §7 are now decided and supersede the "open" framing there:
+
+| Q | Decision |
+|---|----------|
+| **Billing CTA** | **Status-only, neutral copy.** No prices, no "cheaper on web" steering. The Subscription screen shows tier/credits/renewal/PAST_DUE and a single neutral "Manage subscription on mortly.ca" that opens the external browser. Most conservative posture vs. App/Play Store anti-steering. |
+| **Mobile auth** | **Yes** — add a credentials (email/password) mobile login endpoint + issue a mobile session token (JWT) stored in Keychain/Keystore; reuse `tokenVersion` for "log out everywhere". Biometric app-unlock (Face ID / fingerprint) as an optional convenience. |
+| **Admin v1 scope** | **Moderation-first.** Inbox (pending verifications + open reports) → approve/reject/resolve with reason + read-only context (user/broker/request/conversation) + push alerts. Deferred to web: user mutations (suspend/ban/credit-adjust), create-admin, system settings, geography maps. |
+| **Repo shape** | **Monorepo** (npm/pnpm workspaces): `apps/web`, `apps/mobile`, `packages/core` (types, zod, i18n JSON, tier/credit constants, business rules, API contract). Low-risk path: extract `packages/core` first, add `apps/mobile`, do the `apps/web` move as a dedicated refactor. |
+| **Borrower on mobile** | **Full peer** — create requests + chat + browse brokers at launch (not chat-first). |
+
 ### What already exists that de-risks this build
 - **`components/MobileTabBar.tsx`** — a native-style bottom tab bar with a "More" bottom sheet, badges, and safe-area padding, already powering all three web app areas below `md`. Its `TabBarItem` model is the canonical mobile tab contract.
 - **Three data/badge context providers** (Admin/Broker/Borrower) that already centralize polling + counters — reuse their shapes as mobile view-models.
@@ -2749,12 +2760,16 @@ Ship-gate for each screen (owned by the design + engineering DoD, aligning with 
 | R8 | **OTA update + versioned API** | Silent breakage | Use EAS Update for JS-only fixes; version the API contract and gate on minimum-supported-app-version to force upgrades when the server changes. |
 | R9 | **Deep-link security** | Spoofed navigation | Validate deep-link targets against the session role; never trust a link to bypass a role/verification gate. |
 
-### Open questions for you
-1. **Billing CTA policy (R1):** conservative (status-only + a neutral "Manage on mortly.ca") vs. showing prices with an external link. What's your risk appetite / target launch regions (US, EU, KR)?
-2. **Auth (R2):** OK to add a mobile credentials-login endpoint + issue a mobile session token (Bearer, stored in Keychain/Keystore)? Any SSO/biometric-unlock requirement (Face ID / fingerprint to re-open)?
-3. **Admin scope for v1:** full parity (users, credits adjust, system settings, geography maps) or a **moderation-first** slice (inbox: approve/reject + reports) with the rest deferred to web?
-4. **Monorepo:** move the web repo into a monorepo with a shared `packages/core` (types, validation, i18n, tier/credit constants), or keep the mobile app a separate repo consuming a published shared package?
-5. **Borrower value on mobile:** is the borrower app a full peer (create requests + chat) at launch, or chat-first (create-request stays web) to shrink v1?
+### Open questions
+
+**Resolved (2026-07-01) — see the Resolved decisions table in §0:**
+1. ~~Billing CTA policy~~ → **status-only, neutral copy** (no prices/steering).
+2. ~~Mobile auth~~ → **yes**: credentials endpoint + mobile JWT in Keychain/Keystore, `tokenVersion` logout, optional biometric unlock.
+3. ~~Admin v1 scope~~ → **moderation-first** (inbox approve/reject/resolve + read-only context + push; management deferred to web).
+4. ~~Repo shape~~ → **monorepo** (`apps/web` + `apps/mobile` + `packages/core`); extract `packages/core` first as the low-risk path.
+5. ~~Borrower on mobile~~ → **full peer** (create requests + chat + browse at launch).
+
+**Still open:**
 6. **Notifications granularity:** per-category toggles (new response, new message, request approved/expired, admin alerts) or a single on/off?
 7. **App identity:** one app in both stores, or separate builds? Store listing name/keywords, and do brokers/admins get any special onboarding at install?
 
@@ -2781,8 +2796,8 @@ Broker dashboard (KPIs + verification + **read-only plan/credits**) · verificat
 ### Phase 4 — Notifications & polish (1 wk)
 Expo push tokens + permission priming · deep links into request/chat/report · notification preferences · offline/retry for chat · empty/error/loading polish · accessibility pass (dynamic type, VoiceOver/TalkBack, 44pt targets). *Exit: re-engagement works; app feels finished.*
 
-### Phase 5 — Admin app (1.5 wks)
-Moderation **inbox** (approve/reject brokers + resolve reports, reason entry, confirm on destructive) · users search + detail (suspend/ban, adjust credits) · activity/audit · reports detail · **geography** (list-first, compact map) · system settings · admin push alerts (new report, broker awaiting verification). *Exit: admins can run day-to-day moderation from the phone.*
+### Phase 5 — Admin app · **moderation-first** (~1 wk)
+Scope per the resolved decision: Moderation **inbox** (approve/reject brokers + resolve reports, reason entry, confirm on destructive actions) · **read-only** context views (user/broker/request/conversation detail) · admin push alerts (new report, broker awaiting verification). **Deferred to web (not in v1 app):** user mutations (suspend/ban/adjust-credits), create-admin, system settings, geography maps. *Exit: admins can triage verifications + reports from the phone; heavy management stays on the responsive web.*
 
 ### Phase 6 — Hardening & store submission (1 wk)
 Offline resilience · performance (list virtualization, image caching) · EAS Update channel · privacy labels / Data Safety · **compliance review of the billing hand-off (R1)** · reviewer demo accounts + disclaimers · screenshots/metadata · TestFlight/closed-track beta → phased rollout.
