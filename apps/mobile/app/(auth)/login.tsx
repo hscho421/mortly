@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/auth/AuthContext";
 import { ApiError } from "@/api/client";
+import { signInWithApple } from "@/auth/appleSignIn";
 
 const ERROR_KO: Record<string, string> = {
   MISSING_CREDENTIALS: "이메일과 비밀번호를 입력해주세요.",
@@ -16,7 +17,7 @@ const ERROR_KO: Record<string, string> = {
 
 export default function Login() {
   const { t } = useTranslation();
-  const { signInWithPassword } = useAuth();
+  const { signInWithPassword, signInWithOAuth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,23 @@ export default function Login() {
       // Uses the shared i18n key when present, else a KO fallback.
       setError(t(`mobile.authError.${code}`, ERROR_KO[code] ?? "로그인에 실패했습니다."));
       setBusy(false);
+    }
+  }
+
+  async function onApple() {
+    setError(null);
+    try {
+      const { identityToken, fullName } = await signInWithApple();
+      await signInWithOAuth("apple", identityToken, fullName);
+      // RootNavigator redirects on success.
+    } catch (e) {
+      const code = e instanceof ApiError ? e.code : e instanceof Error ? e.message : "APPLE_FAILED";
+      if (code === "ERR_REQUEST_CANCELED") return; // user dismissed — stay silent
+      if (code === "APPLE_UNAVAILABLE") {
+        setError("Apple 로그인은 개발/배포 빌드에서만 가능합니다 (Expo Go 미지원).");
+        return;
+      }
+      setError(t(`mobile.authError.${code}`, ERROR_KO[code] ?? "Apple 로그인에 실패했습니다."));
     }
   }
 
@@ -95,14 +113,23 @@ export default function Login() {
               </Text>
             </Pressable>
 
+            {Platform.OS === "ios" ? (
+              <Pressable
+                onPress={onApple}
+                accessibilityRole="button"
+                className="h-[52px] flex-row items-center justify-center rounded-sm bg-white"
+              >
+                <Text className="font-display text-[16px] font-semibold text-black">Apple로 계속하기</Text>
+              </Pressable>
+            ) : null}
             <Pressable
-              onPress={() => Alert.alert("Apple", "Sign in with Apple — wire expo-apple-authentication → /api/auth/mobile-oauth")}
-              className="h-[52px] flex-row items-center justify-center rounded-sm bg-white"
-            >
-              <Text className="font-display text-[16px] font-semibold text-black">Apple로 계속하기</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => Alert.alert("Google", "Google Sign-In — wire the native SDK → /api/auth/mobile-oauth")}
+              onPress={() =>
+                Alert.alert(
+                  "Google",
+                  "Google 로그인은 client ID 설정 + 개발 빌드가 필요합니다 (@react-native-google-signin 또는 expo-auth-session → /api/auth/mobile-oauth).",
+                )
+              }
+              accessibilityRole="button"
               className="h-[52px] flex-row items-center justify-center rounded-sm border border-forest-600"
             >
               <Text className="font-display text-[16px] font-semibold text-white">Google로 계속하기</Text>
