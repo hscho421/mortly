@@ -312,6 +312,20 @@ export async function closeConversation(token: string, id: string) {
   });
 }
 
+// ── Trust & safety (App Store 1.2: report + block) ───────────────────────────
+/** POST /api/reports — flag content. 409 = already reported, 429 = daily cap. */
+export async function reportTarget(token: string, targetType: string, targetId: string, reason: string) {
+  return api("/api/reports", { method: "POST", token, body: { targetType, targetId, reason } });
+}
+
+/** POST /api/users/:publicId/block — block a user (symmetric; idempotent). */
+export async function blockUser(token: string, publicId: string) {
+  return api<{ success: boolean; blocked: boolean }>(`/api/users/${publicId}/block`, {
+    method: "POST",
+    token,
+  });
+}
+
 // ── Admin (moderation) ───────────────────────────────────────────────────────
 export interface AdminQueue {
   pendingBrokers: {

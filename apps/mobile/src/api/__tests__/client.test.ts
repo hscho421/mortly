@@ -1,4 +1,13 @@
-import { api, ApiError, loginWithPassword, selectRole, updateName, deleteAccount } from "@/api/client";
+import {
+  api,
+  ApiError,
+  loginWithPassword,
+  selectRole,
+  updateName,
+  deleteAccount,
+  reportTarget,
+  blockUser,
+} from "@/api/client";
 
 describe("api client", () => {
   const fetchMock = jest.fn();
@@ -88,5 +97,26 @@ describe("api client", () => {
     fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true }) });
     await deleteAccount("tok");
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ ack: "DELETE_MY_ACCOUNT" });
+  });
+
+  it("reportTarget POSTs the flag (App Store 1.2)", async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 201, json: async () => ({ id: "r1" }) });
+    await reportTarget("tok", "CONVERSATION", "100000001", "spam");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/api/reports");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({
+      targetType: "CONVERSATION",
+      targetId: "100000001",
+      reason: "spam",
+    });
+  });
+
+  it("blockUser POSTs to the block endpoint by publicId", async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true, blocked: true }) });
+    await blockUser("tok", "200000001");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/api/users/200000001/block");
+    expect(init.method).toBe("POST");
   });
 });
