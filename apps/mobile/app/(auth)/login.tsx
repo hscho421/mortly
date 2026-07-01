@@ -30,9 +30,13 @@ export default function Login() {
       await signInWithPassword(email.trim(), password);
       // RootNavigator redirects to the role home on success.
     } catch (e) {
-      const code = e instanceof ApiError ? e.code : "INVALID_CREDENTIALS";
-      // Uses the shared i18n key when present, else a KO fallback.
-      setError(t(`mobile.authError.${code}`, ERROR_KO[code] ?? "로그인에 실패했습니다."));
+      if (e instanceof ApiError) {
+        // Uses the shared i18n key when present, else a KO fallback.
+        setError(t(`mobile.authError.${e.code}`, ERROR_KO[e.code] ?? "로그인에 실패했습니다."));
+      } else {
+        // Network / unreachable server — don't mislabel it as bad credentials.
+        setError(t("mobile.connectionError", "서버에 연결할 수 없습니다. 네트워크를 확인해주세요."));
+      }
       setBusy(false);
     }
   }

@@ -5,10 +5,13 @@ import Constants from "expo-constants";
  * EXPO_PUBLIC_API_URL (e.g. a staging URL or your machine's LAN IP for a
  * device hitting a local `next dev`).
  */
+// NOTE: use the canonical `www` host. The apex `mortly.ca` 307-redirects to
+// `www.mortly.ca`, and RN fetch drops the POST body / strips the auth cookie
+// across that cross-host redirect — which silently breaks login + authed calls.
 export const API_URL: string =
   process.env.EXPO_PUBLIC_API_URL ??
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
-  "https://mortly.ca";
+  "https://www.mortly.ca";
 
 /**
  * The next-auth session-cookie name the API reads. Production is HTTPS, so

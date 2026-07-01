@@ -7,15 +7,15 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://mortly.ca" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://www.mortly.ca" }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://mortly.ca" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://www.mortly.ca" }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://mortly.ca" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://www.mortly.ca" }
     }
   },
   "submit": {
