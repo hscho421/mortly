@@ -10,10 +10,9 @@ import { API_URL, SESSION_COOKIE_NAME } from "@/config";
  * Errors: the backend returns `{ error: "<SENTINEL_CODE>" }`; we surface that
  * code on ApiError so screens map it to the shared i18n copy.
  *
- * NOTE: mutating endpoints (POST/PUT/DELETE) additionally enforce a same-origin
- * CSRF check on the web. Wiring those for mobile (a mobile-exempt path when a
- * valid session is present and no browser Origin exists) is a per-feature
- * follow-up; GET reads work today.
+ * CSRF: every request sends `x-mortly-mobile: 1`, which the backend treats as a
+ * trusted mobile client and lets past its same-origin check — so mutations
+ * (POST/PUT/DELETE) work without a browser Origin.
  */
 
 export class ApiError extends Error {
@@ -35,7 +34,10 @@ export interface ApiOptions {
 }
 
 export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "x-mortly-mobile": "1",
+  };
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (opts.token) headers["Cookie"] = `${SESSION_COOKIE_NAME}=${opts.token}`;
 
@@ -58,6 +60,14 @@ export async function loginWithPassword(email: string, password: string) {
   return api<{ sessionToken: string; user: import("@/auth/session").SessionUser }>(
     "/api/auth/mobile-login",
     { method: "POST", body: { email, password } },
+  );
+}
+
+/** GET /api/users/me → the fresh current user (reflects role/name/status changes). */
+export async function getMe(token: string) {
+  return api<{ user: import("@/auth/session").SessionUser & { status: string } }>(
+    "/api/users/me",
+    { token },
   );
 }
 

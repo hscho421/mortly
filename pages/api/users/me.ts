@@ -25,6 +25,9 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.method === "GET") {
+    return handleGet(req, res);
+  }
   if (req.method === "PATCH") {
     return handlePatch(req, res);
   }
@@ -195,6 +198,49 @@ export default async function handler(
       error: "Failed to delete account. Please contact support.",
     });
   }
+}
+
+/**
+ * GET /api/users/me — the current signed-in user, read fresh from the DB.
+ * The mobile app's canonical "who am I / refresh session" call: it reflects
+ * server-side changes (role selection, name, status) the stored JWT can't.
+ * Read-only + session-gated; no CSRF concern (mobile sends x-mortly-mobile).
+ */
+async function handleGet(req: NextApiRequest, res: NextApiResponse) {
+  const isMobile = req.headers[MOBILE_HEADER] === "1";
+  if (!isMobile && !isAllowedOrigin(req)) {
+    return res.status(403).json({ error: "Cross-origin request rejected" });
+  }
+
+  const session = await getServerSession(req, res, authOptions);
+  if (!session?.user?.id) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true, publicId: true, email: true, name: true, role: true,
+      preferences: true, status: true,
+    },
+  });
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const prefs = (user.preferences as Record<string, unknown> | null) ?? {};
+  return res.status(200).json({
+    user: {
+      id: user.id,
+      publicId: user.publicId,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      needsRoleSelection: prefs.needsRoleSelection === true,
+      needsNameEntry: prefs.needsNameEntry === true || !user.name,
+      status: user.status,
+    },
+  });
 }
 
 async function handlePatch(req: NextApiRequest, res: NextApiResponse) {

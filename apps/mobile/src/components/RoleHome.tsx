@@ -1,16 +1,20 @@
-import { View, Text } from "react-native";
+import { View, Text, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Screen, Button, Eyebrow } from "@/components/ui";
 import { useAuth } from "@/auth/AuthContext";
+import { useMe } from "@/hooks/useMe";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 /**
  * Phase 0 placeholder home — proves the full stack is wired end-to-end
- * (login → Keychain session → role router → this screen). Real per-role
- * dashboards land in Phase 2/3.
+ * (login → Keychain session → role router → authed API → this screen). Real
+ * per-role dashboards land in Phase 2/3.
  */
 export function RoleHome({ label }: { label: string }) {
   const { user, signOut } = useAuth();
   const { t } = useTranslation();
+  const me = useMe(); // fresh user from GET /api/users/me — proves the authed loop
+
   return (
     <Screen className="justify-center gap-3 px-6">
       <Eyebrow>{label}</Eyebrow>
@@ -26,9 +30,22 @@ export function RoleHome({ label }: { label: string }) {
           Phase 0 · foundation ✓
         </Text>
         <Text className="mt-2 text-[13px] leading-5 text-sage-500">
-          로그인 · 세션(Keychain) · API 클라이언트 · i18n · 디자인 토큰 · 역할 라우팅이 모두 연결되었습니다.
-          화면 UI는 다음 단계에서 구현됩니다.
+          로그인 · 세션(Keychain) · API · i18n · 디자인 토큰 · 역할 라우팅 · 실시간이 모두 연결되었습니다.
         </Text>
+
+        {/* Live proof the authenticated API loop works from the device. */}
+        <View className="mt-3 border-t border-cream-200 pt-3">
+          {me.isPending ? (
+            <ActivityIndicator color="#c49a3a" />
+          ) : me.isError ? (
+            <Text className="font-mono text-[11px] text-error-600">GET /me failed</Text>
+          ) : (
+            <Text className="font-mono text-[11px] text-sage-500">
+              /api/users/me → {me.data?.role} · {me.data?.status} · realtime{" "}
+              {isSupabaseConfigured ? "ready" : "off"}
+            </Text>
+          )}
+        </View>
       </View>
 
       <View className="mt-4">
