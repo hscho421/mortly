@@ -67,11 +67,15 @@ npx expo-doctor                  # dependency sanity (18/18)
 No action needed. The root workspace is **web + `packages/core` only** — the RN
 toolchain never enters the web install, so the production deploy is unaffected.
 
-## Remaining for Phase 0 (needs your machine / accounts)
-These are wired in code but can't be finished/verified from CI — they need a
-device, an EAS account, or your OAuth credentials:
+## Wired in code — need your machine / accounts to finish
+These can't be verified from CI/Expo Go; they need a device, an EAS account, or
+your OAuth credentials:
 - **Dev build** — `npx expo run:ios` (or `eas build --profile development`) to
-  test **Apple sign-in** and later push (Expo Go can't run native modules).
+  test **native Apple sign-in** and **push** (Expo Go can't run these).
+- **Push notifications** — the client (register + tap deep-linking) + backend
+  are done. To enable: run `eas init` and add the project id to `app.json` under
+  `expo.extra.eas.projectId` (registration no-ops without it), then test in a
+  dev build. Unregisters on sign-out.
 - **EAS build on iOS + Android** from `eas.json` (needs your Expo account).
 - **Google sign-in** — add client IDs + `@react-native-google-signin` (or
   `expo-auth-session`) in a dev build; server verify already exists.
