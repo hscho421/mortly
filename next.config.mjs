@@ -3,6 +3,8 @@ import i18nConfig from "./next-i18next.config.js";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Transpile the shared workspace package (ships TypeScript source).
+  transpilePackages: ["@mortly/core"],
   // Don't advertise the framework/version — removes the `X-Powered-By: Next.js`
   // fingerprint that helps an attacker target framework-specific CVEs.
   poweredByHeader: false,

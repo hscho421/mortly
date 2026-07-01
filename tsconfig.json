@@ -19,6 +19,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@mortly/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@mortly/core/*": [
+        "./packages/core/src/*"
       ]
     },
     "target": "ES2017"
@@ -32,6 +38,7 @@
     "node_modules",
     "tests/**",
     "vitest.config.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "apps/**"
   ]
 }

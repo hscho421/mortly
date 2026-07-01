@@ -1,11 +1,5 @@
 /**
- * Map a Next.js router locale ("ko" | "en") to a BCP-47 formatting locale.
- *
- * Several pages previously hardcoded "en-CA" in toLocaleDateString /
- * toLocaleTimeString, so Korean users saw English month names on a
- * Korean-default product. Thread `router.locale` (or i18n.language) through
- * this helper instead.
+ * Re-export shim — implementation moved to @mortly/core (shared with the
+ * mobile app). Keeps the web's existing @/lib/format imports working.
  */
-export function dateLocale(locale?: string | null): string {
-  return locale === "ko" ? "ko-KR" : "en-CA";
-}
+export * from "@mortly/core/format";

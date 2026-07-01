@@ -57,8 +57,12 @@ export default defineConfig({
     restoreMocks: true,
   },
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "."),
-    },
+    // Array form so we can resolve @mortly/core subpaths (@mortly/core/tiers →
+    // packages/core/src/tiers.ts) alongside the barrel and the "@/" root alias.
+    alias: [
+      { find: /^@mortly\/core$/, replacement: path.resolve(__dirname, "./packages/core/src/index.ts") },
+      { find: /^@mortly\/core\/(.*)$/, replacement: path.resolve(__dirname, "./packages/core/src") + "/$1.ts" },
+      { find: /^@\/(.*)$/, replacement: path.resolve(__dirname, ".") + "/$1" },
+    ],
   },
 });

@@ -2,6 +2,10 @@
   "name": "mortgage-marketplace",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "postinstall": "prisma generate",
